@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: ..
+    restart: unless-stopped
+    init: true
+    environment:
+      APP_PUBLIC_URL: https://${MACH_DOMAIN:?Set MACH_DOMAIN in .env}
+      APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL:?Set APP_ADMIN_EMAIL in .env}
+      APP_SIGNUP_CODE: ${APP_SIGNUP_CODE:?Set APP_SIGNUP_CODE in .env}
+      APP_AI_CONFIG: ${APP_AI_CONFIG:-}
+    volumes:
+      - mach_data:/var/lib/mach
+    shm_size: 256mb
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+  https:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      MACH_DOMAIN: ${MACH_DOMAIN:?Set MACH_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+volumes:
+  mach_data:
+  caddy_data:
+  caddy_config:

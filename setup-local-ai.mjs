@@ -1,0 +1,13 @@
+// Official portable Ollama, CPU-only subset. Range requests avoid downloading GPU libraries.
+import {mkdir,writeFile} from 'node:fs/promises';
+import {inflateRawSync,crc32} from 'node:zlib';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=fileURLToPath(new URL('.',import.meta.url)),target=path.join(root,'.runtime/ollama');await mkdir(target,{recursive:true});
+const head=await fetch('https://ollama.com/download/ollama-windows-amd64.zip',{method:'HEAD'});if(!head.ok)throw Error('Không tải được bản Ollama chính thức.');const size=Number(head.headers.get('content-length')),url=head.url;
+async function range(start,end){const r=await fetch(url,{headers:{Range:`bytes=${start}-${end}`}});if(r.status!==206)throw Error('Máy chủ không hỗ trợ đọc từng phần tệp.');return Buffer.from(await r.arrayBuffer());}
+const tail=await range(size-65557,size-1);let end=-1;for(let i=tail.length-22;i>=0;i--)if(tail.readUInt32LE(i)===0x06054b50){end=i;break;}if(end<0)throw Error('Không đọc được danh mục ZIP.');const length=tail.readUInt32LE(end+12),offset=tail.readUInt32LE(end+16);const cd=offset>=size-tail.length?tail.subarray(offset-(size-tail.length)):await range(offset,offset+length-1);const entries=[];
+for(let p=0;p+46<=cd.length&&cd.readUInt32LE(p)===0x02014b50;){const n=cd.readUInt16LE(p+28),x=cd.readUInt16LE(p+30),comment=cd.readUInt16LE(p+32),name=cd.subarray(p+46,p+46+n).toString();if(name==='ollama.exe'||/^lib\/ollama\/[^/]+$/.test(name))entries.push({name,compressed:cd.readUInt32LE(p+20),size:cd.readUInt32LE(p+24),offset:cd.readUInt32LE(p+42),method:cd.readUInt16LE(p+10),crc:cd.readUInt32LE(p+16)});p+=46+n+x+comment;}
+console.log('Tải',entries.length,'tệp CPU từ bản phân phối chính thức; khoảng',Math.round(entries.reduce((s,e)=>s+e.compressed,0)/1048576),'MB.');
+for(let i=0;i<entries.length;i+=5){const results=await Promise.allSettled(entries.slice(i,i+5).map(async e=>{const header=await range(e.offset,e.offset+29);if(header.readUInt32LE(0)!==0x04034b50)throw Error('ZIP header không hợp lệ.');const start=e.offset+30+header.readUInt16LE(26)+header.readUInt16LE(28);const compressed=await range(start,start+e.compressed-1);const data=e.method===8?inflateRawSync(compressed):compressed;if(data.length!==e.size||crc32(data)!==e.crc)throw Error('Kiểm tra toàn vẹn thất bại: '+e.name);const dest=path.resolve(target,e.name);if(!dest.startsWith(target+path.sep))throw Error('Đường dẫn không hợp lệ.');await mkdir(path.dirname(dest),{recursive:true});await writeFile(dest,data);}));for(const r of results)if(r.status==='rejected')throw r.reason;console.log('Đã chuẩn bị',Math.min(i+5,entries.length),'/',entries.length);}
+console.log('Ollama CPU sẵn sàng tại',target);

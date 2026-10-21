@@ -1,0 +1,251 @@
+{
+  "title": "Đề thi tuyển sinh vào lớp 10 môn Toán kèm hướng dẫn chấm",
+  "subject": "Toán",
+  "grade": "9",
+  "minutes": 120,
+  "instructions": "Thí sinh trình bày lời giải đầy đủ. Đề gồm 5 bài, tổng 10,0 điểm.",
+  "questions": [
+    {
+      "id": "5d1e89c8-6155-4869-a25b-303779b942de",
+      "v": 1,
+      "type": "essay",
+      "stem": "Cho biểu thức $P=\\frac{\\sqrt{x}+1}{\\sqrt{x}-1}$ với $x\\geq0$, $x\\ne1$.\na) Tính $P$ khi $x=9$.\nb) Tìm $x$ để $P>3$.",
+      "explanation": "a) Với $x=9$, ta có $P=\\frac{3+1}{3-1}=2$.\nb) Đặt $t=\\sqrt{x}$, $t\\geq0$, $t\\ne1$. Ta có $P>3\\Leftrightarrow\\frac{-2t+4}{t-1}>0$. Xét dấu theo các mốc $1$ và $2$, suy ra $1<t<2$. Vậy $1<x<4$.",
+      "points": 2,
+      "rubric": [
+        {
+          "text": "Thay $x=9$, tính được $P=2$.",
+          "points": 1
+        },
+        {
+          "text": "Đặt $t=\\sqrt{x}$ và đưa về $\\frac{-2t+4}{t-1}>0$.",
+          "points": 0.5
+        },
+        {
+          "text": "Xét dấu, kết luận $1<x<4$.",
+          "points": 0.5
+        }
+      ],
+      "options": [],
+      "answer": 0,
+      "answerKnown": true,
+      "topic": "Ôn tập tuyển sinh",
+      "level": 1,
+      "source": null,
+      "check": null
+    },
+    {
+      "id": "6c5b3fd1-4934-4078-a4bd-b6c2af5cea59",
+      "v": 1,
+      "type": "essay",
+      "stem": "Hai đội cùng làm một công việc thì hoàn thành sau 4 giờ. Nếu làm riêng, đội thứ hai cần nhiều hơn đội thứ nhất 6 giờ để hoàn thành công việc. Tính thời gian mỗi đội làm riêng.",
+      "explanation": "Gọi thời gian đội thứ nhất làm riêng là $x$ giờ, $x>0$. Đội thứ hai cần $x+6$ giờ. Mỗi giờ hai đội làm được $\\frac1x+\\frac1{x+6}=\\frac14$ công việc. Suy ra $x(x+6)=4(2x+6)$, hay $x^2-2x-24=0\\Leftrightarrow(x-6)(x+4)=0$. Loại $x=-4$, chọn $x=6$. Vậy đội thứ nhất cần 6 giờ, đội thứ hai cần 12 giờ. Kiểm tra: $\\frac16+\\frac1{12}=\\frac14$.",
+      "points": 2,
+      "rubric": [
+        {
+          "text": "Đặt ẩn và điều kiện $x>0$; thời gian đội thứ hai là $x+6$.",
+          "points": 0.5
+        },
+        {
+          "text": "Lập phương trình $\\frac1x+\\frac1{x+6}=\\frac14$.",
+          "points": 0.5
+        },
+        {
+          "text": "Giải được $x=6$ hoặc $x=-4$, loại nghiệm âm.",
+          "points": 0.5
+        },
+        {
+          "text": "Kết luận 6 giờ và 12 giờ; kiểm tra năng suất tổng bằng $\\frac14$.",
+          "points": 0.5
+        }
+      ],
+      "options": [],
+      "answer": 0,
+      "answerKnown": true,
+      "topic": "Ôn tập tuyển sinh",
+      "level": 1,
+      "source": null,
+      "check": null
+    },
+    {
+      "id": "0c49a3d5-6832-4a4b-a191-de384ab64b98",
+      "v": 1,
+      "type": "essay",
+      "stem": "a) Giải hệ phương trình $\\begin{cases}x+y=5\\\\xy=6\\end{cases}$.\nb) Cho phương trình $x^2-2(m-1)x+m^2-4=0$. Tìm $m$ để phương trình có hai nghiệm thực phân biệt $x_1,x_2$ thỏa mãn $x_1^2+x_2^2=12$.",
+      "explanation": "a) Hai số $x,y$ có tổng 5 và tích 6 nên là các nghiệm của $t^2-5t+6=0$. Do đó $(x,y)=(2,3)$ hoặc $(3,2)$.\nb) Ta có $\\Delta'=(m-1)^2-(m^2-4)=5-2m$. Phương trình có hai nghiệm phân biệt khi $m<\\frac52$. Theo Vi-ét, $x_1+x_2=2(m-1)$ và $x_1x_2=m^2-4$. Suy ra $x_1^2+x_2^2=2m^2-8m+12$. Điều kiện đề bài tương đương $2m(m-4)=0$, nên $m=0$ hoặc $m=4$. Đối chiếu $m<\\frac52$, chỉ nhận $m=0$.",
+      "points": 2,
+      "rubric": [
+        {
+          "text": "Từ tổng và tích, tìm $(x,y)=(2,3)$ hoặc $(3,2)$.",
+          "points": 1
+        },
+        {
+          "text": "Tính $\\Delta'=5-2m$, nêu điều kiện $m<\\frac52$.",
+          "points": 0.25
+        },
+        {
+          "text": "Dùng Vi-ét, tính $x_1^2+x_2^2=2m^2-8m+12$.",
+          "points": 0.25
+        },
+        {
+          "text": "Giải $m(m-4)=0$, tìm hai ứng viên $m=0,m=4$.",
+          "points": 0.25
+        },
+        {
+          "text": "Loại $m=4$ theo điều kiện, nhận $m=0$.",
+          "points": 0.25
+        }
+      ],
+      "options": [],
+      "answer": 0,
+      "answerKnown": true,
+      "topic": "Ôn tập tuyển sinh",
+      "level": 1,
+      "source": null,
+      "check": null
+    },
+    {
+      "id": "030b4a15-57a3-4336-bb2f-046e3421278b",
+      "v": 1,
+      "type": "essay",
+      "stem": "Cho tam giác nhọn $ABC$ có $AB<AC$, nội tiếp đường tròn $(O)$. Các đường cao $AD,BE,CF$ cắt nhau tại $H$. Gọi $M$ là trung điểm $BC$; đường thẳng $AO$ cắt lại đường tròn tại $K$.\na) Chứng minh $B,C,E,F$ cùng thuộc một đường tròn.\nb) Chứng minh $\\triangle ABD\\sim\\triangle AKC$ và $AB\\cdot AC=AD\\cdot AK$.\nc) Chứng minh $H,M,K$ thẳng hàng và $AH=2OM$.",
+      "explanation": "a) Vì $BE\\perp AC$ và $CF\\perp AB$, các góc $BEC$ và $BFC$ đều bằng $90^\\circ$. Do đó $E,F$ cùng nằm trên đường tròn đường kính $BC$.\nb) $AK$ là đường kính nên $\\angle ACK=90^\\circ=\\angle ADB$. Mặt khác $\\angle AKC=\\angle ABC=\\angle ABD$ vì cùng chắn cung $AC$. Suy ra $\\triangle ABD\\sim\\triangle AKC$. Do đó $\\frac{AB}{AK}=\\frac{AD}{AC}$, hay $AB\\cdot AC=AD\\cdot AK$.\nc) Vì $AK$ là đường kính nên $BK\\perp AB$ và $CK\\perp AC$. Các đường cao cho $CH\\perp AB$, $BH\\perp AC$, nên $BK\\parallel CH$, $CK\\parallel BH$. Tứ giác $BHCK$ là hình bình hành. Hai đường chéo $BC,HK$ cắt nhau tại trung điểm của mỗi đường. Vì $M$ là trung điểm $BC$, suy ra $H,M,K$ thẳng hàng và $M$ là trung điểm $HK$. Trong tam giác $AHK$, $O$ là trung điểm $AK$, $M$ là trung điểm $HK$. Vì vậy $OM$ là đường trung bình, $OM=\\frac12 AH$, tức $AH=2OM$.",
+      "points": 3.5,
+      "rubric": [
+        {
+          "text": "Nêu hai góc $BEC,BFC$ vuông, kết luận nội tiếp đường tròn đường kính $BC$.",
+          "points": 1
+        },
+        {
+          "text": "Chỉ ra cặp góc vuông và $\\angle ABD=\\angle AKC$, suy ra hai tam giác đồng dạng.",
+          "points": 0.75
+        },
+        {
+          "text": "Từ tỉ số cạnh tương ứng, suy ra $AB\\cdot AC=AD\\cdot AK$.",
+          "points": 0.5
+        },
+        {
+          "text": "Chứng minh $BHCK$ là hình bình hành, suy ra $M$ là trung điểm $HK$ và $H,M,K$ thẳng hàng.",
+          "points": 0.75
+        },
+        {
+          "text": "Áp dụng đường trung bình trong tam giác $AHK$, kết luận $AH=2OM$.",
+          "points": 0.5
+        }
+      ],
+      "options": [],
+      "answer": 0,
+      "answerKnown": true,
+      "topic": "Ôn tập tuyển sinh",
+      "level": 1,
+      "source": null,
+      "check": null,
+      "figure": {
+        "points": {
+          "A": "free",
+          "B": "free",
+          "C": "free"
+        },
+        "constraints": [
+          "D=foot(A,B,C)",
+          "O=circumcenter(A,B,C)",
+          "H=orthocenter(A,B,C)",
+          "E=foot(B,A,C)",
+          "F=foot(C,A,B)",
+          "M=midpoint(B,C)",
+          "K=opposite(A,O)"
+        ],
+        "objects": [
+          "segment(A,B)",
+          "segment(A,C)",
+          "segment(B,C)",
+          {
+            "type": "segment",
+            "points": [
+              "A",
+              "D"
+            ],
+            "dashed": true
+          },
+          "circle(O,A)",
+          "rightAngle(A,D,B)",
+          {
+            "type": "segment",
+            "points": [
+              "B",
+              "E"
+            ],
+            "dashed": true
+          },
+          {
+            "type": "segment",
+            "points": [
+              "C",
+              "F"
+            ],
+            "dashed": true
+          },
+          "segment(A,K)",
+          "segment(B,K)",
+          "segment(C,K)",
+          {
+            "type": "segment",
+            "points": [
+              "H",
+              "K"
+            ],
+            "dashed": true
+          },
+          "segment(O,M)",
+          "rightAngle(B,E,A)",
+          "rightAngle(C,F,A)"
+        ],
+        "conditions": [
+          "AB<AC",
+          "acute(A,B,C)"
+        ],
+        "labels": {
+          "A": "above",
+          "B": "left",
+          "C": "right",
+          "D": "left",
+          "O": "right",
+          "H": "left",
+          "E": "right",
+          "F": "left",
+          "M": "below",
+          "K": "below"
+        },
+        "caption": "Các đường cao, trực tâm và đường kính AK",
+        "width": 480,
+        "align": "center"
+      }
+    },
+    {
+      "id": "446e2e41-2e5a-4b70-b0d8-d93316e8e42c",
+      "v": 1,
+      "type": "essay",
+      "stem": "Cho các số thực dương $a,b,c$ thỏa mãn $a+b+c=3$. Tìm giá trị nhỏ nhất của $P=\\frac1{1+a^2}+\\frac1{1+b^2}+\\frac1{1+c^2}$.",
+      "explanation": "Với mọi $t>0$, ta có $\\frac1{1+t^2}-1+\\frac t2=\\frac{t(t-1)^2}{2(1+t^2)}\\geq0$. Suy ra $\\frac1{1+t^2}\\geq1-\\frac t2$. Áp dụng cho $a,b,c$ và cộng lại: $P\\geq3-\\frac{a+b+c}{2}=\\frac32$. Dấu bằng xảy ra khi $a=b=c=1$. Vậy giá trị nhỏ nhất là $\\frac32$.",
+      "points": 0.5,
+      "rubric": [
+        {
+          "text": "Chứng minh $\\frac1{1+t^2}\\geq1-\\frac t2$ với $t>0$.",
+          "points": 0.25
+        },
+        {
+          "text": "Cộng ba bất đẳng thức, suy ra $P\\geq\\frac32$; dấu bằng khi $a=b=c=1$.",
+          "points": 0.25
+        }
+      ],
+      "options": [],
+      "answer": 0,
+      "answerKnown": true,
+      "topic": "Ôn tập tuyển sinh",
+      "level": 1,
+      "source": null,
+      "check": null
+    }
+  ],
+  "note": "Mẫu ôn tập tự biên soạn để thử các thao tác trong video: căn thức, hệ phương trình, tham số, hình dựng bằng tọa độ và bảng barem 10 điểm. Đây không phải đề chính thức của một địa phương."
+}

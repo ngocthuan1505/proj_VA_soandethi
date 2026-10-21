@@ -1,0 +1,9 @@
+**
+!package.json
+!package-lock.json
+!*.mjs
+!*.js
+!*.css
+!index.html
+!assets/
+!assets/**

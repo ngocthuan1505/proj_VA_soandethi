@@ -1,0 +1,40 @@
+// Own-app TLS fixture only. The self-signed certificate is never installed in the OS.
+import assert from 'node:assert/strict';
+import http from 'node:http';import https from 'node:https';
+import {spawn,execFileSync} from 'node:child_process';import {once} from 'node:events';
+import {mkdtemp,readFile,writeFile} from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import {fileURLToPath} from 'node:url';
+import {dependency,chromePath} from '../runtime.mjs';
+const root=fileURLToPath(new URL('../',import.meta.url)),dir=await mkdtemp(path.join(os.tmpdir(),'mach-online-browser-')),output=path.resolve(root,'..'),reports=[],errors=[],invite='fixture-private-invitation-2026';let browser,child;
+execFileSync(process.env.QA_PYTHON||'python',['-c',`
+import sys,datetime
+from pathlib import Path
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import serialization,hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+p=Path(sys.argv[1]);k=rsa.generate_private_key(public_exponent=65537,key_size=2048)
+n=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'localhost')]);now=datetime.datetime.now(datetime.timezone.utc)
+c=x509.CertificateBuilder().subject_name(n).issuer_name(n).public_key(k.public_key()).serial_number(x509.random_serial_number()).not_valid_before(now-datetime.timedelta(minutes=1)).not_valid_after(now+datetime.timedelta(hours=2)).add_extension(x509.SubjectAlternativeName([x509.DNSName('localhost')]),False).sign(k,hashes.SHA256())
+(p/'key.pem').write_bytes(k.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()))
+(p/'cert.pem').write_bytes(c.public_bytes(serialization.Encoding.PEM))
+`,dir],{windowsHide:true});
+const probe=http.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));
+const proxy=https.createServer({key:await readFile(path.join(dir,'key.pem')),cert:await readFile(path.join(dir,'cert.pem'))},(req,res)=>{const upstream=http.request({host:'127.0.0.1',port,path:req.url,method:req.method,headers:req.headers},r=>{res.writeHead(r.statusCode,r.headers);r.pipe(res);});upstream.on('error',()=>{res.writeHead(502);res.end();});req.pipe(upstream);});
+await new Promise(r=>proxy.listen(0,'127.0.0.1',r));const origin='https://localhost:'+proxy.address().port,pass=text=>{reports.push(text);console.log('PASS',text);};
+try{
+ child=spawn(process.execPath,[path.join(root,'server.mjs')],{env:{...process.env,PORT:String(port),HOST:'127.0.0.1',APP_PUBLIC_URL:origin,APP_ADMIN_EMAIL:'owner@example.test',APP_SIGNUP_CODE:invite,APP_DATA_DIR:path.join(dir,'data'),APP_AI_CONFIG:''},stdio:'ignore',windowsHide:true});
+ for(let i=0;i<80;i++){try{if((await fetch('http://127.0.0.1:'+port+'/api/health')).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
+ browser=await dependency('playwright-core').chromium.launch({headless:true,executablePath:chromePath()});
+ const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:1366,height:768}}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(12000);
+ await page.goto(origin);await page.waitForLoadState('networkidle');await page.locator('#online-login').waitFor();assert.match(page.url(),/\/login$/);pass('Anonymous visits open the login screen over the TLS fixture');
+ await page.locator('#registration-toggle').click();await page.locator('[name=email]').fill('owner@example.test');await page.locator('[name=password]').fill('fixture-owner-password');await page.locator('[name=name]').fill('Chủ Mạch');await page.locator('[name=inviteCode]').fill('wrong-code');await page.locator('#login-submit').click();await page.getByRole('alert').filter({hasText:'Mã mời'}).waitFor();assert.match(page.url(),/\/login$/);pass('Wrong invitation is rejected without leaving the form');
+ await page.locator('[name=inviteCode]').fill(invite);await page.locator('#login-submit').click();await page.locator('.design-rail').waitFor();await page.waitForLoadState('networkidle');assert.ok((await context.cookies()).find(c=>c.name==='soande_session')?.secure);await page.locator('[data-action=connections]:visible').first().waitFor();pass('Owner registration opens the editor with a Secure session and AI settings');
+ const response=await page.request.get(origin+'/api/kv?key=state'),state=(await response.json()).value;assert.ok(state.exams.length);const exam=state.exams[0];exam.title='Đề lưu trên máy chủ kiểm thử';
+ const saved=await page.request.put(origin+'/api/kv',{headers:{Origin:origin,'If-Match':String((await response.json()).revision)},data:{key:'state',value:state}});assert.ok(saved.ok());await page.reload();await page.locator('.design-rail').waitFor();assert.ok((await(await page.request.get(origin+'/api/kv?key=state')).json()).value.exams.some(e=>e.title===exam.title));pass('Authenticated editor loads and keeps the saved exam after reload');
+ for(const format of ['docx','pdf']){const exported=await page.request.post(origin+'/api/save-export',{headers:{Origin:origin},data:{type:'exam',exam,format,teacher:false}});assert.ok(exported.ok(),await exported.text());const data=await exported.json(),file=await page.request.get(origin+data.url);assert.ok(file.ok());assert.ok((await file.body()).length>1000);}pass('Authenticated Word and PDF exports download through private routes');
+ await page.request.post(origin+'/api/account/logout',{headers:{Origin:origin},data:{}});await page.reload();await page.locator('#online-login').waitFor();pass('Logout returns to login; editor cannot be opened anonymously');
+ await page.locator('#registration-toggle').click();await page.locator('[name=email]').fill('member@example.test');await page.locator('[name=password]').fill('fixture-member-password');await page.locator('[name=name]').fill('Giáo viên thử');await page.locator('[name=inviteCode]').fill(invite);await page.locator('#login-submit').click();await page.locator('.online-member .design-rail').waitFor();await page.waitForLoadState('networkidle');assert.equal(await page.locator('[data-action=connections]:visible').count(),0);assert.equal((await page.request.post(origin+'/api/config',{headers:{Origin:origin},data:{}})).status(),403);const own=(await(await page.request.get(origin+'/api/kv?key=state')).json()).value;assert.ok(!own.exams.some(e=>e.title===exam.title));pass('Member has a separate library and cannot view or change shared AI connections');
+ await page.request.post(origin+'/api/account/logout',{headers:{Origin:origin},data:{}});await page.reload();await page.locator('[name=email]').fill('member@example.test');await page.locator('[name=password]').fill('fixture-member-password');await page.locator('#login-submit').click();await page.locator('.online-member .design-rail').waitFor();pass('Existing member can sign in again');
+ await page.request.post(origin+'/api/account/logout',{headers:{Origin:origin},data:{}});await page.setViewportSize({width:390,height:844});await page.goto(origin+'/login');await page.waitForLoadState('networkidle');await page.locator('#registration-toggle').click();assert.ok(await page.locator('#login-submit').isVisible());assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390);await page.screenshot({path:path.join(output,'Mach_Dang_nhap_online.png'),fullPage:true});pass('Mobile login and registration fit the screen without horizontal overflow');
+ assert.deepEqual(errors,[]);await writeFile(path.join(output,'kiem_thu_online_UI.json'),JSON.stringify({at:new Date().toISOString(),transport:'Disposable local TLS proxy; not the production host',checks:reports.length,reports,errors},null,2));
+}finally{await browser?.close();proxy.closeAllConnections();await new Promise(r=>proxy.close(r));if(child&&child.exitCode===null){const done=once(child,'exit');child.kill('SIGTERM');await done;}}

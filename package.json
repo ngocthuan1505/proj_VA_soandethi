@@ -1,0 +1,38 @@
+{
+  "name": "tro-ly-soan-de-mvp",
+  "version": "6.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/core.test.mjs tests/mvp-backend.test.mjs tests/cloud-ai.test.mjs tests/greennode.test.mjs tests/reference.test.mjs tests/workbench.test.mjs tests/studio.test.mjs tests/authoring.test.mjs tests/curriculum.test.mjs tests/selection.test.mjs tests/deployment.test.mjs",
+    "build-editor": "esbuild editor-engine.js --bundle --format=esm --minify --outfile=assets/editor-engine.js",
+    "setup-assets": "node setup-assets.mjs",
+    "setup-local-ai": "node setup-local-ai.mjs",
+    "setup-model": "node setup-model.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "0.1.100",
+    "@tiptap/core": "^3.32.0",
+    "@tiptap/extension-highlight": "^3.32.0",
+    "@tiptap/extension-table": "^3.32.0",
+    "@tiptap/extension-text-align": "^3.32.0",
+    "@tiptap/extension-text-style": "^3.32.0",
+    "@tiptap/extension-unique-id": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
+    "docx": "9.6.1",
+    "esbuild": "^0.25.12",
+    "jszip": "3.10.1",
+    "katex": "^0.16.22",
+    "pdfjs-dist": "5.6.205",
+    "playwright-core": "1.62.1",
+    "tesseract.js": "7.0.0",
+    "xml-js": "1.6.11"
+  },
+  "devDependencies": {
+    "pptxgenjs": "4.0.1"
+  }
+}

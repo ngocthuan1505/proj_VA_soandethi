@@ -1,0 +1,364 @@
+{
+  "title": "Đề minh họa AI — Toán 9",
+  "subject": "Toán",
+  "grade": "9",
+  "minutes": 90,
+  "questions": [
+    {
+      "stem": "Giải phương trình: $\\frac{2x - 3}{x + 1} = \\frac{x + 2}{x - 2}$",
+      "options": [],
+      "answer": 0,
+      "answerText": "x = 5",
+      "truthValues": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "explanation": "Bước 1: Tìm điều kiện xác định của phương trình: $x \\neq -1$ và $x \\neq 2$. Bước 2: Nhân cả hai vế với $ (x + 1)(x - 2) $ để khử mẫu: $ (2x - 3)(x - 2) = (x + 2)(x + 1) $. Bước 3: Khai triển hai vế: $ 2x^2 - 4x - 3x + 6 = x^2 + x + 2x + 2 $, rút gọn: $ 2x^2 - 7x + 6 = x^2 + 3x + 2 $. Bước 4: Chuyển vế và rút gọn: $ x^2 - 10x + 4 = 0 $. Giải phương trình: $ x = \\frac{10 \\pm \\sqrt{100 - 16}}{2} = \\frac{10 \\pm \\sqrt{84}}{2} = \\frac{10 \\pm 2\\sqrt{21}}{2} = 5 \\pm \\sqrt{21} $. Thử nghiệm: $ x = 5 + \\sqrt{21} $ và $ x = 5 - \\sqrt{21} $, cả hai đều thỏa mãn phương trình ban đầu.",
+      "rubric": [
+        {
+          "text": "Tìm điều kiện xác định của phương trình: $x \\neq -1$ và $x \\neq 2$",
+          "points": 0.5
+        },
+        {
+          "text": "Nhân cả hai vế với $ (x + 1)(x - 2) $ để khử mẫu",
+          "points": 0.5
+        },
+        {
+          "text": "Khai triển và rút gọn phương trình thành $ x^2 - 10x + 4 = 0 $",
+          "points": 0.5
+        },
+        {
+          "text": "Giải phương trình và kiểm tra nghiệm thỏa mãn phương trình ban đầu",
+          "points": 0.5
+        }
+      ],
+      "figure": null,
+      "algebra": null,
+      "source": null,
+      "type": "essay",
+      "points": 2,
+      "topic": "Biểu thức và phương trình",
+      "level": 0,
+      "id": "b1157d3a-c911-40a8-9a64-9a11195e6214",
+      "v": 2,
+      "verification": {
+        "supported": true,
+        "method": "Thay nghiệm vào phương trình bằng bộ tính tại máy",
+        "substitutionChecks": 2
+      },
+      "check": null,
+      "generated": {
+        "provider": "greennode",
+        "model": "qwen3:8b",
+        "at": 1792318314355
+      },
+      "blockIds": {
+        "stem": "8bbf216b-63f2-4ea3-ae41-9579a0dea5a6",
+        "explanation": "fbfa9c85-7dd3-4932-ac19-eff27e719953",
+        "rubric": "23eba827-a3e6-4df8-900c-855b5ccbc496",
+        "figure": "859defb8-d552-43b2-a1ba-936edf05a9e4",
+        "options": "aacdd8c6-38ed-4ddd-8246-8e41a9e61015",
+        "answer": "18f73919-cd67-4857-a76f-898dcc69480a",
+        "answerText": "0d688994-72dd-45c1-a7a8-91c38875cd52",
+        "truthValues": "b674dea0-24a9-45fd-9423-376b04eb8360"
+      },
+      "richDoc": null,
+      "runs": null
+    },
+    {
+      "stem": "Vẽ đồ thị hàm số $ y = -2x + 4 $ và tìm tọa độ giao điểm của đồ thị với trục hoành.",
+      "options": [],
+      "answer": 0,
+      "answerText": "Tọa độ giao điểm của đồ thị với trục hoành là $ (2, 0) $.",
+      "truthValues": [],
+      "explanation": "Để vẽ đồ thị hàm số $ y = -2x + 4 $, ta xác định hai điểm thuộc đồ thị. Khi $ x = 0 $, $ y = 4 $, điểm $ A(0, 4) $. Khi $ y = 0 $, ta giải phương trình $ 0 = -2x + 4 $, suy ra $ x = 2 $, điểm $ B(2, 0) $. Nối hai điểm $ A $ và $ B $ ta được đồ thị hàm số. Tọa độ giao điểm của đồ thị với trục hoành là $ (2, 0) $.",
+      "rubric": [
+        {
+          "text": "Xác định hai điểm thuộc đồ thị hàm số $ y = -2x + 4 $ và vẽ đồ thị.",
+          "points": 0.5
+        },
+        {
+          "text": "Giải phương trình $ y = 0 $ để tìm tọa độ giao điểm với trục hoành.",
+          "points": 0.5
+        },
+        {
+          "text": "Thay giá trị $ x = 2 $ vào phương trình để kiểm tra nghiệm.",
+          "points": 0.5
+        },
+        {
+          "text": "Kết luận tọa độ giao điểm của đồ thị với trục hoành là $ (2, 0) $.",
+          "points": 0.5
+        }
+      ],
+      "figure": null,
+      "algebra": null,
+      "source": null,
+      "type": "essay",
+      "points": 2,
+      "topic": "Hàm số và đồ thị",
+      "level": 0,
+      "id": "6f3bddeb-4ff1-4f5a-b8a9-6743b762b3ed",
+      "v": 2,
+      "verification": {
+        "supported": false,
+        "method": "AI giải lại; dạng này chưa có phép kiểm tất định tại máy",
+        "substitutionChecks": 0
+      },
+      "check": null,
+      "generated": {
+        "provider": "greennode",
+        "model": "qwen3:8b",
+        "at": 1792318326606
+      },
+      "blockIds": {
+        "stem": "76377770-962e-48eb-b3da-133b11818c7d",
+        "explanation": "077a9282-25ee-4a71-9b21-a0bfca6561d9",
+        "rubric": "96e76e77-b87e-4184-bff1-c456d1d8fe23",
+        "figure": "3d6eaaed-d71e-4327-a47a-efd386df7947",
+        "options": "2b53d5ee-e101-4eff-adc3-18ac1dd7b679",
+        "answer": "8cf10c19-5397-4ee2-b41e-35c8812a79d8",
+        "answerText": "abaede6c-44e8-4461-8fc7-33e309840616",
+        "truthValues": "2babd694-eb1e-4107-90e6-734ab60032dc"
+      },
+      "richDoc": null,
+      "runs": null
+    },
+    {
+      "stem": "Một người đi xe máy từ A đến B với vận tốc 40 km/h. Khi đến B, người đó nghỉ 30 phút rồi quay lại A với vận tốc 30 km/h. Tổng thời gian từ lúc xuất phát đến khi quay lại A, kể cả thời gian nghỉ, là 5 giờ. Tính khoảng cách AB.",
+      "options": [],
+      "answer": 0,
+      "answerText": "",
+      "truthValues": [],
+      "explanation": "Gọi khoảng cách AB là $x$ km. Thời gian đi từ A đến B là $\\frac{x}{40}$ giờ. Thời gian về từ B đến A là $\\frac{x}{30}$ giờ. Tổng thời gian đi và về là $\\frac{x}{40} + \\frac{x}{30} + \\frac{1}{2} = 5$. Giải phương trình: $\\frac{x}{40} + \\frac{x}{30} = 5 - \\frac{1}{2} = \\frac{9}{2}$. Rút gọn: $\\frac{3x + 4x}{120} = \\frac{9}{2}$. Suy ra $\\frac{7x}{120} = \\frac{9}{2}$. Giải ra $x = \\frac{9}{2} \\cdot \\frac{120}{7} = \\frac{1080}{14} = \\frac{540}{7}$. Thay $x = \\frac{540}{7}$ vào phương trình ban đầu để kiểm tra.",
+      "rubric": [
+        {
+          "text": "Gọi khoảng cách AB là $x$ km và xác định thời gian đi, về.",
+          "points": 0.5
+        },
+        {
+          "text": "Viết phương trình tổng thời gian đi và về bằng 5 giờ.",
+          "points": 0.5
+        },
+        {
+          "text": "Giải phương trình và tìm giá trị $x$.",
+          "points": 0.5
+        },
+        {
+          "text": "Thay giá trị $x$ vào phương trình ban đầu để kiểm tra.",
+          "points": 0.5
+        }
+      ],
+      "figure": null,
+      "algebra": null,
+      "source": null,
+      "type": "essay",
+      "points": 2,
+      "topic": "Bài toán thực tế",
+      "level": 1,
+      "id": "2bfa8eeb-373a-435c-898f-5e6af3f8239d",
+      "v": 2,
+      "verification": {
+        "supported": true,
+        "method": "Thay nghiệm vào phương trình bằng bộ tính tại máy",
+        "substitutionChecks": 1
+      },
+      "check": null,
+      "generated": {
+        "provider": "greennode",
+        "model": "qwen3:8b",
+        "at": 1792318377491
+      },
+      "blockIds": {
+        "stem": "0686efc6-67ea-4bd1-ae4c-a0ab4e9350c2",
+        "explanation": "8a774024-428c-421f-9feb-375396ae6979",
+        "rubric": "1f12f50f-d33f-4b14-a580-87df08a768e7",
+        "figure": "395986f6-4036-4522-a911-2413a807436b",
+        "options": "a031a876-57dd-42d4-936a-08f644a44b9b",
+        "answer": "8fcf3d50-b865-4797-8790-7938ec86881f",
+        "answerText": "0f3f4eb7-5870-4059-bbba-6c776f939142",
+        "truthValues": "fbef087f-2e2e-46bd-b3ec-783c7602d64a"
+      },
+      "richDoc": null,
+      "runs": null
+    },
+    {
+      "stem": "Trong tam giác nhọn ABC, AB < AC, D là chân đường cao từ A xuống BC, O là tâm ngoại tiếp, H là trực tâm. Chứng minh rằng: AD vuông góc với BC; AH vuông góc với BC; BH vuông góc với AC; CH vuông góc với AB; OA = OB = OC; A, D, H thẳng hàng.",
+      "options": [],
+      "answer": 0,
+      "answerText": "",
+      "truthValues": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "explanation": "Bước 1: Vì D là chân đường cao từ A xuống BC nên AD vuông góc với BC. Do đó, AD ⊥ BC.\n\nBước 2: H là trực tâm của tam giác ABC nên AH là đường cao từ A, do đó AH ⊥ BC.\n\nBước 3: BH là đường cao từ B, nên BH ⊥ AC.\n\nBước 4: CH là đường cao từ C, nên CH ⊥ AB. Tâm ngoại tiếp O của tam giác ABC là giao điểm của ba đường trung trực, do đó OA = OB = OC. Ngoài ra, A, D, H thẳng hàng vì D là chân đường cao và H là trực tâm, nên A, D, H nằm trên đường cao từ A.",
+      "rubric": [
+        {
+          "text": "Chứng minh AD vuông góc với BC bằng cách xác định D là chân đường cao từ A xuống BC.",
+          "points": 0.5
+        },
+        {
+          "text": "Chứng minh AH vuông góc với BC bằng cách xác định H là trực tâm của tam giác ABC.",
+          "points": 0.5
+        },
+        {
+          "text": "Chứng minh BH vuông góc với AC bằng cách xác định BH là đường cao từ B.",
+          "points": 0.5
+        },
+        {
+          "text": "Chứng minh CH vuông góc với AB bằng cách xác định CH là đường cao từ C và OA = OB = OC do O là tâm ngoại tiếp.; giải thích A, D, H thẳng hàng trên đường cao từ A.",
+          "points": 0.5
+        }
+      ],
+      "figure": {
+        "points": {
+          "A": "free",
+          "B": "free",
+          "C": "free"
+        },
+        "constraints": [
+          "D=foot(A,B,C)",
+          "O=circumcenter(A,B,C)",
+          "H=orthocenter(A,B,C)"
+        ],
+        "objects": [
+          "segment(A,B)",
+          "segment(A,C)",
+          "segment(B,C)",
+          {
+            "type": "segment",
+            "points": [
+              "A",
+              "D"
+            ],
+            "dashed": true
+          },
+          "circle(O,A)",
+          "rightAngle(A,D,B)"
+        ],
+        "conditions": [
+          "AB<AC",
+          "acute(A,B,C)"
+        ],
+        "labels": {
+          "A": "above",
+          "B": "left",
+          "C": "right",
+          "D": "below",
+          "O": "right",
+          "H": "left"
+        },
+        "caption": "Tam giác ABC và đường cao AD",
+        "width": 480,
+        "align": "center"
+      },
+      "algebra": null,
+      "source": null,
+      "type": "essay",
+      "points": 2,
+      "topic": "Hình học phẳng",
+      "level": 1,
+      "id": "cb37816e-8e39-406f-b497-853fcb6ff7c2",
+      "v": 2,
+      "geometryCheck": {
+        "method": "Kiểm các mệnh đề hình học hỗ trợ bằng tọa độ; không thay thế chứng minh tổng quát",
+        "checked": true
+      },
+      "verification": {
+        "supported": false,
+        "method": "AI giải lại; dạng này chưa có phép kiểm tất định tại máy",
+        "substitutionChecks": 0
+      },
+      "check": null,
+      "generated": {
+        "provider": "greennode",
+        "model": "qwen3:8b",
+        "at": 1792318389392
+      },
+      "blockIds": {
+        "stem": "6b3614bf-b4fe-4200-88da-012133123abb",
+        "explanation": "bddd668c-d86d-426f-a517-43d007dfb3df",
+        "rubric": "545992a0-3a97-4eb4-be57-c8c9de6a4a0d",
+        "figure": "2cab09d6-5eff-4a37-b8ce-d49031da9a88",
+        "options": "6bc46c91-c8cd-461d-9468-3a5256922edd",
+        "answer": "f4630b07-67e3-40f2-9cbb-fe8305a48fab",
+        "answerText": "efc0eeca-3c59-44f5-97c3-7163d1b0026e",
+        "truthValues": "30c66865-6481-4e0f-8c33-8118bef17eb1"
+      },
+      "richDoc": null,
+      "runs": null
+    },
+    {
+      "stem": "Một lớp học có 40 học sinh. Trong đó, 25 học sinh thích môn Toán, 20 học sinh thích môn Văn, và 10 học sinh thích cả hai môn Toán và Văn. Tính số học sinh không thích môn Toán và cũng không thích môn Văn.",
+      "options": [],
+      "answer": 0,
+      "answerText": "Số học sinh không thích cả hai môn Toán và Văn là 5 học sinh.",
+      "truthValues": [],
+      "explanation": "Gọi A là tập hợp học sinh thích Toán, B là tập hợp học sinh thích Văn. Theo công thức hợp của hai tập hợp: |A ∪ B| = |A| + |B| - |A ∩ B|. Thay số vào: |A ∪ B| = 25 + 20 - 10 = 35. Tổng số học sinh là 40, do đó số học sinh không thích môn nào trong hai môn là 40 - 35 = 5.",
+      "rubric": [
+        {
+          "text": "Áp dụng công thức hợp của hai tập hợp: |A ∪ B| = |A| + |B| - |A ∩ B|.",
+          "points": 0.5
+        },
+        {
+          "text": "Thay số vào công thức: |A ∪ B| = 25 + 20 - 10 = 35.",
+          "points": 0.5
+        },
+        {
+          "text": "Tính số học sinh không thích môn nào trong hai môn: 40 - 35 = 5.",
+          "points": 0.5
+        },
+        {
+          "text": "Kết luận số học sinh không thích môn nào trong hai môn là 5 học sinh.",
+          "points": 0.5
+        }
+      ],
+      "figure": null,
+      "algebra": null,
+      "source": null,
+      "type": "essay",
+      "points": 2,
+      "topic": "Xác suất và thống kê",
+      "level": 2,
+      "id": "a769e10d-4d89-409c-8dec-792e575fed4c",
+      "v": 2,
+      "verification": {
+        "supported": false,
+        "method": "AI giải lại; dạng này chưa có phép kiểm tất định tại máy",
+        "substitutionChecks": 0
+      },
+      "check": null,
+      "generated": {
+        "provider": "greennode",
+        "model": "qwen3:8b",
+        "at": 1792318400292
+      },
+      "blockIds": {
+        "stem": "0b41b20e-04c6-4607-a0a6-4e4bd914407f",
+        "explanation": "5a84e7ed-0794-4066-9cd9-77a343ab0008",
+        "rubric": "0eeb6574-04b5-4523-b091-fd6c67eb2537",
+        "figure": "f89fbc50-af13-4a1e-8c59-a280f84f7722",
+        "options": "14f9774f-c1e4-4c81-a0f4-50a2183f874c",
+        "answer": "bc7ccbbf-57a0-4291-9475-ee8942756f6c",
+        "answerText": "6c7e21b7-2262-422b-b7f9-406f511c47f4",
+        "truthValues": "89457034-ddd6-4b5f-b4d9-eaad5f1ebeb8"
+      },
+      "richDoc": null,
+      "runs": null
+    }
+  ],
+  "note": "Qwen3:8b đã tạo từ yêu cầu kiểm thử tự soạn; đã rà và làm rõ câu chữ về thời gian nghỉ, không thích môn nào, và bổ sung ý chấm hình. Giáo viên cần kiểm tra trước khi dùng.",
+  "editorialReview": {
+    "changed": [
+      3,
+      4,
+      5
+    ],
+    "reason": "Làm rõ cách hiểu dữ kiện và hoàn thiện ý chấm; không coi kết quả AI là đã được giáo viên duyệt."
+  }
+}

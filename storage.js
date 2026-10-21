@@ -1,0 +1,13 @@
+let identity='local';
+export const setIdentity=id=>{identity=id||'local';stateRevision=0;};
+const dbp=new Promise((resolve,reject)=>{const request=indexedDB.open('tro-ly-soan-de-v1',1);request.onupgradeneeded=()=>{request.result.createObjectStore('kv');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
+async function localGet(key){const db=await dbp;return new Promise((resolve,reject)=>{const r=db.transaction('kv').objectStore('kv').get(identity+':'+key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+async function localPut(key,value){const db=await dbp;return new Promise((resolve,reject)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(value,identity+':'+key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Không lưu được'));});}
+export async function allFiles(ids){const out={};for(const id of ids){const data=await get('file:'+id);if(data)out[id]=data;}return out;}
+
+let stateRevision=0;const pending=new Map();
+export function hasPendingWrites(){return pending.size>0;}
+export async function retryPendingWrites(){for(const [key,value] of pending)await put(key,value);}
+if(typeof window!=='undefined')window.addEventListener('online',()=>retryPendingWrites().catch(()=>{}));
+export async function get(key){const queued=await localGet('__pending:'+key);if(queued?.value!==undefined){pending.set(key,queued.value);if(key==='state')stateRevision=queued.base||0;}try{const response=await fetch('/api/kv?key='+encodeURIComponent(key));if(!response.ok)throw Error('Máy chủ chưa sẵn sàng');const result=await response.json();if(queued?.value!==undefined){if(result.revision===(queued.base||0)){try{await put(key,queued.value);}catch{}}return queued.value;}if(key==='state')stateRevision=result.revision;if(result.value!==null){await localPut(key,result.value);return result.value;}const legacy=await localGet(key);if(legacy!==undefined&&key.startsWith('file:'))await put(key,legacy);return legacy;}catch(error){if(key==='state')console.warn('Dùng bản lưu trong trình duyệt:',error.message);}return queued?.value??localGet(key);}
+export async function put(key,value){await localPut(key,value);pending.set(key,value);await localPut('__pending:'+key,{value,base:key==='state'?stateRevision:0});const response=await fetch('/api/kv',{method:'PUT',headers:{'Content-Type':'application/json',...(key==='state'?{'If-Match':String(stateRevision)}:{})},body:JSON.stringify({key,value})});const result=await response.json();if(!response.ok)throw Error(result.error||'Không lưu được dữ liệu trên máy chủ');if(key==='state')stateRevision=result.revision;pending.delete(key);await localPut('__pending:'+key,null);}
