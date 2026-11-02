@@ -29,4 +29,6 @@ Chưa bật bắt buộc branch protection hoặc trả phí GitHub: quy tắc r
 
 Thuận thêm người tại Settings → Collaborators, chờ họ nhận lời mời, rồi cập nhật `roster.json`. Chạy công cụ đồng bộ để gán các issue còn trống theo vai trò; không ghi đè assignee người khác đã chọn. Không tự gửi lời mời khi chưa biết đúng tài khoản.
 
+Thuận có thể xem kế hoạch trước bằng `node scripts/bootstrap-github.mjs` (dry-run). Chỉ khi muốn cập nhật GitHub, chạy `node scripts/bootstrap-github.mjs --apply` bằng tài khoản có quyền admin đã đăng nhập Git; script không lưu/in token. Sau đó commit `github-issues.json`, `github-setup.json` và `BACKLOG.md` nếu thay đổi. Chạy lại không tạo task trùng hoặc đặt lại nhãn trạng thái; nội dung người khác sửa được giữ nguyên. Nút đồng bộ không tự gửi lời mời.
+
 CI chạy Python chính và Node legacy/UI trên Ubuntu, mỗi job giới hạn 15 phút, dùng fixture, không có secret/server. Theo dõi phút Actions gói miễn phí; không mua thêm phút hoặc dịch vụ. Không có lịch cron hoặc runner GreenNode.
