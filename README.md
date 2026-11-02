@@ -12,7 +12,7 @@ uv run uvicorn mach_backend.main:app --app-dir src --host 127.0.0.1 --port 8000 
 
 API docs tại `http://127.0.0.1:8000/docs`; chạy `uv run pytest`, `uv run ruff check .`, `uv run ty check src`. Nhóm thực hiện các task để chuyển core/auth/DB/AI/document sang Python; JavaScript vẫn dùng frontend.
 
-**Nhóm đồ án bắt đầu tại [docs/team/README.md](docs/team/README.md): [phân công 3 UI + 5 backend](docs/team/ROLES.md), [24 task](docs/team/BACKLOG.md), [kiến trúc](docs/architecture/CURRENT_STATE.md), [checklist release](docs/team/RELEASE.md). Thuận là BE-1 và là người duy nhất vận hành GreenNode.**
+**Nhóm đồ án bắt đầu tại [docs/team/README.md](docs/team/README.md): [bảng tiến độ kéo thả](https://github.com/users/ngocthuan1505/projects/1/views/1), [cách cập nhật công việc](docs/team/BOARD.md), [phân công 3 UI + 5 backend](docs/team/ROLES.md), [24 task](docs/team/BACKLOG.md), [kiến trúc](docs/architecture/CURRENT_STATE.md), [checklist release](docs/team/RELEASE.md). Thuận là BE-1 và là người duy nhất vận hành GreenNode.**
 
 Ứng dụng soạn đề tiếng Việt cho giáo viên: biên tập tài liệu, nhập công thức trực quan, hỏi/sửa bằng AI, quản lý kho đề và xuất Word/PDF. Repo chứa frontend, backend, bộ chạy AI GreenNode, tài nguyên trình duyệt, cấu hình Docker và kiểm thử.
 

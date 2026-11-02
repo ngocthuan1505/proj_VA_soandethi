@@ -2,9 +2,9 @@
 
 Nguồn duy nhất: [tasks.json](tasks.json); danh sách thành viên: [roster.json](roster.json). Các task là việc cần làm, không phải chức năng đã hoàn thành. Mốc không có deadline cho đến khi nhóm chốt.
 
-**Bảng công việc:** [Ready](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Aready) · [Doing](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Adoing) · [Review](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Areview) · [Blocked](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Ablocked) · [Milestones](https://github.com/ngocthuan1505/proj_VA_soandethi/milestones)
+**Bảng công việc:** [Bảng tiến độ kéo thả](https://github.com/users/ngocthuan1505/projects/1/views/1) · [Danh sách công việc](https://github.com/users/ngocthuan1505/projects/1/views/2) · [Hướng dẫn cập nhật và thông báo](BOARD.md) · [Các mốc](https://github.com/ngocthuan1505/proj_VA_soandethi/milestones)
 
-Dùng Issues + nhãn trạng thái làm bảng chung, không phụ thuộc Project trả phí. Status/assignee thực tế xem trên GitHub.
+Trạng thái hiện tại xem ở trường Status trên Project riêng tư; mỗi thẻ là issue gốc. Nhãn issue `status:*` không tự đồng bộ với bảng. Chi tiết kế hoạch dưới đây không phải báo cáo việc đã hoàn thành.
 
 ## M1 — Chốt hợp đồng và baseline
 
