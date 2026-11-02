@@ -9,7 +9,8 @@
     "build-editor": "esbuild editor-engine.js --bundle --format=esm --minify --outfile=assets/editor-engine.js",
     "setup-assets": "node setup-assets.mjs",
     "setup-local-ai": "node setup-local-ai.mjs",
-    "setup-model": "node setup-model.mjs"
+    "setup-model": "node setup-model.mjs",
+    "check:team": "node --test tests/team.test.mjs tests/github-bootstrap.test.mjs && node scripts/check-team.mjs"
   },
   "engines": {
     "node": ">=24"

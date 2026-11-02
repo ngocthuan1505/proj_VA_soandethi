@@ -1,0 +1,24 @@
+import {readFile,writeFile,stat} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import assert from 'node:assert/strict';
+import {validatePlan,backlogMarkdown} from './team-plan.mjs';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const readJSON=async file=>JSON.parse(await readFile(path.join(root,file),'utf8'));
+const plan=await readJSON('docs/team/tasks.json'),roster=await readJSON('docs/team/roster.json');
+validatePlan(plan,roster);
+for(const file of new Set(plan.tasks.flatMap(t=>t.files))){const dest=path.resolve(root,file);assert(dest.startsWith(root));assert(await stat(dest),'Missing task source '+file);}
+let map={};try{map=await readJSON('docs/team/github-issues.json');}catch(e){if(e.code!=='ENOENT')throw e;}
+if(process.argv.includes('--write'))await writeFile(path.join(root,'docs/team/BACKLOG.md'),backlogMarkdown(plan,roster,map));
+for(const file of ['README.md','docs/team/README.md','docs/team/ROLES.md','docs/team/RELEASE.md','docs/architecture/CURRENT_STATE.md','docs/architecture/DATA_PLAN.md','docs/product/MVP.md','ops/greennode/README.md']){
+ const text=await readFile(path.join(root,file),'utf8');
+ assert(!/nb-[a-f0-9]{8}-[a-f0-9-]{20,}-8888-|\b[a-z0-9]+(?:-[a-z0-9]+){2,}\.ngrok-free\.dev|sk-proj-[\w-]{20,}|AIza[\w-]{30,}/.test(text),'Private value in '+file);
+ for(const match of text.matchAll(/\]\(([^)]+)\)/g)){
+  const link=match[1];if(/^(?:https?:|mailto:|#)/.test(link))continue;
+  const dest=path.resolve(path.dirname(path.join(root,file)),decodeURIComponent(link.split('#')[0]));
+  assert(dest.startsWith(root),'Link leaves repo: '+file);await stat(dest);
+ }
+}
+const example=await readJSON('ops/greennode/runtime-config.example.json');
+assert.equal(example.HOST,'127.0.0.1');assert.equal(example.PORT,'4174');JSON.parse(example.APP_AI_CONFIG);
+console.log('Team plan OK: 8 roles (3 UI + 5 backend), 24 tasks, 3 milestones, valid DAG/source paths/docs; no live server/key in team docs.');

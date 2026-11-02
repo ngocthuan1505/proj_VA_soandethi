@@ -1,0 +1,11 @@
+{
+  "HOST": "127.0.0.1",
+  "PORT": "4174",
+  "APP_PUBLIC_URL": "https://YOUR-ASSIGNED-DOMAIN.ngrok-free.dev",
+  "APP_ADMIN_EMAIL": "owner@example.test",
+  "APP_SIGNUP_CODE": "REPLACE-WITH-A-NEW-PRIVATE-RANDOM-INVITATION",
+  "APP_DATA_DIR": "/network-volume/ProJ_VA/mach_web/.data",
+  "APP_SQLITE_EXCLUSIVE": "1",
+  "BROWSER_PATH": "/network-volume/ProJ_VA/mach_web/.runtime/REPLACE-WITH-ACTUAL-CHROMIUM-PATH",
+  "APP_AI_CONFIG": "{\"greennode\":{\"url\":\"https://YOUR-NOTEBOOK.example.test\",\"model\":\"qwen3:8b\"},\"routes\":{\"generate\":\"greennode\",\"patch\":\"greennode\",\"check\":\"greennode\"}}"
+}

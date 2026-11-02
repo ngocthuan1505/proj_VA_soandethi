@@ -1,0 +1,48 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: '0.13.6'
+          python-version: '3.12'
+      - run: uv sync --frozen
+      - run: uv run pytest
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run ty check src
+  test:
+    name: Legacy UI baseline and team plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium for PDF regression tests
+        run: |
+          node node_modules/playwright-core/cli.js install --with-deps chromium
+          node -e "console.log('BROWSER_PATH='+require('playwright-core').chromium.executablePath())" >> "$GITHUB_ENV"
+      - run: npm test
+      - run: npm run check:team
+      - run: npm run build-editor

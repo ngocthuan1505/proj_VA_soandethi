@@ -27,3 +27,10 @@ paused-status.json
 .mach-owner-bootstrap.json
 .DS_Store
 Thumbs.db
+.pytest_cache/
+.ruff_cache/
+.uv-cache/
+.coverage
+htmlcov/
+outputs/
+graphify-out/

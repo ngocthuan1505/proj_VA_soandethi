@@ -1,0 +1,9 @@
+# Chỉ thêm username thật đã nhận lời mời. UI/BE khác theo docs/team/roster.json.
+# CODEOWNERS yêu cầu review nếu tính năng repo hỗ trợ; không tự bật branch protection.
+/server-kit/ @ngocthuan1505
+/ops/greennode/ @ngocthuan1505
+/greennode.mjs @ngocthuan1505
+/ai.mjs @ngocthuan1505
+/cloud-ai.mjs @ngocthuan1505
+/deploy/ @ngocthuan1505
+/.github/workflows/ @ngocthuan1505

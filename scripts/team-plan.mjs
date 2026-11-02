@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+export const roles=['UI-1','UI-2','UI-3','BE-1','BE-2','BE-3','BE-4','BE-5'];
+export function validatePlan(plan,roster){
+ assert.equal(plan.repository,'ngocthuan1505/proj_VA_soandethi','Wrong repository');
+ assert.equal(plan.architecture?.primaryLanguage,'Python','Course requires Python as the primary language');
+ assert.deepEqual(Object.keys(roster).sort(),[...roles].sort(),'Roster must have exactly 8 roles');
+ assert.equal(roster['BE-1'],'ngocthuan1505','Only Thuận operates GreenNode');
+ for(const username of Object.values(roster))assert(username===null||/^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(username),'Invalid GitHub username');
+ const assigned=Object.values(roster).filter(Boolean);assert.equal(new Set(assigned).size,assigned.length,'One member cannot occupy two roles');
+ const milestones=new Set(plan.milestones.map(m=>m.id));assert.equal(milestones.size,3);
+ const tasks=new Map(plan.tasks.map(t=>[t.id,t]));assert.equal(tasks.size,plan.tasks.length,'Duplicate task ID');
+ assert.equal(tasks.size,24,'Expected three tasks per member');
+ for(const role of roles)assert.equal(plan.tasks.filter(t=>t.role===role).length,3,'Three tasks required: '+role);
+ for(const t of tasks.values()){
+  assert(roles.includes(t.role)&&t.id.startsWith(t.role+'-'),'Invalid role/task ID');
+  assert(milestones.has(t.milestone)&&['P0','P1'].includes(t.priority));
+  assert(t.title&&t.files?.length&&t.acceptance?.length>=3&&t.tests,'Missing acceptance/validation');
+  for(const dep of t.dependsOn)assert(tasks.has(dep)&&dep!==t.id,'Invalid dependency '+dep);
+ }
+ const done=new Set(),visiting=new Set();
+ function visit(id){assert(!visiting.has(id),'Dependency cycle at '+id);if(done.has(id))return;visiting.add(id);for(const dep of tasks.get(id).dependsOn)visit(dep);visiting.delete(id);done.add(id);}
+ for(const id of tasks.keys())visit(id);
+ return plan;
+}
+export function issueBody(task,roster,mapping={}){
+ const dep=id=>mapping[id]?'#'+mapping[id].number:id;
+ return `<!-- mach-team:${task.id} -->\n## Phân công\n\n- Vai trò: **${task.role}**\n- Thành viên: ${roster[task.role]?'@'+roster[task.role]:'Chưa có username; nhận theo vai trò.'}\n- Milestone: ${task.milestone}; ưu tiên: ${task.priority}\n- Phụ thuộc: ${task.dependsOn.length?task.dependsOn.map(dep).join(', '):'Không — có thể bắt đầu ngay.'}\n\n## Phạm vi source\n\n${task.files.map(f=>'- `'+f+'`').join('\n')}\n\n## Tiêu chí nghiệm thu\n\n${task.acceptance.map(a=>'- [ ] '+a).join('\n')}\n\n## Kiểm tra\n\n${task.tests}\n\nĐọc [quy trình nhóm](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/README.md). Chỉ Thuận thao tác GreenNode; nhóm khác dùng fixture, không nhận URL/token. File dùng chung cần hẹn người giữ file trước PR.\n`;
+}
+export function backlogMarkdown(plan,roster,mapping={}){
+ let text='# Backlog nhóm — 24 task\n\nNguồn duy nhất: [tasks.json](tasks.json); danh sách thành viên: [roster.json](roster.json). Các task là việc cần làm, không phải chức năng đã hoàn thành. Mốc không có deadline cho đến khi nhóm chốt.\n\n';
+ text+='**Bảng công việc:** [Ready](https://github.com/'+plan.repository+'/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Aready) · [Doing](https://github.com/'+plan.repository+'/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Adoing) · [Review](https://github.com/'+plan.repository+'/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Areview) · [Blocked](https://github.com/'+plan.repository+'/issues?q=is%3Aissue+is%3Aopen+label%3Astatus%3Ablocked) · [Milestones](https://github.com/'+plan.repository+'/milestones)\n\nDùng Issues + nhãn trạng thái làm bảng chung, không phụ thuộc Project trả phí. Status/assignee thực tế xem trên GitHub.\n\n';
+ for(const m of plan.milestones){
+  text+='## '+m.title+'\n\n'+m.description+'\n\n| Task | Vai trò / thành viên | Đầu ra | Phụ thuộc |\n|---|---|---|---|\n';
+  for(const t of plan.tasks.filter(t=>t.milestone===m.id))text+='| '+(mapping[t.id]?'['+t.id+']('+mapping[t.id].url+')':t.id)+' | '+t.role+(roster[t.role]?' / @'+roster[t.role]:' / chờ username')+' | '+t.title+' | '+(t.dependsOn.join(', ')||'Bắt đầu ngay')+' |\n';
+  text+='\n';
+ }
+ text+='## Chi tiết nghiệm thu\n\n';
+ for(const t of plan.tasks)text+='### '+t.id+' — '+t.title+'\n\n'+issueBody(t,roster,mapping).replace(/<!--.*?-->\n/,'')+'\n';
+ return text.trimEnd()+'\n';
+}

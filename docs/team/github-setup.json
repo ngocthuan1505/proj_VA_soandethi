@@ -1,0 +1,25 @@
+{
+  "tracker": {
+    "number": 25,
+    "url": "https://github.com/ngocthuan1505/proj_VA_soandethi/issues/25"
+  },
+  "createdTasks": 0,
+  "refreshedTasks": 24,
+  "skippedEditedTasks": [],
+  "milestones": {
+    "M1": {
+      "number": 1,
+      "url": "https://github.com/ngocthuan1505/proj_VA_soandethi/milestone/1"
+    },
+    "M2": {
+      "number": 2,
+      "url": "https://github.com/ngocthuan1505/proj_VA_soandethi/milestone/2"
+    },
+    "M3": {
+      "number": 3,
+      "url": "https://github.com/ngocthuan1505/proj_VA_soandethi/milestone/3"
+    }
+  },
+  "repository": "ngocthuan1505/proj_VA_soandethi",
+  "private": true
+}
