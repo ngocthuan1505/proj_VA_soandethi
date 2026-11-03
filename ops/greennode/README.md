@@ -1,5 +1,7 @@
 # GreenNode — chỉ Thuận vận hành
 
+**Cập nhật 04/11/2026:** chưa truy cập được thư mục dự án trên notebook cũ. Đã đối chiếu và bảo toàn source local; xem [hồ sơ khôi phục khi đổi server](KHOI_PHUC.md) và [kết quả kiểm tra](recovery-status.json). Không coi các lệnh vận hành bên dưới là bằng chứng server cũ hoặc bộ cài cũ còn tồn tại.
+
 **Đích backend chính là Python/FastAPI. Các lệnh supervisor web Node dưới đây chỉ dành bản thử cũ, không phải cách triển khai Python mới. BE-1 sẽ bàn giao runbook Python sau khi các slice đủ chức năng; scaffold không được dùng thay app thật.**
 
 Thành viên khác chỉ đọc source, tạo fixture/test và gửi PR. **Không đăng nhập server, không nhận token và không chạy lệnh triển khai thay Thuận.** Repo này không mang URL truy cập thật, trọng số, kho đề, key hay thông tin tài khoản server.

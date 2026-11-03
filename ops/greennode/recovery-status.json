@@ -1,0 +1,78 @@
+{
+  "recordedDate": "2026-11-04",
+  "scope": "/network-volume/ProJ_VA",
+  "baseCommit": "6bab2a15784f67eb4fdfe16bcc4dfc3fdf628265",
+  "remoteCheck": {
+    "notebookHTTP": 200,
+    "oldProjectDirectoryHTTP": 404,
+    "oldProjectDirectoryMissing": true,
+    "knownProjectOrVolumeAtNotebookRoot": false,
+    "downloadedFiles": 0,
+    "serverModified": false,
+    "volumeDeletionConfirmed": false
+  },
+  "localHistoricalDeployment": {
+    "sourceArchiveSHA256": "1fcb59a0b7c6878d25434156913d16908e633397a079b7041df33cf8d2fb203b",
+    "sourceArchiveChecksumVerified": true,
+    "sourceArchiveFileCount": 167,
+    "matchesCurrentSourceIgnoringLineEndings": 141,
+    "preservedInReachableGitHistory": 26,
+    "missingFromGitHistory": [],
+    "serverKitFilesMatch": [
+      "green_web_supervisor.py",
+      "preflight.py",
+      "README.md",
+      "setup_ai.py",
+      "start_after_setup.py",
+      "start_ai.sh",
+      "stop_ai.py",
+      "store_web_token.py",
+      "worker.py"
+    ]
+  },
+  "additionalLocalScriptsPreserved": [
+    {
+      "file": "legacy-bootstrap/prepare-greennode-node.py",
+      "source": "local-historical-bootstrap",
+      "originalSHA256": "dbc0a45eabbe58a120181a0f84bdc99b9026020a4b1842d029fd5973a0e7c089",
+      "savedSHA256": "dbc0a45eabbe58a120181a0f84bdc99b9026020a4b1842d029fd5973a0e7c089",
+      "privateEndpointReplacements": 0
+    },
+    {
+      "file": "legacy-bootstrap/prepare-greennode-app.py",
+      "source": "local-historical-bootstrap",
+      "originalSHA256": "ec8df2d80a0c887d0602266af8544731aa1c4caaa021e2bc172f2dda0e5fe08b",
+      "savedSHA256": "7a900903021cde972b2076ad1546012117fc376896cb561858c38d543b6f6448",
+      "privateEndpointReplacements": 1
+    },
+    {
+      "file": "legacy-bootstrap/prepare-greennode-browser.py",
+      "source": "local-historical-bootstrap",
+      "originalSHA256": "618d0f8e87ab83206f1f836a636268131a6133948fe8b7480191f4e8eb741e65",
+      "savedSHA256": "618d0f8e87ab83206f1f836a636268131a6133948fe8b7480191f4e8eb741e65",
+      "privateEndpointReplacements": 0
+    },
+    {
+      "file": "legacy-bootstrap/prepare-greennode-ngrok.py",
+      "source": "local-historical-bootstrap",
+      "originalSHA256": "aa555f9a505333403652a5dc6bac98c173418a3a8dcd607fce3c48c20ba0d55f",
+      "savedSHA256": "aa555f9a505333403652a5dc6bac98c173418a3a8dcd607fce3c48c20ba0d55f",
+      "privateEndpointReplacements": 0
+    },
+    {
+      "file": "legacy-bootstrap/prepare-greennode-supervisor.py",
+      "source": "local-historical-bootstrap",
+      "originalSHA256": "b34b575ad69de80fac82a0f0bc0b2767e2d7b4496e482b17e3a1225aa364dbcc",
+      "savedSHA256": "b34b575ad69de80fac82a0f0bc0b2767e2d7b4496e482b17e3a1225aa364dbcc",
+      "privateEndpointReplacements": 0
+    }
+  ],
+  "notRecoveredFromServer": [
+    "mach_web/.data (database, accounts, documents)",
+    "mach_web/.runtime (private configuration, credentials)",
+    "soande_ai/models (model weights and original model manifest)",
+    "server-only edits made after the known local source snapshots"
+  ],
+  "restoreOnNewServerTested": false,
+  "pythonBusinessMigrationComplete": false
+}

@@ -1,5 +1,7 @@
 # Mạch — Trợ lý AI soạn đề thi
 
+**Đổi server GreenNode:** source app/worker và các bước dựng môi trường đã được bảo toàn; xem [hồ sơ khôi phục](ops/greennode/KHOI_PHUC.md). Chưa lấy lại được database, cấu hình riêng hoặc trọng số từ volume cũ; clone repo không khôi phục các phần này.
+
 **Theo quy định môn học, Python là ngôn ngữ chính. Backend đích: FastAPI; xem [backend/README.md](backend/README.md) và [kế hoạch chuyển đổi](docs/architecture/PYTHON_MIGRATION.md). Scaffold Python hiện có health/readiness, chưa có đầy đủ nghiệp vụ; backend Node cũ giữ làm tham chiếu.**
 
 ## Bắt đầu backend Python

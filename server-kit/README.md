@@ -1,5 +1,7 @@
 # GreenNode — AI riêng trong ProJ_VA
 
+**Tình trạng 04/11/2026:** đoạn mô tả cấu hình đã cài bên dưới là kết quả lịch sử. Đợt kiểm tra chỉ đọc hiện chưa thấy thư mục ProJ_VA trên notebook cũ, chưa tải lại được dữ liệu/trọng số. Source bộ cài và worker đã giữ trong Git; xem [hướng dẫn khôi phục](../ops/greennode/KHOI_PHUC.md). Chưa cài hoặc bật dịch vụ trên server mới.
+
 Đã cài Qwen3:8b chạy CUDA trong /network-volume/ProJ_VA/soande_ai, nối app qua Jupyter Contents API. Không mở thêm cổng công khai hoặc sửa Jupyter toàn hệ thống. Mọi model, runtime, cache CUDA, tệp tạm, log và hàng đợi ở trong ProJ_VA. Không dùng mô hình/tệp của dự án khác.
 
 Server cấp MIG 2g.20gb trên H100, không phải toàn bộ 80 GB của card. Đã kiểm CUDA hoạt động và bộ nhớ giảm từ khoảng 20,9 xuống 13,3 GB trống khi nạp model. Trọng số 5,2 GB kiểm SHA-256 theo manifest; runtime llama.cpp v0.7.0 biên dịch bằng CUDA 12.4.
