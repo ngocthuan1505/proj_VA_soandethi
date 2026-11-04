@@ -16,6 +16,8 @@ Mở [bảng tiến độ kéo thả](https://github.com/users/ngocthuan1505/pro
 
 24 task kỹ thuật là gói việc theo ba giai đoạn, mỗi task có input, bước làm, output, pattern và reviewer. Sáu task CT riêng bổ sung Problem Brief/WBS/model/PoC/thuật toán/đánh giá; không thay 24 task và không tính các issue báo cáo là công việc đã hoàn thành. Danh sách link thật ở [github-issues.json của hồ sơ môn](../course/github-issues.json).
 
+**Không làm lại hồ sơ đã có:** nhóm đã chuẩn bị proposal/baseline, Decomposition–Pattern 23 trang và Abstraction (UML/Schema/ADT/Interface) ở chat còn lại. Đọc [bản đối chiếu bằng chứng và việc còn thiếu](../course/HO_SO_DA_CO.md) trước khi nhận CT-01/02/03 hoặc thiết kế DTO. Vai trò mới chỉ điều phối phần tiếp theo, không gán công lao tài liệu cũ cho người chưa xác nhận.
+
 ## Quy tắc phối hợp
 
 - `main` luôn chạy được. Dùng nhánh theo task, không tạo nhánh vĩnh viễn cho từng người; cập nhật từ main mỗi ngày và trước PR.

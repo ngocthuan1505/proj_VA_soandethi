@@ -1,0 +1,44 @@
+{
+  "reviewedDate": "2026-11-04",
+  "origin": "Chat còn lại trong cùng dự án và các artifact local đã lưu",
+  "rawChatOrDocumentsUploaded": false,
+  "liveDocsAndCanvaRechecked": false,
+  "artifacts": [
+    {
+      "id": "proposal",
+      "file": "Proposal_final.docx",
+      "bytes": 5508639,
+      "sha256": "9ef40471d1448d3a6be964d0e52d7e7655abf80cec17daa2ff353677002ced36"
+    },
+    {
+      "id": "decomposition",
+      "file": "Slide_Decomposition_Pattern_da_ra_soat_01-11.pptx",
+      "bytes": 4230426,
+      "sha256": "08fc991706f8777f8db1617a7c74d191f57d6293268657ef433befebac9766ac"
+    },
+    {
+      "id": "abstraction",
+      "file": "Abstraction_kiem_tra.docx",
+      "bytes": 378771,
+      "sha256": "625607c4e47da5b5e984bf5c271da810d39c1f703aaf8f3ba4330b9e31569782"
+    },
+    {
+      "id": "abstraction-review",
+      "file": "Nhat_ky_ra_soat.md",
+      "bytes": 3538,
+      "sha256": "c23d249429ad12db41ff84ea6bfe8fa072fc5df7f256c742e3d075601fc6e0e7"
+    },
+    {
+      "id": "decomposition-review",
+      "file": "Ket_qua_ra_soat.md",
+      "bytes": 896,
+      "sha256": "c653d832d54ed843952b6eff8a1edb9ddb10d060d594bd0c6f5b0a25d3a806f6"
+    },
+    {
+      "id": "assignment",
+      "file": "2026_Project_Virtual_Assistant_Academic.pdf",
+      "bytes": 207487,
+      "sha256": "a61abf239275357ad3d59367461276201f8206489392b75f29936437363d96e8"
+    }
+  ]
+}

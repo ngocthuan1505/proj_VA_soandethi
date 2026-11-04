@@ -1,30 +1,44 @@
 # Cây công việc và lộ trình
 
-Nguồn: Topic 1 trang 16, 36–38; Topic 3 trang 8–9, 17–18, 42. Cây dưới phân rã **vấn đề → chức năng → đầu ra**, sau đó mới gắn người; không dùng “UI/backend” làm toàn bộ phân tích vấn đề.
+Nhóm đã có cây 3 cấp, bảy chức năng, luồng phối hợp và bốn pattern trong bộ **Decomposition–Pattern 23 trang**. Cây dưới chép lại ý chính của trang 3 bằng chữ để tiện liên kết task; không thay sơ đồ nhóm đã trình bày. Xem [nguồn và trạng thái hồ sơ](HO_SO_DA_CO.md). Đối chiếu phương pháp: Topic 1 trang 16, 36–38; Topic 3 trang 8–9, 17–18, 42.
 
 ```mermaid
 flowchart TD
-  A[Giúp giáo viên chuẩn bị đề kiểm tra có thể kiểm chứng] --> B[Hiểu vấn đề và kiểm chứng giá trị]
-  A --> C[Biên tập và quản lý đề]
-  A --> D[Đề xuất sửa bằng AI an toàn]
-  A --> E[Chuyển đổi tài liệu và kiểm bản xuất]
-  A --> F[Kiểm thử và đánh giá]
-  B --> B1[CT-01 Phỏng vấn và Problem Brief]
-  B --> B2[CT-02 Cây phân rã và baseline kế hoạch]
-  C --> C1[UI-1 + BE-2 Kho đề và phân quyền]
-  C --> C2[UI-2 + BE-3 Nội dung, lưu và phiên bản]
-  C --> C3[CT-03 Mô hình và hợp đồng]
-  D --> D1[UI-3 + BE-1 Yêu cầu và preview]
-  D --> D2[BE-5 Job, hủy và kết quả cũ]
-  D --> D3[CT-04 PoC sửa đúng vùng]
-  E --> E1[BE-4 Import và kiểm nguồn]
-  E --> E2[UI-2 + BE-4 Word, PDF và công thức]
-  F --> F1[CT-05 Thuật toán và dry run]
-  F --> F2[CT-06 Kiểm người dùng và quyết định cải tiến]
-  F --> F3[BE-5 Tổng hợp nghiệm thu Python]
+  A[Giúp giáo viên tạo và sửa đề bám tài liệu, đúng cơ cấu, có căn cứ] --> B[Làm rõ yêu cầu]
+  A --> C[Chuẩn bị căn cứ]
+  A --> D[Tạo và sửa câu]
+  A --> E[Rà soát bản đề]
+  A --> F[Duyệt và quản lý]
+  B --> B1[Làm rõ phạm vi, dạng câu]
+  B --> B2[Đọc và kiểm tra ma trận]
+  B --> B3[Hỏi lại, xác nhận yêu cầu]
+  C --> C1[Lấy nội dung, giữ nguồn]
+  C --> C2[Làm rõ cấu trúc đề cũ]
+  C --> C3[Tìm đoạn đúng phạm vi]
+  D --> D1[Tạo câu và đáp án]
+  D --> D2[Xác định vùng được sửa]
+  D --> D3[Rà phần bị ảnh hưởng]
+  E --> E1[Giải và đối chiếu căn cứ]
+  E --> E2[Đếm câu, so cơ cấu]
+  E --> E3[Ghi bất đồng, thiếu căn cứ]
+  F --> F1[Cho xem sửa và xác nhận]
+  F --> F2[Lưu, khôi phục phiên bản]
+  F --> F3[Xuất đúng bản đã duyệt]
 ```
 
-Các lá chỉ chức năng vẫn còn là **gói việc**. 24 issue `UI/BE-*-001/002/003` chia mỗi gói thành đặc tả → triển khai → nghiệm thu; trong issue có các bước nhỏ, input/output và điều kiện xong. Mỗi bước gán đúng một người; nếu không hoàn thành được trong khoảng một ngày thì tách tiếp issue, liên kết cha/phụ thuộc và thêm vào bảng. Chưa có ước lượng ngày công thật từ thành viên; không coi cây này là lịch cam kết.
+Phần còn làm ở CT-02 là **ghép thiết kế đã có với kế hoạch hiện thực**. 24 issue `UI/BE-*-001/002/003` chia mỗi gói thành đặc tả → triển khai → nghiệm thu; trong issue có các bước nhỏ, input/output và điều kiện xong. Mỗi bước gán đúng một người; nếu không hoàn thành được trong khoảng một ngày thì tách tiếp issue, liên kết cha/phụ thuộc và thêm vào bảng. Chưa có ước lượng ngày công thật từ thành viên; không coi cây này là lịch cam kết.
+
+| Chức năng đã phân tích ở trang 4–10 | Vai trò nhận phần triển khai và phối hợp |
+|---|---|
+| Chuẩn bị tài liệu | BE-4 + BE-3; UI-2 kiểm đối chiếu nguồn |
+| Truy xuất nội dung | BE-1 + BE-4 + BE-3; thống nhất metadata/phiên bản |
+| Tạo câu hỏi | BE-1 + BE-2; UI-3 yêu cầu/làm rõ, BE-5 job |
+| Kiểm tra đáp án và căn cứ | BE-1 + BE-5; giáo viên duyệt, không tự chứng nhận đúng |
+| Chỉnh sửa đề | UI-2/3 + BE-1/2/3; phạm vi, revision và undo |
+| Số hóa đề cũ | BE-4 + UI-2; vùng chưa chắc cần đối chiếu bản gốc |
+| Lưu và xuất | BE-3/4 + UI-1/2; BE-2 ownership, BE-5 tích hợp |
+
+Đây là ánh xạ trách nhiệm **cho việc tiếp theo**, không gán ngược người thực hiện các slide đã có. Bốn pattern trang 15–18 được giữ làm cơ sở test: tìm căn cứ, so ô ma trận, rà ảnh hưởng, xác nhận trước lưu.
 
 ## Mẫu nhận diện pattern cho từng lá
 

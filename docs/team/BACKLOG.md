@@ -86,7 +86,7 @@ Chạy npm test; đính kèm wireframe/ảnh và checklist phím Tab.
 <!-- mach-course-execution:UI-1-001 -->
 ## Bắt tay thực hiện và bằng chứng môn
 
-**Đầu vào:** Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế
+**Đầu vào:** Dùng lại proposal/baseline và cây Decomposition đã có trong docs/course/HO_SO_DA_CO.md; chỉ bổ sung user flow/ghi chép người dùng còn thiếu.
 
 **Đầu ra:** PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.
 
@@ -140,7 +140,7 @@ npm test; node tests/selection-browser.mjs và ảnh fixture.
 <!-- mach-course-execution:UI-2-001 -->
 ## Bắt tay thực hiện và bằng chứng môn
 
-**Đầu vào:** Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế
+**Đầu vào:** Dùng model Question/QuestionVersion và invariants trong hồ sơ Abstraction đã có; lập fixture richDoc/công thức để nối thiết kế với code.
 
 **Đầu ra:** PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.
 
@@ -194,7 +194,7 @@ node tests/usability-browser.mjs; ghi danh sách state/event.
 <!-- mach-course-execution:UI-3-001 -->
 ## Bắt tay thực hiện và bằng chứng môn
 
-**Đầu vào:** Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế
+**Đầu vào:** Kế thừa ExamRequest target/changes/keep, SessionContext và bước đề xuất/xác nhận của hồ sơ Abstraction; không viết lại khái niệm từ đầu.
 
 **Đầu ra:** PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.
 
@@ -250,7 +250,7 @@ node --test tests/greennode.test.mjs tests/cloud-ai.test.mjs; không dùng key t
 <!-- mach-course-execution:BE-1-001 -->
 ## Bắt tay thực hiện và bằng chứng môn
 
-**Đầu vào:** Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế
+**Đầu vào:** Kế thừa kế hoạch PoC trong proposal, pattern truy xuất/kiểm chứng và ProposeReplaceQuestion của hồ sơ nhóm; chốt ứng viên thử và hợp đồng Python.
 
 **Đầu ra:** PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.
 
@@ -306,7 +306,7 @@ npm test; thêm fixture response và negative auth cases còn thiếu.
 <!-- mach-course-execution:BE-2-001 -->
 ## Bắt tay thực hiện và bằng chứng môn
 
-**Đầu vào:** Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế
+**Đầu vào:** Đọc ExamRequest, ADT, ISourceReader và các trạng thái trong hồ sơ Abstraction trước khi chốt DTO/OpenAPI Python.
 
 **Đầu ra:** PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.
 
@@ -361,7 +361,7 @@ Tạo fixture migration kiểm đếm, FK/ownership dự kiến và golden snaps
 <!-- mach-course-execution:BE-3-001 -->
 ## Bắt tay thực hiện và bằng chứng môn
 
-**Đầu vào:** Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế
+**Đầu vào:** Kế thừa sáu đối tượng miền, SessionContext, QuestionVersion và tham chiếu phiên bản trong Abstraction; phần mới là ánh xạ ERD/DB Python và migration.
 
 **Đầu ra:** PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.
 
@@ -417,7 +417,7 @@ npm test; dùng fixture không bản quyền/không dữ liệu cá nhân.
 <!-- mach-course-execution:BE-4-001 -->
 ## Bắt tay thực hiện và bằng chứng môn
 
-**Đầu vào:** Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế
+**Đầu vào:** Kế thừa SourceDocument và ISourceReader Success/Failure trong hồ sơ Abstraction; bổ sung DTO/fixture và phương án thư viện Python.
 
 **Đầu ra:** PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.
 

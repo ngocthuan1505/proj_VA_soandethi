@@ -2,6 +2,8 @@
 
 Nguồn: Topic 5 trang 8, 18–23, 26–35, 43. BE-2 + BE-5 điều phối, BE-1/3 review. Pseudocode dưới là **thiết kế**, chưa phải chức năng đã migrate trong FastAPI.
 
+Nhóm đã có giả mã `ISourceReader` và pre/postconditions/invariants của `ProposeReplaceQuestion`/`ConfirmProposal` trong Abstraction. Kế thừa chúng theo [hồ sơ đã có](HO_SO_DA_CO.md), rồi bổ sung thuật toán nghiệp vụ, trace và test vào Python. Không ghi nhận giả mã Interface là đã nghiệm thu toàn bộ CT-05.
+
 ## Hợp đồng đề xuất
 
 Input: user đã xác thực, đề hiện tại, job có owner/revision gốc, phạm vi câu/khối cho phép, đề xuất có giới hạn kích thước. Output: preview hợp lệ, hoặc lỗi có mã rõ; chỉ ghi khi người dùng xác nhận, có kiểm lại revision và transaction. DTO/tên lỗi thật chốt trong [CONTRACTS](CONTRACTS.md).

@@ -2,6 +2,8 @@
 
 Tài liệu đã đọc ngày 04/11/2026: **6 PDF, 258 trang** trong [thư mục môn học do Thuận cung cấp](https://drive.google.com/drive/folders/1L_2gLfP4aXve4dcdobSJtAIqDeOoONcK). Chỉ lưu diễn giải, kế hoạch áp dụng và liên kết nguồn; không chép toàn bộ slide vào repo. Danh sách file, số trang và checksum nằm trong [sources.json](sources.json).
 
+**Đã đối chiếu chat còn lại cùng dự án:** nhóm đã có proposal/baseline, Decomposition–Pattern 23 trang và hồ sơ Abstraction. Xem [hồ sơ đã có và việc còn lại](HO_SO_DA_CO.md); dùng lại tài liệu này, không làm lại từ đầu. Đồng thời đã tìm được [đề bài riêng với R1–R8, gói nộp và rubric](DE_BAI_GOC.md), ngoài sáu bài giảng.
+
 ## Nguồn và phần áp dụng
 
 | Nguồn | Trang PDF đã đối chiếu | Áp dụng vào đồ án |
@@ -36,7 +38,7 @@ Python là ngôn ngữ chính theo **ảnh trao đổi giảng viên mà Thuận
 | Thuật toán và dry run | [ALGORITHM.md](ALGORITHM.md) | BE-2 + BE-5; BE-1/3 review |
 | Test với người dùng, đánh giá và báo cáo cuối | [EVALUATION.md](EVALUATION.md), [khung báo cáo](../reports/BAO_CAO_DO_AN.md) | BE-5 tổng hợp, từng vai trò cung cấp bằng chứng |
 
-Các file là **bản chuẩn bị/chưa nghiệm thu**. Không có cuộc phỏng vấn, số đo, PoC model thật hoặc thử server mới nào được coi đã chạy vì đã tạo file/issue. Những phần thiếu bằng chứng ghi rõ “chưa thu thập”.
+Các file trong repo là khung hoàn thiện **dựa trên hồ sơ nhóm đã có**, chưa phải nghiệm thu cả task. Trong các hồ sơ đã đối chiếu chưa thấy đầy đủ ghi chép ba người dùng, benchmark đồng đều hoặc kết quả PoC mới. Ghi “chưa thấy bằng chứng” cho phần đó, không kết luận nhóm chưa từng làm ở nơi khác và không yêu cầu viết lại proposal/UML đã có.
 
 **Issue nhận việc:** [CT-01 #26](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/26) · [CT-02 #27](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/27) · [CT-03 #28](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/28) · [CT-04 #29](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/29) · [CT-05 #30](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/30) · [CT-06 #31](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/31). Đây là 6 đầu ra chung theo vai trò điều phối và người phối hợp, chưa nghiệm thu.
 

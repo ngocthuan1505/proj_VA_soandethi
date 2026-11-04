@@ -1,6 +1,6 @@
 # Problem Brief — bản nháp để kiểm chứng
 
-Trạng thái: **chưa phỏng vấn người dùng, chưa có số đo baseline**. UI-1 điều phối, các vai trò cùng xác minh. Nguồn phương pháp: Topic 2 trang 24–36, 42, 45–46; Topic 4 trang 39.
+Trạng thái: **đã có proposal và baseline nghiên cứu** ở chat còn lại; dùng lại phần Why/What/How/Novelty, stakeholders, scope và nguồn đã đối chiếu. Trong bộ hồ sơ đã đọc chưa thấy ghi chép ba người dùng hoặc benchmark trực tiếp đồng đều. UI-1 điều phối phần còn thiếu, không viết lại từ đầu. Xem [bằng chứng và giới hạn](HO_SO_DA_CO.md). Nguồn phương pháp: Topic 2 trang 24–36, 42, 45–46; Topic 4 trang 39.
 
 ## Vấn đề và người dùng
 
@@ -51,7 +51,7 @@ Chuỗi 5 Whys cần làm sau quan sát: mất thời gian → bước cụ th�
 
 ## Baseline 2–3 công cụ
 
-Nhóm cần trực tiếp kiểm cùng kịch bản trên 2–3 công cụ đang dùng hợp pháp (ứng viên: Word, công cụ soạn đề tham khảo, editor toán khác). Chưa có kết luận về các dịch vụ này. Ghi ngày/phiên bản/quyền truy cập, ảnh được phép và kết quả; không sao chép UI/tài nguyên của họ.
+Proposal đã có baseline soandethi, Quizgecko, NotebookLM, Azota và Smallpdf dựa trên nguồn và ba video; không xóa phần đó để thay bằng bảng trắng này. Các nhận xét là kết quả nghiên cứu tại thời điểm tài liệu, chưa phải benchmark trực tiếp đồng đều hoặc xác minh tính năng hiện tại. Bước còn lại: chọn 2–3 công cụ phù hợp, kiểm cùng kịch bản hợp pháp, ghi ngày/phiên bản/quyền truy cập/ảnh được phép và kết quả; không sao chép UI/tài nguyên của họ.
 
 | Nhu cầu giáo viên | Công cụ A + ngày | Công cụ B + ngày | Công cụ C nếu có | Mạch + commit kiểm | Khoảng trống được người dùng xác nhận |
 |---|---|---|---|---|---|

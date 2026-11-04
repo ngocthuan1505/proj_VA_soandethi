@@ -40,7 +40,7 @@
       ],
       "tests": "Chạy npm test; đính kèm wireframe/ảnh và checklist phím Tab.",
       "execution": {
-        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "inputs": "Dùng lại proposal/baseline và cây Decomposition đã có trong docs/course/HO_SO_DA_CO.md; chỉ bổ sung user flow/ghi chép người dùng còn thiếu.",
         "steps": [
           "Vẽ hành trình tạo/mở/sửa/lưu/xuất và liệt kê loading/empty/error theo màn hình.",
           "Chuẩn bị 5 câu hỏi phỏng vấn, điều phối ít nhất 3 giáo viên ẩn danh và ghi baseline chưa biết.",
@@ -82,7 +82,7 @@
       ],
       "tests": "npm test; node tests/selection-browser.mjs và ảnh fixture.",
       "execution": {
-        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "inputs": "Dùng model Question/QuestionVersion và invariants trong hồ sơ Abstraction đã có; lập fixture richDoc/công thức để nối thiết kế với code.",
         "steps": [
           "Tạo bộ đề fixture ngắn/dài với phân số/hệ, bảng và hình; ghi ID/revision/richDoc mong đợi.",
           "Tái hiện selection/undo/reload/công thức và ghi lỗi nhỏ độc lập, không đổi schema lúc lập baseline.",
@@ -124,7 +124,7 @@
       ],
       "tests": "node tests/usability-browser.mjs; ghi danh sách state/event.",
       "execution": {
-        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "inputs": "Kế thừa ExamRequest target/changes/keep, SessionContext và bước đề xuất/xác nhận của hồ sơ Abstraction; không viết lại khái niệm từ đầu.",
         "steps": [
           "Vẽ trạng thái hỏi/sửa/preview/apply/hủy/retry; quy định câu hỏi mơ hồ cần làm rõ.",
           "Chốt event fixture success/malformed/stale/cancel với BE-1/5 và chip vùng chọn với UI-2.",
@@ -168,7 +168,7 @@
       ],
       "tests": "node --test tests/greennode.test.mjs tests/cloud-ai.test.mjs; không dùng key thật.",
       "execution": {
-        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "inputs": "Kế thừa kế hoạch PoC trong proposal, pattern truy xuất/kiểm chứng và ProposeReplaceQuestion của hồ sơ nhóm; chốt ứng viên thử và hợp đồng Python.",
         "steps": [
           "Mô tả contract request/result với job/owner/revision/timeout/cancel và fixture không có key.",
           "Lập kế hoạch PoC sửa đúng vùng trong docs/course/POC.md, chốt mẫu/ngưỡng với UI-3/BE-5.",
@@ -213,7 +213,7 @@
       ],
       "tests": "npm test; thêm fixture response và negative auth cases còn thiếu.",
       "execution": {
-        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "inputs": "Đọc ExamRequest, ADT, ISourceReader và các trạng thái trong hồ sơ Abstraction trước khi chốt DTO/OpenAPI Python.",
         "steps": [
           "Lập danh mục route cũ: method, input/output, status và ma trận guest/member/admin bằng fixture.",
           "Chốt DTO đề/version/job/file và OpenAPI dự kiến với BE-3/UI; ghi hiện có khác đích Python.",
@@ -256,7 +256,7 @@
       ],
       "tests": "Tạo fixture migration kiểm đếm, FK/ownership dự kiến và golden snapshot.",
       "execution": {
-        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "inputs": "Kế thừa sáu đối tượng miền, SessionContext, QuestionVersion và tham chiếu phiên bản trong Abstraction; phần mới là ánh xạ ERD/DB Python và migration.",
         "steps": [
           "Vẽ ERD và data dictionary có field/type/unit/nullability, đối chiếu KV hiện tại.",
           "Viết ADR SQLite/PostgreSQL về concurrency/chi phí/backup; thống nhất lựa chọn trước thêm driver.",
@@ -300,7 +300,7 @@
       ],
       "tests": "npm test; dùng fixture không bản quyền/không dữ liệu cá nhân.",
       "execution": {
-        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "inputs": "Kế thừa SourceDocument và ISourceReader Success/Failure trong hồ sơ Abstraction; bổ sung DTO/fixture và phương án thư viện Python.",
         "steps": [
           "Tạo mẫu DOCX/PDF/PPTX/ảnh tự viết có chữ Việt/công thức/bảng và mẫu lỗi/quá lớn.",
           "Đánh giá thư viện Python/công cụ hỗ trợ, license và giới hạn giữ định dạng; không mua API.",

@@ -13,4 +13,4 @@ Khi có dữ liệu thật, đưa bằng chứng **được phép và đã ẩn 
 | Usability/accessibility | Tác vụ, cỡ mẫu, thời gian/lỗi/trợ giúp, ảnh đã ẩn danh, vấn đề và kiểm lại |
 | Nghiệm thu | Issue/PR, acceptance có link từng bằng chứng, reviewer, kết luận và điều chưa kiểm |
 
-Hiện chưa có kết quả phỏng vấn, PoC mới hoặc đánh giá người dùng được tạo ra trong đợt chuẩn bị này. Các bảng trống là chỗ nhập sau, không phải hồ sơ nghiệm thu.
+Đã có [proposal, Decomposition và Abstraction của nhóm](../course/HO_SO_DA_CO.md), cùng nhật ký cải tiến tài liệu. Tận dụng các đầu ra đó; các bảng trống chỉ dành phần còn thiếu. Trong hồ sơ đã đọc chưa thấy đủ ghi chép ba người dùng, kết quả PoC mới hoặc benchmark sản phẩm; không đồng nhất việc rà slide với nghiệm thu app.

@@ -2,6 +2,8 @@
 
 Trạng thái: **khung chuẩn bị, chưa phải báo cáo kết quả hoàn thành**. Nhóm điền khi có dữ liệu; BE-5 tổng hợp, mỗi vai trò chịu trách nhiệm phần mình. Đối chiếu [yêu cầu môn và nguồn](../course/README.md), không tự nhận rubric chi tiết chưa được phát.
 
+Dùng lại [hồ sơ nhóm đã có](../course/HO_SO_DA_CO.md) cho Proposal, Decomposition và Abstraction; không viết lại từ đầu. Đã đối chiếu [R1–R8, gói nộp và rubric trong đề bài riêng](../course/DE_BAI_GOC.md). Kết quả thực nghiệm cần bằng chứng riêng; rà soát slide chưa thay được benchmark sản phẩm.
+
 ## 1. Thông tin và đóng góp
 
 Tên đề tài, lớp, giảng viên, thành viên/mã sinh viên theo quy định nộp của lớp, vai trò và phạm vi đóng góp. Thông tin định danh chỉ đưa lên repo khi phù hợp quyền chia sẻ; hiện [roster](../team/roster.json) chưa đủ bảy username. Liên kết issue/PR và review từng người, không đánh giá đóng góp chỉ bằng số commit.

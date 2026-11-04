@@ -2,6 +2,8 @@
 
 Trạng thái: **kế hoạch, chưa có kết quả thí nghiệm này**. Nguồn: Topic 4 trang 31, 36–40; Topic 6 trang 7–8, 14, 17. BE-1 điều phối, UI-3 và BE-5 hỗ trợ; mọi thao tác GreenNode do Thuận thực hiện sau khi có server.
 
+Proposal cũ đã có kế hoạch/phạm vi PoC gồm đọc nguồn, truy xuất, sinh câu có căn cứ, kiểm và rút trích. Câu hỏi sửa vùng dưới đây là **ứng viên nhóm cần chốt**, không tự thay toàn bộ kế hoạch đã làm. Trong [hồ sơ đã đối chiếu](HO_SO_DA_CO.md) chưa thấy bộ kết quả thực nghiệm đủ để kết luận CT-04 hoàn thành; demo kỹ thuật cũ cần chọn input/output/metrics phù hợp mới dùng làm bằng chứng PoC này.
+
 ## Câu hỏi rủi ro
 
 “Từ một đề có công thức và yêu cầu sửa đúng một câu, hệ thống có tạo đề xuất được kiểm phạm vi/revision, cho giáo viên xem trước, và bảo toàn các câu khác không?” Tách hai giả thuyết: bộ kiểm Python chặn thay đổi sai; model thật tạo đề xuất đủ chất lượng. Fixture chỉ kiểm giả thuyết đầu, không chứng minh model giải toán đúng.

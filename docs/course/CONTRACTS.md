@@ -1,6 +1,6 @@
 # Mô hình và hợp đồng cần chốt
 
-Trạng thái: bản chuẩn bị review, chưa phải OpenAPI/DB đã triển khai. Nguồn phương pháp: Topic 3 trang 18; Topic 4 trang 22–24, 30–34. BE-3 giữ [đề xuất dữ liệu](../architecture/DATA_PLAN.md); BE-2 giữ OpenAPI của FastAPI. Bảng dưới chỉ giúp nhóm không bỏ sót thông tin trước khi đặt DTO/schema cụ thể.
+Trạng thái: **đã có mô hình Abstraction, UML, Schema, ADT và Interface của nhóm** trong [Docs bài chính](https://docs.google.com/document/d/1aPbp3jybeoFp9i9B5i2bilZhTqHkqRgkJvQZ8MZ_hkU/edit?tab=t.u9x5d9udf8y9). Dùng lại sáu đối tượng và SessionContext, bảng QuestionVersion 7 trường, changes/keep, ProposeReplaceQuestion/ConfirmProposal và ISourceReader như [bản đối chiếu](HO_SO_DA_CO.md). Phần còn lại là ánh xạ sang DTO/OpenAPI/DB Python có review và test, chưa phải bắt đầu thiết kế từ trang trắng. Nguồn phương pháp: Topic 3 trang 18; Topic 4 trang 22–24, 30–34. BE-3 giữ [đề xuất dữ liệu](../architecture/DATA_PLAN.md); BE-2 giữ OpenAPI của FastAPI.
 
 | Khái niệm | Thông tin cần thống nhất | Bất biến cần kiểm |
 |---|---|---|

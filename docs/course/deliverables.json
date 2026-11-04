@@ -16,7 +16,11 @@
       "Problem Brief một trang đủ stakeholder, nguyên nhân, input/output/constraints, MoSCoW và metrics/ngày cần xác nhận.",
       "Đối chiếu 2–3 công cụ bằng cùng tác vụ, ghi khoảng trống và nguồn/ngày kiểm.",
       "Nhóm review và ghi điều chưa xác minh; chưa coi bản nháp hiện tại là kết quả phỏng vấn."
-    ]
+    ],
+    "existingEvidence": {
+      "reference": "HO_SO_DA_CO.md",
+      "summary": "Đã có proposal/stakeholder/scope và baseline nghiên cứu; còn kiểm chứng người dùng và benchmark đồng đều."
+    }
   },
   {
     "id": "CT-02",
@@ -37,7 +41,11 @@
       "Liên kết 24 gói task với lá, tách bước quá khoảng một ngày thành issue nhỏ có tiêu chí nghiệm thu.",
       "Phụ thuộc không trùng việc, đầu ra ghép được; Kanban cập nhật thật.",
       "Thuận xác nhận lịch môn trước đặt deadline; có kế hoạch tương đối/WBS chờ chốt ngày."
-    ]
+    ],
+    "existingEvidence": {
+      "reference": "HO_SO_DA_CO.md",
+      "summary": "Đã có cây 3 cấp, 7 chức năng, input/output và 4 pattern trong 23 slide; còn ánh xạ owner/task/lịch và review phần triển khai."
+    }
   },
   {
     "id": "CT-03",
@@ -59,7 +67,11 @@
       "Contract input/output/rules/examples/errors cho API và job có fixture dùng chung.",
       "Quyết định giữ/defer/bỏ có lý do theo mục tiêu, nêu giả định AI/API.",
       "BE-2/3 và người dùng contract review; chưa coi ví dụ DTO là code đã chạy."
-    ]
+    ],
+    "existingEvidence": {
+      "reference": "HO_SO_DA_CO.md",
+      "summary": "Đã có UML, model, Schema, ADT và Interface; còn ánh xạ hợp đồng/DB Python và test, không thiết kế lại từ đầu."
+    }
   },
   {
     "id": "CT-04",
@@ -82,7 +94,11 @@
       "Có bộ mẫu hợp pháp và kết quả fixture/script chạy lại được gồm ca sai schema/stale/ngoài vùng/cancel.",
       "Tách kết quả model thật với fixture; thiếu server ghi chờ phần model thật, không dùng danh sách model làm bằng chứng.",
       "Kết luận yes/no/chưa đủ bằng chứng và hướng sửa, có người review độc lập."
-    ]
+    ],
+    "existingEvidence": {
+      "reference": "HO_SO_DA_CO.md",
+      "summary": "Đã có kế hoạch/phạm vi PoC trong proposal; chưa thấy đủ kết quả thực nghiệm cho ứng viên thử sửa vùng."
+    }
   },
   {
     "id": "CT-05",
@@ -103,7 +119,11 @@
       "Trace ít nhất ca đúng, stale, ngoài vùng và cancel; khớp test Python thật.",
       "Phân tích chi phí/bộ nhớ và đo fixture nếu tuyên bố tối ưu; không bịa benchmark.",
       "Giải thích phần quy tắc cố định so với AI xác suất, hạn chế và trách nhiệm khi sai."
-    ]
+    ],
+    "existingEvidence": {
+      "reference": "HO_SO_DA_CO.md",
+      "summary": "Đã có giả mã Interface và điều kiện ADT; còn thuật toán nghiệp vụ, flowchart, trace và test Python."
+    }
   },
   {
     "id": "CT-06",
@@ -130,6 +150,10 @@
       "Feedback log có vấn đề, bằng chứng, mức độ, proposed fix và kết quả kiểm lại.",
       "Nêu giữ/sửa/bỏ, trade-off, phương án khác và mục tiêu vòng sau; không còn blocker trong phạm vi demo mới đề nghị xong.",
       "Báo cáo/demo có truy vết CT-01…06, đóng góp từng người, source kế thừa/AI và bước chạy lại; lịch/nộp theo xác nhận lớp."
-    ]
+    ],
+    "existingEvidence": {
+      "reference": "HO_SO_DA_CO.md",
+      "summary": "Đã có slide và nhật ký cải tiến tài liệu; còn bằng chứng đánh giá sản phẩm và demo cuối."
+    }
   }
 ]
