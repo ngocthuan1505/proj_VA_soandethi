@@ -35,9 +35,30 @@
         "Có sơ đồ tạo → mở → sửa → lưu → xuất đề và màn hình lỗi/rỗng/đang tải.",
         "Đề xuất riêng desktop/mobile, không sao chép nguyên giao diện tham khảo.",
         "UI-2/UI-3 và BE-2 review luồng trước triển khai.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Chạy npm test; đính kèm wireframe/ảnh và checklist phím Tab."
+      "tests": "Chạy npm test; đính kèm wireframe/ảnh và checklist phím Tab.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "steps": [
+          "Vẽ hành trình tạo/mở/sửa/lưu/xuất và liệt kê loading/empty/error theo màn hình.",
+          "Chuẩn bị 5 câu hỏi phỏng vấn, điều phối ít nhất 3 giáo viên ẩn danh và ghi baseline chưa biết.",
+          "Review wireframe với UI-2/3 và BE-2; chốt input/output màn hình, ghi quyết định trong PR."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "UI-2",
+          "UI-3",
+          "BE-2"
+        ],
+        "pattern": "Luồng CRUD, trạng thái giao diện và nghiên cứu người dùng",
+        "courseTasks": [
+          "CT-01",
+          "CT-02",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "UI-2-001",
@@ -56,9 +77,30 @@
         "Liệt kê thao tác vùng chọn, công thức, bảng, hình và lỗi tái hiện được.",
         "Dùng fixture đề dài để kiểm phân trang, reload và undo giữ định dạng.",
         "Chốt với BE-3 snapshot/version cần bảo toàn, chưa đổi schema trực tiếp.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "npm test; node tests/selection-browser.mjs và ảnh fixture."
+      "tests": "npm test; node tests/selection-browser.mjs và ảnh fixture.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "steps": [
+          "Tạo bộ đề fixture ngắn/dài với phân số/hệ, bảng và hình; ghi ID/revision/richDoc mong đợi.",
+          "Tái hiện selection/undo/reload/công thức và ghi lỗi nhỏ độc lập, không đổi schema lúc lập baseline.",
+          "Chốt contract snapshot/selection với BE-3 và bản xuất với BE-4, kèm ảnh trạng thái editor."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-3",
+          "BE-4",
+          "UI-1"
+        ],
+        "pattern": "Editor có cấu trúc, round-trip và optimistic concurrency",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "UI-3-001",
@@ -77,9 +119,30 @@
         "Có luồng hỏi/sửa, chip ngữ cảnh, diff, hủy và retry lỗi.",
         "Có fixture AI dùng chung BE-1/BE-5, không cần server thật.",
         "Ô chat và lịch sử không che nhau trên mobile/cửa sổ thấp.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "node tests/usability-browser.mjs; ghi danh sách state/event."
+      "tests": "node tests/usability-browser.mjs; ghi danh sách state/event.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "steps": [
+          "Vẽ trạng thái hỏi/sửa/preview/apply/hủy/retry; quy định câu hỏi mơ hồ cần làm rõ.",
+          "Chốt event fixture success/malformed/stale/cancel với BE-1/5 và chip vùng chọn với UI-2.",
+          "Kiểm màn hình thấp/mobile, chụp lịch sử và composer không che nhau; review trước triển khai."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-1",
+          "BE-5",
+          "UI-2"
+        ],
+        "pattern": "State machine hội thoại, proposal/consent và xử lý tác vụ bất đồng bộ",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-1-001",
@@ -100,9 +163,31 @@
         "Chốt request/result/job ID/version/timeout/cancel với UI-3 và BE-5.",
         "Ghi rõ dữ liệu nào rời máy, nguồn/model/provenance và điều kiện consent.",
         "Chỉ Thuận giữ URL/token; nhóm có fixture; chưa chạy lệnh lên server trong task tổ chức repo.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "node --test tests/greennode.test.mjs tests/cloud-ai.test.mjs; không dùng key thật."
+      "tests": "node --test tests/greennode.test.mjs tests/cloud-ai.test.mjs; không dùng key thật.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "steps": [
+          "Mô tả contract request/result với job/owner/revision/timeout/cancel và fixture không có key.",
+          "Lập kế hoạch PoC sửa đúng vùng trong docs/course/POC.md, chốt mẫu/ngưỡng với UI-3/BE-5.",
+          "Ghi data flow/consent/chi phí/model và runbook cài server mới; chưa vận hành khi chưa có server."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-2",
+          "BE-5",
+          "UI-3"
+        ],
+        "pattern": "Adapter provider, schema validation và kiểm rủi ro AI bằng PoC",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-2-001",
@@ -123,9 +208,30 @@
         "Tài liệu method/request/response/lỗi của route thực tế, phân biệt hiện có và dự kiến.",
         "Ma trận guest/member/admin cho đề, file, export, cấu hình AI và snapshot.",
         "Chốt DTO và ETag/revision với BE-3, UI-1/2/3; ghi kế hoạch email/recovery trước public rộng.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "npm test; thêm fixture response và negative auth cases còn thiếu."
+      "tests": "npm test; thêm fixture response và negative auth cases còn thiếu.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "steps": [
+          "Lập danh mục route cũ: method, input/output, status và ma trận guest/member/admin bằng fixture.",
+          "Chốt DTO đề/version/job/file và OpenAPI dự kiến với BE-3/UI; ghi hiện có khác đích Python.",
+          "Viết contract/dry run kiểm patch trong docs/course/ALGORITHM.md và negative cases trước triển khai."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-3",
+          "BE-1",
+          "UI-1"
+        ],
+        "pattern": "Contract-first API, kiểm quyền và validation dữ liệu",
+        "courseTasks": [
+          "CT-03",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-3-001",
@@ -145,9 +251,30 @@
         "ERD cho user/session/exam/version/document/job/export/share, phân biệt KV hiện có và schema đích.",
         "ADR so sánh SQLite local và PostgreSQL về concurrency, vận hành, backup và chi phí; nhóm chốt trước thêm driver.",
         "Kế hoạch migrate/rollback trên bản sao, bảo toàn ID/revision/formula/richDoc; không chạy DB thật.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Tạo fixture migration kiểm đếm, FK/ownership dự kiến và golden snapshot."
+      "tests": "Tạo fixture migration kiểm đếm, FK/ownership dự kiến và golden snapshot.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "steps": [
+          "Vẽ ERD và data dictionary có field/type/unit/nullability, đối chiếu KV hiện tại.",
+          "Viết ADR SQLite/PostgreSQL về concurrency/chi phí/backup; thống nhất lựa chọn trước thêm driver.",
+          "Thiết kế fixture migration giữ UUID/revision/richDoc và kế hoạch rollback/restore trên bản sao."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-2",
+          "UI-2",
+          "BE-5"
+        ],
+        "pattern": "Repository, transaction/version, migration và backup/restore",
+        "courseTasks": [
+          "CT-03",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-4-001",
@@ -168,9 +295,30 @@
         "Mẫu tự tạo DOCX/PDF/PPTX/ảnh có chữ Việt/công thức/bảng, có ca hỏng/quá lớn.",
         "Ma trận định dạng được giữ, có thể mất và cần giáo viên kiểm.",
         "Thống nhất DTO tài liệu/trang/nguồn với BE-2/3 và UI-2.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "npm test; dùng fixture không bản quyền/không dữ liệu cá nhân."
+      "tests": "npm test; dùng fixture không bản quyền/không dữ liệu cá nhân.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "steps": [
+          "Tạo mẫu DOCX/PDF/PPTX/ảnh tự viết có chữ Việt/công thức/bảng và mẫu lỗi/quá lớn.",
+          "Đánh giá thư viện Python/công cụ hỗ trợ, license và giới hạn giữ định dạng; không mua API.",
+          "Chốt DTO nguồn/trang/tài liệu với BE-2/3/UI-2 và kỳ vọng bản học sinh/giáo viên."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "UI-2",
+          "BE-2",
+          "BE-3"
+        ],
+        "pattern": "Pipeline tài liệu, adapter định dạng và kiểm round-trip",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-5-001",
@@ -190,9 +338,31 @@
         "CI uv sync --frozen, pytest/Ruff/ty cho Python; npm ci/test giữ baseline legacy/UI.",
         "Phân loại unit/integration/UI/model thật; CI không có secret hoặc GreenNode runner.",
         "Ghi checklist merge, giới hạn thời gian job và lỗi baseline; không mua thêm Actions phút.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "CI thật xanh và một bộ UI fixture chạy local."
+      "tests": "CI thật xanh và một bộ UI fixture chạy local.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; chạy baseline local/fixture, đánh dấu điều chưa biết trước khi thiết kế",
+        "steps": [
+          "Chạy baseline CI Python/legacy UI trên fixture; phân biệt unit/integration/browser/model thật.",
+          "Chốt ma trận tích hợp/timeout/concurrency và sự kiện job với BE-1/2/UI-3.",
+          "Điều phối WBS/nhịp báo cáo, test log và checklist bằng chứng; không cài runner/deploy GreenNode."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-1",
+          "BE-2",
+          "UI-3"
+        ],
+        "pattern": "State machine job, tích hợp theo contract và kiểm thử có truy vết",
+        "courseTasks": [
+          "CT-02",
+          "CT-04",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "UI-1-002",
@@ -214,9 +384,30 @@
         "Tạo/mở/đổi tên/tìm đề và trạng thái lưu phản ánh dữ liệu thật.",
         "Login/logout/phiên hết hạn có thông báo, giữ bản nháp phù hợp.",
         "Responsive desktop/mobile và điều hướng bằng bàn phím; không lộ chức năng admin cho member.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "UI fixture + kiểm thử tài khoản cùng BE-2; không dùng tài khoản thật trong CI."
+      "tests": "UI fixture + kiểm thử tài khoản cùng BE-2; không dùng tài khoản thật trong CI.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ UI-1-001, BE-2-001",
+        "steps": [
+          "Làm kho đề theo DTO đã chốt bằng fixture: tạo/mở/đổi tên/tìm và trạng thái lưu.",
+          "Tích hợp login/logout/hết phiên vào Python API khi slice sẵn sàng; giữ draft và thông báo lỗi.",
+          "Kiểm responsive/bàn phím, gắn ảnh fixture và PR nhỏ; báo riêng phần còn dùng mock."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "UI-2",
+          "UI-3",
+          "BE-2"
+        ],
+        "pattern": "Luồng CRUD, trạng thái giao diện và nghiên cứu người dùng",
+        "courseTasks": [
+          "CT-01",
+          "CT-02",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "UI-2-002",
@@ -238,9 +429,30 @@
         "Chèn/sửa công thức đa môn bằng mẫu và bàn phím, không bắt nhớ LaTeX.",
         "Undo/reload bảo toàn rich text, công thức, bảng và hình.",
         "Xung đột revision không ghi đè im lặng; chỉ chọn/lưu đúng phạm vi.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "selection/authoring/curriculum browser fixtures; npm test."
+      "tests": "selection/authoring/curriculum browser fixtures; npm test.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ UI-2-001, BE-3-001",
+        "steps": [
+          "Hoàn thiện một luồng chèn/sửa công thức bằng mẫu; kiểm bàn phím mà không gõ LaTeX.",
+          "Kiểm round-trip undo/lưu/reload giữ ID/công thức/bảng; sửa lỗi ở helper chung thay vì vá từng caller.",
+          "Tích hợp revision conflict từ Python API, cho xem lựa chọn xử lý thay ghi đè; nộp từng PR theo luồng."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-3",
+          "BE-4",
+          "UI-1"
+        ],
+        "pattern": "Editor có cấu trúc, round-trip và optimistic concurrency",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "UI-3-002",
@@ -262,9 +474,30 @@
         "Hỏi không sửa đề; sửa hiển thị diff đúng vùng và version.",
         "Stream/hủy/retry không nhân đôi nội dung hoặc áp kết quả đã cũ.",
         "Lỗi/timeout giữ lời người dùng đã gõ và trả quyền chỉnh sửa.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "workbench/selection/studio fixtures; tích hợp job với BE-5."
+      "tests": "workbench/selection/studio fixtures; tích hợp job với BE-5.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ UI-3-001, BE-1-001, BE-2-001",
+        "steps": [
+          "Tích hợp hỏi và sửa thành hai luồng rõ, preview đúng vùng/revision và chỉ apply sau xác nhận.",
+          "Xử lý stream/hủy/retry/disconnect từ contract, giữ nội dung đã gõ và không lặp tin nhắn.",
+          "Chạy PoC fixture cùng BE-1/5, chặn stale/ngoài vùng và kiểm undo; ghi mock/model thật tách biệt."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-1",
+          "BE-5",
+          "UI-2"
+        ],
+        "pattern": "State machine hội thoại, proposal/consent và xử lý tác vụ bất đồng bộ",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-1-002",
@@ -288,9 +521,31 @@
         "Provider output được kiểm tra schema/công thức/nguồn trước áp dụng.",
         "Không lộ key trong lỗi, không fallback trả phí; timeout/job ID sai được chặn.",
         "Chuẩn bị release worker và checklist để chính Thuận cập nhật GreenNode; không cho CI đăng nhập server.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Fixture success/malformed/timeout/wrong-id/duplicate, model thật chỉ Thuận chạy khi sẵn sàng."
+      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Fixture success/malformed/timeout/wrong-id/duplicate, model thật chỉ Thuận chạy khi sẵn sàng.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-1-001, BE-2-001",
+        "steps": [
+          "Triển khai Python adapter cho một provider đã chọn và test fixture thành công/lỗi, không fallback trả phí.",
+          "Thêm kiểm schema/job/version/phạm vi vào proposal trước preview và golden test so với hành vi cũ.",
+          "Chạy PoC fixture, chuẩn bị release worker/runbook cho Thuận tự thực hiện; phần model thật ghi chờ nếu thiếu server."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-2",
+          "BE-5",
+          "UI-3"
+        ],
+        "pattern": "Adapter provider, schema validation và kiểm rủi ro AI bằng PoC",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-2-002",
@@ -314,9 +569,30 @@
         "Input/schema/type/size và status lỗi nhất quán, không rò bí mật.",
         "Session/logout/brute-force/email recovery được xử lý hoặc giới hạn invite-only được ghi rõ trước public.",
         "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
-        "Chuyển validation core đề, scope/patch/version và chuẩn lỗi server sang Python; kiểm quyền không chỉ dựa client."
+        "Chuyển validation core đề, scope/patch/version và chuẩn lỗi server sang Python; kiểm quyền không chỉ dựa client.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Negative integration tests cho guest/member/admin, XSS/origin/host và ID không thuộc tài khoản."
+      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Negative integration tests cho guest/member/admin, XSS/origin/host và ID không thuộc tài khoản.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-2-001, BE-3-001",
+        "steps": [
+          "Triển khai một slice auth/session/logout Python có pytest, sau đó slice đề/ownership theo contract.",
+          "Đưa core validation scope/patch/revision vào server Python, phối hợp transaction với BE-3.",
+          "Kiểm input sai/quá lớn/origin/host và lỗi không lộ key; giao UI fixture và từng PR nhỏ theo slice."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-3",
+          "BE-1",
+          "UI-1"
+        ],
+        "pattern": "Contract-first API, kiểm quyền và validation dữ liệu",
+        "courseTasks": [
+          "CT-03",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-3-002",
@@ -339,9 +615,30 @@
         "Adapter/schema theo ADR, giữ caller hiện có hoặc có migration API tương ứng.",
         "Write đồng thời có transaction/version conflict; có test rollback và không mất dữ liệu cũ.",
         "Migration idempotent, backup/restore trên fixture, chưa đụng kho thật trên GreenNode.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Migration twice, rollback failure, two-user isolation và golden richDoc/formula."
+      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Migration twice, rollback failure, two-user isolation và golden richDoc/formula.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-3-001, BE-2-001",
+        "steps": [
+          "Triển khai Python repository/schema đã duyệt cho một luồng lưu/đọc đề với fixture.",
+          "Thêm transaction/version-conflict và test hai writer, lỗi giữa chừng không mất dữ liệu.",
+          "Chạy migration hai lần và restore fixture, so ID/count/ownership/công thức; cập nhật API caller qua PR phối hợp."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-2",
+          "UI-2",
+          "BE-5"
+        ],
+        "pattern": "Repository, transaction/version, migration và backup/restore",
+        "courseTasks": [
+          "CT-03",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-4-002",
@@ -367,9 +664,30 @@
         "Word giữ công thức OMML; PDF chữ Việt/bảng/hình đọc được.",
         "Bản học sinh không chứa đáp án/barem; file theo ownership và có dọn file tạm.",
         "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
-        "Đưa giải pháp thư viện Python/công cụ hỗ trợ vào ADR, kiểm hợp lệ tệp và license; không bắt Python gọi Node để làm toàn bộ export."
+        "Đưa giải pháp thư viện Python/công cụ hỗ trợ vào ADR, kiểm hợp lệ tệp và license; không bắt Python gọi Node để làm toàn bộ export.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Fixtures hợp lệ/hỏng; kiểm nội dung và render Word/PDF mẫu khi có công cụ."
+      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Fixtures hợp lệ/hỏng; kiểm nội dung và render Word/PDF mẫu khi có công cụ.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-4-001, BE-2-001, BE-3-001",
+        "steps": [
+          "Triển khai một luồng import Python có MIME/size/ownership/cleanup, hiển thị OCR cần duyệt.",
+          "Triển khai xuất Word công thức/PDF theo ADR đã chọn; test nội dung và quyền tải.",
+          "Kiểm bản học sinh không lộ đáp án, file hỏng trả lỗi; so bản in với UI-2, chia PR theo định dạng."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "UI-2",
+          "BE-2",
+          "BE-3"
+        ],
+        "pattern": "Pipeline tài liệu, adapter định dạng và kiểm round-trip",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-5-002",
@@ -394,9 +712,31 @@
         "Job ràng buộc owner/version, idempotency; disconnect/cancel không áp output muộn.",
         "Đặt và kiểm concurrency/timeout/size/cleanup phù hợp, không giả định GPU vô hạn.",
         "Test tích hợp UI/API/DB bằng fixture, log có job ID nhưng không ghi prompt/tokens thật.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Stream ngắt giữa chừng, hai user, lặp submit, timeout và process restart với fixture."
+      "tests": "Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Stream ngắt giữa chừng, hai user, lặp submit, timeout và process restart với fixture.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-5-001, BE-1-001, BE-2-001, BE-3-001",
+        "steps": [
+          "Triển khai Python job/SSE với owner/version và giới hạn đã chốt bằng contract test.",
+          "Kiểm cancel/disconnect/duplicate/stale/restart, không để output muộn áp vào đề.",
+          "Chạy luồng UI→FastAPI→repository bằng fixture cùng các vai trò; ghi log an toàn và PR nhỏ."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-1",
+          "BE-2",
+          "UI-3"
+        ],
+        "pattern": "State machine job, tích hợp theo contract và kiểm thử có truy vết",
+        "courseTasks": [
+          "CT-02",
+          "CT-04",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "UI-1-003",
@@ -417,9 +757,30 @@
         "Hoàn thành hành trình giáo viên mới và quay lại với kho đề thật trên staging/fixture.",
         "Tab/focus/label/contrast/mobile và thông báo lỗi được rà soát.",
         "Đính kèm bằng chứng, ghi rõ hạn chế còn lại, không tự tuyên bố chứng nhận WCAG.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Checklist UX cùng UI-2/3 và test phiên hết hạn."
+      "tests": "Checklist UX cùng UI-2/3 và test phiên hết hạn.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ UI-1-002, BE-2-002",
+        "steps": [
+          "Cho người thử thực hiện hành trình mới/quay lại, ghi thời gian/lỗi/trợ giúp đã xin phép.",
+          "Rà Tab/focus/label/contrast và phiên hết hạn, tạo issue cho lỗi có bằng chứng.",
+          "Kiểm lại sau sửa, viết giữ/sửa/bỏ và giới hạn vào báo cáo nghiệm thu, xin review độc lập."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "UI-2",
+          "UI-3",
+          "BE-2"
+        ],
+        "pattern": "Luồng CRUD, trạng thái giao diện và nghiên cứu người dùng",
+        "courseTasks": [
+          "CT-01",
+          "CT-02",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "UI-2-003",
@@ -441,9 +802,30 @@
         "Bộ mẫu Toán/Lý/Hóa/Sinh/Văn/Anh và mẫu lớp nhỏ giữ được nội dung khi lưu/xuất.",
         "Trang dài/bảng dài/công thức dài không làm mất thao tác hoặc nội dung.",
         "Đối chiếu editor với Word/PDF cùng BE-4, ghi lỗi chuyển đổi chưa hỗ trợ.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Golden mẫu tự tạo, reload/undo/export và kiểm bằng mắt."
+      "tests": "Golden mẫu tự tạo, reload/undo/export và kiểm bằng mắt.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ UI-2-002, BE-3-002, BE-4-002",
+        "steps": [
+          "Chạy bộ mẫu tự tạo Toán/Lý/Hóa/Sinh/Văn/Anh và lớp nhỏ, ghi rõ mẫu nào thực sự đã thử.",
+          "Đối chiếu editor với Word/PDF cùng BE-4, gồm trang/bảng/công thức dài.",
+          "Quan sát tác vụ công thức với người dùng, kiểm lại regression và tổng hợp giới hạn hỗ trợ."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-3",
+          "BE-4",
+          "UI-1"
+        ],
+        "pattern": "Editor có cấu trúc, round-trip và optimistic concurrency",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "UI-3-003",
@@ -465,9 +847,30 @@
         "Bôi đen/hủy/retry/undo và hội thoại dài kiểm desktop/mobile.",
         "Đề đã đổi giữa lúc AI chạy không bị ghi đè; sửa phạm vi không lan câu khác.",
         "Thông báo mô hình/nguồn/cần giáo viên duyệt rõ; có bằng chứng fixture.",
-        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API."
+        "UI JavaScript là lớp hỗ trợ; tích hợp hợp đồng FastAPI bằng mock/fixture trước, nghiệm thu cuối vào Python API.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Các luồng malformed/timeout/stale/version/conflict với BE-5."
+      "tests": "Các luồng malformed/timeout/stale/version/conflict với BE-5.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ UI-3-002, BE-1-002, BE-5-002",
+        "steps": [
+          "Thử chuỗi bôi đen/hỏi/sửa/hủy/retry/undo với hội thoại dài trên hai kích thước màn hình.",
+          "Tạo tình huống đề đổi giữa lúc chờ, malformed/timeout/duplicate; ghi bằng chứng không ghi đề ngoài ý muốn.",
+          "Thu phản hồi về ý nghĩa preview/nguồn/model, sửa và kiểm lại rồi bàn giao kết quả có giới hạn."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-1",
+          "BE-5",
+          "UI-2"
+        ],
+        "pattern": "State machine hội thoại, proposal/consent và xử lý tác vụ bất đồng bộ",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-1-003",
@@ -493,9 +896,31 @@
         "Chính Thuận kiểm auth Jupyter/quyền thư mục trước thử server; không dùng link bí mật thay xác thực.",
         "Đánh giá sinh/sửa/giải lại trên bộ mẫu đã duyệt và lưu kết quả không có dữ liệu nhạy cảm.",
         "Backup/rollback/bật-tắt thử được ghi nhận; chỉ mở công khai khi Thuận quyết định, không nhận lời hứa uptime.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Chạy E2E với FastAPI và không chạy Node API. Smoke model thật có timeout/cancel + release checklist; không lấy danh sách model làm bằng chứng suy luận."
+      "tests": "Chạy E2E với FastAPI và không chạy Node API. Smoke model thật có timeout/cancel + release checklist; không lấy danh sách model làm bằng chứng suy luận.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-1-002, BE-2-002, BE-3-002, BE-4-002, BE-5-002",
+        "steps": [
+          "Đọc release candidate, xác nhận backup và bảo vệ Jupyter khi Thuận có server mới và quyết định test.",
+          "Thuận chạy bộ mẫu model thật theo PoC, ghi model/params/thời gian và đánh giá đúng kiến thức có người duyệt.",
+          "Thuận ghi kết quả smoke/rollback/bật-tắt nếu đã thử; công bố giới hạn, không tự đánh dấu phần chưa chạy là đạt."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-2",
+          "BE-5",
+          "UI-3"
+        ],
+        "pattern": "Adapter provider, schema validation và kiểm rủi ro AI bằng PoC",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-2-003",
@@ -519,9 +944,30 @@
         "Test E2E guest/member/admin và các ID/token giả/hết hạn/thu hồi.",
         "Endpoint lỗi không lộ secret và API spec đồng bộ với implementation.",
         "Danh sách rủi ro trước public cùng cách xử lý; chưa mở đăng ký rộng khi recovery/auth chưa sẵn sàng.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Chạy E2E với FastAPI và không chạy Node API. Negative auth matrix, upload/export/share ownership, origin/host và logout."
+      "tests": "Chạy E2E với FastAPI và không chạy Node API. Negative auth matrix, upload/export/share ownership, origin/host và logout.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-2-002, BE-3-002, BE-4-002",
+        "steps": [
+          "Chạy ma trận guest/member/admin và ca token/ID hết hạn/sai owner trên FastAPI không có Node API.",
+          "Đối chiếu OpenAPI với implementation và upload/export/share với BE-4; ghi lỗi/rủi ro còn mở.",
+          "Kiểm lại sau sửa và bàn giao bằng chứng test, điều kiện invite-only/recovery trước public cho Thuận."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-3",
+          "BE-1",
+          "UI-1"
+        ],
+        "pattern": "Contract-first API, kiểm quyền và validation dữ liệu",
+        "courseTasks": [
+          "CT-03",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-3-003",
@@ -544,9 +990,30 @@
         "Backup/restore trên DB bản sao khôi phục được tài khoản/đề/file/version theo thiết kế.",
         "Migration lỗi quay lui được, ghi checksum/count/integrity và thời gian mất dịch vụ đo thực tế.",
         "Bàn giao lệnh đã review cho Thuận; không tự đọc/đổi DB server thật.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Chạy E2E với FastAPI và không chạy Node API. Restore drill fixture, replay revision conflicts và diễn tập nâng/hạ version."
+      "tests": "Chạy E2E với FastAPI và không chạy Node API. Restore drill fixture, replay revision conflicts và diễn tập nâng/hạ version.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-3-002, BE-2-002",
+        "steps": [
+          "Tạo backup nhất quán từ DB fixture và restore vào đích mới, giữ bản gốc.",
+          "Diễn tập lỗi migration/rollback, ghi checksum/count/integrity và thời gian thật.",
+          "Viết lệnh/runbook đã review cho Thuận dùng khi có volume; ghi rõ dữ liệu server cũ chưa khôi phục."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-2",
+          "UI-2",
+          "BE-5"
+        ],
+        "pattern": "Repository, transaction/version, migration và backup/restore",
+        "courseTasks": [
+          "CT-03",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-4-003",
@@ -569,9 +1036,30 @@
         "Đối chiếu mẫu chữ Việt/công thức/bảng/hình/điểm bằng mắt và tự động.",
         "Kiểm bản giáo viên/học sinh, quyền file và tài liệu OCR không tự gán nguồn.",
         "Công bố giới hạn shape/chart/OCR công thức và bộ mẫu regression được phép chia sẻ.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Chạy E2E với FastAPI và không chạy Node API. Golden DOCX/PDF + fixture import hỏng và giới hạn dung lượng."
+      "tests": "Chạy E2E với FastAPI và không chạy Node API. Golden DOCX/PDF + fixture import hỏng và giới hạn dung lượng.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-4-002, UI-2-002",
+        "steps": [
+          "Chạy golden import/export đa môn trên FastAPI, gồm tệp hỏng/quá lớn/sai quyền.",
+          "Xem Word/PDF cùng UI-2 để bắt lỗi bảng/công thức/chữ Việt mà test text không thấy.",
+          "Công bố giới hạn OCR/shape/chart và bộ mẫu regression hợp pháp; ghi bằng chứng từng định dạng."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "UI-2",
+          "BE-2",
+          "BE-3"
+        ],
+        "pattern": "Pipeline tài liệu, adapter định dạng và kiểm round-trip",
+        "courseTasks": [
+          "CT-03",
+          "CT-04",
+          "CT-06"
+        ]
+      }
     },
     {
       "id": "BE-5-003",
@@ -599,9 +1087,31 @@
         "CI xanh đúng commit/tag dự kiến; test UI và giới hạn tải có số liệu, không bịa khả năng chịu tải.",
         "Tổng hợp bug còn lại, hướng dẫn chạy sạch, báo cáo đồ án và rollback.",
         "Bàn giao candidate cho Thuận duyệt BE-1-003; không tự deploy hoặc nâng gói trả phí.",
-        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ."
+        "Python là backend/core chính. Source Node chỉ tham chiếu hành vi; không dùng facade Python gọi Node để làm nghiệp vụ.",
+        "Có bằng chứng CT liên quan và đầu ra từng bước; báo cáo progress/blocker/nghiệm thu theo docs/team/BAO_CAO.md, chưa tick thay cho kiểm thử/review."
       ],
-      "tests": "Chạy E2E với FastAPI và không chạy Node API. Full suite + manual checklist và kiểm source không có secret/runtime."
+      "tests": "Chạy E2E với FastAPI và không chạy Node API. Full suite + manual checklist và kiểm source không có secret/runtime.",
+      "execution": {
+        "inputs": "Đọc file tham chiếu và acceptance bên trên; nhận output/contract đã review từ BE-5-002, UI-1-003, UI-2-003, UI-3-003, BE-2-003, BE-3-003, BE-4-003",
+        "steps": [
+          "Chạy full suite và tác vụ người dùng của candidate đúng commit, ghi chỉ số thật và bug còn lại.",
+          "Tổng hợp CT-01…06, phần đóng góp từng người, nguồn tái sử dụng/AI, trade-off và demo script.",
+          "Review báo cáo với nhóm, bàn giao candidate/release checklist cho Thuận; không tự phát hành."
+        ],
+        "deliverables": "PR nhỏ hoặc tài liệu review được, fixture/test log/ảnh phù hợp acceptance; ghi rõ phần chưa chạy và liên kết báo cáo vào issue gốc.",
+        "reviewers": [
+          "BE-1",
+          "BE-2",
+          "UI-3"
+        ],
+        "pattern": "State machine job, tích hợp theo contract và kiểm thử có truy vết",
+        "courseTasks": [
+          "CT-02",
+          "CT-04",
+          "CT-05",
+          "CT-06"
+        ]
+      }
     }
   ],
   "architecture": {

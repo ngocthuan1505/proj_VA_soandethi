@@ -2,6 +2,7 @@
 
 - Viết commit, tiêu đề/mô tả PR, task và tài liệu hướng dẫn bằng tiếng Việt. Chỉ giữ tiếng Anh khi cần cho tên kỹ thuật, định danh, lệnh hoặc thông báo tương thích công cụ. Không viết lại lịch sử commit đã đẩy chỉ để đổi ngôn ngữ.
 - Read `docs/team/README.md`, `docs/team/ROLES.md` and `docs/architecture/PYTHON_MIGRATION.md` before changing architecture.
+- Đọc `docs/course/README.md` khi lập task/đánh giá đồ án; truy vết nguồn slide và bằng chứng CT-01…06. Báo tiến độ/vướng/nghiệm thu theo `docs/team/BAO_CAO.md`. Không bịa phỏng vấn, số đo, kết quả PoC hoặc deadline chưa xác nhận; giữ trạng thái/assignee/checklist người khác đã cập nhật.
 - Python is the primary language required by the course. Implement backend/core/auth/database/jobs/AI validation in `backend/`; JavaScript supports the browser/editor and build tooling.
 - Existing root Node API files are legacy references. Do not satisfy the Python requirement with a Python proxy that delegates core business logic to Node. Do not claim the FastAPI foundation has migrated features it does not implement.
 - Preserve user data, UUIDs, revision conflicts, formulas and rich documents when porting behavior. Add focused pytest/contract tests for migrated slices and compare with legacy fixtures.

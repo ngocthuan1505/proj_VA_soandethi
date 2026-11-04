@@ -1,0 +1,49 @@
+name: Đề nghị nghiệm thu task
+description: Nộp đầu ra và bằng chứng để reviewer quyết định hoàn thành.
+title: "[Nghiệm thu] Vai trò — tên task"
+labels: ["type:completion"]
+body:
+  - type: markdown
+    attributes:
+      value: "Gửi form chưa tự đóng task hoặc chuyển Hoàn thành. Đưa task gốc sang Chờ duyệt; reviewer kiểm acceptance và PR trước khi chấp nhận. PR đã đủ nội dung tương đương thì không cần báo cáo trùng."
+  - type: input
+    id: task
+    attributes:
+      label: Task gốc, vai trò và PR hoặc commit cần duyệt
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Đối chiếu từng tiêu chí nghiệm thu
+      description: "Mỗi tiêu chí → đầu ra/bằng chứng. Chưa đạt thì ghi rõ, không tick toàn bộ cho nhanh."
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Cách kiểm tra và kết quả
+      description: "Ghi command, fixture, commit/môi trường và pass/fail; tách model thật khỏi fixture, UI cần ảnh phù hợp."
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Bằng chứng môn và quyết định thiết kế
+      description: "CT-01…06 liên quan, input/output/thuật toán/test, trade-off và nguồn tái sử dụng hoặc AI hỗ trợ. Ghi không áp dụng kèm lý do nếu task không liên quan."
+    validations:
+      required: true
+  - type: textarea
+    id: limits
+    attributes:
+      label: Giới hạn, việc chưa kiểm và cách quay lui
+      description: "Nêu ảnh hưởng caller/API/schema/dữ liệu; không liên quan migration thì ghi không áp dụng."
+    validations:
+      required: true
+  - type: input
+    id: reviewer
+    attributes:
+      label: Người hoặc vai trò cần review
+      description: "Khác người thực hiện; phần GreenNode cần Thuận."
+    validations:
+      required: true

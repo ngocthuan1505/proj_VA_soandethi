@@ -4,7 +4,7 @@
 - [Dạng bảng — Danh sách công việc](https://github.com/users/ngocthuan1505/projects/1/views/2)
 - [Điểm bắt đầu của nhóm — issue #25](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/25)
 
-Project **Mạch — Tiến độ đồ án Python** và repo đều đang riêng tư. Bảng dùng trực tiếp 24 issue #1–#24, không tạo bản sao công việc trên Excel. Mỗi người có ba task theo [phân công](ROLES.md): 3 UI và 5 backend; Thuận là BE-1, chỉ Thuận vận hành GreenNode.
+Project **Mạch — Tiến độ đồ án Python** và repo đều đang riêng tư. Bảng dùng issue gốc, không tạo bản sao công việc trên Excel: 24 task kỹ thuật #1–#24 và thêm 6 hồ sơ môn CT-01…06 (xem [link issue](../course/github-issues.json)). Mỗi người có ba gói việc kỹ thuật theo [phân công](ROLES.md): 3 UI và 5 backend; Thuận là BE-1, chỉ Thuận vận hành GreenNode. Hồ sơ CT là đầu ra chung, không thêm thành viên hoặc tính hai lần phần code.
 
 ## Nhận và thực hiện công việc
 
@@ -25,6 +25,8 @@ Project **Mạch — Tiến độ đồ án Python** và repo đều đang riên
 Lúc khởi tạo ngày 02/11/2026: **24 task, 8 Sẵn sàng, 16 Bị chặn, 0 Hoàn thành**. Đây là ảnh chụp trạng thái ban đầu; xem số hiện tại trên bảng. Không có deadline tự đặt khi nhóm chưa chốt.
 
 ## Báo tiến độ và nhận thông báo
+
+Mở [trang hướng dẫn báo cáo](BAO_CAO.md) để chọn form tiến độ, vướng mắc, nghiệm thu hoặc mẫu comment trong task. Issue **Nhật ký tiến độ chung** giữ link tổng hợp tuần/vòng, không thay issue task. Lọc `label:type:course` để xem hồ sơ môn, `label:type:task` để chỉ xem 24 việc kỹ thuật. Các issue báo cáo có nhãn riêng để không lẫn số task.
 
 Thành viên chọn **Subscribe** trong issue mình cần theo dõi. Bình luận ngắn khi có tiến triển, vướng mắc hoặc cần review:
 

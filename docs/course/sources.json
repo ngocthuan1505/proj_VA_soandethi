@@ -1,0 +1,55 @@
+{
+  "reviewedDate": "2026-11-04",
+  "folder": "https://drive.google.com/drive/folders/1L_2gLfP4aXve4dcdobSJtAIqDeOoONcK",
+  "totalPages": 258,
+  "files": [
+    {
+      "topic": "01",
+      "name": "CT_Topic_01_Introduction_v3.pdf",
+      "url": "https://drive.google.com/file/d/10TNlV_kvtYEkutskHYtT_nMgvXWpSskS/view",
+      "pages": 42,
+      "yearOnSlides": "2026",
+      "sha256": "d4b9af9bef3854388c3b9bb22f4630baafb2b1948b583040271fd8c83f9d7789"
+    },
+    {
+      "topic": "02",
+      "name": "CT_Topic_02_Problem_Analysis_v3.pdf",
+      "url": "https://drive.google.com/file/d/1tppsndZ8AvvLwhZzohZOQkCgtPVB6xkB/view",
+      "pages": 49,
+      "yearOnSlides": "2026",
+      "sha256": "07ccdd3c5421d71990e80de7ff8f8f98e827245b78d63f6d41efe757eb554325"
+    },
+    {
+      "topic": "03",
+      "name": "CT_Topic_03_Decomposition_Pattern_Recognition_v3.pdf",
+      "url": "https://drive.google.com/file/d/1yYUVMut2OOS3yofcZWHlv4S0ks3zkwhG/view",
+      "pages": 46,
+      "yearOnSlides": "2026",
+      "sha256": "a29e3cae417e22b6698874c82ce6be8698d72a9567c58fa5a8e30b68d82ac977"
+    },
+    {
+      "topic": "04",
+      "name": "CT_Topic_04_Abstraction_v3.pdf",
+      "url": "https://drive.google.com/file/d/1e5yQP0THCQQcjBywhKgB5XHmh82E4w0f/view",
+      "pages": 43,
+      "yearOnSlides": "2026",
+      "sha256": "ef2b45b8bab2a6bec8f866c76eef2df9a2e2f03912add350cc57de7777cea2dc"
+    },
+    {
+      "topic": "05",
+      "name": "CT_Topic_05_Algorithm.pdf",
+      "url": "https://drive.google.com/file/d/1R2OE7sIcHw8lseHBvYd0YD58wlYb6XC_/view",
+      "pages": 45,
+      "yearOnSlides": "2025",
+      "sha256": "391439035168654a3fc43a54551a696b9cd2f980da85e32240e4092adf9474d1"
+    },
+    {
+      "topic": "06",
+      "name": "CT_Topic_06_Prototype Development, Testing, and Critical Evaluation.pdf",
+      "url": "https://drive.google.com/file/d/1Ce8LL9gTl3J8tUNm7vOkCl1HQr1_IP57/view",
+      "pages": 33,
+      "yearOnSlides": "2025",
+      "sha256": "b400e601825e6755b9d073c1f1ee127cc1922cfd8dea05f5691ad3b365ea1dbe"
+    }
+  ]
+}

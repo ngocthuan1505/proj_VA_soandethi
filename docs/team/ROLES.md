@@ -22,3 +22,5 @@ BE-1 và BE-5 cùng đọc `workbench-server.mjs`: BE-1 giữ prompt/provider/va
 UI-1/UI-2/UI-3 phối hợp layout chung; không ghi đè toàn bộ stylesheet của nhau. Schema/API thay đổi phải ghi trong issue và được người dùng module review.
 
 **Task mở đầu:** mỗi người nhận issue có mã `<vai-trò>-001`. Các task `002/003` có phụ thuộc trong [BACKLOG](BACKLOG.md), không cần chờ GreenNode để làm UI/API/database/QA.
+
+**Đầu ra môn chung:** UI-1 điều phối CT-01 (Problem Brief), BE-5 CT-02 (WBS), BE-3 CT-03 (model/contracts), Thuận BE-1 CT-04 (PoC), BE-2 CT-05 (thuật toán), BE-5 CT-06 (đánh giá/báo cáo). Các vai trò khác đóng góp bằng chứng theo module, không giao cả báo cáo cho một người viết thay. Xem [yêu cầu, nguồn và link issue CT](../course/README.md).

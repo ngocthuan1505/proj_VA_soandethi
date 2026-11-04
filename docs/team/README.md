@@ -4,13 +4,17 @@
 
 Repo Private này là nguồn chung duy nhất. Tiếp tục từ MVP đang có; không tạo tám bản ứng dụng độc lập và không đổi framework chỉ để chia việc.
 
+**Vào nhóm từ đây:** [Nhật ký chung #32](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/32) · [Báo tiến độ / vướng mắc / nghiệm thu](BAO_CAO.md) · [Tài liệu môn và 6 hồ sơ CT](../course/README.md) · [Khung báo cáo đồ án](../reports/BAO_CAO_DO_AN.md). Chưa có username bảy thành viên, lịch nộp của lớp và bằng chứng người dùng; các phần này được ghi rõ cần bổ sung.
+
 Mở [bảng tiến độ kéo thả](https://github.com/users/ngocthuan1505/projects/1/views/1) hoặc [bảng danh sách](https://github.com/users/ngocthuan1505/projects/1/views/2). Đọc [hướng dẫn nhận việc, cập nhật và thông báo](BOARD.md); mỗi thẻ dẫn tới issue có chi tiết nghiệm thu.
 
-1. Đọc [phạm vi sản phẩm](../product/MVP.md), [phân công 8 người](ROLES.md), [backlog](BACKLOG.md).
+1. Đọc [phạm vi sản phẩm](../product/MVP.md), [phân công 8 người](ROLES.md), [backlog](BACKLOG.md) và [đối chiếu slide môn](../course/README.md).
 2. Backend chính: Python 3.12+ và uv, vào backend chạy `uv sync --frozen` và pytest. Demo UI legacy: dùng Node.js 24, chạy `npm ci`, `npm test`, `npm start` và mở `http://127.0.0.1:4173`.
 3. Chọn issue theo nhãn `role:UI-1`…`role:BE-5`. Chưa có username nên nhãn là phân công vai trò, chưa phải GitHub assignee. BE-1 là Thuận (`@ngocthuan1505`).
 4. Nhận issue trong comment, gán chính mình khi được cấp quyền; tạo nhánh `feat/UI-1-001-ten-ngan` hoặc `fix/BE-2-001-ten-ngan`.
 5. PR nhỏ, liên kết `Closes #...`, nêu cách kiểm tra, ảnh UI nếu có, ảnh hưởng dữ liệu/API và cách quay lui. Đợi một người khác review trước khi merge.
+
+24 task kỹ thuật là gói việc theo ba giai đoạn, mỗi task có input, bước làm, output, pattern và reviewer. Sáu task CT riêng bổ sung Problem Brief/WBS/model/PoC/thuật toán/đánh giá; không thay 24 task và không tính các issue báo cáo là công việc đã hoàn thành. Danh sách link thật ở [github-issues.json của hồ sơ môn](../course/github-issues.json).
 
 ## Quy tắc phối hợp
 

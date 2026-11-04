@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Bảng tiến độ kéo thả
+    url: https://github.com/users/ngocthuan1505/projects/1/views/1
+    about: Nhận việc theo vai trò và cập nhật Status của task gốc.
+  - name: Hướng dẫn báo cáo và nghiệm thu
+    url: https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/BAO_CAO.md
+    about: Đọc cách báo tiến độ, báo khó khăn, nộp kết quả và nhận review.
+  - name: Yêu cầu môn và hồ sơ CT
+    url: https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md
+    about: Xem nguồn slide, Problem Brief, PoC, thuật toán và đánh giá.

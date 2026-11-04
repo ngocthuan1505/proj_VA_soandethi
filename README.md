@@ -1,5 +1,7 @@
 # Mạch — Trợ lý AI soạn đề thi
 
+**Thành viên bắt đầu tại [hướng dẫn nhóm](docs/team/README.md): [nhật ký tiến độ #32](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/32), [báo tiến độ/vướng mắc/nghiệm thu](docs/team/BAO_CAO.md), [áp dụng slide môn](docs/course/README.md), [khung báo cáo đồ án](docs/reports/BAO_CAO_DO_AN.md).**
+
 **Đổi server GreenNode:** source app/worker và các bước dựng môi trường đã được bảo toàn; xem [hồ sơ khôi phục](ops/greennode/KHOI_PHUC.md). Chưa lấy lại được database, cấu hình riêng hoặc trọng số từ volume cũ; clone repo không khôi phục các phần này.
 
 **Theo quy định môn học, Python là ngôn ngữ chính. Backend đích: FastAPI; xem [backend/README.md](backend/README.md) và [kế hoạch chuyển đổi](docs/architecture/PYTHON_MIGRATION.md). Scaffold Python hiện có health/readiness, chưa có đầy đủ nghiệp vụ; backend Node cũ giữ làm tham chiếu.**

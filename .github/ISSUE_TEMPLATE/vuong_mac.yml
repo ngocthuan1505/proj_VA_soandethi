@@ -1,0 +1,48 @@
+name: Báo vướng mắc
+description: Nêu chỗ bị chặn, điều đã thử và hỗ trợ cần từ nhóm.
+title: "[Vướng mắc] Vai trò — vấn đề"
+labels: ["type:blocker"]
+body:
+  - type: markdown
+    attributes:
+      value: "Chuyển task gốc sang Bị chặn nếu thật sự không tiếp tục được. Thiếu server không chặn phần fixture/local độc lập. Không tự đăng nhập GreenNode thay Thuận."
+  - type: input
+    id: task
+    attributes:
+      label: Task gốc và vai trò
+      description: "Ví dụ #12 / BE-1-002."
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Nhóm vướng mắc
+      options: ["Hợp đồng hoặc phụ thuộc chưa chốt", "Lỗi code hoặc dữ liệu mẫu", "Môi trường hoặc quyền truy cập", "Thiếu thông tin người dùng hoặc yêu cầu môn", "Khác — mô tả bên dưới"]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Mong đợi, thực tế và ảnh hưởng
+      description: "Ghi bước tái hiện bằng fixture, commit, log đã che thông tin riêng; có mất dữ liệu/ảnh hưởng người khác không?"
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: Đã thử gì và kết quả
+    validations:
+      required: true
+  - type: textarea
+    id: help
+    attributes:
+      label: Cần ai hỗ trợ hoặc quyết định gì
+      description: "Nêu vai trò/người đã biết, thông tin cần chốt và mức khẩn; chỉ @ đúng username đã được xác nhận."
+    validations:
+      required: true
+  - type: textarea
+    id: parallel
+    attributes:
+      label: Phần vẫn tiếp tục được và điều kiện gỡ chặn
+    validations:
+      required: true

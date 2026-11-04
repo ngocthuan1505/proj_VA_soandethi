@@ -15,6 +15,9 @@ export function validatePlan(plan,roster){
   assert(roles.includes(t.role)&&t.id.startsWith(t.role+'-'),'Invalid role/task ID');
   assert(milestones.has(t.milestone)&&['P0','P1'].includes(t.priority));
   assert(t.title&&t.files?.length&&t.acceptance?.length>=3&&t.tests,'Missing acceptance/validation');
+  assert(t.execution?.inputs&&t.execution.deliverables&&t.execution.pattern&&t.execution.steps?.length>=3,'Missing task execution details');
+  assert(t.execution.reviewers?.length&&t.execution.reviewers.every(r=>roles.includes(r)&&r!==t.role),'Invalid reviewer role');
+  assert(t.execution.courseTasks?.length&&t.execution.courseTasks.every(id=>/^CT-0[1-6]$/.test(id)),'Invalid course evidence reference');
   for(const dep of t.dependsOn)assert(tasks.has(dep)&&dep!==t.id,'Invalid dependency '+dep);
  }
  const done=new Set(),visiting=new Set();
@@ -22,9 +25,14 @@ export function validatePlan(plan,roster){
  for(const id of tasks.keys())visit(id);
  return plan;
 }
+export function executionSection(task){
+ if(!task.execution)return '';
+ const e=task.execution;
+ return `<!-- mach-course-execution:${task.id} -->\n## Bắt tay thực hiện và bằng chứng môn\n\n**Đầu vào:** ${e.inputs}\n\n**Đầu ra:** ${e.deliverables}\n\n**Pattern/công cụ:** ${e.pattern}\n\n### Các bước nhỏ\n\n${e.steps.map((s,i)=>'- [ ] '+(i+1)+'. '+s).join('\n')}\n\nĐây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.\n\n**Reviewer theo vai trò:** ${e.reviewers.join(', ')}; chờ username thực, không tự gán người chưa biết.\n\n**Hồ sơ môn liên quan:** ${e.courseTasks.join(', ')} — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).\n\n[Báo tiến độ / vướng mắc / đề nghị nghiệm thu](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/BAO_CAO.md). Đề nghị xong → Chờ duyệt; reviewer chấp nhận mới Hoàn thành.\n<!-- /mach-course-execution:${task.id} -->\n`;
+}
 export function issueBody(task,roster,mapping={}){
  const dep=id=>mapping[id]?'#'+mapping[id].number:id;
- return `<!-- mach-team:${task.id} -->\n## Phân công\n\n- Vai trò: **${task.role}**\n- Thành viên: ${roster[task.role]?'@'+roster[task.role]:'Chưa có username; nhận theo vai trò.'}\n- Milestone: ${task.milestone}; ưu tiên: ${task.priority}\n- Phụ thuộc: ${task.dependsOn.length?task.dependsOn.map(dep).join(', '):'Không — có thể bắt đầu ngay.'}\n\n## Phạm vi source\n\n${task.files.map(f=>'- `'+f+'`').join('\n')}\n\n## Tiêu chí nghiệm thu\n\n${task.acceptance.map(a=>'- [ ] '+a).join('\n')}\n\n## Kiểm tra\n\n${task.tests}\n\nĐọc [quy trình nhóm](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/README.md). Chỉ Thuận thao tác GreenNode; nhóm khác dùng fixture, không nhận URL/token. File dùng chung cần hẹn người giữ file trước PR.\n`;
+ return `<!-- mach-team:${task.id} -->\n## Phân công\n\n- Vai trò: **${task.role}**\n- Thành viên: ${roster[task.role]?'@'+roster[task.role]:'Chưa có username; nhận theo vai trò.'}\n- Milestone: ${task.milestone}; ưu tiên: ${task.priority}\n- Phụ thuộc: ${task.dependsOn.length?task.dependsOn.map(dep).join(', '):'Không — có thể bắt đầu ngay.'}\n\n## Phạm vi source\n\n${task.files.map(f=>'- `'+f+'`').join('\n')}\n\n## Tiêu chí nghiệm thu\n\n${task.acceptance.map(a=>'- [ ] '+a).join('\n')}\n\n## Kiểm tra\n\n${task.tests}\n\nĐọc [quy trình nhóm](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/README.md). Chỉ Thuận thao tác GreenNode; nhóm khác dùng fixture, không nhận URL/token. File dùng chung cần hẹn người giữ file trước PR.\n\n`+executionSection(task);
 }
 export function backlogMarkdown(plan,roster,mapping={}){
  let text='# Backlog nhóm — 24 task\n\nNguồn duy nhất: [tasks.json](tasks.json); danh sách thành viên: [roster.json](roster.json). Các task là việc cần làm, không phải chức năng đã hoàn thành. Mốc không có deadline cho đến khi nhóm chốt.\n\n';

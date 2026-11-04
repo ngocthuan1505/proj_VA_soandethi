@@ -1,0 +1,135 @@
+[
+  {
+    "id": "CT-01",
+    "title": "Kiểm chứng vấn đề với 3 người dùng và chốt Problem Brief/baseline",
+    "role": "UI-1",
+    "collaborators": [
+      "UI-2",
+      "UI-3",
+      "BE-2"
+    ],
+    "milestone": "M1",
+    "dependsOn": [],
+    "document": "PROBLEM_BRIEF.md",
+    "criteria": [
+      "Có ghi chép được phép từ ít nhất 3 người dùng thật, ẩn danh; không bịa số liệu.",
+      "Problem Brief một trang đủ stakeholder, nguyên nhân, input/output/constraints, MoSCoW và metrics/ngày cần xác nhận.",
+      "Đối chiếu 2–3 công cụ bằng cùng tác vụ, ghi khoảng trống và nguồn/ngày kiểm.",
+      "Nhóm review và ghi điều chưa xác minh; chưa coi bản nháp hiện tại là kết quả phỏng vấn."
+    ]
+  },
+  {
+    "id": "CT-02",
+    "title": "Chốt cây phân rã 3 cấp, pattern và kế hoạch làm việc",
+    "role": "BE-5",
+    "collaborators": [
+      "UI-1",
+      "BE-2",
+      "BE-3"
+    ],
+    "milestone": "M1",
+    "dependsOn": [
+      "CT-01"
+    ],
+    "document": "WBS.md",
+    "criteria": [
+      "Cây vấn đề→chức năng→lá có owner, pattern, công cụ và done-when; chỉ ra lá rủi ro nhất.",
+      "Liên kết 24 gói task với lá, tách bước quá khoảng một ngày thành issue nhỏ có tiêu chí nghiệm thu.",
+      "Phụ thuộc không trùng việc, đầu ra ghép được; Kanban cập nhật thật.",
+      "Thuận xác nhận lịch môn trước đặt deadline; có kế hoạch tương đối/WBS chờ chốt ngày."
+    ]
+  },
+  {
+    "id": "CT-03",
+    "title": "Chốt mô hình dữ liệu và hợp đồng để các phần ghép được",
+    "role": "BE-3",
+    "collaborators": [
+      "BE-2",
+      "BE-1",
+      "BE-4",
+      "UI-2"
+    ],
+    "milestone": "M1",
+    "dependsOn": [
+      "CT-02"
+    ],
+    "document": "CONTRACTS.md",
+    "criteria": [
+      "ERD/data dictionary đủ field/type/unit/nullability/ID/version; phân biệt schema cũ và đề xuất.",
+      "Contract input/output/rules/examples/errors cho API và job có fixture dùng chung.",
+      "Quyết định giữ/defer/bỏ có lý do theo mục tiêu, nêu giả định AI/API.",
+      "BE-2/3 và người dùng contract review; chưa coi ví dụ DTO là code đã chạy."
+    ]
+  },
+  {
+    "id": "CT-04",
+    "title": "Chạy PoC sửa đúng vùng có bằng chứng và kết luận",
+    "role": "BE-1",
+    "collaborators": [
+      "UI-3",
+      "BE-5",
+      "BE-2",
+      "UI-2"
+    ],
+    "milestone": "M1",
+    "dependsOn": [
+      "CT-02",
+      "CT-03"
+    ],
+    "document": "POC.md",
+    "criteria": [
+      "Chọn một câu hỏi rủi ro và chốt dữ liệu/tool/steps/ngưỡng trước chạy.",
+      "Có bộ mẫu hợp pháp và kết quả fixture/script chạy lại được gồm ca sai schema/stale/ngoài vùng/cancel.",
+      "Tách kết quả model thật với fixture; thiếu server ghi chờ phần model thật, không dùng danh sách model làm bằng chứng.",
+      "Kết luận yes/no/chưa đủ bằng chứng và hướng sửa, có người review độc lập."
+    ]
+  },
+  {
+    "id": "CT-05",
+    "title": "Trình bày thuật toán, flowchart, dry run và phân tích chi phí",
+    "role": "BE-2",
+    "collaborators": [
+      "BE-5",
+      "BE-1",
+      "BE-3"
+    ],
+    "milestone": "M2",
+    "dependsOn": [
+      "CT-03"
+    ],
+    "document": "ALGORITHM.md",
+    "criteria": [
+      "Pseudocode và flowchart đủ input/output, điều kiện dừng, nhánh lỗi, quyền/version/consent.",
+      "Trace ít nhất ca đúng, stale, ngoài vùng và cancel; khớp test Python thật.",
+      "Phân tích chi phí/bộ nhớ và đo fixture nếu tuyên bố tối ưu; không bịa benchmark.",
+      "Giải thích phần quy tắc cố định so với AI xác suất, hạn chế và trách nhiệm khi sai."
+    ]
+  },
+  {
+    "id": "CT-06",
+    "title": "Đánh giá prototype/MVP và chuẩn bị báo cáo, demo cuối",
+    "role": "BE-5",
+    "collaborators": [
+      "UI-1",
+      "UI-2",
+      "UI-3",
+      "BE-1",
+      "BE-2",
+      "BE-3",
+      "BE-4"
+    ],
+    "milestone": "M3",
+    "dependsOn": [
+      "CT-01",
+      "CT-04",
+      "CT-05"
+    ],
+    "document": "EVALUATION.md",
+    "criteria": [
+      "Có bằng chứng concept/value, functional, usability và accessibility; ghi cỡ mẫu, commit/môi trường và giới hạn.",
+      "Feedback log có vấn đề, bằng chứng, mức độ, proposed fix và kết quả kiểm lại.",
+      "Nêu giữ/sửa/bỏ, trade-off, phương án khác và mục tiêu vòng sau; không còn blocker trong phạm vi demo mới đề nghị xong.",
+      "Báo cáo/demo có truy vết CT-01…06, đóng góp từng người, source kế thừa/AI và bước chạy lại; lịch/nộp theo xác nhận lớp."
+    ]
+  }
+]

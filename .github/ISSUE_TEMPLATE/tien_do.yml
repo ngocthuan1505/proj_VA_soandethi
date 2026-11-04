@@ -1,0 +1,49 @@
+name: Cập nhật tiến độ
+description: Báo đầu ra đã làm, bằng chứng và bước tiếp theo cho task có sẵn.
+title: "[Tiến độ] Vai trò — tên task — ngày"
+labels: ["type:progress"]
+body:
+  - type: markdown
+    attributes:
+      value: "Đây là báo cáo, không thay task gốc. Sau khi gửi, dán link báo cáo vào task và cập nhật Status trên Project nếu cần. Không đưa khóa, URL server riêng hoặc dữ liệu người dùng vào đây."
+  - type: input
+    id: task
+    attributes:
+      label: Task gốc và vai trò
+      description: "Ví dụ #2 / UI-2-001 / UI-2; một báo cáo có thể link các task liên quan."
+    validations:
+      required: true
+  - type: input
+    id: period
+    attributes:
+      label: Ngày hoặc buổi làm được báo cáo
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: Trạng thái đề nghị của task gốc
+      options: ["Đang làm", "Bị chặn", "Chờ duyệt"]
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Đã làm và bằng chứng
+      description: "Nêu đầu ra cụ thể, link PR/commit/ảnh/test và kết quả. Nếu mới phân tích, ghi tài liệu đang review; chưa chạy thì nói rõ."
+    validations:
+      required: true
+  - type: textarea
+    id: next
+    attributes:
+      label: Còn lại và bước tiếp theo
+      description: "Ghi bước nhỏ dự kiến, phụ thuộc hoặc người cần review."
+    validations:
+      required: true
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Khó khăn hoặc quyết định cần hỗ trợ
+      description: "Ghi không nếu không vướng; nếu bị chặn, ghi đã thử gì và cần vai trò nào giúp."
+    validations:
+      required: true
