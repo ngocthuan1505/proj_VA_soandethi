@@ -1,5 +1,7 @@
 # Project instructions
 
+- Mỗi lượt làm việc, đọc `docs/context/README.md`, `docs/context/LY_THUYET.md` và `docs/context/THUC_HANH.md` trước khi làm phần liên quan dự án. Hai chat nghiên cứu/thuyết trình và thực hành dùng các file này làm bản bàn giao chung; không mặc định đọc lại toàn bộ lịch sử chat bên kia.
+- Trước khi kết thúc lượt có thay đổi đáng kể, cập nhật bản bàn giao đúng mảng bằng kết quả, bằng chứng, tác động tới bên kia và việc còn thiếu. Phân biệt đề xuất/thiết kế với tính năng đã chạy; không ghi đè phần bên kia chưa kiểm chứng, không lưu toàn bộ hội thoại hoặc bí mật. Không tự gửi prompt qua lại giữa chat.
 - Viết commit, tiêu đề/mô tả PR, task và tài liệu hướng dẫn bằng tiếng Việt. Chỉ giữ tiếng Anh khi cần cho tên kỹ thuật, định danh, lệnh hoặc thông báo tương thích công cụ. Không viết lại lịch sử commit đã đẩy chỉ để đổi ngôn ngữ.
 - Read `docs/team/README.md`, `docs/team/ROLES.md` and `docs/architecture/PYTHON_MIGRATION.md` before changing architecture.
 - Đọc `docs/course/README.md` khi lập task/đánh giá đồ án; truy vết nguồn slide và bằng chứng CT-01…06. Báo tiến độ/vướng/nghiệm thu theo `docs/team/BAO_CAO.md`. Không bịa phỏng vấn, số đo, kết quả PoC hoặc deadline chưa xác nhận; giữ trạng thái/assignee/checklist người khác đã cập nhật.

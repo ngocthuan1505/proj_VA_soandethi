@@ -1,5 +1,7 @@
 # Bắt đầu làm việc nhóm
 
+**Hai chat nghiên cứu và thực hành:** đọc [điểm bắt đầu và bản bàn giao chung](../context/README.md); cập nhật phần mình làm để bên kia kế thừa quyết định và bằng chứng mà không phải lục lại toàn bộ chat.
+
 **Ràng buộc môn học: Python là ngôn ngữ chính. Đọc [kế hoạch chuyển Python](../architecture/PYTHON_MIGRATION.md) và [backend/README](../../backend/README.md). Node backend hiện có chỉ là legacy reference, không phải kiến trúc đích.**
 
 Repo Private này là nguồn chung duy nhất. Tiếp tục từ MVP đang có; không tạo tám bản ứng dụng độc lập và không đổi framework chỉ để chia việc.
