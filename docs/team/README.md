@@ -6,6 +6,8 @@
 
 Repo Private này là nguồn chung duy nhất. Tiếp tục từ MVP đang có; không tạo tám bản ứng dụng độc lập và không đổi framework chỉ để chia việc.
 
+**Trước khi nhận task:** đọc [bảng chức năng demo sẵn có theo vai trò](../product/DEMO_DA_CO.md), [cách bật app và đi một vòng test](CHAY_VA_TEST_DEMO.md), [baseline đã thực chạy](../testing/BASELINE_2026_11_05.md). Dùng lại source/fixture; ghi rõ phần kế thừa, phần mới và phần chưa test. Không tính demo Node là task Python đã xong.
+
 **Vào nhóm từ đây:** [Nhật ký chung #32](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/32) · [Báo tiến độ / vướng mắc / nghiệm thu](BAO_CAO.md) · [Tài liệu môn và 6 hồ sơ CT](../course/README.md) · [Khung báo cáo đồ án](../reports/BAO_CAO_DO_AN.md). Chưa có username bảy thành viên, lịch nộp của lớp và bằng chứng người dùng; các phần này được ghi rõ cần bổ sung.
 
 Mở [bảng tiến độ kéo thả](https://github.com/users/ngocthuan1505/projects/1/views/1) hoặc [bảng danh sách](https://github.com/users/ngocthuan1505/projects/1/views/2). Đọc [hướng dẫn nhận việc, cập nhật và thông báo](BOARD.md); mỗi thẻ dẫn tới issue có chi tiết nghiệm thu.

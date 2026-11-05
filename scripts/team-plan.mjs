@@ -36,6 +36,7 @@ export function issueBody(task,roster,mapping={}){
 }
 export function backlogMarkdown(plan,roster,mapping={}){
  let text='# Backlog nhóm — 24 task\n\nNguồn duy nhất: [tasks.json](tasks.json); danh sách thành viên: [roster.json](roster.json). Các task là việc cần làm, không phải chức năng đã hoàn thành. Mốc không có deadline cho đến khi nhóm chốt.\n\n';
+ text+='**Demo để kế thừa:** [Chức năng và phần còn thiếu](../product/DEMO_DA_CO.md) · [Cách mở app và test](CHAY_VA_TEST_DEMO.md) · [Baseline thực chạy](../testing/BASELINE_2026_11_05.md). Đọc trước khi nhận task; demo Node không thay nghiệm thu Python.\n\n';
  text+='**Bảng công việc:** [Bảng tiến độ kéo thả](https://github.com/users/ngocthuan1505/projects/1/views/1) · [Danh sách công việc](https://github.com/users/ngocthuan1505/projects/1/views/2) · [Hướng dẫn cập nhật và thông báo](BOARD.md) · [Các mốc](https://github.com/'+plan.repository+'/milestones)\n\nTrạng thái hiện tại xem ở trường Status trên Project riêng tư; mỗi thẻ là issue gốc. Nhãn issue `status:*` không tự đồng bộ với bảng. Chi tiết kế hoạch dưới đây không phải báo cáo việc đã hoàn thành.\n\n';
  for(const m of plan.milestones){
   text+='## '+m.title+'\n\n'+m.description+'\n\n| Task | Vai trò / thành viên | Đầu ra | Phụ thuộc |\n|---|---|---|---|\n';

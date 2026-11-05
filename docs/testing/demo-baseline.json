@@ -1,0 +1,121 @@
+{
+  "date": "2026-11-05",
+  "sourceCommit": "71868ebab35813fdc3a16cea737fb5aa2f33e4e9",
+  "environment": {
+    "os": "Windows",
+    "node": "24.22.1",
+    "npm": "11.6.2",
+    "chrome": "156.0.8078.80",
+    "python": "3.12.14",
+    "uv": "0.13.6"
+  },
+  "install": {
+    "command": "npm ci",
+    "exitCode": 0,
+    "packages": 98
+  },
+  "suites": [
+    {
+      "name": "npm-test",
+      "command": "npm test",
+      "exitCode": 0,
+      "checks": 98,
+      "durationMs": 22334,
+      "logSha256": "68b5392dda9587e9a1be61d25998fed267ba33a9d8b8dd5d7f8c1aaf2ff452d1"
+    },
+    {
+      "name": "team",
+      "command": "npm run check:team",
+      "exitCode": 0,
+      "checks": 10,
+      "durationMs": 1130,
+      "logSha256": "6b2d632a4d809a85b409a9931e80ad3f015d29a099eb935f8720fc7aa4d52c73"
+    },
+    {
+      "name": "selection",
+      "command": "node tests/selection-browser.mjs",
+      "exitCode": 0,
+      "checks": 9,
+      "durationMs": 9331,
+      "logSha256": "7e25d6d13c870fa739d2250223a9077b582f62a37ce53b48f414b4d5e0ae7a81"
+    },
+    {
+      "name": "usability",
+      "command": "node tests/usability-browser.mjs",
+      "exitCode": 0,
+      "checks": 13,
+      "durationMs": 7885,
+      "logSha256": "cf09b37d07da199e266510749f631ddfefea2bda501b9601c0226f12df512a64"
+    },
+    {
+      "name": "curriculum",
+      "command": "node tests/curriculum-browser.mjs",
+      "exitCode": 0,
+      "checks": 13,
+      "durationMs": 9792,
+      "logSha256": "b7ab477efa3e7bdc0c937f5a2166c52465515072eb75e46e12c350631708d9b1"
+    },
+    {
+      "name": "authoring",
+      "command": "node tests/authoring-browser.mjs",
+      "exitCode": 0,
+      "checks": 12,
+      "durationMs": 17773,
+      "logSha256": "3b9308d0b477dfeb10f709d40884bae9c776876087299e2e702d343dccf51fee"
+    },
+    {
+      "name": "studio",
+      "command": "node tests/studio-browser.mjs",
+      "exitCode": 0,
+      "checks": 11,
+      "durationMs": 16639,
+      "logSha256": "f712b9324e188afc80befbe4fddc60b47de2371ae68c56a1a2a61c01dfe1d6c6"
+    },
+    {
+      "name": "workbench",
+      "command": "node tests/workbench-browser.mjs",
+      "exitCode": 0,
+      "checks": 13,
+      "durationMs": 31557,
+      "logSha256": "2932fc09d6aba073a0af9f183323596acfc7c5fa082a800dae18fd48c8e6af3a"
+    },
+    {
+      "name": "online",
+      "command": "node tests/online-browser.mjs",
+      "exitCode": 0,
+      "checks": 9,
+      "durationMs": 7216,
+      "logSha256": "8e9fab7e063cd8a8430341defad4240cdd753e320332074196dd784c5f102e41"
+    }
+  ],
+  "python": {
+    "commands": [
+      "uv sync --frozen",
+      "uv run pytest",
+      "uv run ruff check .",
+      "uv run ruff format --check .",
+      "uv run ty check src"
+    ],
+    "exitCodes": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "testsPassed": 2,
+    "pythonSelection": "existing Python 3.12.14",
+    "evidence": "Captured command output during this run",
+    "warning": "StarletteDeprecationWarning: httpx/TestClient"
+  },
+  "boundaries": {
+    "ai": "loopback fixtures only",
+    "browserSteps": 80,
+    "realTeacherStudy": false,
+    "realModelValidation": false,
+    "serverOperations": false,
+    "liveDataUsed": false,
+    "pythonBusinessMigrationComplete": false
+  },
+  "logsCommitted": false
+}

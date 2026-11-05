@@ -1,5 +1,7 @@
 # Kiểm thử và đánh giá phản biện
 
+**Baseline kỹ thuật đã chạy 05/11/2026:** xem [kết quả demo kế thừa](../testing/BASELINE_2026_11_05.md), [chức năng/giới hạn](../product/DEMO_DA_CO.md) và [cách thành viên tự test](../team/CHAY_VA_TEST_DEMO.md). Đã có regression fixture; chưa có thử nghiệm giáo viên hoặc số đo chất lượng AI. Không lấy kết quả kỹ thuật này thay phần đánh giá người dùng dưới đây.
+
 Nguồn: Topic 6 trang 17–24, 26–30, 32. Đây là kế hoạch chưa có dữ liệu thực nghiệm. BE-5 tổng hợp, từng vai trò thực hiện test phần mình; người đánh giá độc lập review kết luận.
 
 ## Bốn loại bằng chứng
