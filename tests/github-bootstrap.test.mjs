@@ -33,9 +33,12 @@ test('Bootstrap refuses public repository before any write and never assigns inv
  const f=fixture(false);await assert.rejects(()=>syncGitHub(f.api,plan,roster),/Private/);assert.equal(f.state.writes,0);
  const g=fixture();await syncGitHub(g.api,plan,roster);assert(g.state.issues.filter(i=>i.assignees.length).every(i=>Object.values(roster).includes(i.assignees[0].login)));
 });
-test('A new roster assigns only open unassigned tasks; existing assignees and closed issues remain untouched',async()=>{
- const f=fixture();await syncGitHub(f.api,plan,roster);const first=f.state.issues[0],last=f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-003 -->'));first.assignees=[{login:'already-assigned'}];last.assignees=[];last.state='closed';const openUnassigned=f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-002 -->'));openUnassigned.assignees=[];
- await syncGitHub(f.api,plan,{...roster,'UI-1':'new-teammate'});assert.equal(first.assignees[0].login,'already-assigned');assert.equal(last.assignees.length,0);const second=f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-002 -->'));assert.equal(second.assignees[0].login,'new-teammate');
+test('Roster không tự gán việc: giữ assignee tự chọn, nhiều người và issue chưa nhận',async()=>{
+ const chosen={...roster,'UI-1':'new-teammate'};const f=fixture();await syncGitHub(f.api,plan,chosen);
+ assert(f.state.issues.filter(i=>/mach-team:(?:UI|BE)-/.test(i.body)).every(i=>i.assignees.length===0));
+ const first=f.state.issues[0];first.assignees=[{login:'volunteer-a'},{login:'volunteer-b'}];const last=f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-003 -->'));last.state='closed';
+ const writes=f.state.writes;await syncGitHub(f.api,plan,chosen);assert.equal(f.state.writes,writes);assert.deepEqual(first.assignees.map(a=>a.login),['volunteer-a','volunteer-b']);
+ assert.equal(last.assignees.length,0);assert.equal(f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-002 -->')).assignees.length,0);
 });
 test('Explicit plan refresh updates only untouched generated task bodies; human changes are reported and preserved',async()=>{
  const f=fixture();await syncGitHub(f.api,plan,roster);const changed=structuredClone(plan);changed.tasks[0].title+=' updated';changed.tasks[0].acceptance.push('Additional Python criterion');changed.tasks[1].acceptance.push('Another criterion');const human=f.state.issues[1];human.body+='\nHUMAN CHANGE';const result=await syncGitHub(f.api,changed,roster,{previousPlan:plan});assert(f.state.issues[0].title.endsWith('updated'));assert(human.body.endsWith('HUMAN CHANGE'));assert(result.skippedEditedTasks.includes(plan.tasks[1].id));assert.equal(f.state.issues.length,25);

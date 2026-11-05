@@ -1,5 +1,8 @@
 # Nhận việc, báo tiến độ, báo vướng và nghiệm thu
 
+**Cách nhận việc mới:** [nghiên cứu rồi tự chọn cá nhân/nhóm](CHON_VIEC.md). Mã mảng không phải người; báo thành viên và chia Wxx/code/test/review khi làm chung.
+
+
 Issue gốc là nơi giữ acceptance và thảo luận; **Status trên Project** là nguồn tiến độ. Không lấy số commit, số dòng code hoặc phần trăm tự khai làm bằng chứng hoàn thành.
 
 **Mở ngay:** [Nhật ký tiến độ chung #32](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/32) · [Báo cáo tiến độ](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+label%3Atype%3Aprogress) · [Vướng mắc đang mở](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+is%3Aopen+label%3Atype%3Ablocker) · [Đề nghị nghiệm thu đang mở](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+is%3Aopen+label%3Atype%3Acompletion).

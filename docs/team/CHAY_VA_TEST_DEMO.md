@@ -124,7 +124,7 @@ Editor/thư viện không cần AI. Muốn thử AI thật, mở **Kết nối A
 
 ## 7. Nhận task và báo kết quả
 
-Tìm vai trò trong [bảng kế thừa](../product/DEMO_DA_CO.md), mở task `001` của mình trong [backlog](BACKLOG.md), đọc phần demo sẵn có trước khi viết code. Dùng [mẫu tiến độ/vướng mắc/nghiệm thu](BAO_CAO.md) và dẫn issue task gốc. Ghi nguồn kế thừa, phần mới của mình, test đã chạy và chưa chạy; thiếu username thì nhận theo mã vai trò, không chia sẻ tài khoản GitHub.
+Đọc [menu tự chọn việc](CHON_VIEC.md) và [bảng kế thừa](../product/DEMO_DA_CO.md), rồi đăng ký cá nhân/nhóm ở task phù hợp trong [backlog](BACKLOG.md), đọc phần demo sẵn có trước khi viết code. Dùng [mẫu tiến độ/vướng mắc/nghiệm thu](BAO_CAO.md) và dẫn issue task gốc. Ghi nguồn kế thừa, phần mới của mình, test đã chạy và chưa chạy; mã mảng không phải tên người, không chia sẻ tài khoản GitHub.
 
 Ví dụ một báo cáo hữu ích:
 

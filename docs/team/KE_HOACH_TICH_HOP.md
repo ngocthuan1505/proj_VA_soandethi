@@ -2,11 +2,13 @@
 
 Cập nhật 05/11/2026. 24 task kỹ thuật + 6 hồ sơ môn giữ ID/issue hiện có; **150 bước Wxx và 90 ca Txx là kế hoạch**, không phải 150 issue mới hoặc test đã đạt. [Task kỹ thuật](BACKLOG.md), [task hồ sơ](../course/BACKLOG_CT.md), [11 use case](../product/USE_CASES.md), [test tích hợp](../testing/KIEM_THU_TICH_HOP.md).
 
-## Một người bắt đầu như thế nào?
+## Cá nhân hoặc nhóm bắt đầu như thế nào?
 
-1. Đọc hướng dẫn demo và task theo vai trò, xem phần đã có để kế thừa. Chọn một Wxx nhỏ, ghi vào comment nhận việc; giữ một việc đang làm mỗi người.
+Chọn sau nghiên cứu theo [menu định hướng](CHON_VIEC.md), không gán chuyên môn theo thứ tự danh sách. Có thể nhiều người cùng nhận, chia Wxx/PR và chọn đầu mối bàn giao.
+
+1. Đọc hướng dẫn demo và task theo mảng tự chọn, xem phần đã có để kế thừa. Chọn một Wxx nhỏ, ghi vào comment nhận việc; giữ một việc đang làm mỗi người.
 2. Kiểm `Điều kiện bắt đầu`, dependency và contract. Có thể làm mock/fixture khi implementation chưa sẵn sàng, nhưng phải ghi chưa tích hợp. Không dùng mock để đóng nghiệm thu E2E.
-3. Hẹn người giữ file dùng chung trong issue. Bước hơn khoảng một ngày thì tạo issue con ghi cha/Wxx, owner theo vai trò, đầu ra, dependency và expected test; thêm lên Project. Không chia sẵn hàng trăm thẻ rỗng.
+3. Hẹn người giữ file dùng chung trong issue. Bước hơn khoảng một ngày thì tạo issue con ghi cha/Wxx, người/nhóm tự đăng ký, đầu ra, dependency và expected test; thêm lên Project. Không chia sẵn hàng trăm thẻ rỗng.
 4. PR nhỏ theo bước, dẫn `task/Wxx` và `task/Txx`, giải thích phần kế thừa/phần mới, chạy kiểm phù hợp. Đường dẫn artifact “đề xuất” là đầu ra sẽ tạo trong PR, không phải tài liệu đã tồn tại.
 5. Bên nhận bàn giao xác nhận dùng được contract/fixture; reviewer kiểm acceptance và bằng chứng. Chờ duyệt khác Hoàn thành. [Cách báo cáo](BAO_CAO.md).
 
