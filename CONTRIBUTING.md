@@ -3,7 +3,7 @@
 Đọc [quy trình và phân công hiện hành](docs/team/README.md) trước khi nhận task. Mỗi issue có mã vai trò, phụ thuộc và tiêu chí nghiệm thu trong [backlog](docs/team/BACKLOG.md). Mọi thao tác thực tế trên GreenNode do **Thuận/BE-1** thực hiện; người khác chỉ gửi source/test qua PR.
 
 1. Clone repo. Backend chính dùng Python 3.12+ + uv: trong `backend` chạy `uv sync --frozen`. Node.js 24+ / `npm ci` dùng UI/build và demo legacy.
-2. Tạo nhánh riêng: `git switch -c ten-ban/mo-ta-thay-doi`.
+2. Tạo nhánh riêng: `git switch -c codex/UI-1-001-mo-ta-thay-doi`.
 3. Sửa Python chạy pytest/Ruff/ty trong backend; chạy `npm test`, `npm run check:team` cho UI/baseline, thử luồng bị ảnh hưởng.
 4. Commit, push nhánh và tạo pull request về `main`. Ghi rõ thay đổi và cách đã kiểm tra.
 
