@@ -23,7 +23,7 @@ body:
     id: tests
     attributes:
       label: Cách kiểm tra và kết quả
-      description: "Ghi command, fixture, commit/môi trường và pass/fail; tách model thật khỏi fixture, UI cần ảnh phù hợp."
+      description: "Ghi task/Txx, expected/actual, command/fixture/commit/môi trường và pass/fail/chưa chạy; tách model thật khỏi fixture, UI có ảnh. Nêu IT-xx và gate liên quan, artifact đã được bên nhận review."
     validations:
       required: true
   - type: textarea

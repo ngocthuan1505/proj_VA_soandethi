@@ -58,6 +58,69 @@
           "CT-02",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Chạy được demo local, đọc D01/D12/D13/D15 và proposal; chưa cần API Python hoặc server.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Đi một vòng tạo/mở/đổi tên/tìm/lưu/xuất trên dữ liệu tự tạo; ghi màn hình và source kế thừa."
+          },
+          {
+            "id": "W02",
+            "text": "Vẽ luồng guest/member/admin, đăng nhập/hết phiên và kho rỗng/đang tải/lỗi; ghi nút quay lại và bản nháp."
+          },
+          {
+            "id": "W03",
+            "text": "Đối chiếu mỗi thao tác với API/data cần nhận; ghi field dùng thật thay vì tự đoán DTO."
+          },
+          {
+            "id": "W04",
+            "text": "Đặc tả desktop/mobile, thứ tự Tab/focus và thông báo lưu/xung đột; chỉ ra chỗ cần phối hợp UI-2/3."
+          },
+          {
+            "id": "W05",
+            "text": "Review wireframe với BE-2/UI-2/UI-3; ghi quyết định và câu hỏi còn mở vào issue."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-2",
+            "UI-2",
+            "UI-3"
+          ],
+          "artifact": "Sơ đồ màn hình/luồng, bảng trạng thái và UI→API, ảnh baseline có commit; đường dẫn đề xuất docs/design/luong-man-hinh.md."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Dùng fixture tạo đề rồi quay kho và mở lại.",
+            "expected": "Sơ đồ có đủ điểm vào/ra và dữ liệu hiển thị đúng đề."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Phiên hết hạn khi có bản nháp chưa lưu.",
+            "expected": "Thiết kế nêu cách thông báo/khôi phục, không gửi nội dung sang tài khoản khác."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Kho rỗng trên viewport hẹp và điều khiển bằng Tab.",
+            "expected": "Có CTA tạo đề, focus thấy được, nút chính truy cập được."
+          }
+        ],
+        "requirements": [
+          "R1",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-03",
+          "UC-10"
+        ]
       }
     },
     {
@@ -100,6 +163,72 @@
           "CT-04",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Có demo editor và fixture baseline; đọc mô hình QuestionVersion/richDoc và phân biệt ID với vị trí câu.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Chọn mẫu chữ Việt/công thức/bảng/hình ở Toán, Hóa và một môn văn bản; lưu bản trước và sau thao tác."
+          },
+          {
+            "id": "W02",
+            "text": "Đặc tả cấu trúc editor, vị trí công thức, vùng chọn và undo/redo; chỉ rõ hành vi đang kế thừa."
+          },
+          {
+            "id": "W03",
+            "text": "Lập bộ golden fixture round-trip richDoc→lưu→mở→Word/PDF với ID/version và ghi chú định dạng."
+          },
+          {
+            "id": "W04",
+            "text": "Chốt DTO lưu/patch và cách hiển thị revision conflict cùng BE-3/BE-2; không làm phẳng richDoc thành text."
+          },
+          {
+            "id": "W05",
+            "text": "Ghi các trường hợp chưa hỗ trợ, ảnh so sánh và quyết định review cho UI-3/BE-4."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-3",
+            "BE-4",
+            "UI-3"
+          ],
+          "artifact": "Đặc tả editor/richDoc, ma trận golden fixture và ảnh đối chiếu; đề xuất docs/design/editor-va-richdoc.md."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Phân số, bảng và hình qua lưu/mở lại/undo.",
+            "expected": "Kỳ vọng giữ nội dung, UUID, cấu trúc và vị trí công thức được ghi để tái chạy."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Chọn vùng cắt ngang cấu trúc bảng không thể bảo toàn.",
+            "expected": "Đặc tả từ chối rõ và giữ nguyên đề, không ngầm sửa cả bảng."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Hai công thức giống nhau và đoạn có nhiều dấu tiếng Việt.",
+            "expected": "Xác định đúng node/vùng, không chọn theo text trùng."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-05",
+          "UC-06",
+          "UC-08",
+          "UC-09",
+          "UC-10"
+        ]
       }
     },
     {
@@ -141,6 +270,71 @@
           "CT-03",
           "CT-04",
           "CT-06"
+        ]
+      },
+      "detail": {
+        "ready": "Có demo chat, selection/workbench fixture và input/output AI do BE-1/BE-2 đang review.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Vẽ state machine idle/clarify/preview/running/cancel/error/retry và phân biệt hỏi với sửa."
+          },
+          {
+            "id": "W02",
+            "text": "Ghi payload UI cần cho scope, version, jobId và proposal; thống nhất event và lỗi với BE-1/2/5."
+          },
+          {
+            "id": "W03",
+            "text": "Lập mock thành công, thiếu nguồn, quá vùng, stale và stream đứt; đánh dấu dữ liệu fixture rõ ràng."
+          },
+          {
+            "id": "W04",
+            "text": "Thiết kế vị trí ngữ cảnh, diff và nút xác nhận/hủy; giữ prompt và vùng đọc tin cũ khi có lỗi/tin mới."
+          },
+          {
+            "id": "W05",
+            "text": "Review keyboard/mobile và kịch bản PoC sửa một vùng; gửi quyết định cho bên backend."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-1",
+            "BE-2",
+            "BE-5"
+          ],
+          "artifact": "Sơ đồ trạng thái trợ lý, ví dụ payload/event/lỗi và mock có thể chạy; đề xuất docs/design/tro-ly-va-job.md."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Chỉ hỏi rồi yêu cầu đề xuất sửa.",
+            "expected": "Hai luồng tách bạch, tài liệu chỉ đổi sau xác nhận proposal."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Mock trả kết quả của version cũ.",
+            "expected": "Có trạng thái stale và hành động tạo lại; không xem là thành công."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Hủy ngay trước event cuối và gửi lại prompt.",
+            "expected": "Thiết kế không áp kết quả muộn hoặc nhân đôi nội dung."
+          }
+        ],
+        "requirements": [
+          "R4",
+          "R5",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-04",
+          "UC-06",
+          "UC-07",
+          "UC-11"
         ]
       }
     },
@@ -187,6 +381,73 @@
           "CT-05",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Đọc adapter/validator cũ và nguồn thiết kế; có fixture được phép. Thiếu server/model thật không chặn thiết kế.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Lập routing Sinh/Sửa/Kiểm: quy tắc cục bộ, truy xuất nguồn hay model; chỉ rõ khi cần hỏi lại."
+          },
+          {
+            "id": "W02",
+            "text": "Chốt input/output AI Python với questionId/version/scope/source locator và schema lỗi."
+          },
+          {
+            "id": "W03",
+            "text": "Đặc tả chọn/đối chiếu nguồn, yêu cầu evidence và cách báo thiếu căn cứ; tài liệu nguồn không có quyền ra lệnh."
+          },
+          {
+            "id": "W04",
+            "text": "Tạo adapter fixture valid/invalid/rate-limit/timeout/cancel; thống nhất retry và giới hạn với BE-5."
+          },
+          {
+            "id": "W05",
+            "text": "Chuẩn bị runbook cấu hình/test model chỉ cho Thuận; ghi phương án khi chưa có AI và không fallback trả phí."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-2",
+            "BE-4",
+            "BE-5",
+            "UI-3"
+          ],
+          "artifact": "Hợp đồng AI/routing/evidence, fixture request-response và runbook; đề xuất docs/contracts/ai.md."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Cùng request Sinh/Sửa/Kiểm tới adapter fixture.",
+            "expected": "Mỗi loại có schema và route rõ, check không được đọc đáp án cũ như đáp án chuẩn."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Nguồn chứa câu yêu cầu bỏ qua quyền hoặc gửi khóa.",
+            "expected": "Nội dung được coi là dữ liệu, không đổi policy/route hoặc lộ khóa."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Chưa có provider hoặc thiếu consent gửi nguồn.",
+            "expected": "Trả lý do/cách tiếp tục, không gọi nhà cung cấp khác ngầm."
+          }
+        ],
+        "requirements": [
+          "R3",
+          "R4",
+          "R5",
+          "R7"
+        ],
+        "useCases": [
+          "UC-03",
+          "UC-04",
+          "UC-06",
+          "UC-07",
+          "UC-09"
+        ]
       }
     },
     {
@@ -231,6 +492,75 @@
           "CT-05",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Đọc route Node/auth/ownership và mô hình miền; có bản draft schema từ BE-3.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Inventory route/account/workspace/source/job/proposal/export/share và caller UI; phân nhóm port."
+          },
+          {
+            "id": "W02",
+            "text": "Chốt OpenAPI DTO, validation, định dạng lỗi và mã HTTP với consumer; endpoint mới chỉ là đề xuất cho tới khi review."
+          },
+          {
+            "id": "W03",
+            "text": "Lập ma trận guest/member/admin × tài nguyên × thao tác, kể cả download/share/config AI."
+          },
+          {
+            "id": "W04",
+            "text": "Chốt session/cookie/logout/expiry, Origin/CSRF theo transport và chính sách file không tin cậy."
+          },
+          {
+            "id": "W05",
+            "text": "Tạo fixture contract có owner/ID/version khác nhau; review với UI-1/3 và BE-1/3/4/5."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "UI-1",
+            "UI-3",
+            "BE-3",
+            "BE-5"
+          ],
+          "artifact": "OpenAPI review được, bảng quyền/lỗi và fixture hợp đồng; đề xuất docs/contracts/http.md."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "UI gọi luồng đọc/lưu đề bằng fixture theo OpenAPI.",
+            "expected": "Input/output và lỗi có ví dụ khớp schema đã review."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Member đổi ID để đọc file/export của user khác.",
+            "expected": "Contract quy định từ chối phía server, không chỉ ẩn nút."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Cookie hết hạn, Origin lạ hoặc revision không đúng.",
+            "expected": "Phân biệt auth/CSRF/conflict; không mất bản nháp vì lỗi chung chung."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R5",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-04",
+          "UC-06",
+          "UC-10",
+          "UC-11"
+        ]
       }
     },
     {
@@ -273,6 +603,75 @@
           "CT-03",
           "CT-05",
           "CT-06"
+        ]
+      },
+      "detail": {
+        "ready": "Có bản xuất fixture richDoc/SQLite cũ và Abstraction của nhóm; chỉ dùng dữ liệu tự tạo.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Inventory key/prefix/owner/file/version của store cũ và các consumer; ghi record count/ID/shape fixture."
+          },
+          {
+            "id": "W02",
+            "text": "Đối chiếu ERD/data dictionary với sáu entity miền, SessionContext và tài nguyên kỹ thuật session/job/export."
+          },
+          {
+            "id": "W03",
+            "text": "Chốt ADR DB/transaction/index/concurrency/serialization cùng BE-2; lựa chọn chưa được review vẫn là đề xuất."
+          },
+          {
+            "id": "W04",
+            "text": "Đặc tả migration idempotent và backup/restore/rollback trên bản sao, bao gồm file reference và richDoc."
+          },
+          {
+            "id": "W05",
+            "text": "Tạo fixture before/after/expected và checklist review cho UI-2/BE-4/5."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-2",
+            "UI-2",
+            "BE-4",
+            "BE-5"
+          ],
+          "artifact": "ERD/data dictionary/ADR, contract repository và fixture migration có checksum; đề xuất docs/contracts/du-lieu.md."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Đối chiếu cùng đề fixture ở schema cũ và đích.",
+            "expected": "UUID, version, owner, công thức/bảng/hình và nguồn có đường ánh xạ rõ."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Payload/file reference hỏng hoặc field bắt buộc thiếu.",
+            "expected": "Có cách từ chối/cách ly và rollback; không âm thầm bỏ nội dung."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Migration chạy lại và hai phiên ghi cùng revision.",
+            "expected": "Thiết kế idempotency/conflict cụ thể, không tạo bản sao hoặc last-write-wins ngầm."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R3",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-06",
+          "UC-08",
+          "UC-09",
+          "UC-11"
         ]
       }
     },
@@ -318,6 +717,71 @@
           "CT-04",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Đọc import/export cũ và tài nguyên nguồn đã thiết kế; tự tạo file không nhạy cảm.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Tạo DOCX/PDF/PPTX/text/ảnh chữ Việt có công thức/bảng/hình và các file hỏng/quá giới hạn."
+          },
+          {
+            "id": "W02",
+            "text": "Lập expected extraction theo trang/slide/locator, ghi phần giữ được/mất/cần giáo viên xem."
+          },
+          {
+            "id": "W03",
+            "text": "Chọn thử thư viện Python/công cụ hỗ trợ theo fixture, license, kích thước và tái lập; chưa mua OCR/API."
+          },
+          {
+            "id": "W04",
+            "text": "Chốt SourceDocument/evidence và file ownership/retention với BE-2/3/1; nguồn không tự thành prompt."
+          },
+          {
+            "id": "W05",
+            "text": "Chốt bản học sinh/giáo viên, công thức OMML, PDF và ma trận kiểm trực quan cùng UI-2."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-1",
+            "BE-2",
+            "BE-3",
+            "UI-2"
+          ],
+          "artifact": "Bộ file synthetic + expected/manifest, ma trận hỗ trợ định dạng và ADR công cụ; đề xuất docs/contracts/tai-lieu.md."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Đọc file nguồn hợp lệ hai trang/slide có tiếng Việt.",
+            "expected": "Expected giữ nội dung và vị trí nguồn để truy vết lại."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "File giả đuôi, hỏng hoặc quá giới hạn cấu hình.",
+            "expected": "Hợp đồng từ chối an toàn và không tạo tài nguyên mồ côi."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Ảnh mờ, công thức OCR hoặc chart/shape không giữ được.",
+            "expected": "Báo độ không chắc/giới hạn, không tự xác nhận nội dung đúng."
+          }
+        ],
+        "requirements": [
+          "R3",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-02",
+          "UC-05",
+          "UC-10"
+        ]
       }
     },
     {
@@ -361,6 +825,79 @@
           "CT-04",
           "CT-05",
           "CT-06"
+        ]
+      },
+      "detail": {
+        "ready": "Có baseline 05/11 và CI đang có; dùng fixture, không runner server thật.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Tái lập môi trường Node/Python, phân loại unit/contract/integration/browser/model thật và lưu baseline theo commit."
+          },
+          {
+            "id": "W02",
+            "text": "Chốt event/state job cùng BE-1/2/UI-3: jobId, thứ tự, terminal state và cancellation."
+          },
+          {
+            "id": "W03",
+            "text": "Lập ma trận luồng tích hợp, lỗi mất mạng/quá hạn/quá tải và cách phục hồi không mất dữ liệu."
+          },
+          {
+            "id": "W04",
+            "text": "Chốt ngưỡng timeout/concurrency/size test cùng owner trước đo; cấu hình/đơn vị phải được ghi, không bịa SLA."
+          },
+          {
+            "id": "W05",
+            "text": "Review gates M1/M2/M3, quy trình bug/report/CI và trách nhiệm bàn giao từng nhóm."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-1",
+            "BE-2",
+            "UI-3",
+            "BE-3"
+          ],
+          "artifact": "Baseline log/manifest theo commit, contract job, kế hoạch tích hợp và cấu hình ngưỡng chờ chốt; đề xuất docs/contracts/jobs.md."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Clone sạch rồi chạy bộ kiểm đã công bố.",
+            "expected": "Tái lập được hoặc có lỗi môi trường cụ thể; không chỉ dẫn ảnh CI cũ."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Một job timeout hoặc test thất bại.",
+            "expected": "Log phân loại lỗi và giữ artifact sạch; CI không deploy hoặc lộ secret."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Hai event kết thúc trùng hoặc đến không đúng thứ tự.",
+            "expected": "Contract nêu một terminal state, dedupe và consumer xử lý được."
+          }
+        ],
+        "requirements": [
+          "R5",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-04",
+          "UC-05",
+          "UC-06",
+          "UC-07",
+          "UC-08",
+          "UC-09",
+          "UC-10",
+          "UC-11"
         ]
       }
     },
@@ -407,6 +944,70 @@
           "CT-02",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "UI-1-001/BE-2-001 có hợp đồng review được; có thể làm mock trước nhưng chỉ gọi tích hợp khi API Python tương ứng sẵn sàng.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Giữ shell/kho cũ, nối DTO để tạo/mở/đổi tên/tìm/nhân bản và trạng thái lưu theo từng PR."
+          },
+          {
+            "id": "W02",
+            "text": "Nối login/logout/expiry và member/admin; không gửi bản nháp của phiên cũ cho account mới."
+          },
+          {
+            "id": "W03",
+            "text": "Thêm màn hình chọn/xác nhận tùy chọn giáo viên; chỉ preference đã xác nhận được áp vào đề mới."
+          },
+          {
+            "id": "W04",
+            "text": "Xử lý empty/loading/error/conflict/offline và điều hướng focus/mobile theo đặc tả."
+          },
+          {
+            "id": "W05",
+            "text": "Tích hợp một lát thật với FastAPI, chạy E2E cùng BE-2/3 và ghi rõ màn hình còn mock."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-2",
+            "BE-3",
+            "UI-2"
+          ],
+          "artifact": "PR UI nhỏ, bảng caller đã chuyển/chưa chuyển, fixture và ảnh/E2E tới Python."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Đăng nhập, tạo/đổi tên/tìm đề rồi reload.",
+            "expected": "Kho lấy dữ liệu đúng owner từ Python và giữ thay đổi đã lưu."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Hết phiên giữa lúc soạn hoặc API trả lỗi.",
+            "expected": "Thông báo có hành động, giữ nháp riêng an toàn, không báo đã lưu sai."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Hai account và một preference mới chưa xác nhận.",
+            "expected": "Kho không lẫn; preference nháp không tự áp cho đề tiếp theo."
+          }
+        ],
+        "requirements": [
+          "R1",
+          "R5",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-03",
+          "UC-10"
+        ]
       }
     },
     {
@@ -452,6 +1053,72 @@
           "CT-04",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Baseline UI-2-001 và schema BE-3-001 đã review; cần API lưu/version thật trước nghiệm thu tích hợp.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Giữ TipTap/MathLive và mẫu đa môn; sửa helper chung cho lỗi đã tái hiện thay vì viết lại editor."
+          },
+          {
+            "id": "W02",
+            "text": "Nối load/save richDoc với schema Python, giữ UUID/node/math/table/figure và đánh dấu trạng thái lưu."
+          },
+          {
+            "id": "W03",
+            "text": "Bảo toàn vùng ngoài thay đổi, undo/redo cả transaction và selection khi modal/chat mở/đóng."
+          },
+          {
+            "id": "W04",
+            "text": "Hiển thị conflict/stale và lựa chọn đọc lại/giữ nháp theo contract; không ghi đè im lặng."
+          },
+          {
+            "id": "W05",
+            "text": "Chạy golden đa môn và ảnh Word/PDF cùng BE-3/4; nộp PR theo một luồng có regression."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-3",
+            "BE-4",
+            "UI-3"
+          ],
+          "artifact": "PR editor/caller Python, golden round-trip và ảnh chênh lệch trước-sau."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Chèn phân số/bảng/hình, lưu Python, reload rồi undo sửa mới.",
+            "expected": "Nội dung/ID/định dạng ngoài thay đổi giữ đúng."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Server báo conflict hoặc trả richDoc không hợp lệ.",
+            "expected": "Không đè bản đang mở, nêu cách phục hồi và giữ bản gốc."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Công thức trùng, text nhiều đoạn và một ô bảng.",
+            "expected": "Chọn đúng node/vùng; phần không hỗ trợ được từ chối rõ."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-05",
+          "UC-06",
+          "UC-08",
+          "UC-09",
+          "UC-10"
+        ]
       }
     },
     {
@@ -496,6 +1163,71 @@
           "CT-03",
           "CT-04",
           "CT-06"
+        ]
+      },
+      "detail": {
+        "ready": "Contract UI-3/BE-1/BE-2/BE-5 đã review; dùng mock để làm UI nhưng nghiệm thu phải nối job/proposal Python.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Nối gửi hỏi/làm rõ/sinh/sửa với snapshot, source và scope/version đúng hợp đồng."
+          },
+          {
+            "id": "W02",
+            "text": "Hiện diff đúng nội dung; xác nhận mới gọi apply, không lấy câu trả lời chat làm đề đã lưu."
+          },
+          {
+            "id": "W03",
+            "text": "Xử lý event tiến độ, thứ tự/dedupe, hủy/retry/disconnect và kết quả đến muộn."
+          },
+          {
+            "id": "W04",
+            "text": "Giữ prompt, vị trí cuộn, ngữ cảnh và quyền sửa khi lỗi; gỡ chip phải gỡ phạm vi thật."
+          },
+          {
+            "id": "W05",
+            "text": "Chạy PoC fixture và E2E với backend Python, gồm stale/quá vùng/undo; tách model thật khỏi mock."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-1",
+            "BE-2",
+            "BE-5"
+          ],
+          "artifact": "PR tích hợp trợ lý, fixture event/proposal và log E2E vào Python."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Hỏi rồi sửa vùng, xem diff và xác nhận một lần.",
+            "expected": "Hỏi không ghi đề; apply đúng version/phạm vi và undo nguyên transaction."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Proposal quá vùng hoặc scope hết hiệu lực.",
+            "expected": "Không áp nội dung và không ngầm mở rộng phạm vi."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Nhấn hủy/retry khi stream đứt hoặc response cũ tới.",
+            "expected": "Không nhân đôi/ghi muộn; prompt và phần đã lưu vẫn còn."
+          }
+        ],
+        "requirements": [
+          "R4",
+          "R5",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-04",
+          "UC-06",
+          "UC-07",
+          "UC-11"
         ]
       }
     },
@@ -545,6 +1277,74 @@
           "CT-05",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Hợp đồng AI/HTTP/source đã review; có fixture repo/job. Không cần GreenNode để implement/test Python.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Implement một adapter Python được chọn theo contract và routing rule/retrieval/model; mở rộng provider theo test parity."
+          },
+          {
+            "id": "W02",
+            "text": "Truy xuất nguồn được phép theo owner/version/locator; giữ evidence và báo thiếu căn cứ thay vì bịa trích dẫn."
+          },
+          {
+            "id": "W03",
+            "text": "Validate schema, toán/cấu trúc hỗ trợ, scope/baseVersion và trạng thái trước khi trả proposal; check không sao chép đáp án cũ."
+          },
+          {
+            "id": "W04",
+            "text": "Chặn lệnh giả trong nguồn, thiếu consent, timeout/refusal/rate-limit và fallback trả phí ngầm; phối hợp cancel với BE-5."
+          },
+          {
+            "id": "W05",
+            "text": "Chạy golden fixture so Node, log PoC và giới hạn; chỉ Thuận thử model thật sau khi có cấu hình hợp lệ."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-2",
+            "BE-4",
+            "BE-5",
+            "UI-3"
+          ],
+          "artifact": "Service/adapter/validator Python và pytest contract, fixture retrieval/evidence, log PoC không có khóa."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Request sửa hợp lệ có nguồn đã chọn.",
+            "expected": "Python trả proposal có scope/version/evidence hợp lệ, chưa tự ghi đề."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Response sai schema/ngoài vùng hoặc locator không tồn tại.",
+            "expected": "Từ chối/đánh dấu cần xem, không trả trạng thái đã kiểm đúng."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Provider timeout, nguồn chứa prompt injection hoặc không consent.",
+            "expected": "Không lộ key, không gọi provider khác ngầm, dữ liệu đề giữ nguyên."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R3",
+          "R4",
+          "R5",
+          "R7"
+        ],
+        "useCases": [
+          "UC-03",
+          "UC-04",
+          "UC-06",
+          "UC-07",
+          "UC-09"
+        ]
       }
     },
     {
@@ -592,6 +1392,75 @@
           "CT-05",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "BE-2-001/BE-3-001 đã chốt; repository có interface fixture để làm song song, luồng thật cần repository Python.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Implement session/auth/role dependency và ownership phía server cho từng router FastAPI."
+          },
+          {
+            "id": "W02",
+            "text": "Implement API đề/nguồn/preference/config/proposal/share/export theo DTO, kiểm input và lỗi nhất quán."
+          },
+          {
+            "id": "W03",
+            "text": "Confirm proposal trong transaction: đối chiếu owner/baseVersion/scope, chỉ ghi một lần và invalidation trạng thái liên quan."
+          },
+          {
+            "id": "W04",
+            "text": "Bảo vệ upload/download/config, Origin/CSRF, session expiry/logout và lỗi không lộ secret."
+          },
+          {
+            "id": "W05",
+            "text": "Chạy pytest dương/âm và contract UI, ghi endpoint đã chuyển/chưa chuyển; không route nghiệp vụ về Node."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-3",
+            "UI-1",
+            "UI-3",
+            "BE-5"
+          ],
+          "artifact": "Router/auth/dependencies Python, OpenAPI thực sinh, pytest quyền/version/idempotency và bảng parity route."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Owner tạo/lưu đề rồi confirm proposal đúng version.",
+            "expected": "API/Python repository trả dữ liệu đúng contract và ghi một revision hợp lệ."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "User khác gọi ID đề/file/export/config hoặc Origin không hợp lệ.",
+            "expected": "Server từ chối theo contract, không lộ tài nguyên/khóa qua error."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Confirm hai lần, phiên hết hạn hoặc baseVersion cũ.",
+            "expected": "Không ghi lặp/ghi đè; phản hồi lỗi hoặc kết quả idempotent đã được chốt."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R5",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-04",
+          "UC-06",
+          "UC-10",
+          "UC-11"
+        ]
       }
     },
     {
@@ -637,6 +1506,75 @@
           "CT-03",
           "CT-05",
           "CT-06"
+        ]
+      },
+      "detail": {
+        "ready": "ADR/schema/repository contract đã review; có DB synthetic cũ và expected checksum, không dùng DB thật.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Implement Python repository/transaction/constraint theo ADR, giữ ID/owner/revision và richDoc đầy đủ."
+          },
+          {
+            "id": "W02",
+            "text": "Lưu source/version/evidence và preference có trạng thái xác nhận; liên kết bảng/hình/ngữ liệu theo ID ổn định."
+          },
+          {
+            "id": "W03",
+            "text": "Implement optimistic concurrency và apply nhiều field trong một transaction, rollback nếu lỗi giữa chừng."
+          },
+          {
+            "id": "W04",
+            "text": "Viết migration idempotent cùng backup/restore trên bản sao; kiểm file reference, record count và checksum."
+          },
+          {
+            "id": "W05",
+            "text": "Nối consumer API/document/job bằng contract tests, nộp cách rollback và bảng dữ liệu trước-sau."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-2",
+            "BE-4",
+            "BE-5",
+            "UI-2"
+          ],
+          "artifact": "Repository/migration Python, fixture trước-sau, checksum và script/runbook restore bản sao."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Port workspace có richDoc, nhiều version, file nguồn và preference.",
+            "expected": "ID/owner/nội dung/revision khớp expected, không mất công thức hay nguồn."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Migration lỗi giữa chừng hoặc một field patch không hợp lệ.",
+            "expected": "Rollback nguyên transaction, bản trước vẫn đọc được."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Chạy lại migration và hai writer cùng revision.",
+            "expected": "Không nhân đôi record; một writer bị conflict thay vì ghi đè."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R3",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-06",
+          "UC-08",
+          "UC-09",
+          "UC-11"
         ]
       }
     },
@@ -687,6 +1625,71 @@
           "CT-04",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Contract tài liệu/HTTP/data đã review, fixture định dạng đã có; quyền nguồn/export phải do Python kiểm.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Implement ISourceReader/extraction Python theo kiểu file, giữ trang/slide/locator và metadata nguồn."
+          },
+          {
+            "id": "W02",
+            "text": "Validate loại/kích thước/nội dung file và ownership, cleanup khi lỗi; không tin đuôi file hay text OCR."
+          },
+          {
+            "id": "W03",
+            "text": "Implement OCR với trạng thái không chắc; cho preview/xác nhận trước dùng làm nguồn hoặc đề."
+          },
+          {
+            "id": "W04",
+            "text": "Implement/điều phối xuất Word công thức sửa được, PDF/HTML và bản học sinh/giáo viên, không gọi Node core."
+          },
+          {
+            "id": "W05",
+            "text": "Golden test round-trip và quyền download, báo rõ chart/shape/công thức OCR chưa giữ; tích hợp UI-2."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-1",
+            "BE-2",
+            "BE-3",
+            "UI-2"
+          ],
+          "artifact": "Document service Python, fixture expected, log extraction/export và ma trận định dạng thực đạt."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Nhập nguồn hai trang rồi xuất đề có công thức/bảng.",
+            "expected": "Metadata/locator giữ được, Word/PDF hợp lệ và tách teacher/student."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "File giả định dạng, quá lớn, hỏng hoặc khác owner.",
+            "expected": "Không parse vô hạn/ghi file mồ côi, lỗi rõ và không truy cập dữ liệu người khác."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "OCR thiếu ký hiệu/nguồn chứa lệnh giả.",
+            "expected": "Giữ phần không chắc để duyệt; nội dung không trở thành chỉ dẫn hệ thống."
+          }
+        ],
+        "requirements": [
+          "R3",
+          "R5",
+          "R6",
+          "R7"
+        ],
+        "useCases": [
+          "UC-02",
+          "UC-05",
+          "UC-10"
+        ]
       }
     },
     {
@@ -736,6 +1739,80 @@
           "CT-05",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Job/event contract và repo/API/AI interface đã review; cần service Python thật cho test tích hợp cuối.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Implement job state machine và giới hạn tài nguyên theo cấu hình đã chốt; persist owner/jobId/baseVersion."
+          },
+          {
+            "id": "W02",
+            "text": "Implement SSE/thứ tự/dedupe, status/reconnect và một terminal state; phối hợp UI-3/BE-1."
+          },
+          {
+            "id": "W03",
+            "text": "Implement cancellation/timeout/retry/idempotency, dọn tài nguyên và chặn commit kết quả muộn."
+          },
+          {
+            "id": "W04",
+            "text": "Test nhiều job theo giới hạn cấu hình, disconnect/duplicate/stale và startup recovery; đo trên fixture."
+          },
+          {
+            "id": "W05",
+            "text": "Nối pytest/contract/E2E vào CI không secret, ghi config và artifact sạch; không auto-deploy GreenNode."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-1",
+            "BE-2",
+            "BE-3",
+            "UI-3"
+          ],
+          "artifact": "Job/SSE/cancel Python, test tích hợp/đồng thời và log giới hạn đo được, CI fixture."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Job chạy và UI reconnect nhận kết quả.",
+            "expected": "Cùng jobId/owner, thứ tự rõ, terminal state và revision khớp."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Hủy/timeout rồi worker trả muộn.",
+            "expected": "Không commit đề; giải phóng tài nguyên, trạng thái nhất quán."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Vượt giới hạn cấu hình hoặc gửi retry/event trùng.",
+            "expected": "Từ chối/xếp hàng theo contract, không tạo side effect lặp hoặc hứa SLA chưa đo."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R5",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-04",
+          "UC-05",
+          "UC-06",
+          "UC-07",
+          "UC-08",
+          "UC-09",
+          "UC-10",
+          "UC-11"
+        ]
       }
     },
     {
@@ -780,6 +1857,69 @@
           "CT-02",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "UI/API Python lát tương ứng đã nối; có account fixture và candidate SHA, không dùng production data.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Tái chạy luồng kho/tài khoản/preference bằng Python API với Node API tắt."
+          },
+          {
+            "id": "W02",
+            "text": "Kiểm guest/member/admin, hết phiên, offline/conflict và kho rỗng/lỗi trên candidate."
+          },
+          {
+            "id": "W03",
+            "text": "Kiểm viewport hẹp, keyboard/focus/label và đường quay lại; nhờ người khác làm tác vụ từ hướng dẫn."
+          },
+          {
+            "id": "W04",
+            "text": "Ghi lỗi theo severity và sửa/retest từng issue; không dùng ảnh đẹp thay xác nhận dữ liệu."
+          },
+          {
+            "id": "W05",
+            "text": "Nộp ảnh/log/checklist và giới hạn cho BE-2/5 review; user study đi cùng CT-01/06 có consent."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-2",
+            "BE-5"
+          ],
+          "artifact": "Biên bản nghiệm thu UI kho/tài khoản theo SHA, ảnh/keyboard log và bug đã retest."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Máy/context mới tạo→tìm→mở→đổi tên→reload đề.",
+            "expected": "Luồng thật vào Python, không dữ liệu fixture hardcode."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Account B truy cập đường dẫn của A và session hết hạn khi soạn.",
+            "expected": "Không lộ kho/nháp; có cách đăng nhập lại an toàn."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Mobile và chỉ Tab trong kho rỗng/modal.",
+            "expected": "Không mất focus/CTA hoặc buộc dùng chuột cho thao tác chính."
+          }
+        ],
+        "requirements": [
+          "R1",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-03",
+          "UC-10"
+        ]
       }
     },
     {
@@ -796,7 +1936,8 @@
       "dependsOn": [
         "UI-2-002",
         "BE-3-002",
-        "BE-4-002"
+        "BE-4-002",
+        "BE-2-002"
       ],
       "acceptance": [
         "Bộ mẫu Toán/Lý/Hóa/Sinh/Văn/Anh và mẫu lớp nhỏ giữ được nội dung khi lưu/xuất.",
@@ -824,6 +1965,72 @@
           "CT-03",
           "CT-04",
           "CT-06"
+        ]
+      },
+      "detail": {
+        "ready": "Editor nối lưu Python và import/export thật; baseline golden/ảnh trước có sẵn, candidate đã chốt SHA.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Chạy ma trận Toán/Hóa/môn văn bản với phân số/hệ/ma trận/bảng/hình/ngữ liệu nhiều dòng."
+          },
+          {
+            "id": "W02",
+            "text": "Kiểm chọn/sửa/undo/reload, hai phiên conflict và tách bản học sinh/giáo viên."
+          },
+          {
+            "id": "W03",
+            "text": "Đối chiếu bằng mắt Word/PDF, thử sửa công thức trong Word; chưa có môi trường thì ghi pending và không tick."
+          },
+          {
+            "id": "W04",
+            "text": "Kiểm mobile/IME/keyboard, câu rất dài/bảng qua trang và ghi giới hạn paginate."
+          },
+          {
+            "id": "W05",
+            "text": "Retest bug, nộp fixture + ảnh expected/actual + consumer API đã kiểm cho reviewer."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-3",
+            "BE-4",
+            "BE-5"
+          ],
+          "artifact": "Ma trận editor/print đã đánh kết quả theo SHA, file synthetic đối chiếu và danh sách pending/bug."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Lưu/mở lại đề đa môn rồi xuất teacher/student.",
+            "expected": "RichDoc và bản in giữ nội dung, đáp án chỉ ở bản phù hợp."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Lưu đồng thời hoặc chọn vùng không bảo toàn được.",
+            "expected": "Không mất bản trước, thông báo xử lý rõ."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Hai công thức trùng, bảng dài và IME tiếng Việt.",
+            "expected": "Đúng node/vùng; lệch in hoặc giới hạn được ghi bằng chứng, không che lỗi."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-05",
+          "UC-06",
+          "UC-08",
+          "UC-09",
+          "UC-10"
         ]
       }
     },
@@ -869,6 +2076,72 @@
           "CT-03",
           "CT-04",
           "CT-06"
+        ]
+      },
+      "detail": {
+        "ready": "Chat/proposal/job Python đã tích hợp; fixture failure và candidate SHA thống nhất với BE-1/5.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Chạy hỏi→đề xuất→diff→confirm→undo vào Python, đo vùng ngoài không thay đổi."
+          },
+          {
+            "id": "W02",
+            "text": "Chạy thiếu source/scope, response sai schema, stale version và source bị đổi giữa lúc job chạy."
+          },
+          {
+            "id": "W03",
+            "text": "Chạy cancel/retry/reconnect/trả muộn và prompt tiếp nối, kiểm không nhân đôi side effect."
+          },
+          {
+            "id": "W04",
+            "text": "Kiểm chat mobile/IME/cuộn/focus và lời người dùng khi error; reviewer dùng hướng dẫn để tái hiện."
+          },
+          {
+            "id": "W05",
+            "text": "Nộp log job/version sạch, ảnh diff và bảng fixture/model thật riêng cho BE-1/5."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-1",
+            "BE-5",
+            "BE-2"
+          ],
+          "artifact": "Biên bản E2E trợ lý và error matrix, log scope/version/job, bug retest theo SHA."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Hỏi rồi sửa đúng bước barem và undo.",
+            "expected": "Hỏi không ghi đề; chỉ phần được duyệt đổi, undo khôi phục đúng cụm."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Đề đổi khi đang chờ AI hoặc proposal chạm câu khác.",
+            "expected": "Apply bị chặn, bản mới của người dùng giữ nguyên."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Hủy sát event cuối rồi retry sau mất mạng.",
+            "expected": "Không áp kết quả muộn/lặp; không kẹt editor hoặc mất prompt."
+          }
+        ],
+        "requirements": [
+          "R4",
+          "R5",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-04",
+          "UC-06",
+          "UC-07",
+          "UC-11"
         ]
       }
     },
@@ -920,6 +2193,73 @@
           "CT-05",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "AI/Python/API/DB/document/job đã tích hợp; chỉ Thuận có quyền/cấu hình server. Fixture có thể hoàn tất trước, model thật còn thiếu phải ghi pending.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Chốt provider/model/task/dataset/commit và ngưỡng đánh giá trước smoke; không dùng key cũ trong chat."
+          },
+          {
+            "id": "W02",
+            "text": "Chạy model thật trên mẫu được phép cho Sinh/Sửa/Kiểm, ghi chất lượng/evidence/lỗi và giới hạn."
+          },
+          {
+            "id": "W03",
+            "text": "Đối chiếu routing/consent/timeout/cancel/version và không fallback trả phí; phân biệt provider hoạt động với đáp án đúng."
+          },
+          {
+            "id": "W04",
+            "text": "Review runbook khôi phục/cấu hình/model/license/rollback; chỉ Thuận thực hiện thao tác hạ tầng khi quyết định sẵn sàng."
+          },
+          {
+            "id": "W05",
+            "text": "Bàn giao kết quả kỹ thuật cho BE-5; quyết định mở/đóng web là phê duyệt riêng của owner, không tự từ CI."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-5",
+            "BE-2",
+            "UI-3"
+          ],
+          "artifact": "Báo cáo model thật theo task/commit, error taxonomy và runbook owner; pending rõ nếu chưa có server/quota."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Model thật xử lý bộ mẫu đã chốt.",
+            "expected": "Lưu model/config không bí mật, input được phép, output và đánh giá; không suy độ đúng từ HTTP 200."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Quota/timeout/refusal hoặc trích nguồn sai.",
+            "expected": "Không fallback ngầm/đánh dấu đúng; có lý do, dữ liệu gốc và đường khôi phục."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Không có GreenNode hoặc quyền provider.",
+            "expected": "Ghi bị chặn cho phần real-model; không lấy fixture làm bằng chứng hoàn tất."
+          }
+        ],
+        "requirements": [
+          "R3",
+          "R4",
+          "R5",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-03",
+          "UC-04",
+          "UC-06",
+          "UC-07",
+          "UC-09"
+        ]
       }
     },
     {
@@ -967,6 +2307,75 @@
           "CT-05",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "API/auth/repository/document Python thật đã có, candidate và ma trận quyền đã chốt.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Chạy ma trận guest/member/admin cho đề/nguồn/job/proposal/config/export/share và các ID khác owner."
+          },
+          {
+            "id": "W02",
+            "text": "Kiểm session cookie, logout/expiry, Origin/CSRF, input/file validation và lỗi không lộ thông tin."
+          },
+          {
+            "id": "W03",
+            "text": "Kiểm replay/confirm trùng/stale/đổi owner và transaction khi lỗi một phần."
+          },
+          {
+            "id": "W04",
+            "text": "Thử nguồn chứa lệnh giả và các thao tác bỏ qua UI; server vẫn enforce quyền/version/consent."
+          },
+          {
+            "id": "W05",
+            "text": "Review OpenAPI parity, bug/severity/giới hạn; chỉ đề nghị mở đăng ký trong phạm vi auth đã nghiệm thu."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-3",
+            "BE-5",
+            "UI-1"
+          ],
+          "artifact": "Ma trận quyền và negative tests theo SHA, OpenAPI khớp thực chạy, bug và quyết định phạm vi đăng ký."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Owner dùng full luồng và member dùng phần được phép.",
+            "expected": "API đúng contract và UI không cần bypass kiểm quyền."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Đổi ID tài nguyên, dùng phiên đã logout hoặc payload không hợp lệ.",
+            "expected": "Từ chối phía Python, không trả data/file/secret của người khác."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Replay confirm, share bị thu hồi hoặc hết hạn nếu hỗ trợ.",
+            "expected": "Không ghi lặp/ghi cũ; link thu hồi mất quyền xem theo contract."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R5",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-04",
+          "UC-06",
+          "UC-10",
+          "UC-11"
+        ]
       }
     },
     {
@@ -1013,6 +2422,75 @@
           "CT-05",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Migration/repository Python đã có, fixture multi-owner/richDoc/file và runbook bản sao; không thao tác DB production.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Tạo backup nhất quán của DB fixture cùng manifest file/version/config schema không có secret."
+          },
+          {
+            "id": "W02",
+            "text": "Restore vào thư mục/DB mới, chạy integrity/record count/checksum và consumer smoke."
+          },
+          {
+            "id": "W03",
+            "text": "Diễn tập lỗi giữa migration, rollback và chạy lại; giữ bản cũ và ID/owner/revision."
+          },
+          {
+            "id": "W04",
+            "text": "Kiểm concurrent writes, source đổi version, xóa đề/file và liên kết snapshot theo quy tắc đã chốt."
+          },
+          {
+            "id": "W05",
+            "text": "Bàn giao lệnh/dataset/log và điều kiện rollback cho BE-5/Thuận; chưa diễn tập thật thì không tick production restore."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-2",
+            "BE-4",
+            "BE-5"
+          ],
+          "artifact": "Biên bản backup→restore→verify trên bản sao, manifest/checksum và rollback có kết quả."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Restore backup fixture sang DB trống rồi mở/lưu/xuất.",
+            "expected": "Đúng số record/ID/owner/revision/nội dung và file tham chiếu đọc được."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Backup thiếu file hoặc migration dừng nửa chừng.",
+            "expected": "Phát hiện thiếu/rollback an toàn, không tự nhận restore thành công."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Chạy restore/migration lại và hai writer ghi cạnh tranh.",
+            "expected": "Idempotent theo contract, không nhân bản hoặc ghi đè im lặng."
+          }
+        ],
+        "requirements": [
+          "R2",
+          "R3",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-06",
+          "UC-08",
+          "UC-09",
+          "UC-11"
+        ]
       }
     },
     {
@@ -1030,7 +2508,9 @@
       ],
       "dependsOn": [
         "BE-4-002",
-        "UI-2-002"
+        "UI-2-002",
+        "BE-2-002",
+        "BE-3-002"
       ],
       "acceptance": [
         "Đối chiếu mẫu chữ Việt/công thức/bảng/hình/điểm bằng mắt và tự động.",
@@ -1059,6 +2539,70 @@
           "CT-04",
           "CT-06"
         ]
+      },
+      "detail": {
+        "ready": "Import/export, API ownership và repository Python đã có; có bộ file hợp pháp và candidate SHA.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Chạy ma trận định dạng/chữ Việt/công thức/bảng/hình/điểm, gồm hỏng/quá lớn và OCR không chắc."
+          },
+          {
+            "id": "W02",
+            "text": "Đối chiếu source locator/evidence sau import, sửa nguồn và import lại không làm sai trích dẫn cũ."
+          },
+          {
+            "id": "W03",
+            "text": "Mở file teacher/student bằng công cụ thực; kiểm OMML sửa được, hình/điểm/phân trang và không lộ ghi chú."
+          },
+          {
+            "id": "W04",
+            "text": "Kiểm download/auth/owner/share/revoke và cleanup khi lỗi bằng service Python thật."
+          },
+          {
+            "id": "W05",
+            "text": "Công bố file mẫu/expected/actual, giới hạn chart/shape/OCR và hướng dẫn giáo viên xem lại."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "UI-2",
+            "BE-2",
+            "BE-5"
+          ],
+          "artifact": "Ma trận import/export đã đánh kết quả, file synthetic và ảnh kiểm trực quan, quyền file và bug retest."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "DOCX/PDF/PPTX/ảnh hợp lệ qua import và xuất đề đa môn.",
+            "expected": "Nội dung/nguồn và bản in đạt kỳ vọng đã chốt, không mất dữ liệu ngầm."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "File sai owner/hỏng/quá lớn và export thất bại.",
+            "expected": "Từ chối đúng, không lộ file hay bỏ tài nguyên mồ côi."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "Ngữ liệu nhiều dòng, bảng qua trang, OCR công thức sai.",
+            "expected": "Có kiểm lại/giới hạn rõ, không tự khẳng định nhận dạng chính xác."
+          }
+        ],
+        "requirements": [
+          "R3",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-02",
+          "UC-05",
+          "UC-10"
+        ]
       }
     },
     {
@@ -1081,7 +2625,8 @@
         "UI-3-003",
         "BE-2-003",
         "BE-3-003",
-        "BE-4-003"
+        "BE-4-003",
+        "BE-1-003"
       ],
       "acceptance": [
         "CI xanh đúng commit/tag dự kiến; test UI và giới hạn tải có số liệu, không bịa khả năng chịu tải.",
@@ -1110,6 +2655,82 @@
           "CT-04",
           "CT-05",
           "CT-06"
+        ]
+      },
+      "detail": {
+        "ready": "Các task nghiệm thu UI/API/DB/document và BE-1-003 đủ bằng chứng; thiếu real-model phải giữ candidate pending, không tuyên bố hoàn tất.",
+        "work": [
+          {
+            "id": "W01",
+            "text": "Chốt candidate SHA, môi trường/config và danh sách slice Python; tắt Node API khi chạy luồng chính."
+          },
+          {
+            "id": "W02",
+            "text": "Chạy regression/contract/E2E, quyền/phạm vi/job/restore/export và giới hạn tài nguyên đã chốt; lưu log sạch."
+          },
+          {
+            "id": "W03",
+            "text": "Đối chiếu R1–R8, 11 use case và CT-01…06; tách fixture/model thật/usability, so baseline và bug còn mở."
+          },
+          {
+            "id": "W04",
+            "text": "Tổng hợp source kế thừa/đóng góp từng người/AI hỗ trợ, báo cáo và demo từ clone sạch có người khác tái lập."
+          },
+          {
+            "id": "W05",
+            "text": "Review candidate/rollback và pending với nhóm, bàn giao owner duyệt phát hành riêng; không tự deploy/mua dịch vụ."
+          }
+        ],
+        "handoff": {
+          "to": [
+            "BE-1",
+            "BE-2",
+            "UI-1"
+          ],
+          "artifact": "Biên bản candidate theo SHA, ma trận R/UC/CT có bằng chứng, known issues, hướng dẫn tái lập và gói báo cáo/demo."
+        },
+        "cases": [
+          {
+            "id": "T01",
+            "kind": "happy",
+            "action": "Người khác clone sạch, chạy Python và full luồng chính.",
+            "expected": "Không cần Node API hay key thật trong CI; output và source provenance tái lập được."
+          },
+          {
+            "id": "T02",
+            "kind": "error",
+            "action": "Còn lỗi mất dữ liệu/quyền hoặc thiếu bằng chứng real-model.",
+            "expected": "Không release/đóng toàn task; ghi blocker/ngoại lệ cần owner quyết định."
+          },
+          {
+            "id": "T03",
+            "kind": "edge",
+            "action": "CI xanh nhưng usability, Word hoặc restore chưa kiểm.",
+            "expected": "Mục đó vẫn pending, không dùng CI thay mọi tiêu chí nghiệm thu."
+          }
+        ],
+        "requirements": [
+          "R1",
+          "R2",
+          "R3",
+          "R4",
+          "R5",
+          "R6",
+          "R7",
+          "R8"
+        ],
+        "useCases": [
+          "UC-01",
+          "UC-02",
+          "UC-03",
+          "UC-04",
+          "UC-05",
+          "UC-06",
+          "UC-07",
+          "UC-08",
+          "UC-09",
+          "UC-10",
+          "UC-11"
         ]
       }
     }

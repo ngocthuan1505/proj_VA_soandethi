@@ -4,6 +4,7 @@ Cập nhật: 05/11/2026.
 
 ## Hiện trạng đã kiểm
 
+- Task được bổ sung chi tiết: 24 kỹ thuật + 6 hồ sơ, 150 bước Wxx và 90 ca Txx có expected result, điều kiện bắt đầu và artifact/consumer. [11 use case](../product/USE_CASES.md), [test tích hợp](../testing/KIEM_THU_TICH_HOP.md), [hợp đồng/gates](../team/KE_HOACH_TICH_HOP.md). Đây là **kế hoạch cần làm**, không phải code/test đã hoàn thành; giữ tiến độ/assignee/checklist cũ khi đồng bộ. Thêm bốn phụ thuộc nghiệm thu được giải thích trong gates.
 - Đã kiểm kê [16 nhóm chức năng demo có sẵn](../product/DEMO_DA_CO.md), phân việc kế thừa theo tám vai trò và viết [hướng dẫn thành viên tự mở/dùng/test app](../team/CHAY_VA_TEST_DEMO.md). [Baseline 05/11](../testing/BASELINE_2026_11_05.md): 98 test Node, 10 test kế hoạch, 80 bước UI trong 7 bộ và 2 pytest nền đều đạt; ruff/format/ty đạt. Dùng clone tạm riêng để cài/test, không dùng DB cá nhân; chuyển tài liệu về thư mục chung bằng commit sau kiểm tra sạch.
 - Bằng chứng trên chỉ là fixture/cục bộ, không là nghiệm thu AI thật/hosting/giáo viên hoặc hoàn tất Python. Có một deprecation warning Starlette/httpx trong pytest; chưa sửa dependency vì test vẫn đạt. Báo cáo ghi rõ phần chưa thử và log manifest; không đính kèm tài liệu thật.
 - Source MVP kế thừa còn frontend/editor và Node backend ở gốc. `backend/` mới là nền FastAPI với health/readiness; chưa chuyển đủ auth/database/core/AI/job/import-export. [Hiện trạng](../architecture/CURRENT_STATE.md), [kế hoạch Python](../architecture/PYTHON_MIGRATION.md).

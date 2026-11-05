@@ -1,5 +1,7 @@
 # Mạch — Trợ lý AI soạn đề thi
 
+**Nhận việc chi tiết:** [Task kỹ thuật](docs/team/BACKLOG.md) · [Task hồ sơ môn](docs/course/BACKLOG_CT.md) · [11 use case](docs/product/USE_CASES.md) · [Bàn giao và gates M1–M3](docs/team/KE_HOACH_TICH_HOP.md) · [Test tích hợp](docs/testing/KIEM_THU_TICH_HOP.md). Các bước/ca kiểm là kế hoạch cần thực hiện, không phải kết quả đã đạt.
+
 **Xem demo trước khi làm task:** [Chức năng đã có và phần cần tiếp quản](docs/product/DEMO_DA_CO.md) · [Cách tự bật app, dùng và test](docs/team/CHAY_VA_TEST_DEMO.md) · [Baseline thực chạy 05/11/2026](docs/testing/BASELINE_2026_11_05.md). Có source kế thừa không đồng nghĩa backend Python đã hoàn tất.
 
 **Thành viên bắt đầu tại [hướng dẫn nhóm](docs/team/README.md): [nhật ký tiến độ #32](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/32), [báo tiến độ/vướng mắc/nghiệm thu](docs/team/BAO_CAO.md), [áp dụng slide môn](docs/course/README.md), [khung báo cáo đồ án](docs/reports/BAO_CAO_DO_AN.md).**

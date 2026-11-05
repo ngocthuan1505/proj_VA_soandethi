@@ -28,6 +28,8 @@ Không có bot tự chuyển Status, đồng bộ nhãn hay gửi thông báo t�
 
 ## Mẫu comment tiến độ
 
+Ghi cả mã bước/ca của task (ví dụ `UI-2-002/W03`, `UI-2-002/T02`) và expected/actual. Một Wxx đã xong không tự đóng cả task. Đính kèm artifact và xác nhận bên nhận bàn giao; chưa tích hợp/model thật/chưa test phải ghi rõ. Xem [gates và cách chia PR](KE_HOACH_TICH_HOP.md).
+
 ```text
 Vai trò / task: UI-2 / #2
 Ngày, buổi làm:
