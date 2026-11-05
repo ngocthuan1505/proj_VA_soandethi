@@ -1,5 +1,7 @@
 # Mạch — Trợ lý AI soạn đề thi
 
+**Thành viên mới:** [Cẩm nang có link task và cách bật app](docs/team/HUONG_DAN_GUI_DISCORD.md) · [PDF để gửi Discord](docs/team/HUONG_DAN_NHOM_MACH.pdf).
+
 **Nhận việc chi tiết:** [Task kỹ thuật](docs/team/BACKLOG.md) · [Task hồ sơ môn](docs/course/BACKLOG_CT.md) · [11 use case](docs/product/USE_CASES.md) · [Bàn giao và gates M1–M3](docs/team/KE_HOACH_TICH_HOP.md) · [Test tích hợp](docs/testing/KIEM_THU_TICH_HOP.md). Các bước/ca kiểm là kế hoạch cần thực hiện, không phải kết quả đã đạt.
 
 **Xem demo trước khi làm task:** [Chức năng đã có và phần cần tiếp quản](docs/product/DEMO_DA_CO.md) · [Cách tự bật app, dùng và test](docs/team/CHAY_VA_TEST_DEMO.md) · [Baseline thực chạy 05/11/2026](docs/testing/BASELINE_2026_11_05.md). Có source kế thừa không đồng nghĩa backend Python đã hoàn tất.

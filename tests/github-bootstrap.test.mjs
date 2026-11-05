@@ -31,10 +31,10 @@ test('Bootstrap creates 24 linked tasks, three milestones and tracker once; re-r
 });
 test('Bootstrap refuses public repository before any write and never assigns invented usernames',async()=>{
  const f=fixture(false);await assert.rejects(()=>syncGitHub(f.api,plan,roster),/Private/);assert.equal(f.state.writes,0);
- const g=fixture();await syncGitHub(g.api,plan,roster);assert(g.state.issues.filter(i=>i.assignees.length).every(i=>i.assignees[0].login==='ngocthuan1505'));
+ const g=fixture();await syncGitHub(g.api,plan,roster);assert(g.state.issues.filter(i=>i.assignees.length).every(i=>Object.values(roster).includes(i.assignees[0].login)));
 });
 test('A new roster assigns only open unassigned tasks; existing assignees and closed issues remain untouched',async()=>{
- const f=fixture();await syncGitHub(f.api,plan,roster);const first=f.state.issues[0],last=f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-003 -->'));first.assignees=[{login:'already-assigned'}];last.state='closed';
+ const f=fixture();await syncGitHub(f.api,plan,roster);const first=f.state.issues[0],last=f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-003 -->'));first.assignees=[{login:'already-assigned'}];last.assignees=[];last.state='closed';const openUnassigned=f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-002 -->'));openUnassigned.assignees=[];
  await syncGitHub(f.api,plan,{...roster,'UI-1':'new-teammate'});assert.equal(first.assignees[0].login,'already-assigned');assert.equal(last.assignees.length,0);const second=f.state.issues.find(i=>i.body.includes('<!-- mach-team:UI-1-002 -->'));assert.equal(second.assignees[0].login,'new-teammate');
 });
 test('Explicit plan refresh updates only untouched generated task bodies; human changes are reported and preserved',async()=>{

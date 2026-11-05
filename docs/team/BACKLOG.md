@@ -14,14 +14,14 @@ Chốt API FastAPI, core Python, UX và dữ liệu; tám task 001. Không coi w
 
 | Task | Vai trò / thành viên | Đầu ra | Phụ thuộc |
 |---|---|---|---|
-| [UI-1-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/1) | UI-1 / chờ username | Chốt sơ đồ màn hình và luồng kho đề/tài khoản | Bắt đầu ngay |
-| [UI-2-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/2) | UI-2 / chờ username | Đặc tả editor và baseline công thức/undo/lưu | Bắt đầu ngay |
-| [UI-3-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/3) | UI-3 / chờ username | Chốt UX trợ lý, trạng thái streaming và hợp đồng mock | Bắt đầu ngay |
+| [UI-1-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/1) | UI-1 / @lamngoc25032007-netizen | Chốt sơ đồ màn hình và luồng kho đề/tài khoản | Bắt đầu ngay |
+| [UI-2-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/2) | UI-2 / @Mysthaps | Đặc tả editor và baseline công thức/undo/lưu | Bắt đầu ngay |
+| [UI-3-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/3) | UI-3 / @PhuQuang0307 | Chốt UX trợ lý, trạng thái streaming và hợp đồng mock | Bắt đầu ngay |
 | [BE-1-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4) | BE-1 / @ngocthuan1505 | Thuận chốt hợp đồng AI Python và quy trình GreenNode riêng | Bắt đầu ngay |
-| [BE-2-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/5) | BE-2 / chờ username | Chốt API FastAPI/OpenAPI và ma trận quyền tài khoản | Bắt đầu ngay |
-| [BE-3-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/6) | BE-3 / chờ username | Thiết kế ERD, Python repository và kế hoạch migration | Bắt đầu ngay |
-| [BE-4-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/7) | BE-4 / chờ username | Chốt bộ mẫu và kế hoạch import/export bằng Python | Bắt đầu ngay |
-| [BE-5-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/8) | BE-5 / chờ username | Xác nhận CI Python + UI baseline và kế hoạch tích hợp | Bắt đầu ngay |
+| [BE-2-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/5) | BE-2 / @fiiwk21 | Chốt API FastAPI/OpenAPI và ma trận quyền tài khoản | Bắt đầu ngay |
+| [BE-3-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/6) | BE-3 / @2512716757-source | Thiết kế ERD, Python repository và kế hoạch migration | Bắt đầu ngay |
+| [BE-4-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/7) | BE-4 / @cyan-cpu | Chốt bộ mẫu và kế hoạch import/export bằng Python | Bắt đầu ngay |
+| [BE-5-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/8) | BE-5 / @shin-hybrid | Xác nhận CI Python + UI baseline và kế hoạch tích hợp | Bắt đầu ngay |
 
 ## M2 — Hoàn thiện luồng chính
 
@@ -29,14 +29,14 @@ Chuyển backend/core sang Python theo slice có pytest, UI dùng fixture rồi 
 
 | Task | Vai trò / thành viên | Đầu ra | Phụ thuộc |
 |---|---|---|---|
-| [UI-1-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/9) | UI-1 / chờ username | Hoàn thiện shell, kho đề và tài khoản theo hợp đồng | UI-1-001, BE-2-001 |
-| [UI-2-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/10) | UI-2 / chờ username | Hoàn thiện editor, công thức trực quan và xung đột lưu | UI-2-001, BE-3-001 |
-| [UI-3-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/11) | UI-3 / chờ username | Tích hợp trợ lý thật với preview, hủy và retry an toàn | UI-3-001, BE-1-001, BE-2-001 |
+| [UI-1-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/9) | UI-1 / @lamngoc25032007-netizen | Hoàn thiện shell, kho đề và tài khoản theo hợp đồng | UI-1-001, BE-2-001 |
+| [UI-2-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/10) | UI-2 / @Mysthaps | Hoàn thiện editor, công thức trực quan và xung đột lưu | UI-2-001, BE-3-001 |
+| [UI-3-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/11) | UI-3 / @PhuQuang0307 | Tích hợp trợ lý thật với preview, hủy và retry an toàn | UI-3-001, BE-1-001, BE-2-001 |
 | [BE-1-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) | BE-1 / @ngocthuan1505 | Thuận triển khai AI orchestration/validation bằng Python | BE-1-001, BE-2-001 |
-| [BE-2-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/13) | BE-2 / chờ username | Triển khai API/auth/ownership và validation FastAPI | BE-2-001, BE-3-001 |
-| [BE-3-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/14) | BE-3 / chờ username | Triển khai Python persistence/version và migration theo ADR | BE-3-001, BE-2-001 |
-| [BE-4-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/15) | BE-4 / chờ username | Triển khai import/OCR/export do Python xử lý | BE-4-001, BE-2-001, BE-3-001 |
-| [BE-5-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/16) | BE-5 / chờ username | Triển khai job/SSE/cancel và kiểm thử tích hợp Python | BE-5-001, BE-1-001, BE-2-001, BE-3-001 |
+| [BE-2-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/13) | BE-2 / @fiiwk21 | Triển khai API/auth/ownership và validation FastAPI | BE-2-001, BE-3-001 |
+| [BE-3-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/14) | BE-3 / @2512716757-source | Triển khai Python persistence/version và migration theo ADR | BE-3-001, BE-2-001 |
+| [BE-4-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/15) | BE-4 / @cyan-cpu | Triển khai import/OCR/export do Python xử lý | BE-4-001, BE-2-001, BE-3-001 |
+| [BE-5-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/16) | BE-5 / @shin-hybrid | Triển khai job/SSE/cancel và kiểm thử tích hợp Python | BE-5-001, BE-1-001, BE-2-001, BE-3-001 |
 
 ## M3 — Nghiệm thu và phát hành thử
 
@@ -44,14 +44,14 @@ Nghiệm thu E2E vào Python không chạy Node API; diễn tập dữ liệu/AI
 
 | Task | Vai trò / thành viên | Đầu ra | Phụ thuộc |
 |---|---|---|---|
-| [UI-1-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/17) | UI-1 / chờ username | Nghiệm thu kho đề/tài khoản và accessibility | UI-1-002, BE-2-002 |
-| [UI-2-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/18) | UI-2 / chờ username | Nghiệm thu editor đa môn và đối chiếu bản in | UI-2-002, BE-3-002, BE-4-002, BE-2-002 |
-| [UI-3-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/19) | UI-3 / chờ username | Nghiệm thu chat/sửa vùng với lỗi và kết quả cũ | UI-3-002, BE-1-002, BE-5-002 |
+| [UI-1-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/17) | UI-1 / @lamngoc25032007-netizen | Nghiệm thu kho đề/tài khoản và accessibility | UI-1-002, BE-2-002 |
+| [UI-2-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/18) | UI-2 / @Mysthaps | Nghiệm thu editor đa môn và đối chiếu bản in | UI-2-002, BE-3-002, BE-4-002, BE-2-002 |
+| [UI-3-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/19) | UI-3 / @PhuQuang0307 | Nghiệm thu chat/sửa vùng với lỗi và kết quả cũ | UI-3-002, BE-1-002, BE-5-002 |
 | [BE-1-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/20) | BE-1 / @ngocthuan1505 | Thuận nghiệm thu AI Python thật và diễn tập GreenNode | BE-1-002, BE-2-002, BE-3-002, BE-4-002, BE-5-002 |
-| [BE-2-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/21) | BE-2 / chờ username | Nghiệm thu auth/API và rà soát ranh giới truy cập | BE-2-002, BE-3-002, BE-4-002 |
-| [BE-3-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/22) | BE-3 / chờ username | Diễn tập khôi phục dữ liệu và kiểm migration release | BE-3-002, BE-2-002 |
-| [BE-4-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/23) | BE-4 / chờ username | Nghiệm thu tài liệu và bản xuất đa môn | BE-4-002, UI-2-002, BE-2-002, BE-3-002 |
-| [BE-5-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/24) | BE-5 / chờ username | Nghiệm thu candidate Python và báo cáo đồ án | BE-5-002, UI-1-003, UI-2-003, UI-3-003, BE-2-003, BE-3-003, BE-4-003, BE-1-003 |
+| [BE-2-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/21) | BE-2 / @fiiwk21 | Nghiệm thu auth/API và rà soát ranh giới truy cập | BE-2-002, BE-3-002, BE-4-002 |
+| [BE-3-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/22) | BE-3 / @2512716757-source | Diễn tập khôi phục dữ liệu và kiểm migration release | BE-3-002, BE-2-002 |
+| [BE-4-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/23) | BE-4 / @cyan-cpu | Nghiệm thu tài liệu và bản xuất đa môn | BE-4-002, UI-2-002, BE-2-002, BE-3-002 |
+| [BE-5-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/24) | BE-5 / @shin-hybrid | Nghiệm thu candidate Python và báo cáo đồ án | BE-5-002, UI-1-003, UI-2-003, UI-3-003, BE-2-003, BE-3-003, BE-4-003, BE-1-003 |
 
 ## Chi tiết nghiệm thu
 
@@ -60,7 +60,7 @@ Nghiệm thu E2E vào Python không chạy Node API; diễn tập dữ liệu/AI
 ## Phân công
 
 - Vai trò: **UI-1**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @lamngoc25032007-netizen
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -102,7 +102,7 @@ Chạy npm test; đính kèm wireframe/ảnh và checklist phím Tab.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, UI-3, BE-2; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-01, CT-02, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -147,7 +147,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **UI-2**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @Mysthaps
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -189,7 +189,7 @@ npm test; node tests/selection-browser.mjs và ảnh fixture.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-4, UI-1; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -234,7 +234,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **UI-3**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @PhuQuang0307
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -276,7 +276,7 @@ node tests/usability-browser.mjs; ghi danh sách state/event.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-5, UI-2; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -365,7 +365,7 @@ node --test tests/greennode.test.mjs tests/cloud-ai.test.mjs; không dùng key t
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, BE-5, UI-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -410,7 +410,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-2**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @fiiwk21
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -454,7 +454,7 @@ npm test; thêm fixture response và negative auth cases còn thiếu.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-1, UI-1; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -499,7 +499,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-3**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @2512716757-source
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -542,7 +542,7 @@ Tạo fixture migration kiểm đếm, FK/ownership dự kiến và golden snaps
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, UI-2, BE-5; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -587,7 +587,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-4**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @cyan-cpu
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -631,7 +631,7 @@ npm test; dùng fixture không bản quyền/không dữ liệu cá nhân.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, BE-2, BE-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -676,7 +676,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-5**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @shin-hybrid
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -719,7 +719,7 @@ CI thật xanh và một bộ UI fixture chạy local.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-2, UI-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-02, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -764,7 +764,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **UI-1**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @lamngoc25032007-netizen
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #1, #5
 
@@ -806,7 +806,7 @@ UI fixture + kiểm thử tài khoản cùng BE-2; không dùng tài khoản th�
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, UI-3, BE-2; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-01, CT-02, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -851,7 +851,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **UI-2**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @Mysthaps
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #2, #6
 
@@ -893,7 +893,7 @@ selection/authoring/curriculum browser fixtures; npm test.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-4, UI-1; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -938,7 +938,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **UI-3**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @PhuQuang0307
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #3, #4, #5
 
@@ -979,7 +979,7 @@ workbench/selection/studio fixtures; tích hợp job với BE-5.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-5, UI-2; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1068,7 +1068,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Fi
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, BE-5, UI-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1113,7 +1113,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-2**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @fiiwk21
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #5, #6
 
@@ -1157,7 +1157,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Ne
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-1, UI-1; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1202,7 +1202,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-3**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @2512716757-source
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #6, #5
 
@@ -1245,7 +1245,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Mi
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, UI-2, BE-5; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1290,7 +1290,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-4**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @cyan-cpu
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #7, #5, #6
 
@@ -1335,7 +1335,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Fi
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, BE-2, BE-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1380,7 +1380,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-5**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @shin-hybrid
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #8, #4, #5, #6
 
@@ -1423,7 +1423,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. St
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-2, UI-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-02, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1468,7 +1468,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **UI-1**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @lamngoc25032007-netizen
 - Milestone: M3; ưu tiên: P1
 - Phụ thuộc: #9, #13
 
@@ -1509,7 +1509,7 @@ Checklist UX cùng UI-2/3 và test phiên hết hạn.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, UI-3, BE-2; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-01, CT-02, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1554,7 +1554,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **UI-2**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @Mysthaps
 - Milestone: M3; ưu tiên: P1
 - Phụ thuộc: #10, #14, #15, #13
 
@@ -1595,7 +1595,7 @@ Golden mẫu tự tạo, reload/undo/export và kiểm bằng mắt.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-4, UI-1; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1640,7 +1640,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **UI-3**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @PhuQuang0307
 - Milestone: M3; ưu tiên: P1
 - Phụ thuộc: #11, #12, #16
 
@@ -1681,7 +1681,7 @@ Các luồng malformed/timeout/stale/version/conflict với BE-5.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-5, UI-2; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1769,7 +1769,7 @@ Chạy E2E với FastAPI và không chạy Node API. Smoke model thật có time
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, BE-5, UI-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1814,7 +1814,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-2**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @fiiwk21
 - Milestone: M3; ưu tiên: P0
 - Phụ thuộc: #13, #14, #15
 
@@ -1857,7 +1857,7 @@ Chạy E2E với FastAPI và không chạy Node API. Negative auth matrix, uploa
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-1, UI-1; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1902,7 +1902,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-3**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @2512716757-source
 - Milestone: M3; ưu tiên: P0
 - Phụ thuộc: #14, #13
 
@@ -1945,7 +1945,7 @@ Chạy E2E với FastAPI và không chạy Node API. Restore drill fixture, repl
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, UI-2, BE-5; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1990,7 +1990,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-4**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @cyan-cpu
 - Milestone: M3; ưu tiên: P1
 - Phụ thuộc: #15, #10, #13, #14
 
@@ -2033,7 +2033,7 @@ Chạy E2E với FastAPI và không chạy Node API. Golden DOCX/PDF + fixture i
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, BE-2, BE-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -2078,7 +2078,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 ## Phân công
 
 - Vai trò: **BE-5**
-- Thành viên: Chưa có username; nhận theo vai trò.
+- Thành viên: @shin-hybrid
 - Milestone: M3; ưu tiên: P0
 - Phụ thuộc: #16, #17, #18, #19, #21, #22, #23, #20
 
@@ -2121,7 +2121,7 @@ Chạy E2E với FastAPI và không chạy Node API. Full suite + manual checkli
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-2, UI-3; chờ username thực, không tự gán người chưa biết.
+**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
 
 **Hồ sơ môn liên quan:** CT-02, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 

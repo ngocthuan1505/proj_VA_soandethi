@@ -60,7 +60,7 @@ UI-2-003 chờ BE-2-002 để kiểm lưu/conflict bằng API thật. BE-4-003 c
 
 | Việc / rủi ro | Vai trò điều phối | Đầu ra cần ghi |
 |---|---|---|
-| Chưa có đủ username/quyền repo/Project | Thuận | Danh tính xác nhận, lời mời đúng người; không dùng chung tài khoản |
+| Thêm/đổi thành viên hoặc chưa nhận lời mời repo | Thuận | Danh tính xác nhận, lời mời đúng người; không dùng chung tài khoản |
 | Deadline/rubric cập nhật và nhóm 8 người | Thuận + CT-02 | Nguồn xác nhận lớp/giảng viên; không tự đặt ngày hoặc bỏ thành viên |
 | DB/schema/tool OCR/provider/model và ngưỡng test | BE-3/4/1/5 + consumer | ADR ngắn, fixture, config/đơn vị và lý do; chưa quyết thì ghi đề xuất |
 | Chưa có server/quota/model | Thuận + BE-1 | Fixture vẫn tiếp tục; real-model pending, không tự mua hoặc dùng key cũ |

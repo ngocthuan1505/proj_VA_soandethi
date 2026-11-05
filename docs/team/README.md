@@ -1,5 +1,7 @@
 # Bắt đầu làm việc nhóm
 
+**File gửi nhóm:** [Hướng dẫn có đầy đủ link](HUONG_DAN_GUI_DISCORD.md) · [Bản PDF](HUONG_DAN_NHOM_MACH.pdf).
+
 **Task đã có chỉ dẫn cụ thể:** [24 task kỹ thuật](BACKLOG.md) và [6 task hồ sơ](../course/BACKLOG_CT.md), mỗi task có điều kiện bắt đầu, Wxx, Txx với expected result, artifact và bên nhận bàn giao. Đọc [cách ghép/gates/phụ thuộc](KE_HOACH_TICH_HOP.md), [11 use case](../product/USE_CASES.md) và [kế hoạch test xuyên module](../testing/KIEM_THU_TICH_HOP.md). Không đồng nhất checklist kế hoạch với tiến độ đã hoàn thành.
 
 **Hai chat nghiên cứu và thực hành:** đọc [điểm bắt đầu và bản bàn giao chung](../context/README.md); cập nhật phần mình làm để bên kia kế thừa quyết định và bằng chứng mà không phải lục lại toàn bộ chat.
@@ -10,13 +12,13 @@ Repo Private này là nguồn chung duy nhất. Tiếp tục từ MVP đang có;
 
 **Trước khi nhận task:** đọc [bảng chức năng demo sẵn có theo vai trò](../product/DEMO_DA_CO.md), [cách bật app và đi một vòng test](CHAY_VA_TEST_DEMO.md), [baseline đã thực chạy](../testing/BASELINE_2026_11_05.md). Dùng lại source/fixture; ghi rõ phần kế thừa, phần mới và phần chưa test. Không tính demo Node là task Python đã xong.
 
-**Vào nhóm từ đây:** [Nhật ký chung #32](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/32) · [Báo tiến độ / vướng mắc / nghiệm thu](BAO_CAO.md) · [Tài liệu môn và 6 hồ sơ CT](../course/README.md) · [Khung báo cáo đồ án](../reports/BAO_CAO_DO_AN.md). Chưa có username bảy thành viên, lịch nộp của lớp và bằng chứng người dùng; các phần này được ghi rõ cần bổ sung.
+**Vào nhóm từ đây:** [Nhật ký chung #32](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/32) · [Báo tiến độ / vướng mắc / nghiệm thu](BAO_CAO.md) · [Tài liệu môn và 6 hồ sơ CT](../course/README.md) · [Khung báo cáo đồ án](../reports/BAO_CAO_DO_AN.md). Đã có username đủ tám người trong roster.json. Lịch nộp và bằng chứng người dùng còn cần xác nhận; quyền repo có hiệu lực sau khi nhận lời mời.
 
 Mở [bảng tiến độ kéo thả](https://github.com/users/ngocthuan1505/projects/1/views/1) hoặc [bảng danh sách](https://github.com/users/ngocthuan1505/projects/1/views/2). Đọc [hướng dẫn nhận việc, cập nhật và thông báo](BOARD.md); mỗi thẻ dẫn tới issue có chi tiết nghiệm thu.
 
 1. Đọc [phạm vi sản phẩm](../product/MVP.md), [phân công 8 người](ROLES.md), [backlog](BACKLOG.md) và [đối chiếu slide môn](../course/README.md).
 2. Backend chính: Python 3.12+ và uv, vào backend chạy `uv sync --frozen` và pytest. Demo UI legacy: dùng Node.js 24, chạy `npm ci`, `npm test`, `npm start` và mở `http://127.0.0.1:4173`.
-3. Chọn issue theo nhãn `role:UI-1`…`role:BE-5`. Chưa có username nên nhãn là phân công vai trò, chưa phải GitHub assignee. BE-1 là Thuận (`@ngocthuan1505`).
+3. Chọn issue theo nhãn `role:UI-1`…`role:BE-5`. Username/vai trò đã có trong [ROLES](ROLES.md). Nhãn là phân công; assignee được cập nhật khi tài khoản có quyền, không ghi đè người đang nhận việc. BE-1 là Thuận (`@ngocthuan1505`).
 4. Nhận issue trong comment, gán chính mình khi được cấp quyền; tạo nhánh `feat/UI-1-001-ten-ngan` hoặc `fix/BE-2-001-ten-ngan`.
 5. PR nhỏ, liên kết `Closes #...`, nêu cách kiểm tra, ảnh UI nếu có, ảnh hưởng dữ liệu/API và cách quay lui. Đợi một người khác review trước khi merge.
 
@@ -40,9 +42,9 @@ PR phải đạt CI, có kiểm tra phù hợp thay đổi, không làm mất d�
 
 Chưa bật bắt buộc branch protection hoặc trả phí GitHub: quy tắc review hiện là quy ước nhóm, CODEOWNERS hỗ trợ yêu cầu review nhưng không tự cưỡng chế. Không bật auto-deploy tới GreenNode.
 
-## Khi có username
+## Danh sách và quyền truy cập
 
-Thuận thêm người tại Settings → Collaborators, chờ họ nhận lời mời, rồi cập nhật `roster.json`. Cấp thêm quyền Write trong phần Manage access của Project riêng tư để họ cập nhật bảng; quyền repo và Project là hai phần riêng. Chạy công cụ đồng bộ để gán các issue còn trống theo vai trò; không ghi đè assignee người khác đã chọn. Không tự gửi lời mời khi chưa biết đúng tài khoản.
+Đã gửi lời mời repo theo danh sách Thuận xác nhận và cấp Project Write cho bảy thành viên; owner giữ Admin. Mỗi người cần nhận lời mời repo bằng đúng account. Roster ghi danh tính/vai trò, không chứng minh mọi lời mời đã được chấp nhận. Khi thêm/đổi người, Thuận kiểm đúng username và cập nhật `roster.json`; quyền repo và Project là hai phần riêng. Chạy công cụ đồng bộ để gán các issue còn trống theo vai trò; không ghi đè assignee người khác đã chọn. Không tự gửi lời mời khi chưa biết đúng tài khoản.
 
 Thuận có thể xem kế hoạch trước bằng `node scripts/bootstrap-github.mjs` (dry-run). Chỉ khi muốn cập nhật GitHub, chạy `node scripts/bootstrap-github.mjs --apply` bằng tài khoản có quyền admin đã đăng nhập Git; script không lưu/in token. Sau đó commit `github-issues.json`, `github-setup.json` và `BACKLOG.md` nếu thay đổi. Chạy lại không tạo task trùng hoặc đặt lại nhãn trạng thái; nội dung người khác sửa được giữ nguyên. Nút đồng bộ không tự gửi lời mời.
 

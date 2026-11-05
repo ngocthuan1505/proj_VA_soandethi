@@ -2,18 +2,18 @@
 
 **Core/API/database/AI/job/import-export chuyển sang Python/FastAPI. File Node trong bảng là nguồn tham chiếu; code backend mới đặt trong `backend/src/mach_backend/` và pytest trong `backend/tests/`.**
 
-Đã xác nhận: Thuận thuộc 5 người backend. Các mã còn lại sẽ thay bằng username khi có đủ danh sách.
+Danh sách đã được Thuận xác nhận ngày 05/11/2026: ba người UI; năm người backend gồm Thuận BE-1. Mã vai trò giữ ổn định, username UI/backend được ánh xạ theo thứ tự danh sách đã trao đổi. Quyền repo có hiệu lực sau khi nhận lời mời; quyền Project được cấp riêng.
 
 | Vai trò | Thành viên | Trách nhiệm và file chủ yếu | Đầu ra đầu tiên |
 |---|---|---|---|
-| UI-1 | Chưa có username | Shell, điều hướng, kho đề, tài khoản; `design.*`, `app.js` (phần shell), `assets/online-login.*` | Bản đồ màn hình + empty/loading/error states |
-| UI-2 | Chưa có username | Editor, vùng chọn, công thức/bảng/hình; `editor*`, `composer*`, `pages.js`, catalog, CSS editor | Hồi quy lưu/undo/công thức trên fixture |
-| UI-3 | Chưa có username | Chat, ngữ cảnh, diff, streaming; `workbench.js/css`, `studio.js/css`, `assets/usability.*` | Luồng chat/sửa với mock và hủy tác vụ |
+| UI-1 | @lamngoc25032007-netizen | Shell, điều hướng, kho đề, tài khoản; `design.*`, `app.js` (phần shell), `assets/online-login.*` | Bản đồ màn hình + empty/loading/error states |
+| UI-2 | @Mysthaps | Editor, vùng chọn, công thức/bảng/hình; `editor*`, `composer*`, `pages.js`, catalog, CSS editor | Hồi quy lưu/undo/công thức trên fixture |
+| UI-3 | @PhuQuang0307 | Chat, ngữ cảnh, diff, streaming; `workbench.js/css`, `studio.js/css`, `assets/usability.*` | Luồng chat/sửa với mock và hủy tác vụ |
 | BE-1 | Thuận — `@ngocthuan1505` | AI orchestration, GreenNode, cấu hình provider; `ai.mjs`, `cloud-ai.mjs`, `greennode.mjs`, `server-kit/`, `ops/greennode/` | Hợp đồng AI và runbook; **người duy nhất thao tác server** |
-| BE-2 | Chưa có username | HTTP/API, auth, phân quyền, validation; `mvp-server.mjs`, `accounts.mjs`, `deployment.mjs` | Danh mục API + test cách ly tài khoản |
-| BE-3 | Chưa có username | Data model, repository, version, migration/backup; `backend-store.mjs`, `storage.js`, thiết kế schema | ERD/ADR dữ liệu và fixture migration không mất dữ liệu |
-| BE-4 | Chưa có username | Import/OCR/Word/PDF và file ownership; `importers.mjs`, `word-import.mjs`, `exports.mjs`, `math-word.mjs` | Bộ tài liệu mẫu hợp lệ/hỏng và ma trận hỗ trợ |
-| BE-5 | Chưa có username | CI, tích hợp job/SSE, giới hạn tài nguyên, QA backend; `tests/`, workflow, phần job trong `workbench-server.mjs` | Baseline CI, checklist release và integration tests |
+| BE-2 | @fiiwk21 | HTTP/API, auth, phân quyền, validation; `mvp-server.mjs`, `accounts.mjs`, `deployment.mjs` | Danh mục API + test cách ly tài khoản |
+| BE-3 | @2512716757-source | Data model, repository, version, migration/backup; `backend-store.mjs`, `storage.js`, thiết kế schema | ERD/ADR dữ liệu và fixture migration không mất dữ liệu |
+| BE-4 | @cyan-cpu | Import/OCR/Word/PDF và file ownership; `importers.mjs`, `word-import.mjs`, `exports.mjs`, `math-word.mjs` | Bộ tài liệu mẫu hợp lệ/hỏng và ma trận hỗ trợ |
+| BE-5 | @shin-hybrid | CI, tích hợp job/SSE, giới hạn tài nguyên, QA backend; `tests/`, workflow, phần job trong `workbench-server.mjs` | Baseline CI, checklist release và integration tests |
 
 Đích Python: BE-1 giữ AI service/validation, BE-5 giữ job/SSE/cancel; BE-3 giữ repository, BE-4 giữ document service.
 
