@@ -4,7 +4,7 @@ Dùng lại [hồ sơ đã có](HO_SO_DA_CO.md). Đây là bước cần làm ti
 
 ## CT-01 — Kiểm chứng vấn đề với 3 người dùng và chốt Problem Brief/baseline
 
-[Issue #26](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/26) · Điều phối: UI-1; phối hợp: UI-2, UI-3, BE-2. Phụ thuộc hồ sơ: Không.
+[Issue #26](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/26) · Mảng điều phối gợi ý (nhóm tự chọn người): UI-1; phối hợp theo contract: UI-2, UI-3, BE-2. Phụ thuộc hồ sơ: Không.
 
 [Hồ sơ làm việc](PROBLEM_BRIEF.md) · [Phần đã có](HO_SO_DA_CO.md)
 
@@ -42,7 +42,7 @@ Mã bước/ca luôn đi cùng task, ví dụ CT-01/W01 và CT-01/T01. Checklist
 
 **Đầu ra cụ thể:** Problem Brief đã review, ghi chép ẩn danh/consent summary và bảng baseline cùng tác vụ.
 
-**Bên nhận bàn giao:** BE-5, BE-3, UI-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-5, BE-3, UI-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R1, R8; UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -51,7 +51,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ## CT-02 — Chốt cây phân rã 3 cấp, pattern và kế hoạch làm việc
 
-[Issue #27](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/27) · Điều phối: BE-5; phối hợp: UI-1, BE-2, BE-3. Phụ thuộc hồ sơ: CT-01.
+[Issue #27](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/27) · Mảng điều phối gợi ý (nhóm tự chọn người): BE-5; phối hợp theo contract: UI-1, BE-2, BE-3. Phụ thuộc hồ sơ: CT-01.
 
 [Hồ sơ làm việc](WBS.md) · [Phần đã có](HO_SO_DA_CO.md)
 
@@ -89,7 +89,7 @@ Mã bước/ca luôn đi cùng task, ví dụ CT-02/W01 và CT-02/T01. Checklist
 
 **Đầu ra cụ thể:** WBS/pattern giữ nguồn cũ, mapping task/lá/owner/phụ thuộc, quyết định PoC và lịch chờ chốt.
 
-**Bên nhận bàn giao:** UI-1, BE-2, BE-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** UI-1, BE-2, BE-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R1, R2, R5, R6; UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -98,7 +98,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ## CT-03 — Chốt mô hình dữ liệu và hợp đồng để các phần ghép được
 
-[Issue #28](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/28) · Điều phối: BE-3; phối hợp: BE-2, BE-1, BE-4, UI-2. Phụ thuộc hồ sơ: CT-02.
+[Issue #28](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/28) · Mảng điều phối gợi ý (nhóm tự chọn người): BE-3; phối hợp theo contract: BE-2, BE-1, BE-4, UI-2. Phụ thuộc hồ sơ: CT-02.
 
 [Hồ sơ làm việc](CONTRACTS.md) · [Phần đã có](HO_SO_DA_CO.md)
 
@@ -136,7 +136,7 @@ Mã bước/ca luôn đi cùng task, ví dụ CT-03/W01 và CT-03/T01. Checklist
 
 **Đầu ra cụ thể:** Model/data dictionary/ADT/interface đã version, ví dụ DTO/fixture và log review consumer.
 
-**Bên nhận bàn giao:** BE-2, BE-1, BE-4, UI-2. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, BE-1, BE-4, UI-2. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R3, R5, R7; UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -145,7 +145,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ## CT-04 — Chạy PoC sửa đúng vùng có bằng chứng và kết luận
 
-[Issue #29](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/29) · Điều phối: BE-1; phối hợp: UI-3, BE-5, BE-2, UI-2. Phụ thuộc hồ sơ: CT-02, CT-03.
+[Issue #29](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/29) · Mảng điều phối gợi ý (nhóm tự chọn người): BE-1; phối hợp theo contract: UI-3, BE-5, BE-2, UI-2. Phụ thuộc hồ sơ: CT-02, CT-03.
 
 [Hồ sơ làm việc](POC.md) · [Phần đã có](HO_SO_DA_CO.md)
 
@@ -183,7 +183,7 @@ Mã bước/ca luôn đi cùng task, ví dụ CT-04/W01 và CT-04/T01. Checklist
 
 **Đầu ra cụ thể:** Hồ sơ PoC giả thuyết/dataset/threshold/command/results/conclusion và phần real-model riêng.
 
-**Bên nhận bàn giao:** UI-3, BE-5, BE-2. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** UI-3, BE-5, BE-2. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R3, R4, R5, R7, R8; UC-04, UC-06, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -192,7 +192,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ## CT-05 — Trình bày thuật toán, flowchart, dry run và phân tích chi phí
 
-[Issue #30](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/30) · Điều phối: BE-2; phối hợp: BE-5, BE-1, BE-3. Phụ thuộc hồ sơ: CT-03.
+[Issue #30](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/30) · Mảng điều phối gợi ý (nhóm tự chọn người): BE-2; phối hợp theo contract: BE-5, BE-1, BE-3. Phụ thuộc hồ sơ: CT-03.
 
 [Hồ sơ làm việc](ALGORITHM.md) · [Phần đã có](HO_SO_DA_CO.md)
 
@@ -230,7 +230,7 @@ Mã bước/ca luôn đi cùng task, ví dụ CT-05/W01 và CT-05/T01. Checklist
 
 **Đầu ra cụ thể:** Pseudocode/flowchart, bảng dry-run, phân tích chi phí có giả định và pytest theo SHA.
 
-**Bên nhận bàn giao:** BE-1, BE-3, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-3, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R5, R7, R8; UC-06, UC-07, UC-08. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -239,7 +239,7 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ## CT-06 — Đánh giá prototype/MVP và chuẩn bị báo cáo, demo cuối
 
-[Issue #31](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/31) · Điều phối: BE-5; phối hợp: UI-1, UI-2, UI-3, BE-1, BE-2, BE-3, BE-4. Phụ thuộc hồ sơ: CT-01, CT-04, CT-05.
+[Issue #31](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/31) · Mảng điều phối gợi ý (nhóm tự chọn người): BE-5; phối hợp theo contract: UI-1, UI-2, UI-3, BE-1, BE-2, BE-3, BE-4. Phụ thuộc hồ sơ: CT-01, CT-04, CT-05.
 
 [Hồ sơ làm việc](EVALUATION.md) · [Phần đã có](HO_SO_DA_CO.md)
 
@@ -277,7 +277,7 @@ Mã bước/ca luôn đi cùng task, ví dụ CT-06/W01 và CT-06/T01. Checklist
 
 **Đầu ra cụ thể:** Gói đánh giá trước-sau, feedback/error log, báo cáo/demo/đóng góp và bảng truy vết bằng chứng.
 
-**Bên nhận bàn giao:** BE-1, UI-1, BE-2. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, UI-1, BE-2. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R1, R2, R3, R4, R5, R6, R7, R8; UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 

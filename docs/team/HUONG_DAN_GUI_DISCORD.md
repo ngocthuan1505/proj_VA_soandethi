@@ -1,32 +1,45 @@
 # Mạch - Hướng dẫn vào nhóm và bắt đầu làm đồ án
 
-Bản gửi nhóm ngày 05/11/2026. Repo và Project giữ **Private**. Tài liệu này không có khóa API, mật khẩu, mã mời bí mật hoặc địa chỉ server GreenNode. Bản PDF đi kèm có link bấm được; tài liệu GitHub là bản cập nhật lâu dài.
+Bản sửa 2 ngày 05/11/2026 - **tự chọn việc hoặc làm chung, thay bản phân công cứng trước đó**. Repo và Project giữ **Private**. Tài liệu này không có khóa API, mật khẩu, mã mời bí mật hoặc địa chỉ server GreenNode. Bản PDF đi kèm có link bấm được; tài liệu GitHub là bản cập nhật lâu dài.
 
 ## 1. Nhận quyền trước khi clone
 
-1. Đăng nhập đúng tài khoản GitHub trong bảng bên dưới.
+1. Đăng nhập đúng tài khoản GitHub trong danh sách thành viên bên dưới.
 2. Mở [lời mời repo](https://github.com/ngocthuan1505/proj_VA_soandethi/invitations), chọn **Accept invitation** nếu còn đang chờ; cũng có thể mở lời mời từ thông báo/email GitHub.
 3. Mở [repo source](https://github.com/ngocthuan1505/proj_VA_soandethi) và [bảng tiến độ](https://github.com/users/ngocthuan1505/projects/1/views/1). Repo Write cho phép cộng tác code; Project Write cho phép cập nhật bảng, không phải quyền admin/server.
 4. Nếu thấy 404/không mở được: kiểm tra đúng account, đã nhận lời mời chưa, rồi báo Thuận. Không tạo repo khác hoặc đổi công khai. Repo và Project là hai quyền riêng.
 
-Lời mời đã được gửi theo danh sách chủ nhóm xác nhận. Chỉ sau khi người nhận chấp nhận thì mới có quyền repo; PDF không thay thao tác Accept. UI-1 chính xác là **lamngoc25032007-netizen**, BE-3 là **2512716757-source**; không dùng các username thiếu/sai trước đó.
+Lời mời đã được gửi theo danh sách chủ nhóm xác nhận. Chỉ sau khi người nhận chấp nhận thì mới có quyền repo; PDF không thay thao tác Accept. Username đúng là **lamngoc25032007-netizen** và **2512716757-source**; không dùng các username thiếu/sai trước đó. Đây là danh sách thành viên, không gán chuyên môn cho từng người.
 
-## 2. Ai làm phần nào? Mở task đầu tiên tại đây
+## 2. Đọc định hướng rồi tự chọn hoặc làm chung
 
-Phân vai theo nhóm UI đã xác nhận và thứ tự danh sách backend; có thể điều chỉnh qua Thuận/issue, không tự nhận hai vai trò hoặc ghi đè việc người khác.
+**Không gán từng người một mảng cố định.** Nhóm đã chốt:
 
-| Vai trò | GitHub | Trọng tâm | Task bắt đầu | Task tiếp theo |
-|---|---|---|---|---|
-| UI-1 | [lamngoc25032007-netizen](https://github.com/lamngoc25032007-netizen) | Shell, kho đề, tài khoản | [UI-1-001 #1](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/1) | [002 #9](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/9), [003 #17](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/17) |
-| UI-2 | [Mysthaps](https://github.com/Mysthaps) | Editor, công thức, bảng/hình, undo | [UI-2-001 #2](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/2) | [002 #10](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/10), [003 #18](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/18) |
-| UI-3 | [PhuQuang0307](https://github.com/PhuQuang0307) | Chat, vùng chọn, diff, streaming | [UI-3-001 #3](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/3) | [002 #11](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/11), [003 #19](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/19) |
-| BE-1 | [ngocthuan1505 - Thuận](https://github.com/ngocthuan1505) | AI, owner, duy nhất vận hành GreenNode | [BE-1-001 #4](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4) | [002 #12](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12), [003 #20](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/20) |
-| BE-2 | [fiiwk21](https://github.com/fiiwk21) | FastAPI, auth, quyền và validation | [BE-2-001 #5](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/5) | [002 #13](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/13), [003 #21](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/21) |
-| BE-3 | [2512716757-source](https://github.com/2512716757-source) | Database, repository, version, migration/restore | [BE-3-001 #6](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/6) | [002 #14](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/14), [003 #22](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/22) |
-| BE-4 | [cyan-cpu](https://github.com/cyan-cpu) | Import/OCR, Word/PDF, tài liệu/nguồn | [BE-4-001 #7](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/7) | [002 #15](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/15), [003 #23](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/23) |
-| BE-5 | [shin-hybrid](https://github.com/shin-hybrid) | Job/SSE/cancel, CI, tích hợp, QA | [BE-5-001 #8](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/8) | [002 #16](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/16), [003 #24](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/24) |
+| Nhóm | Thành viên |
+|---|---|
+| UI - 3 người | [@lamngoc25032007-netizen](https://github.com/lamngoc25032007-netizen), [@Mysthaps](https://github.com/Mysthaps), [@PhuQuang0307](https://github.com/PhuQuang0307) |
+| Backend - 5 người | [@ngocthuan1505](https://github.com/ngocthuan1505), [@fiiwk21](https://github.com/fiiwk21), [@2512716757-source](https://github.com/2512716757-source), [@cyan-cpu](https://github.com/cyan-cpu), [@shin-hybrid](https://github.com/shin-hybrid) |
 
-`001` chốt baseline/hợp đồng; `002` triển khai/tích hợp; `003` nghiệm thu. Bắt đầu `001`, xem phụ thuộc trước khi nhận việc sau. Mỗi task có Wxx/Txx, expected result, đầu ra và bên nhận bàn giao. Tên trong phân vai là kế hoạch; Assignee thực chỉ gán khi có quyền, không ghi đè người đang nhận task.
+Cả ba bạn UI có thể cùng nghiên cứu/chọn/làm một mảng hoặc một luồng. Backend cũng có thể nhận chung và phối hợp giữa các mảng. Mã UI-1/UI-2/BE-2… dưới đây là **mã công việc, không phải tên người**. Chỉ việc vận hành GreenNode thuộc riêng Thuận.
+
+Đầu tiên mở [menu chọn việc trên GitHub](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md), thử demo/source/fixture rồi đề xuất giữ/cải thiện và phương án. Đọc mục tiêu/đầu ra để chọn có căn cứ; chưa cần chốt công nghệ ngay.
+
+| Mảng | Mảng này làm gì? | Nên nghiên cứu/thử, đầu ra gợi ý | Đọc task và đăng ký |
+|---|---|---|---|
+| UI-1: Shell, kho đề, tài khoản | Giúp giáo viên tạo/mở/tìm/lưu đề và biết trạng thái lưu. | Thử kho rỗng/lỗi/hết phiên, Tab/mobile; đề xuất luồng và ảnh rồi chia PR. | [001 #1](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/1) · [002 #9](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/9) · [003 #17](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/17) |
+| UI-2: Editor, công thức, bảng/hình | Giúp soạn không cần nhớ LaTeX; lưu/undo giữ richDoc và định dạng. | Thử mẫu/MathLive, node trùng, bảng/hình, reload và Word/PDF; đề xuất fixture/UX rồi cải thiện editor. | [001 #2](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/2) · [002 #10](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/10) · [003 #18](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/18) |
+| UI-3: Trợ lý, vùng chọn, diff | Giúp hỏi khác sửa, xem AI định đổi gì và xác nhận/hủy rõ. | Chạy selection/workbench fixture, thử stale/quá vùng/cancel/scroll; đề xuất state/contract mock rồi nối Python. | [001 #3](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/3) · [002 #11](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/11) · [003 #19](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/19) |
+| BE-1: AI/routing/validation | Chọn rule/truy xuất/model; kiểm schema/evidence và sửa an toàn. | Đọc adapter cũ, thử thiếu nguồn/sai schema/stale; đề xuất contract/validator Python và PoC. AI code có thể làm chung; server chỉ Thuận. | [001 #4](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4) · [002 #12](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) · [003 #20](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/20) |
+| BE-2: API/auth/quyền | Nối UI với FastAPI, kiểm owner/session/input và confirm đúng version. | Inventory route, thử hai user/request sai quyền; đề xuất OpenAPI/error matrix rồi router/pytest. | [001 #5](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/5) · [002 #13](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/13) · [003 #21](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/21) |
+| BE-3: Database/version | Lưu đúng ID/revision/richDoc, migrate/restore không mất dữ liệu. | Đọc KV cũ/ADT, thử conflict/rollback/checksum; đề xuất ADR/schema/repository và fixture before-after. | [001 #6](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/6) · [002 #14](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/14) · [003 #22](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/22) |
+| BE-4: Import/OCR/export | Đọc nguồn có locator, báo chỗ không chắc, xuất đúng bản và quyền. | Tạo file synthetic hợp lệ/hỏng, thử công thức/bảng/OCR; đề xuất ma trận định dạng và document service Python. | [001 #7](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/7) · [002 #15](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/15) · [003 #23](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/23) |
+| BE-5: Job/tích hợp/QA | Theo dõi/hủy/retry an toàn, không ghi kết quả muộn/lặp; giữ regression/CI. | Thử stream đứt/cancel/duplicate; đề xuất event/state/giới hạn rồi job Python và test tích hợp. | [001 #8](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/8) · [002 #16](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/16) · [003 #24](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/24) |
+
+**Cách đăng ký:** comment trong issue tên thành viên, mảng/luồng muốn nghiên cứu, task/Wxx định nhận, đầu ra, ai code/test/review và phụ thuộc. Trao đổi với người đang nhận rồi thêm Assignees một hoặc nhiều người thực sự làm; không tự gỡ người đã nhận thật. Có thể cùng nghiên cứu trước, chọn người thực hiện sau. Công cụ không tự gán theo roster.
+
+**Ví dụ làm chung:** ba bạn UI chọn luồng sửa công thức bằng chat, tự chia phần editor/ngữ cảnh-diff/fixture-test hoặc luân phiên; ghi Wxx và đầu mối mỗi PR để không đè file. Ví dụ này không phải phân công mới; reviewer khác người viết.
+
+001 là baseline/hợp đồng, 002 triển khai/tích hợp, 003 nghiệm thu; task có Wxx/Txx và expected result để nhóm tự chia. Chưa chọn vẫn để mở, không có nghĩa thiếu danh tính. Các mục chưa tick là kế hoạch, không phủ nhận demo/hồ sơ đã có.
 
 ## 3. Cài và bật demo trên máy mình
 
@@ -80,7 +93,7 @@ Baseline đã có 98 test Node, 80 bước UI trong 7 bộ và 2 pytest nền; k
 
 ## 5. Nhận việc, làm PR và báo tiến độ
 
-1. Mở task đầu tiên ở bảng phân vai, đọc điều kiện bắt đầu, source demo, Wxx, Txx và reviewer. Comment nhận một Wxx; mỗi người một việc đang làm.
+1. Mở menu định hướng, đọc/thử rồi comment đăng ký cá nhân hoặc nhóm vào task phù hợp. Ghi Wxx, đầu ra và ai thực hiện/test/review; hạn chế một việc đang làm mỗi người, không bắt một người giữ một chuyên môn.
 2. Trước khi sửa: `git status`, cập nhật main khi sạch bằng `git pull --ff-only`; tạo nhánh riêng dạng `codex/UI-2-001-ten-viec`. Không sửa/force-push thẳng main, không reset/clean thay đổi người khác.
 3. Giữ scope nhỏ, thống nhất file/contract dùng chung trong issue. Bước quá khoảng một ngày thì tạo issue con nối cha/Wxx, có đầu ra và test.
 4. Commit/tiêu đề PR/mô tả tiếng Việt. PR dẫn task/Wxx và Txx, nêu phần kế thừa/phần mới, expected/actual, test đã/chưa chạy, ảnh UI hoặc log phù hợp và cách quay lui. Chờ review trước merge.
@@ -90,6 +103,8 @@ Baseline đã có 98 test Node, 80 bước UI trong 7 bộ và 2 pytest nền; k
 Mẫu ngắn để dán vào task:
 
 ```text
+Cá nhân / nhóm và thành viên GitHub:
+Mảng / luồng tự chọn và lý do:
 Task / bước: UI-2-001 / W01
 Đã làm / phần kế thừa / phần mới:
 Bằng chứng: PR, commit, ảnh hoặc log fixture
@@ -119,4 +134,4 @@ Chỉ Thuận đăng nhập/thao tác GreenNode. Nhóm khác dùng local/fixture
 
 Chưa có deadline thật thì không tự bịa ngày. Không coi mẫu đa môn là AI đúng mọi chương trình; model thật cần dữ liệu được phép và quyền/quota hợp lệ, không tự dùng API trả phí. Đã có proposal/decomposition/abstraction và demo: đọc đầu vào để kế thừa, không nhận công cũ là phần mình vừa làm.
 
-Mục tiêu buổi đầu: nhận lời mời, mở đủ repo/bảng, chạy được demo, test một luồng, nhận đúng Wxx và báo kết quả. Có vướng thì báo sớm bằng bằng chứng cụ thể.
+Mục tiêu buổi đầu: nhận lời mời, mở đủ repo/bảng, chạy được demo, test một luồng, tự chọn/đăng ký Wxx (cá nhân hoặc nhóm) và báo kết quả. Có vướng thì báo sớm bằng bằng chứng cụ thể.

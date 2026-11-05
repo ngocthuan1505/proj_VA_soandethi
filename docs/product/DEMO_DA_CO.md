@@ -29,7 +29,9 @@ Test ghi trong bảng là nơi kiểm hành vi; kết quả lượt chạy hiệ
 
 Tra hướng dẫn thao tác chi tiết trong [USER_GUIDE](../../USER_GUIDE.md). Tìm nguồn/web, bộ chạy model, Docker/ngrok và các công cụ triển khai có source tham khảo nhưng không được suy ra đã chạy live hoặc có SLA 24/7 từ lượt test này. Không có thanh toán thật; điểm trong demo không phải hóa đơn dịch vụ.
 
-## Mỗi vai trò tiếp quản thế nào?
+## Định hướng từng mảng để tự chọn
+
+Bảng dưới là menu công việc, không gán sẵn username. [Cách nghiên cứu/đăng ký cá nhân hoặc làm chung](../team/CHON_VIEC.md); nhóm tự chọn người/consumer/reviewer.
 
 Đầu ra `001` là baseline/thiết kế, `002` là triển khai/tích hợp, `003` là nghiệm thu. Tính năng Node đã có là đầu vào để đọc, chạy fixture và port; không tự tick task Python chỉ vì demo kế thừa chạy được. Không giao người mới viết lại toàn bộ tính năng.
 

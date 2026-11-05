@@ -343,7 +343,7 @@
       "role": "BE-1",
       "milestone": "M1",
       "priority": "P0",
-      "title": "Thuận chốt hợp đồng AI Python và quy trình GreenNode riêng",
+      "title": "chốt hợp đồng AI Python và quy trình GreenNode riêng",
       "files": [
         "backend/src/mach_backend/",
         "backend/tests/",
@@ -1236,7 +1236,7 @@
       "role": "BE-1",
       "milestone": "M2",
       "priority": "P0",
-      "title": "Thuận triển khai AI orchestration/validation bằng Python",
+      "title": "triển khai AI orchestration/validation bằng Python",
       "files": [
         "backend/src/mach_backend/",
         "backend/tests/",

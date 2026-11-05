@@ -1,6 +1,6 @@
 # Backlog nhóm — 24 task
 
-Nguồn duy nhất: [tasks.json](tasks.json); danh sách thành viên: [roster.json](roster.json). Các task là việc cần làm, không phải chức năng đã hoàn thành. Mốc không có deadline cho đến khi nhóm chốt.
+Nguồn duy nhất: [tasks.json](tasks.json); danh sách nhóm: [members.json](members.json); [tự chọn cá nhân hoặc làm chung](CHON_VIEC.md). Các task là việc cần làm, không phải chức năng đã hoàn thành. Mốc không có deadline cho đến khi nhóm chốt.
 
 **Demo để kế thừa:** [Chức năng và phần còn thiếu](../product/DEMO_DA_CO.md) · [Cách mở app và test](CHAY_VA_TEST_DEMO.md) · [Baseline thực chạy](../testing/BASELINE_2026_11_05.md). Đọc trước khi nhận task; demo Node không thay nghiệm thu Python.
 
@@ -12,55 +12,55 @@ Trạng thái hiện tại xem ở trường Status trên Project riêng tư; m�
 
 Chốt API FastAPI, core Python, UX và dữ liệu; tám task 001. Không coi worker Python đơn lẻ đủ yêu cầu môn học.
 
-| Task | Vai trò / thành viên | Đầu ra | Phụ thuộc |
+| Task | Mảng / cách nhận | Đầu ra | Phụ thuộc |
 |---|---|---|---|
-| [UI-1-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/1) | UI-1 / @lamngoc25032007-netizen | Chốt sơ đồ màn hình và luồng kho đề/tài khoản | Bắt đầu ngay |
-| [UI-2-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/2) | UI-2 / @Mysthaps | Đặc tả editor và baseline công thức/undo/lưu | Bắt đầu ngay |
-| [UI-3-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/3) | UI-3 / @PhuQuang0307 | Chốt UX trợ lý, trạng thái streaming và hợp đồng mock | Bắt đầu ngay |
-| [BE-1-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4) | BE-1 / @ngocthuan1505 | Thuận chốt hợp đồng AI Python và quy trình GreenNode riêng | Bắt đầu ngay |
-| [BE-2-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/5) | BE-2 / @fiiwk21 | Chốt API FastAPI/OpenAPI và ma trận quyền tài khoản | Bắt đầu ngay |
-| [BE-3-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/6) | BE-3 / @2512716757-source | Thiết kế ERD, Python repository và kế hoạch migration | Bắt đầu ngay |
-| [BE-4-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/7) | BE-4 / @cyan-cpu | Chốt bộ mẫu và kế hoạch import/export bằng Python | Bắt đầu ngay |
-| [BE-5-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/8) | BE-5 / @shin-hybrid | Xác nhận CI Python + UI baseline và kế hoạch tích hợp | Bắt đầu ngay |
+| [UI-1-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/1) | UI-1 / tự chọn hoặc làm chung | Chốt sơ đồ màn hình và luồng kho đề/tài khoản | Bắt đầu ngay |
+| [UI-2-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/2) | UI-2 / tự chọn hoặc làm chung | Đặc tả editor và baseline công thức/undo/lưu | Bắt đầu ngay |
+| [UI-3-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/3) | UI-3 / tự chọn hoặc làm chung | Chốt UX trợ lý, trạng thái streaming và hợp đồng mock | Bắt đầu ngay |
+| [BE-1-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4) | BE-1 / tự chọn hoặc làm chung | chốt hợp đồng AI Python và quy trình GreenNode riêng | Bắt đầu ngay |
+| [BE-2-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/5) | BE-2 / tự chọn hoặc làm chung | Chốt API FastAPI/OpenAPI và ma trận quyền tài khoản | Bắt đầu ngay |
+| [BE-3-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/6) | BE-3 / tự chọn hoặc làm chung | Thiết kế ERD, Python repository và kế hoạch migration | Bắt đầu ngay |
+| [BE-4-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/7) | BE-4 / tự chọn hoặc làm chung | Chốt bộ mẫu và kế hoạch import/export bằng Python | Bắt đầu ngay |
+| [BE-5-001](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/8) | BE-5 / tự chọn hoặc làm chung | Xác nhận CI Python + UI baseline và kế hoạch tích hợp | Bắt đầu ngay |
 
 ## M2 — Hoàn thiện luồng chính
 
 Chuyển backend/core sang Python theo slice có pytest, UI dùng fixture rồi tích hợp FastAPI; chưa triển khai server tự động.
 
-| Task | Vai trò / thành viên | Đầu ra | Phụ thuộc |
+| Task | Mảng / cách nhận | Đầu ra | Phụ thuộc |
 |---|---|---|---|
-| [UI-1-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/9) | UI-1 / @lamngoc25032007-netizen | Hoàn thiện shell, kho đề và tài khoản theo hợp đồng | UI-1-001, BE-2-001 |
-| [UI-2-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/10) | UI-2 / @Mysthaps | Hoàn thiện editor, công thức trực quan và xung đột lưu | UI-2-001, BE-3-001 |
-| [UI-3-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/11) | UI-3 / @PhuQuang0307 | Tích hợp trợ lý thật với preview, hủy và retry an toàn | UI-3-001, BE-1-001, BE-2-001 |
-| [BE-1-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) | BE-1 / @ngocthuan1505 | Thuận triển khai AI orchestration/validation bằng Python | BE-1-001, BE-2-001 |
-| [BE-2-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/13) | BE-2 / @fiiwk21 | Triển khai API/auth/ownership và validation FastAPI | BE-2-001, BE-3-001 |
-| [BE-3-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/14) | BE-3 / @2512716757-source | Triển khai Python persistence/version và migration theo ADR | BE-3-001, BE-2-001 |
-| [BE-4-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/15) | BE-4 / @cyan-cpu | Triển khai import/OCR/export do Python xử lý | BE-4-001, BE-2-001, BE-3-001 |
-| [BE-5-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/16) | BE-5 / @shin-hybrid | Triển khai job/SSE/cancel và kiểm thử tích hợp Python | BE-5-001, BE-1-001, BE-2-001, BE-3-001 |
+| [UI-1-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/9) | UI-1 / tự chọn hoặc làm chung | Hoàn thiện shell, kho đề và tài khoản theo hợp đồng | UI-1-001, BE-2-001 |
+| [UI-2-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/10) | UI-2 / tự chọn hoặc làm chung | Hoàn thiện editor, công thức trực quan và xung đột lưu | UI-2-001, BE-3-001 |
+| [UI-3-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/11) | UI-3 / tự chọn hoặc làm chung | Tích hợp trợ lý thật với preview, hủy và retry an toàn | UI-3-001, BE-1-001, BE-2-001 |
+| [BE-1-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) | BE-1 / tự chọn hoặc làm chung | triển khai AI orchestration/validation bằng Python | BE-1-001, BE-2-001 |
+| [BE-2-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/13) | BE-2 / tự chọn hoặc làm chung | Triển khai API/auth/ownership và validation FastAPI | BE-2-001, BE-3-001 |
+| [BE-3-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/14) | BE-3 / tự chọn hoặc làm chung | Triển khai Python persistence/version và migration theo ADR | BE-3-001, BE-2-001 |
+| [BE-4-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/15) | BE-4 / tự chọn hoặc làm chung | Triển khai import/OCR/export do Python xử lý | BE-4-001, BE-2-001, BE-3-001 |
+| [BE-5-002](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/16) | BE-5 / tự chọn hoặc làm chung | Triển khai job/SSE/cancel và kiểm thử tích hợp Python | BE-5-001, BE-1-001, BE-2-001, BE-3-001 |
 
 ## M3 — Nghiệm thu và phát hành thử
 
 Nghiệm thu E2E vào Python không chạy Node API; diễn tập dữ liệu/AI/export. Chỉ Thuận vận hành GreenNode.
 
-| Task | Vai trò / thành viên | Đầu ra | Phụ thuộc |
+| Task | Mảng / cách nhận | Đầu ra | Phụ thuộc |
 |---|---|---|---|
-| [UI-1-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/17) | UI-1 / @lamngoc25032007-netizen | Nghiệm thu kho đề/tài khoản và accessibility | UI-1-002, BE-2-002 |
-| [UI-2-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/18) | UI-2 / @Mysthaps | Nghiệm thu editor đa môn và đối chiếu bản in | UI-2-002, BE-3-002, BE-4-002, BE-2-002 |
-| [UI-3-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/19) | UI-3 / @PhuQuang0307 | Nghiệm thu chat/sửa vùng với lỗi và kết quả cũ | UI-3-002, BE-1-002, BE-5-002 |
-| [BE-1-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/20) | BE-1 / @ngocthuan1505 | Thuận nghiệm thu AI Python thật và diễn tập GreenNode | BE-1-002, BE-2-002, BE-3-002, BE-4-002, BE-5-002 |
-| [BE-2-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/21) | BE-2 / @fiiwk21 | Nghiệm thu auth/API và rà soát ranh giới truy cập | BE-2-002, BE-3-002, BE-4-002 |
-| [BE-3-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/22) | BE-3 / @2512716757-source | Diễn tập khôi phục dữ liệu và kiểm migration release | BE-3-002, BE-2-002 |
-| [BE-4-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/23) | BE-4 / @cyan-cpu | Nghiệm thu tài liệu và bản xuất đa môn | BE-4-002, UI-2-002, BE-2-002, BE-3-002 |
-| [BE-5-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/24) | BE-5 / @shin-hybrid | Nghiệm thu candidate Python và báo cáo đồ án | BE-5-002, UI-1-003, UI-2-003, UI-3-003, BE-2-003, BE-3-003, BE-4-003, BE-1-003 |
+| [UI-1-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/17) | UI-1 / tự chọn hoặc làm chung | Nghiệm thu kho đề/tài khoản và accessibility | UI-1-002, BE-2-002 |
+| [UI-2-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/18) | UI-2 / tự chọn hoặc làm chung | Nghiệm thu editor đa môn và đối chiếu bản in | UI-2-002, BE-3-002, BE-4-002, BE-2-002 |
+| [UI-3-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/19) | UI-3 / tự chọn hoặc làm chung | Nghiệm thu chat/sửa vùng với lỗi và kết quả cũ | UI-3-002, BE-1-002, BE-5-002 |
+| [BE-1-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/20) | BE-1 / tự chọn hoặc làm chung | Thuận nghiệm thu AI Python thật và diễn tập GreenNode | BE-1-002, BE-2-002, BE-3-002, BE-4-002, BE-5-002 |
+| [BE-2-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/21) | BE-2 / tự chọn hoặc làm chung | Nghiệm thu auth/API và rà soát ranh giới truy cập | BE-2-002, BE-3-002, BE-4-002 |
+| [BE-3-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/22) | BE-3 / tự chọn hoặc làm chung | Diễn tập khôi phục dữ liệu và kiểm migration release | BE-3-002, BE-2-002 |
+| [BE-4-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/23) | BE-4 / tự chọn hoặc làm chung | Nghiệm thu tài liệu và bản xuất đa môn | BE-4-002, UI-2-002, BE-2-002, BE-3-002 |
+| [BE-5-003](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/24) | BE-5 / tự chọn hoặc làm chung | Nghiệm thu candidate Python và báo cáo đồ án | BE-5-002, UI-1-003, UI-2-003, UI-3-003, BE-2-003, BE-3-003, BE-4-003, BE-1-003 |
 
 ## Chi tiết nghiệm thu
 
 ### UI-1-001 — Chốt sơ đồ màn hình và luồng kho đề/tài khoản
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-1**
-- Thành viên: @lamngoc25032007-netizen
+- Mảng: **UI-1** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -102,7 +102,7 @@ Chạy npm test; đính kèm wireframe/ảnh và checklist phím Tab.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-01, CT-02, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -135,7 +135,7 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-1-001/W01 và UI-1-001/T01. Che
 
 **Đầu ra cụ thể:** Sơ đồ màn hình/luồng, bảng trạng thái và UI→API, ảnh baseline có commit; đường dẫn đề xuất docs/design/luong-man-hinh.md.
 
-**Bên nhận bàn giao:** BE-2, UI-2, UI-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, UI-2, UI-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R1, R6, R7; UC-01, UC-03, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -144,10 +144,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### UI-2-001 — Đặc tả editor và baseline công thức/undo/lưu
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-2**
-- Thành viên: @Mysthaps
+- Mảng: **UI-2** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -189,7 +189,7 @@ npm test; node tests/selection-browser.mjs và ảnh fixture.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -222,7 +222,7 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-2-001/W01 và UI-2-001/T01. Che
 
 **Đầu ra cụ thể:** Đặc tả editor/richDoc, ma trận golden fixture và ảnh đối chiếu; đề xuất docs/design/editor-va-richdoc.md.
 
-**Bên nhận bàn giao:** BE-3, BE-4, UI-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-3, BE-4, UI-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R6, R7, R8; UC-05, UC-06, UC-08, UC-09, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -231,10 +231,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### UI-3-001 — Chốt UX trợ lý, trạng thái streaming và hợp đồng mock
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-3**
-- Thành viên: @PhuQuang0307
+- Mảng: **UI-3** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -276,7 +276,7 @@ node tests/usability-browser.mjs; ghi danh sách state/event.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -309,19 +309,19 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-3-001/W01 và UI-3-001/T01. Che
 
 **Đầu ra cụ thể:** Sơ đồ trạng thái trợ lý, ví dụ payload/event/lỗi và mock có thể chạy; đề xuất docs/design/tro-ly-va-job.md.
 
-**Bên nhận bàn giao:** BE-1, BE-2, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-2, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R4, R5, R6, R7; UC-04, UC-06, UC-07, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
 Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự tick/đóng task, không coi gói kế hoạch này là code đã chạy hoặc phê duyệt triển khai.
 <!-- /mach-task-detail:UI-3-001 -->
 
-### BE-1-001 — Thuận chốt hợp đồng AI Python và quy trình GreenNode riêng
+### BE-1-001 — chốt hợp đồng AI Python và quy trình GreenNode riêng
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-1**
-- Thành viên: @ngocthuan1505
+- Mảng: **BE-1** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -365,7 +365,7 @@ node --test tests/greennode.test.mjs tests/cloud-ai.test.mjs; không dùng key t
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -398,7 +398,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-1-001/W01 và BE-1-001/T01. Che
 
 **Đầu ra cụ thể:** Hợp đồng AI/routing/evidence, fixture request-response và runbook; đề xuất docs/contracts/ai.md.
 
-**Bên nhận bàn giao:** BE-2, BE-4, BE-5, UI-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, BE-4, BE-5, UI-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R3, R4, R5, R7; UC-03, UC-04, UC-06, UC-07, UC-09. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -407,10 +407,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-2-001 — Chốt API FastAPI/OpenAPI và ma trận quyền tài khoản
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-2**
-- Thành viên: @fiiwk21
+- Mảng: **BE-2** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -454,7 +454,7 @@ npm test; thêm fixture response và negative auth cases còn thiếu.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -487,7 +487,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-2-001/W01 và BE-2-001/T01. Che
 
 **Đầu ra cụ thể:** OpenAPI review được, bảng quyền/lỗi và fixture hợp đồng; đề xuất docs/contracts/http.md.
 
-**Bên nhận bàn giao:** UI-1, UI-3, BE-3, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** UI-1, UI-3, BE-3, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R5, R6, R7; UC-01, UC-02, UC-03, UC-04, UC-06, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -496,10 +496,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-3-001 — Thiết kế ERD, Python repository và kế hoạch migration
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-3**
-- Thành viên: @2512716757-source
+- Mảng: **BE-3** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -542,7 +542,7 @@ Tạo fixture migration kiểm đếm, FK/ownership dự kiến và golden snaps
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -575,7 +575,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-3-001/W01 và BE-3-001/T01. Che
 
 **Đầu ra cụ thể:** ERD/data dictionary/ADR, contract repository và fixture migration có checksum; đề xuất docs/contracts/du-lieu.md.
 
-**Bên nhận bàn giao:** BE-2, UI-2, BE-4, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, UI-2, BE-4, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R3, R6, R7; UC-01, UC-02, UC-03, UC-06, UC-08, UC-09, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -584,10 +584,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-4-001 — Chốt bộ mẫu và kế hoạch import/export bằng Python
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-4**
-- Thành viên: @cyan-cpu
+- Mảng: **BE-4** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -631,7 +631,7 @@ npm test; dùng fixture không bản quyền/không dữ liệu cá nhân.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -664,7 +664,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-4-001/W01 và BE-4-001/T01. Che
 
 **Đầu ra cụ thể:** Bộ file synthetic + expected/manifest, ma trận hỗ trợ định dạng và ADR công cụ; đề xuất docs/contracts/tai-lieu.md.
 
-**Bên nhận bàn giao:** BE-1, BE-2, BE-3, UI-2. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-2, BE-3, UI-2. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R3, R6, R7, R8; UC-02, UC-05, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -673,10 +673,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-5-001 — Xác nhận CI Python + UI baseline và kế hoạch tích hợp
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-5**
-- Thành viên: @shin-hybrid
+- Mảng: **BE-5** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M1; ưu tiên: P0
 - Phụ thuộc: Không — có thể bắt đầu ngay.
 
@@ -719,7 +719,7 @@ CI thật xanh và một bộ UI fixture chạy local.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-02, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -752,7 +752,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-5-001/W01 và BE-5-001/T01. Che
 
 **Đầu ra cụ thể:** Baseline log/manifest theo commit, contract job, kế hoạch tích hợp và cấu hình ngưỡng chờ chốt; đề xuất docs/contracts/jobs.md.
 
-**Bên nhận bàn giao:** BE-1, BE-2, UI-3, BE-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-2, UI-3, BE-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R5, R6, R7, R8; UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -761,10 +761,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### UI-1-002 — Hoàn thiện shell, kho đề và tài khoản theo hợp đồng
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-1**
-- Thành viên: @lamngoc25032007-netizen
+- Mảng: **UI-1** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #1, #5
 
@@ -806,7 +806,7 @@ UI fixture + kiểm thử tài khoản cùng BE-2; không dùng tài khoản th�
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-01, CT-02, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -839,7 +839,7 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-1-002/W01 và UI-1-002/T01. Che
 
 **Đầu ra cụ thể:** PR UI nhỏ, bảng caller đã chuyển/chưa chuyển, fixture và ảnh/E2E tới Python.
 
-**Bên nhận bàn giao:** BE-2, BE-3, UI-2. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, BE-3, UI-2. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R1, R5, R6, R7; UC-01, UC-03, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -848,10 +848,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### UI-2-002 — Hoàn thiện editor, công thức trực quan và xung đột lưu
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-2**
-- Thành viên: @Mysthaps
+- Mảng: **UI-2** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #2, #6
 
@@ -893,7 +893,7 @@ selection/authoring/curriculum browser fixtures; npm test.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -926,7 +926,7 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-2-002/W01 và UI-2-002/T01. Che
 
 **Đầu ra cụ thể:** PR editor/caller Python, golden round-trip và ảnh chênh lệch trước-sau.
 
-**Bên nhận bàn giao:** BE-3, BE-4, UI-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-3, BE-4, UI-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R6, R7, R8; UC-05, UC-06, UC-08, UC-09, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -935,10 +935,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### UI-3-002 — Tích hợp trợ lý thật với preview, hủy và retry an toàn
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-3**
-- Thành viên: @PhuQuang0307
+- Mảng: **UI-3** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #3, #4, #5
 
@@ -979,7 +979,7 @@ workbench/selection/studio fixtures; tích hợp job với BE-5.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1012,19 +1012,19 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-3-002/W01 và UI-3-002/T01. Che
 
 **Đầu ra cụ thể:** PR tích hợp trợ lý, fixture event/proposal và log E2E vào Python.
 
-**Bên nhận bàn giao:** BE-1, BE-2, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-2, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R4, R5, R6, R7; UC-04, UC-06, UC-07, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
 Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự tick/đóng task, không coi gói kế hoạch này là code đã chạy hoặc phê duyệt triển khai.
 <!-- /mach-task-detail:UI-3-002 -->
 
-### BE-1-002 — Thuận triển khai AI orchestration/validation bằng Python
+### BE-1-002 — triển khai AI orchestration/validation bằng Python
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-1**
-- Thành viên: @ngocthuan1505
+- Mảng: **BE-1** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #4, #5
 
@@ -1068,7 +1068,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Fi
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1101,7 +1101,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-1-002/W01 và BE-1-002/T01. Che
 
 **Đầu ra cụ thể:** Service/adapter/validator Python và pytest contract, fixture retrieval/evidence, log PoC không có khóa.
 
-**Bên nhận bàn giao:** BE-2, BE-4, BE-5, UI-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, BE-4, BE-5, UI-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R3, R4, R5, R7; UC-03, UC-04, UC-06, UC-07, UC-09. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1110,10 +1110,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-2-002 — Triển khai API/auth/ownership và validation FastAPI
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-2**
-- Thành viên: @fiiwk21
+- Mảng: **BE-2** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #5, #6
 
@@ -1157,7 +1157,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Ne
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1190,7 +1190,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-2-002/W01 và BE-2-002/T01. Che
 
 **Đầu ra cụ thể:** Router/auth/dependencies Python, OpenAPI thực sinh, pytest quyền/version/idempotency và bảng parity route.
 
-**Bên nhận bàn giao:** BE-3, UI-1, UI-3, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-3, UI-1, UI-3, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R5, R6, R7; UC-01, UC-02, UC-03, UC-04, UC-06, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1199,10 +1199,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-3-002 — Triển khai Python persistence/version và migration theo ADR
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-3**
-- Thành viên: @2512716757-source
+- Mảng: **BE-3** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #6, #5
 
@@ -1245,7 +1245,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Mi
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1278,7 +1278,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-3-002/W01 và BE-3-002/T01. Che
 
 **Đầu ra cụ thể:** Repository/migration Python, fixture trước-sau, checksum và script/runbook restore bản sao.
 
-**Bên nhận bàn giao:** BE-2, BE-4, BE-5, UI-2. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, BE-4, BE-5, UI-2. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R3, R6, R7; UC-01, UC-02, UC-03, UC-06, UC-08, UC-09, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1287,10 +1287,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-4-002 — Triển khai import/OCR/export do Python xử lý
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-4**
-- Thành viên: @cyan-cpu
+- Mảng: **BE-4** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #7, #5, #6
 
@@ -1335,7 +1335,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. Fi
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1368,7 +1368,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-4-002/W01 và BE-4-002/T01. Che
 
 **Đầu ra cụ thể:** Document service Python, fixture expected, log extraction/export và ma trận định dạng thực đạt.
 
-**Bên nhận bàn giao:** BE-1, BE-2, BE-3, UI-2. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-2, BE-3, UI-2. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R3, R5, R6, R7; UC-02, UC-05, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1377,10 +1377,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-5-002 — Triển khai job/SSE/cancel và kiểm thử tích hợp Python
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-5**
-- Thành viên: @shin-hybrid
+- Mảng: **BE-5** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M2; ưu tiên: P0
 - Phụ thuộc: #8, #4, #5, #6
 
@@ -1423,7 +1423,7 @@ Pytest cho phần Python mới + đối chiếu golden fixture từ Node cũ. St
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-02, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1456,7 +1456,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-5-002/W01 và BE-5-002/T01. Che
 
 **Đầu ra cụ thể:** Job/SSE/cancel Python, test tích hợp/đồng thời và log giới hạn đo được, CI fixture.
 
-**Bên nhận bàn giao:** BE-1, BE-2, BE-3, UI-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-2, BE-3, UI-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R5, R6, R7, R8; UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1465,10 +1465,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### UI-1-003 — Nghiệm thu kho đề/tài khoản và accessibility
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-1**
-- Thành viên: @lamngoc25032007-netizen
+- Mảng: **UI-1** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M3; ưu tiên: P1
 - Phụ thuộc: #9, #13
 
@@ -1509,7 +1509,7 @@ Checklist UX cùng UI-2/3 và test phiên hết hạn.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** UI-2, UI-3, BE-2; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-01, CT-02, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1542,7 +1542,7 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-1-003/W01 và UI-1-003/T01. Che
 
 **Đầu ra cụ thể:** Biên bản nghiệm thu UI kho/tài khoản theo SHA, ảnh/keyboard log và bug đã retest.
 
-**Bên nhận bàn giao:** BE-2, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R1, R6, R7, R8; UC-01, UC-03, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1551,10 +1551,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### UI-2-003 — Nghiệm thu editor đa môn và đối chiếu bản in
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-2**
-- Thành viên: @Mysthaps
+- Mảng: **UI-2** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M3; ưu tiên: P1
 - Phụ thuộc: #10, #14, #15, #13
 
@@ -1595,7 +1595,7 @@ Golden mẫu tự tạo, reload/undo/export và kiểm bằng mắt.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-3, BE-4, UI-1; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1628,7 +1628,7 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-2-003/W01 và UI-2-003/T01. Che
 
 **Đầu ra cụ thể:** Ma trận editor/print đã đánh kết quả theo SHA, file synthetic đối chiếu và danh sách pending/bug.
 
-**Bên nhận bàn giao:** BE-3, BE-4, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-3, BE-4, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R6, R7, R8; UC-05, UC-06, UC-08, UC-09, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1637,10 +1637,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### UI-3-003 — Nghiệm thu chat/sửa vùng với lỗi và kết quả cũ
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **UI-3**
-- Thành viên: @PhuQuang0307
+- Mảng: **UI-3** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M3; ưu tiên: P1
 - Phụ thuộc: #11, #12, #16
 
@@ -1681,7 +1681,7 @@ Các luồng malformed/timeout/stale/version/conflict với BE-5.
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-1, BE-5, UI-2; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1714,7 +1714,7 @@ Mã bước/ca luôn đi cùng task, ví dụ UI-3-003/W01 và UI-3-003/T01. Che
 
 **Đầu ra cụ thể:** Biên bản E2E trợ lý và error matrix, log scope/version/job, bug retest theo SHA.
 
-**Bên nhận bàn giao:** BE-1, BE-5, BE-2. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-5, BE-2. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R4, R5, R6, R7, R8; UC-04, UC-06, UC-07, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1723,10 +1723,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-1-003 — Thuận nghiệm thu AI Python thật và diễn tập GreenNode
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-1**
-- Thành viên: @ngocthuan1505
+- Mảng: **BE-1** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M3; ưu tiên: P0
 - Phụ thuộc: #12, #13, #14, #15, #16
 
@@ -1769,7 +1769,7 @@ Chạy E2E với FastAPI và không chạy Node API. Smoke model thật có time
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-2, BE-5, UI-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1802,7 +1802,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-1-003/W01 và BE-1-003/T01. Che
 
 **Đầu ra cụ thể:** Báo cáo model thật theo task/commit, error taxonomy và runbook owner; pending rõ nếu chưa có server/quota.
 
-**Bên nhận bàn giao:** BE-5, BE-2, UI-3. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-5, BE-2, UI-3. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R3, R4, R5, R7, R8; UC-03, UC-04, UC-06, UC-07, UC-09. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1811,10 +1811,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-2-003 — Nghiệm thu auth/API và rà soát ranh giới truy cập
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-2**
-- Thành viên: @fiiwk21
+- Mảng: **BE-2** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M3; ưu tiên: P0
 - Phụ thuộc: #13, #14, #15
 
@@ -1857,7 +1857,7 @@ Chạy E2E với FastAPI và không chạy Node API. Negative auth matrix, uploa
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-3, BE-1, UI-1; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1890,7 +1890,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-2-003/W01 và BE-2-003/T01. Che
 
 **Đầu ra cụ thể:** Ma trận quyền và negative tests theo SHA, OpenAPI khớp thực chạy, bug và quyết định phạm vi đăng ký.
 
-**Bên nhận bàn giao:** BE-3, BE-5, UI-1. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-3, BE-5, UI-1. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R5, R6, R7, R8; UC-01, UC-02, UC-03, UC-04, UC-06, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1899,10 +1899,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-3-003 — Diễn tập khôi phục dữ liệu và kiểm migration release
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-3**
-- Thành viên: @2512716757-source
+- Mảng: **BE-3** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M3; ưu tiên: P0
 - Phụ thuộc: #14, #13
 
@@ -1945,7 +1945,7 @@ Chạy E2E với FastAPI và không chạy Node API. Restore drill fixture, repl
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-2, UI-2, BE-5; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -1978,7 +1978,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-3-003/W01 và BE-3-003/T01. Che
 
 **Đầu ra cụ thể:** Biên bản backup→restore→verify trên bản sao, manifest/checksum và rollback có kết quả.
 
-**Bên nhận bàn giao:** BE-2, BE-4, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-2, BE-4, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R2, R3, R6, R7, R8; UC-01, UC-02, UC-03, UC-06, UC-08, UC-09, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -1987,10 +1987,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-4-003 — Nghiệm thu tài liệu và bản xuất đa môn
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-4**
-- Thành viên: @cyan-cpu
+- Mảng: **BE-4** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M3; ưu tiên: P1
 - Phụ thuộc: #15, #10, #13, #14
 
@@ -2033,7 +2033,7 @@ Chạy E2E với FastAPI và không chạy Node API. Golden DOCX/PDF + fixture i
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** UI-2, BE-2, BE-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-03, CT-04, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -2066,7 +2066,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-4-003/W01 và BE-4-003/T01. Che
 
 **Đầu ra cụ thể:** Ma trận import/export đã đánh kết quả, file synthetic và ảnh kiểm trực quan, quyền file và bug retest.
 
-**Bên nhận bàn giao:** UI-2, BE-2, BE-5. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** UI-2, BE-2, BE-5. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R3, R6, R7, R8; UC-02, UC-05, UC-10. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 
@@ -2075,10 +2075,10 @@ Acceptance gốc và bằng chứng đã có vẫn được giữ. Không tự t
 
 ### BE-5-003 — Nghiệm thu candidate Python và báo cáo đồ án
 
-## Phân công
+## Mảng việc để tự chọn
 
-- Vai trò: **BE-5**
-- Thành viên: @shin-hybrid
+- Mảng: **BE-5** (mã chuyên môn, không phải người).
+- Người thực hiện: Chưa đăng ký; có thể nhận cá nhân hoặc nhóm. Xem [cách chọn việc](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/CHON_VIEC.md).
 - Milestone: M3; ưu tiên: P0
 - Phụ thuộc: #16, #17, #18, #19, #21, #22, #23, #20
 
@@ -2121,7 +2121,7 @@ Chạy E2E với FastAPI và không chạy Node API. Full suite + manual checkli
 
 Đây là gói việc; nếu một bước hơn khoảng một ngày, tách issue con và liên kết cha/phụ thuộc. Không coi checklist là test đã chạy.
 
-**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đối chiếu roster/ROLES để biết username, không tự gán người ngoài danh sách đã xác nhận.
+**Reviewer theo vai trò:** BE-1, BE-2, UI-3; đây là mảng cần tham khảo; chọn người review khác người thực hiện, không suy username từ mã.
 
 **Hồ sơ môn liên quan:** CT-02, CT-04, CT-05, CT-06 — [yêu cầu và nguồn slide](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/course/README.md).
 
@@ -2154,7 +2154,7 @@ Mã bước/ca luôn đi cùng task, ví dụ BE-5-003/W01 và BE-5-003/T01. Che
 
 **Đầu ra cụ thể:** Biên bản candidate theo SHA, ma trận R/UC/CT có bằng chứng, known issues, hướng dẫn tái lập và gói báo cáo/demo.
 
-**Bên nhận bàn giao:** BE-1, BE-2, UI-1. Bên nhận xác nhận artifact/contract dùng được; reviewer vẫn theo phân công task, chưa có username thì không tự gán người. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
+**Mảng cần bàn giao:** BE-1, BE-2, UI-1. Nhóm chọn người/nhóm nhận bàn giao và xác nhận contract dùng được; không suy username từ mã mảng. Đường dẫn artifact ghi “đề xuất” là nơi sẽ tạo trong PR, chưa phải file đã có.
 
 **Truy vết:** R1, R2, R3, R4, R5, R6, R7, R8; UC-01, UC-02, UC-03, UC-04, UC-05, UC-06, UC-07, UC-08, UC-09, UC-10, UC-11. [Use case và phạm vi](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/product/USE_CASES.md) · [Test tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/testing/KIEM_THU_TICH_HOP.md) · [Hợp đồng/gates/quyết định](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/docs/team/KE_HOACH_TICH_HOP.md).
 

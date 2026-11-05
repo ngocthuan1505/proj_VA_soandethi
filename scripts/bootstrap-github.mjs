@@ -24,10 +24,8 @@ export async function syncGitHub(api,plan,roster,{previousPlan}={}){
   const matches=issues.filter(i=>i.body?.includes(marker));assert(matches.length<=1,'Duplicate remote task marker '+task.id);
   let issue=matches[0];
   if(!issue){
-   const assignees=roster[task.role]?[roster[task.role]]:[];
+   const assignees=[]; // Thành viên tự đăng ký; roster không tự gán chuyên môn.
    issue=await api('POST','/issues',{title:'['+task.id+'] '+task.title,body:issueBody(task,roster),milestone:milestones[task.milestone].number,labels:['type:task','role:'+task.role,'area:'+areaFor(task.role),'priority:'+task.priority,'status:'+(task.dependsOn.length?'blocked':'ready')],assignees});created.push(task.id);
-  }else if(roster[task.role]&&!issue.assignees?.length&&issue.state!=='closed'){
-   await api('POST','/issues/'+issue.number+'/assignees',{assignees:[roster[task.role]]});
   }
   mapping[task.id]={number:issue.number,url:issue.html_url};
  }
@@ -47,7 +45,7 @@ export async function syncGitHub(api,plan,roster,{previousPlan}={}){
  for(const id of created){const task=plan.tasks.find(t=>t.id===id);await api('PATCH','/issues/'+mapping[id].number,{body:issueBody(task,roster,mapping)});}
  const marker='<!-- mach-team:TRACKER -->';let tracker=issues.find(i=>i.body?.includes(marker));
  if(!tracker){
-  let body=marker+'\n# Kế hoạch đồ án — 3 UI + 5 backend\n\nBE-1 là @ngocthuan1505, duy nhất vận hành GreenNode. Các vai trò khác chờ username; phân công qua nhãn role. Đọc [hướng dẫn nhóm](https://github.com/'+plan.repository+'/blob/main/docs/team/README.md). Không đăng URL/token server.\n\n';
+  let body=marker+'\n# Kế hoạch đồ án — 3 UI + 5 backend\n\nBE-1 là @ngocthuan1505, duy nhất vận hành GreenNode. Mã UI/BE là mảng việc để nghiên cứu và tự chọn; có thể nhận chung. Đọc [hướng dẫn nhóm](https://github.com/'+plan.repository+'/blob/main/docs/team/README.md). Không đăng URL/token server.\n\n';
   for(const m of plan.milestones){body+='## '+m.title+'\n\n';for(const t of plan.tasks.filter(t=>t.milestone===m.id))body+='- [ ] #'+mapping[t.id].number+' — '+t.id+'\n';body+='\n';}
   body+='Bắt đầu task 001. Sau khi phụ thuộc xong, chuyển task blocked sang ready. Một status mỗi issue. Chưa mời thành viên khi chưa có username; chưa đặt deadline hoặc bật auto-deploy.';
   tracker=await api('POST','/issues',{title:'Kế hoạch nhóm: 3 UI + 5 backend, GreenNode chỉ Thuận',body,labels:['type:tracker'],assignees:['ngocthuan1505']});
@@ -61,7 +59,7 @@ export async function syncGitHub(api,plan,roster,{previousPlan}={}){
 
 async function main(){
  const plan=JSON.parse(await readFile(path.join(root,'docs/team/tasks.json'),'utf8')),roster=JSON.parse(await readFile(path.join(root,'docs/team/roster.json'),'utf8'));validatePlan(plan,roster);
- if(!process.argv.includes('--apply')){console.log(JSON.stringify({dryRun:true,repository:plan.repository,privateRequired:true,tasks:plan.tasks.length,roles:roles.length,milestones:plan.milestones.length,knownAssignees:Object.values(roster).filter(Boolean),serverOperations:false}));return;}
+ if(!process.argv.includes('--apply')){console.log(JSON.stringify({dryRun:true,repository:plan.repository,privateRequired:true,tasks:plan.tasks.length,roles:roles.length,milestones:plan.milestones.length,automaticTaskAssignment:false,serverOperator:roster['BE-1'],serverOperations:false}));return;}
  let token=process.env.GITHUB_TOKEN||'';
  if(!token){
   let raw;try{raw=execFileSync('git',['credential-manager','get'],{input:'protocol=https\nhost=github.com\nusername=ngocthuan1505\n\n',encoding:'utf8',stdio:['pipe','pipe','pipe'],env:{...process.env,GCM_INTERACTIVE:'never',GIT_TERMINAL_PROMPT:'0'},timeout:20000});}catch{throw Error('GitHub credential unavailable; sign in through normal GitHub/Git flow, do not paste a token into chat.');}
