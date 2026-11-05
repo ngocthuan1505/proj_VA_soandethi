@@ -1,5 +1,7 @@
 # Checklist merge và bàn giao bản thử
 
+Đối chiếu [gates M1/M2/M3 và các hợp đồng bàn giao](KE_HOACH_TICH_HOP.md), [11 use case](../product/USE_CASES.md) và [kế hoạch test tích hợp](../testing/KIEM_THU_TICH_HOP.md). Candidate cuối cần bằng chứng BE-1-003; owner quyết định mở web riêng, không suy từ CI hoặc checklist đã tick.
+
 ## Từng PR
 
 - [ ] Liên kết issue, đúng scope, không chứa URL/token server hoặc dữ liệu giáo viên.

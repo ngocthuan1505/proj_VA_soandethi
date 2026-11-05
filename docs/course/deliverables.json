@@ -20,6 +20,76 @@
     "existingEvidence": {
       "reference": "HO_SO_DA_CO.md",
       "summary": "Đã có proposal/stakeholder/scope và baseline nghiên cứu; còn kiểm chứng người dùng và benchmark đồng đều."
+    },
+    "detail": {
+      "ready": "Đọc proposal/baseline đã có; cần người dùng được phép tham gia, không bắt đầu lại nội dung đã viết.",
+      "work": [
+        {
+          "id": "W01",
+          "text": "Đánh dấu phần proposal đã có và các giả định chưa kiểm; dùng 11 use case để chọn tác vụ khảo sát."
+        },
+        {
+          "id": "W02",
+          "text": "Chuẩn bị câu hỏi và consent, ghi chép ẩn danh ít nhất ba người dùng thật; không tải bản ghi riêng lên repo."
+        },
+        {
+          "id": "W03",
+          "text": "Làm cùng tác vụ trên 2–3 công cụ theo quyền sử dụng, ghi cách đo/nguồn/ngày và giới hạn so sánh."
+        },
+        {
+          "id": "W04",
+          "text": "Hoàn thiện Problem Brief/MoSCoW/non-goals/metrics; phân biệt mục tiêu với số đo đã có."
+        },
+        {
+          "id": "W05",
+          "text": "Review với nhóm, ghi thay đổi do bằng chứng và lịch/thông báo lớp còn cần Thuận xác nhận."
+        }
+      ],
+      "handoff": {
+        "to": [
+          "BE-5",
+          "BE-3",
+          "UI-3"
+        ],
+        "artifact": "Problem Brief đã review, ghi chép ẩn danh/consent summary và bảng baseline cùng tác vụ."
+      },
+      "cases": [
+        {
+          "id": "T01",
+          "kind": "happy",
+          "action": "Có bằng chứng ba người dùng và một tác vụ đại diện.",
+          "expected": "Claim vấn đề/tiêu chí truy được nguồn và dữ liệu thực."
+        },
+        {
+          "id": "T02",
+          "kind": "error",
+          "action": "Chưa có phỏng vấn hoặc không được phép lưu nội dung.",
+          "expected": "Giữ pending/ẩn danh phù hợp; không bịa transcript hoặc số đo."
+        },
+        {
+          "id": "T03",
+          "kind": "edge",
+          "action": "Ý kiến người dùng mâu thuẫn hoặc benchmark thiếu chức năng.",
+          "expected": "Ghi phân nhóm/giới hạn và quyết định scope, không chọn số thuận lợi."
+        }
+      ],
+      "requirements": [
+        "R1",
+        "R8"
+      ],
+      "useCases": [
+        "UC-01",
+        "UC-02",
+        "UC-03",
+        "UC-04",
+        "UC-05",
+        "UC-06",
+        "UC-07",
+        "UC-08",
+        "UC-09",
+        "UC-10",
+        "UC-11"
+      ]
     }
   },
   {
@@ -45,6 +115,78 @@
     "existingEvidence": {
       "reference": "HO_SO_DA_CO.md",
       "summary": "Đã có cây 3 cấp, 7 chức năng, input/output và 4 pattern trong 23 slide; còn ánh xạ owner/task/lịch và review phần triển khai."
+    },
+    "detail": {
+      "ready": "Có cây Decomposition–Pattern 23 slide; dùng kết quả CT-01 hiện có và ghi giả định nếu khảo sát còn pending.",
+      "work": [
+        {
+          "id": "W01",
+          "text": "Đối chiếu cây ba cấp/bảy module/bốn pattern đã có với source demo, không vẽ lại tùy ý."
+        },
+        {
+          "id": "W02",
+          "text": "Gắn từng lá vào task/vai trò, input/output và tiêu chí kiểm được; ghi phụ thuộc cứng với hợp đồng mềm."
+        },
+        {
+          "id": "W03",
+          "text": "Dùng Wxx để chia PR; bước quá khoảng một ngày thì tạo issue con có cha/đầu ra/test và thêm bảng."
+        },
+        {
+          "id": "W04",
+          "text": "Chọn lá rủi ro nhất cho CT-04, ghi lý do/trade-off và phương án dự phòng."
+        },
+        {
+          "id": "W05",
+          "text": "Review gates M1/M2/M3, lượng việc mỗi người, ngày nộp do lớp xác nhận và quyết định chưa chốt."
+        }
+      ],
+      "handoff": {
+        "to": [
+          "UI-1",
+          "BE-2",
+          "BE-3"
+        ],
+        "artifact": "WBS/pattern giữ nguồn cũ, mapping task/lá/owner/phụ thuộc, quyết định PoC và lịch chờ chốt."
+      },
+      "cases": [
+        {
+          "id": "T01",
+          "kind": "happy",
+          "action": "Theo một lá từ nhu cầu tới task, output và test.",
+          "expected": "Không có lá chính vô chủ hoặc output không có consumer."
+        },
+        {
+          "id": "T02",
+          "kind": "error",
+          "action": "Hai nhóm cùng sửa file/API hoặc phụ thuộc thành vòng.",
+          "expected": "Nêu owner/contract, tách scope và sửa kế hoạch trước triển khai."
+        },
+        {
+          "id": "T03",
+          "kind": "edge",
+          "action": "Một bước lớn hoặc server chưa có.",
+          "expected": "Tách issue con; công việc fixture/thiết kế vẫn có đường tiến, không giả deadline."
+        }
+      ],
+      "requirements": [
+        "R1",
+        "R2",
+        "R5",
+        "R6"
+      ],
+      "useCases": [
+        "UC-01",
+        "UC-02",
+        "UC-03",
+        "UC-04",
+        "UC-05",
+        "UC-06",
+        "UC-07",
+        "UC-08",
+        "UC-09",
+        "UC-10",
+        "UC-11"
+      ]
     }
   },
   {
@@ -71,6 +213,79 @@
     "existingEvidence": {
       "reference": "HO_SO_DA_CO.md",
       "summary": "Đã có UML, model, Schema, ADT và Interface; còn ánh xạ hợp đồng/DB Python và test, không thiết kế lại từ đầu."
+    },
+    "detail": {
+      "ready": "Đã có UML/Schema/ADT/Interface; cần các owner dữ liệu/API/source/job review phần mở rộng cho code.",
+      "work": [
+        {
+          "id": "W01",
+          "text": "Kế thừa sáu entity/SessionContext, kiểm field/type/unit/ID/version/status và chỗ draftStatus chưa đồng bộ."
+        },
+        {
+          "id": "W02",
+          "text": "Đối chiếu schema văn bản với richDoc/file/evidence thực của demo; ghi giữ/defer/bỏ có lý do."
+        },
+        {
+          "id": "W03",
+          "text": "Chốt contract input/output/pre/postcondition/invariant/errors/examples và ownership với consumer."
+        },
+        {
+          "id": "W04",
+          "text": "Tạo ví dụ valid/invalid/stale/ngoài vùng và nối tới pytest/golden fixture cần implement."
+        },
+        {
+          "id": "W05",
+          "text": "Review model↔OpenAPI↔repository↔slide, ghi version và chỗ chưa nghiệm thu, không sửa slide ngầm."
+        }
+      ],
+      "handoff": {
+        "to": [
+          "BE-2",
+          "BE-1",
+          "BE-4",
+          "UI-2"
+        ],
+        "artifact": "Model/data dictionary/ADT/interface đã version, ví dụ DTO/fixture và log review consumer."
+      },
+      "cases": [
+        {
+          "id": "T01",
+          "kind": "happy",
+          "action": "Trace QuestionVersion/proposal từ model tới contract.",
+          "expected": "ID/revision/status/evidence cùng nghĩa và có ví dụ kiểm được."
+        },
+        {
+          "id": "T02",
+          "kind": "error",
+          "action": "Một nguồn không có locator hoặc patch sai baseVersion.",
+          "expected": "Precondition/error rõ; không confirm thành công giả."
+        },
+        {
+          "id": "T03",
+          "kind": "edge",
+          "action": "RichDoc có node mà schema văn bản không biểu diễn.",
+          "expected": "Bổ sung/giới hạn được nêu, không làm phẳng rồi mất công thức/bảng."
+        }
+      ],
+      "requirements": [
+        "R2",
+        "R3",
+        "R5",
+        "R7"
+      ],
+      "useCases": [
+        "UC-01",
+        "UC-02",
+        "UC-03",
+        "UC-04",
+        "UC-05",
+        "UC-06",
+        "UC-07",
+        "UC-08",
+        "UC-09",
+        "UC-10",
+        "UC-11"
+      ]
     }
   },
   {
@@ -98,6 +313,71 @@
     "existingEvidence": {
       "reference": "HO_SO_DA_CO.md",
       "summary": "Đã có kế hoạch/phạm vi PoC trong proposal; chưa thấy đủ kết quả thực nghiệm cho ứng viên thử sửa vùng."
+    },
+    "detail": {
+      "ready": "Câu hỏi rủi ro và contract đã chốt, dữ liệu synthetic được phép; model thật cần Thuận/cấu hình, không bắt các thành viên vào server.",
+      "work": [
+        {
+          "id": "W01",
+          "text": "Viết giả thuyết một câu và ngưỡng pass/fail/chưa đủ trước chạy; chốt input/output và môi trường."
+        },
+        {
+          "id": "W02",
+          "text": "Chuẩn bị fixture đúng/sai schema/stale/quá vùng/cancel và expected; nguồn có provenance."
+        },
+        {
+          "id": "W03",
+          "text": "Chạy script lặp lại đúng commit, lưu kết quả từng mẫu và lỗi; tách hoàn toàn model thật khỏi fixture."
+        },
+        {
+          "id": "W04",
+          "text": "Khi Thuận có model hợp lệ, thử mẫu được phép và đánh giá theo rubric đã chốt; chưa có thì ghi pending."
+        },
+        {
+          "id": "W05",
+          "text": "Reviewer độc lập kết luận giữ/sửa/bỏ/chưa đủ và tác động tới kiến trúc/task tiếp theo."
+        }
+      ],
+      "handoff": {
+        "to": [
+          "UI-3",
+          "BE-5",
+          "BE-2"
+        ],
+        "artifact": "Hồ sơ PoC giả thuyết/dataset/threshold/command/results/conclusion và phần real-model riêng."
+      },
+      "cases": [
+        {
+          "id": "T01",
+          "kind": "happy",
+          "action": "Người khác chạy lại PoC fixture theo tài liệu.",
+          "expected": "Cùng kỳ vọng kiểm chứng và log theo mẫu; số đo ghi đúng môi trường."
+        },
+        {
+          "id": "T02",
+          "kind": "error",
+          "action": "Proposal sai schema/ngoài vùng hoặc worker bị hủy.",
+          "expected": "Đề giữ nguyên; lỗi được tính vào kết quả thay vì bỏ khỏi mẫu."
+        },
+        {
+          "id": "T03",
+          "kind": "edge",
+          "action": "Thiếu model/server hoặc mẫu quá ít.",
+          "expected": "Kết luận chưa đủ cho claim tương ứng, không suy từ fixture thành real-AI pass."
+        }
+      ],
+      "requirements": [
+        "R3",
+        "R4",
+        "R5",
+        "R7",
+        "R8"
+      ],
+      "useCases": [
+        "UC-04",
+        "UC-06",
+        "UC-11"
+      ]
     }
   },
   {
@@ -123,6 +403,70 @@
     "existingEvidence": {
       "reference": "HO_SO_DA_CO.md",
       "summary": "Đã có giả mã Interface và điều kiện ADT; còn thuật toán nghiệp vụ, flowchart, trace và test Python."
+    },
+    "detail": {
+      "ready": "Có ADT/interface và source baseline; chọn thuật toán Python thật cần chứng minh, không chỉ viết lại pseudocode interface.",
+      "work": [
+        {
+          "id": "W01",
+          "text": "Chọn một luồng minh bạch như validate/apply proposal hoặc đối chiếu ma trận; nêu input/output/invariant."
+        },
+        {
+          "id": "W02",
+          "text": "Viết pseudocode/flowchart có nhánh quyền/version/consent/lỗi và điều kiện dừng; link implementation Python."
+        },
+        {
+          "id": "W03",
+          "text": "Dry-run đúng/stale/quá vùng/cancel với state trước-sau và expected; đối chiếu pytest thực."
+        },
+        {
+          "id": "W04",
+          "text": "Phân tích chi phí theo biến n/k cụ thể, đo nếu tuyên bố tối ưu; phân biệt rule xác định với AI xác suất."
+        },
+        {
+          "id": "W05",
+          "text": "Review trace/model/code/test, ghi counterexample/giới hạn và trách nhiệm khi AI sai."
+        }
+      ],
+      "handoff": {
+        "to": [
+          "BE-1",
+          "BE-3",
+          "BE-5"
+        ],
+        "artifact": "Pseudocode/flowchart, bảng dry-run, phân tích chi phí có giả định và pytest theo SHA."
+      },
+      "cases": [
+        {
+          "id": "T01",
+          "kind": "happy",
+          "action": "Trace ca hợp lệ từ input tới state sau.",
+          "expected": "Pseudocode, Python và expected khớp invariants."
+        },
+        {
+          "id": "T02",
+          "kind": "error",
+          "action": "Stale hoặc patch chạm câu ngoài scope.",
+          "expected": "Nhánh từ chối rõ, không đổi state kể cả lỗi giữa transaction."
+        },
+        {
+          "id": "T03",
+          "kind": "edge",
+          "action": "Đầu vào rỗng/lớn hoặc hủy sát commit.",
+          "expected": "Có điều kiện dừng/chi phí và bằng chứng, không tuyên bố O(1) tùy tiện."
+        }
+      ],
+      "requirements": [
+        "R2",
+        "R5",
+        "R7",
+        "R8"
+      ],
+      "useCases": [
+        "UC-06",
+        "UC-07",
+        "UC-08"
+      ]
     }
   },
   {
@@ -154,6 +498,82 @@
     "existingEvidence": {
       "reference": "HO_SO_DA_CO.md",
       "summary": "Đã có slide và nhật ký cải tiến tài liệu; còn bằng chứng đánh giá sản phẩm và demo cuối."
+    },
+    "detail": {
+      "ready": "Có baseline kỹ thuật và các hồ sơ thiết kế; cần kết quả người dùng/model/candidate thật để nghiệm thu các claim tương ứng.",
+      "work": [
+        {
+          "id": "W01",
+          "text": "Chốt rubric/metrics/dataset và consent cho functional/value/usability/accessibility; ghi sample size, môi trường và SHA."
+        },
+        {
+          "id": "W02",
+          "text": "Chạy bộ test/quan sát tác vụ, ghi expected/actual và error taxonomy; không đồng nhất CI xanh với người dùng dùng tốt."
+        },
+        {
+          "id": "W03",
+          "text": "Chọn ít nhất một vấn đề có bằng chứng, sửa và đo/kiểm lại cùng tác vụ; giữ trước/sau và giới hạn."
+        },
+        {
+          "id": "W04",
+          "text": "Tổng hợp R1–R8/CT/UC, đóng góp/issue/PR/source kế thừa/AI hỗ trợ và quyết định giữ/sửa/bỏ."
+        },
+        {
+          "id": "W05",
+          "text": "Review báo cáo/demo/reproduction từ máy khác; chốt mục pending, thông báo lớp và rủi ro chưa xử lý."
+        }
+      ],
+      "handoff": {
+        "to": [
+          "BE-1",
+          "UI-1",
+          "BE-2"
+        ],
+        "artifact": "Gói đánh giá trước-sau, feedback/error log, báo cáo/demo/đóng góp và bảng truy vết bằng chứng."
+      },
+      "cases": [
+        {
+          "id": "T01",
+          "kind": "happy",
+          "action": "Một tác vụ có baseline, cải tiến và lần kiểm lại.",
+          "expected": "Kết luận dựa dữ liệu cùng cách đo, không chỉ ảnh slide đẹp hơn."
+        },
+        {
+          "id": "T02",
+          "kind": "error",
+          "action": "Thiếu người dùng/model hoặc còn bug mất dữ liệu.",
+          "expected": "Claim tương ứng pending/không đạt, không báo hoàn thành toàn bộ."
+        },
+        {
+          "id": "T03",
+          "kind": "edge",
+          "action": "Mẫu ít, kết quả trái chiều hoặc cải tiến gây regression.",
+          "expected": "Ghi giới hạn/trade-off và quyết định giữ/sửa/bỏ có lý do."
+        }
+      ],
+      "requirements": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R7",
+        "R8"
+      ],
+      "useCases": [
+        "UC-01",
+        "UC-02",
+        "UC-03",
+        "UC-04",
+        "UC-05",
+        "UC-06",
+        "UC-07",
+        "UC-08",
+        "UC-09",
+        "UC-10",
+        "UC-11"
+      ]
     }
   }
 ]

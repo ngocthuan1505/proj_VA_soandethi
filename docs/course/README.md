@@ -1,5 +1,7 @@
 # Áp dụng môn Computational Thinking vào đồ án Mạch
 
+**Nhận việc hồ sơ:** [Chi tiết sáu task CT](BACKLOG_CT.md), có bước Wxx, ca kiểm Txx, đầu ra và người nhận bàn giao; kế thừa hồ sơ cũ thay vì viết lại. Các bước này chưa phải kết quả thực hiện hoặc điểm đã đạt.
+
 Tài liệu đã đọc ngày 04/11/2026: **6 PDF, 258 trang** trong [thư mục môn học do Thuận cung cấp](https://drive.google.com/drive/folders/1L_2gLfP4aXve4dcdobSJtAIqDeOoONcK). Chỉ lưu diễn giải, kế hoạch áp dụng và liên kết nguồn; không chép toàn bộ slide vào repo. Danh sách file, số trang và checksum nằm trong [sources.json](sources.json).
 
 **Đã đối chiếu chat còn lại cùng dự án:** nhóm đã có proposal/baseline, Decomposition–Pattern 23 trang và hồ sơ Abstraction. Xem [hồ sơ đã có và việc còn lại](HO_SO_DA_CO.md); dùng lại tài liệu này, không làm lại từ đầu. Đồng thời đã tìm được [đề bài riêng với R1–R8, gói nộp và rubric](DE_BAI_GOC.md), ngoài sáu bài giảng.

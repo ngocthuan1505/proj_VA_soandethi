@@ -1,5 +1,7 @@
 # Bắt đầu làm việc nhóm
 
+**Task đã có chỉ dẫn cụ thể:** [24 task kỹ thuật](BACKLOG.md) và [6 task hồ sơ](../course/BACKLOG_CT.md), mỗi task có điều kiện bắt đầu, Wxx, Txx với expected result, artifact và bên nhận bàn giao. Đọc [cách ghép/gates/phụ thuộc](KE_HOACH_TICH_HOP.md), [11 use case](../product/USE_CASES.md) và [kế hoạch test xuyên module](../testing/KIEM_THU_TICH_HOP.md). Không đồng nhất checklist kế hoạch với tiến độ đã hoàn thành.
+
 **Hai chat nghiên cứu và thực hành:** đọc [điểm bắt đầu và bản bàn giao chung](../context/README.md); cập nhật phần mình làm để bên kia kế thừa quyết định và bằng chứng mà không phải lục lại toàn bộ chat.
 
 **Ràng buộc môn học: Python là ngôn ngữ chính. Đọc [kế hoạch chuyển Python](../architecture/PYTHON_MIGRATION.md) và [backend/README](../../backend/README.md). Node backend hiện có chỉ là legacy reference, không phải kiến trúc đích.**

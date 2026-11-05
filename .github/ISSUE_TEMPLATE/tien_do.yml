@@ -30,7 +30,7 @@ body:
     id: output
     attributes:
       label: Đã làm và bằng chứng
-      description: "Nêu đầu ra cụ thể, link PR/commit/ảnh/test và kết quả. Nếu mới phân tích, ghi tài liệu đang review; chưa chạy thì nói rõ."
+      description: "Ghi bước task/Wxx, đầu ra, PR/commit/ảnh; ca task/Txx có expected/actual và đã chạy/chưa chạy. Nêu phần kế thừa/phần mới, bên nhận bàn giao; phân tích/fixture chưa là tích hợp thật."
     validations:
       required: true
   - type: textarea
