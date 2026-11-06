@@ -94,6 +94,8 @@ Sửa `editor-engine.js` thì chạy thêm `npm run build-editor`; sửa tài li
 
 ## 5. Chạy phần Python đúng mức hiện tại
 
+Cổng 8000 là ví dụ, không bắt buộc. Nếu máy chạy được ở 8080, đổi `--port 8080` và mở đúng URL 8080. [Hướng dẫn phân biệt lỗi cổng](LOI_CONG_API.md).
+
 ```sh
 cd backend
 uv sync --frozen --python 3.12
