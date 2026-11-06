@@ -1,8 +1,10 @@
 # Bàn giao: xây app và kiểm thử
 
-Cập nhật: 05/11/2026.
+Cập nhật: 06/11/2026.
 
 ## Hiện trạng đã kiểm
+
+- Có [bản tóm tắt toàn repo cho người mới](../../DOC_REPO_TRONG_5_PHUT.md), README dẫn bản này trước và thu gọn tài liệu chi tiết. Kiểm FastAPI thực tại loopback 8000/8080 trên clone riêng: cả hai health/docs 200, readiness 503 đúng foundation; dừng đúng tiến trình test, không đụng app 4173. Không có log máy thành viên nên chưa kết luận lỗi 8000 trên máy đó. [Hướng dẫn cổng thay thế/chẩn đoán](../team/LOI_CONG_API.md); không thay nghiệp vụ hoặc port mặc định toàn app.
 
 - Theo Thuận sửa cơ chế nhận việc: chỉ chốt nhóm 3 UI/5 backend trong members.json, mã UI-1/BE-2… là mảng để nghiên cứu và tự chọn/làm chung; không gán người theo thứ tự. Có [menu định hướng và đăng ký](../team/CHON_VIEC.md). Bỏ auto-assign từ roster; quyền repo/Project và yêu cầu Python giữ nguyên, GreenNode chỉ Thuận. Bản PDF sửa 2 thay bảng phân công cứng trước đó.
 

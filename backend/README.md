@@ -14,6 +14,10 @@ uv run uvicorn mach_backend.main:app --app-dir src --host 127.0.0.1 --port 8000 
 
 Mở `http://127.0.0.1:8000/docs` hoặc `/api/health`. **Hiện chỉ có liveness và readiness trả 503**, chưa có auth/đề/DB/AI/import/export Python hoàn chỉnh. Không đưa scaffold này lên Internet hoặc gọi nó là app đã migrate xong. Frontend hiện vẫn dùng hợp đồng Node cũ cho đến khi các task Python tương ứng hoàn tất; UI có thể phát triển bằng fixture.
 
+## Nếu cổng 8000 bị lỗi
+
+Không có ràng buộc phải dùng 8000. Có thể đổi thành `--port 8080` trong lệnh trên và mở `http://127.0.0.1:8080/docs`; nếu 8080 cũng bận thì chọn cổng trống khác. Đổi cổng không triển khai thêm nghiệp vụ và UI demo 4173 chưa tự nối nền Python. [Phân biệt lỗi bind/import/readiness và cách kiểm tra](../docs/team/LOI_CONG_API.md).
+
 ## Kiểm tra
 
 ```sh

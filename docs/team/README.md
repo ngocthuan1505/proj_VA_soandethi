@@ -1,5 +1,7 @@
 # Bắt đầu làm việc nhóm
 
+**Chưa biết đọc gì trước:** xem [tóm tắt repo trong 5 phút](../../DOC_REPO_TRONG_5_PHUT.md); chỉ mở tài liệu chi tiết khi đã chọn phần cần làm.
+
 **Cập nhật cách nhận việc:** chỉ chốt nhóm UI/backend. [Đọc định hướng và tự đăng ký cá nhân/nhóm](CHON_VIEC.md); ba bạn UI có thể cùng làm một mảng/luồng. UI-1/BE-2… là mã mảng, không phải người.
 
 **File gửi nhóm:** [Hướng dẫn có đầy đủ link](HUONG_DAN_GUI_DISCORD.md) · [Bản PDF](HUONG_DAN_NHOM_MACH.pdf).

@@ -1,5 +1,10 @@
 # Mạch — Trợ lý AI soạn đề thi
 
+**Mới vào repo? Chỉ đọc [bản tóm tắt trong 5 phút](DOC_REPO_TRONG_5_PHUT.md) trước.** Có bản đồ source, phần đã có/còn thiếu, lệnh mở demo và đường dẫn tự chọn việc; chưa cần đọc toàn bộ backlog.
+
+<details>
+<summary>Tài liệu chi tiết, hồ sơ và kế hoạch nhóm</summary>
+
 **Thành viên mới:** [Cẩm nang có link task và cách bật app](docs/team/HUONG_DAN_GUI_DISCORD.md) · [PDF để gửi Discord](docs/team/HUONG_DAN_NHOM_MACH.pdf).
 
 **Nhận việc chi tiết:** [Task kỹ thuật](docs/team/BACKLOG.md) · [Task hồ sơ môn](docs/course/BACKLOG_CT.md) · [11 use case](docs/product/USE_CASES.md) · [Bàn giao và gates M1–M3](docs/team/KE_HOACH_TICH_HOP.md) · [Test tích hợp](docs/testing/KIEM_THU_TICH_HOP.md). Các bước/ca kiểm là kế hoạch cần thực hiện, không phải kết quả đã đạt.
@@ -11,6 +16,9 @@
 **Đổi server GreenNode:** source app/worker và các bước dựng môi trường đã được bảo toàn; xem [hồ sơ khôi phục](ops/greennode/KHOI_PHUC.md). Chưa lấy lại được database, cấu hình riêng hoặc trọng số từ volume cũ; clone repo không khôi phục các phần này.
 
 **Theo quy định môn học, Python là ngôn ngữ chính. Backend đích: FastAPI; xem [backend/README.md](backend/README.md) và [kế hoạch chuyển đổi](docs/architecture/PYTHON_MIGRATION.md). Scaffold Python hiện có health/readiness, chưa có đầy đủ nghiệp vụ; backend Node cũ giữ làm tham chiếu.**
+
+
+</details>
 
 ## Bắt đầu backend Python
 
