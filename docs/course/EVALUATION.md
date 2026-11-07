@@ -6,7 +6,7 @@ Nguồn: Topic 6 trang 17–24, 26–30, 32. Đây là kế hoạch chưa có d�
 
 ## Bốn loại bằng chứng
 
-| Loại | Câu hỏi với Mạch | Cách thu thập dự kiến |
+| Loại | Câu hỏi với Soạn đề thi | Cách thu thập dự kiến |
 |---|---|---|
 | Giá trị/khái niệm | Giáo viên có tiết kiệm công sức ở bước họ thực sự gặp khó không? | Phỏng vấn + tác vụ trước/sau bằng nội dung tự tạo, không chỉ hỏi thích UI |
 | Chức năng | Tạo/sửa/lưu/reload/xuất có đúng, giữ công thức/ownership/version không? | Pytest/contract/golden fixture/UI, gồm input rỗng/hỏng/quá lớn, stale/cancel |

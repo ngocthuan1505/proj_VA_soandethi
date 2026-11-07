@@ -1,4 +1,4 @@
-# Báo cáo đồ án Mạch — khung điền theo bằng chứng
+# Báo cáo đồ án Soạn đề thi — khung điền theo bằng chứng
 
 Trạng thái: **khung chuẩn bị, chưa phải báo cáo kết quả hoàn thành**. Nhóm điền khi có dữ liệu; BE-5 tổng hợp, mỗi vai trò chịu trách nhiệm phần mình. Đối chiếu [yêu cầu môn và nguồn](../course/README.md), không tự nhận rubric chi tiết chưa được phát.
 

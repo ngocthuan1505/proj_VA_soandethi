@@ -1,8 +1,11 @@
 # Bàn giao: xây app và kiểm thử
 
-Cập nhật: 06/11/2026.
+Cập nhật: 07/11/2026.
 
 ## Hiện trạng đã kiểm
+
+- 07/11 theo Thuận: dùng **tên tạm Soạn đề thi (Exam Maker)**, chưa chốt tên sản phẩm. Đổi title/nhãn/logo editor và đăng nhập, tiêu đề Swagger, README/tóm tắt/hướng dẫn/tài liệu môn/khung báo cáo; không sửa hồ sơ Docs/Canva hay bản bàn giao lý thuyết chưa commit. Có launcher mới `OPEN-SOAN-DE.ps1`, wrapper cũ tương thích; PDF sửa 3 tên trung tính, 6 trang/66 link đã render/kiểm metadata và đọc đủ trang, bản ở đường dẫn cũ cùng nội dung để giữ link đã gửi. Các module/liveness ID/biến/volume/đường dẫn lưu trữ/marker cũ giữ để dữ liệu, lệnh chạy và task không hỏng. Bảng GitHub đã đổi tên, vẫn Private; không đổi quyền, assignee hoặc Status.
+- Kiểm lượt đổi tên: npm ci, 98 test Node, 14 test kế hoạch/link, uv sync frozen, 2 pytest, Ruff/format/ty đạt; 13 ca chat/usability và 12 ca authoring desktop/mobile đạt, có assert title/nhãn/logo mới. Bộ online lần đầu timeout 30 giây ở save-export; chạy lại riêng cùng source/fixture đạt đủ 9 ca gồm login/tên mới/lưu/reload/xuất Word-PDF/logout/quyền/mobile. Chưa kết luận nguyên nhân biến động thời gian; không sửa nghiệp vụ export trong lượt đổi tên. Không coi kiểm fixture là nghiệm thu dịch vụ AI thật hoặc chuyển hết Python. Tác động bên lý thuyết: dùng tên tạm này trong tài liệu mới; hồ sơ trực tuyến chưa tự sửa, không tuyên bố nhóm đã chốt thương hiệu.
 
 - Có [bản tóm tắt toàn repo cho người mới](../../DOC_REPO_TRONG_5_PHUT.md), README dẫn bản này trước và thu gọn tài liệu chi tiết. Kiểm FastAPI thực tại loopback 8000/8080 trên clone riêng: cả hai health/docs 200, readiness 503 đúng foundation; dừng đúng tiến trình test, không đụng app 4173. Không có log máy thành viên nên chưa kết luận lỗi 8000 trên máy đó. [Hướng dẫn cổng thay thế/chẩn đoán](../team/LOI_CONG_API.md); không thay nghiệp vụ hoặc port mặc định toàn app.
 

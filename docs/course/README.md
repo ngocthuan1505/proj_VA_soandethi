@@ -1,4 +1,4 @@
-# Áp dụng môn Computational Thinking vào đồ án Mạch
+# Áp dụng môn Computational Thinking vào đồ án Soạn đề thi
 
 **Nhận việc hồ sơ:** [Chi tiết sáu task CT](BACKLOG_CT.md), có bước Wxx, ca kiểm Txx, đầu ra và người nhận bàn giao; kế thừa hồ sơ cũ thay vì viết lại. Các bước này chưa phải kết quả thực hiện hoặc điểm đã đạt.
 
@@ -21,7 +21,7 @@ Topic 5 và 6 trong thư mục ghi **2025** trên slide, trong khi Topic 1–4 g
 
 ## Mốc đánh giá đã thấy trong slide
 
-Topic 1 trang 39: phần bài tập 30% (quiz 10%, lab 20%); đồ án 70% gồm **Proposal + PoC 20%, MVP 10%, sản phẩm cuối 40%**. Đây là tỉ trọng tổng quan trong slide, không phải rubric chi tiết cho từng chức năng Mạch.
+Topic 1 trang 39: phần bài tập 30% (quiz 10%, lab 20%); đồ án 70% gồm **Proposal + PoC 20%, MVP 10%, sản phẩm cuối 40%**. Đây là tỉ trọng tổng quan trong slide, không phải rubric chi tiết cho từng chức năng Soạn đề thi.
 
 Topic 1 trang 36 và Topic 2 trang 45 minh họa Proposal/PoC ở tuần 5, phát triển/kiểm thử ở giai đoạn tiếp theo và đánh giá/demo ở tuần 11. Trang 38 liệt kê 10 lab. **Chưa có lịch lớp/ngày nộp cụ thể hoặc đề bài lab chi tiết trong sáu PDF này.** Không lấy ngày minh họa SMART trong slide làm deadline thật.
 

@@ -4,7 +4,7 @@
 
 **Cập nhật cách nhận việc:** chỉ chốt nhóm UI/backend. [Đọc định hướng và tự đăng ký cá nhân/nhóm](CHON_VIEC.md); ba bạn UI có thể cùng làm một mảng/luồng. UI-1/BE-2… là mã mảng, không phải người.
 
-**File gửi nhóm:** [Hướng dẫn có đầy đủ link](HUONG_DAN_GUI_DISCORD.md) · [Bản PDF](HUONG_DAN_NHOM_MACH.pdf).
+**File gửi nhóm:** [Hướng dẫn có đầy đủ link](HUONG_DAN_GUI_DISCORD.md) · [Bản PDF](HUONG_DAN_NHOM_SOAN_DE_THI.pdf).
 
 **Task đã có chỉ dẫn cụ thể:** [24 task kỹ thuật](BACKLOG.md) và [6 task hồ sơ](../course/BACKLOG_CT.md), mỗi task có điều kiện bắt đầu, Wxx, Txx với expected result, artifact và bên nhận bàn giao. Đọc [cách ghép/gates/phụ thuộc](KE_HOACH_TICH_HOP.md), [11 use case](../product/USE_CASES.md) và [kế hoạch test xuyên module](../testing/KIEM_THU_TICH_HOP.md). Không đồng nhất checklist kế hoạch với tiến độ đã hoàn thành.
 

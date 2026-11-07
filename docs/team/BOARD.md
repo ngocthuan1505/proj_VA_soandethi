@@ -4,7 +4,7 @@
 - [Dạng bảng — Danh sách công việc](https://github.com/users/ngocthuan1505/projects/1/views/2)
 - [Điểm bắt đầu của nhóm — issue #25](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/25)
 
-Project **Mạch — Tiến độ đồ án Python** và repo đều đang riêng tư. Bảng dùng issue gốc, không tạo bản sao công việc trên Excel: 24 task kỹ thuật #1–#24 và thêm 6 hồ sơ môn CT-01…06 (xem [link issue](../course/github-issues.json)). Mỗi người có ba gói việc kỹ thuật theo [phân công](ROLES.md): 3 UI và 5 backend; Thuận là BE-1, chỉ Thuận vận hành GreenNode. Hồ sơ CT là đầu ra chung, không thêm thành viên hoặc tính hai lần phần code.
+Project **Soạn đề thi — Tiến độ đồ án Python** và repo đều đang riêng tư. Bảng dùng issue gốc, không tạo bản sao công việc trên Excel: 24 task kỹ thuật #1–#24 và thêm 6 hồ sơ môn CT-01…06 (xem [link issue](../course/github-issues.json)). Mỗi người có ba gói việc kỹ thuật theo [phân công](ROLES.md): 3 UI và 5 backend; Thuận là BE-1, chỉ Thuận vận hành GreenNode. Hồ sơ CT là đầu ra chung, không thêm thành viên hoặc tính hai lần phần code.
 
 ## Nhận và thực hiện công việc
 

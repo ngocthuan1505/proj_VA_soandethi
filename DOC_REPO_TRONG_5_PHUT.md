@@ -1,10 +1,10 @@
-# Đọc repo Mạch trong 5 phút
+# Đọc repo Soạn đề thi trong 5 phút
 
 Bản tóm tắt 06/11/2026 cho người mới. **Chỉ cần đọc file này trước**, mở demo rồi chọn việc; chưa cần đọc hết backlog/hồ sơ. Đây là bản đồ repo, không phải tuyên bố mọi tính năng đã nghiệm thu.
 
 ## 1. Nhóm đang xây cái gì?
 
-Mạch là trợ lý soạn đề cho giáo viên: tạo/mở đề, soạn trực tiếp, chèn công thức không cần nhớ LaTeX, dùng nguồn tài liệu, hỏi/sửa bằng AI có xem trước và xác nhận, lưu và xuất Word/PDF bản học sinh/giáo viên.
+Soạn đề thi là trợ lý soạn đề cho giáo viên: tạo/mở đề, soạn trực tiếp, chèn công thức không cần nhớ LaTeX, dùng nguồn tài liệu, hỏi/sửa bằng AI có xem trước và xác nhận, lưu và xuất Word/PDF bản học sinh/giáo viên.
 
 **Đã có demo JS/Node khá đầy đủ để kế thừa.** Đồ án yêu cầu Python là ngôn ngữ chính nên nhóm đang chuẩn bị chuyển core/backend sang FastAPI theo từng phần, giữ JavaScript cho editor/trình duyệt. `backend/` hiện mới có health/readiness, chưa có toàn bộ nghiệp vụ. Không phải xây lại UI từ số 0 và cũng chưa được coi là đã chuyển Python xong.
 

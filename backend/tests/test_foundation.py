@@ -22,4 +22,5 @@ def test_python_service_liveness_does_not_claim_business_readiness() -> None:
 def test_no_fake_business_routes_or_proxy_to_node() -> None:
     assert client.get("/api/kv").status_code == 404
     schema = client.get("/openapi.json").json()
+    assert schema["info"]["title"] == "Soạn đề thi Python API"
     assert set(schema["paths"]) == {"/api/health", "/api/readiness"}

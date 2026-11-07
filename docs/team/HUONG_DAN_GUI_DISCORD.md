@@ -1,6 +1,10 @@
-# Mạch - Hướng dẫn vào nhóm và bắt đầu làm đồ án
+# Soạn đề thi - Hướng dẫn vào nhóm và bắt đầu làm đồ án
 
-Bản sửa 2 ngày 05/11/2026 - **tự chọn việc hoặc làm chung, thay bản phân công cứng trước đó**. Repo và Project giữ **Private**. Tài liệu này không có khóa API, mật khẩu, mã mời bí mật hoặc địa chỉ server GreenNode. Bản PDF đi kèm có link bấm được; tài liệu GitHub là bản cập nhật lâu dài.
+Bản sửa 3 ngày 07/11/2026 - **tự chọn việc hoặc làm chung, thay bản phân công cứng trước đó**. Repo và Project giữ **Private**. Tài liệu này không có khóa API, mật khẩu, mã mời bí mật hoặc địa chỉ server GreenNode. Bản PDF đi kèm có link bấm được; tài liệu GitHub là bản cập nhật lâu dài.
+
+Tên tạm của đồ án là **Soạn đề thi (Exam Maker)**; nhóm chưa chốt tên sản phẩm.
+
+Đọc [bản tóm tắt repo trong 5 phút](https://github.com/ngocthuan1505/proj_VA_soandethi/blob/main/DOC_REPO_TRONG_5_PHUT.md) trước khi mở tài liệu chi tiết.
 
 ## 1. Nhận quyền trước khi clone
 

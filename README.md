@@ -1,11 +1,14 @@
-# Mạch — Trợ lý AI soạn đề thi
+# Soạn đề thi — Trợ lý AI soạn đề thi
+
+**Tên tạm: Soạn đề thi (Exam Maker). Nhóm chưa chốt tên sản phẩm.**
+
 
 **Mới vào repo? Chỉ đọc [bản tóm tắt trong 5 phút](DOC_REPO_TRONG_5_PHUT.md) trước.** Có bản đồ source, phần đã có/còn thiếu, lệnh mở demo và đường dẫn tự chọn việc; chưa cần đọc toàn bộ backlog.
 
 <details>
 <summary>Tài liệu chi tiết, hồ sơ và kế hoạch nhóm</summary>
 
-**Thành viên mới:** [Cẩm nang có link task và cách bật app](docs/team/HUONG_DAN_GUI_DISCORD.md) · [PDF để gửi Discord](docs/team/HUONG_DAN_NHOM_MACH.pdf).
+**Thành viên mới:** [Cẩm nang có link task và cách bật app](docs/team/HUONG_DAN_GUI_DISCORD.md) · [PDF để gửi Discord](docs/team/HUONG_DAN_NHOM_SOAN_DE_THI.pdf).
 
 **Nhận việc chi tiết:** [Task kỹ thuật](docs/team/BACKLOG.md) · [Task hồ sơ môn](docs/course/BACKLOG_CT.md) · [11 use case](docs/product/USE_CASES.md) · [Bàn giao và gates M1–M3](docs/team/KE_HOACH_TICH_HOP.md) · [Test tích hợp](docs/testing/KIEM_THU_TICH_HOP.md). Các bước/ca kiểm là kế hoạch cần thực hiện, không phải kết quả đã đạt.
 
@@ -45,7 +48,7 @@ npm ci
 npm start
 ```
 
-Mở **http://127.0.0.1:4173/**. Giữ tiến trình chạy trong lúc sử dụng; Ctrl+C để dừng. Trên Windows có thể dùng `START-DEMO.cmd` hoặc `OPEN-MACH.ps1` sau khi đã chạy `npm ci`.
+Mở **http://127.0.0.1:4173/**. Giữ tiến trình chạy trong lúc sử dụng; Ctrl+C để dừng. Trên Windows có thể dùng `START-DEMO.cmd` hoặc `OPEN-SOAN-DE.ps1` sau khi đã chạy `npm ci`.
 
 Linux: đặt `BROWSER_PATH` tới Chromium/Chrome để xuất PDF, ví dụ `BROWSER_PATH=/usr/bin/chromium npm start`. Trên macOS cũng đặt biến này tới file thực thi Chrome. Không cần trình duyệt headless để sửa đề hoặc chạy bộ unit test.
 
