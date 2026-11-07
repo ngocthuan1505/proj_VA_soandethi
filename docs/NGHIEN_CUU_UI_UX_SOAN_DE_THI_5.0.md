@@ -1,4 +1,4 @@
-# Nghiên cứu và đánh giá UI/UX — Mạch 5.0
+# Nghiên cứu và đánh giá UI/UX — Soạn đề thi 5.0
 
 Ngày: 18/10/2026. Mục tiêu: giảm yêu cầu nhớ cú pháp khi soạn nội dung chuyên môn, đồng thời tạo nhận diện và cách điều hướng riêng cho app. Phạm vi là bàn soạn MVP đang chạy ở máy người dùng; không triển khai công khai.
 
@@ -24,7 +24,7 @@ Ngày: 18/10/2026. Mục tiêu: giảm yêu cầu nhớ cú pháp khi soạn n�
 | Hóa học vẫn giống bàn nhập toán | Ô chất tham gia/sản phẩm/điều kiện; preview mhchem; ghi rõ phạm vi kiểm nguyên tố | Phản ứng thường, ion và điều kiện giữ đúng khi chèn |
 | Chỉ có điểm vào Toán/Hóa | Một thư viện sáu môn; tìm không dấu; khung nội dung phù hợp môn | Lý/Sinh/Văn/Anh đều tạo block thật, sửa lại được |
 | Nhiều cách tìm công cụ nằm trong menu | Thanh điều hướng cố định + thư viện theo môn + Ctrl+K | Tìm và mở đúng công cụ, không làm mất bản soạn |
-| Bố cục/nhận diện quá sát dịch vụ tham khảo | Nhận diện Mạch, rail xanh đậm, cấu trúc dạng thẻ, toolbar trong bàn soạn, panel riêng | Duy trì định dạng in; giao diện làm việc có thiết kế riêng |
+| Bố cục/nhận diện quá sát dịch vụ tham khảo | Nhận diện Soạn đề thi, rail xanh đậm, cấu trúc dạng thẻ, toolbar trong bàn soạn, panel riêng | Duy trì định dạng in; giao diện làm việc có thiết kế riêng |
 | Trợ lý luôn chiếm không gian | Chế độ tập trung có nút thoát rõ | Ẩn/hiện hai cột phụ mà dữ liệu giữ nguyên |
 | Ngữ liệu nhiều dòng bị làm phẳng trong bộ tuần tự hóa | Dùng chung documentPlain cho editor và xuất; giữ blockquote/dòng/bảng | Nhập thơ, reload, giữ từng dòng và nguồn |
 

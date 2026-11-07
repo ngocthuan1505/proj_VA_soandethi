@@ -53,7 +53,7 @@ Chuỗi 5 Whys cần làm sau quan sát: mất thời gian → bước cụ th�
 
 Proposal đã có baseline soandethi, Quizgecko, NotebookLM, Azota và Smallpdf dựa trên nguồn và ba video; không xóa phần đó để thay bằng bảng trắng này. Các nhận xét là kết quả nghiên cứu tại thời điểm tài liệu, chưa phải benchmark trực tiếp đồng đều hoặc xác minh tính năng hiện tại. Bước còn lại: chọn 2–3 công cụ phù hợp, kiểm cùng kịch bản hợp pháp, ghi ngày/phiên bản/quyền truy cập/ảnh được phép và kết quả; không sao chép UI/tài nguyên của họ.
 
-| Nhu cầu giáo viên | Công cụ A + ngày | Công cụ B + ngày | Công cụ C nếu có | Mạch + commit kiểm | Khoảng trống được người dùng xác nhận |
+| Nhu cầu giáo viên | Công cụ A + ngày | Công cụ B + ngày | Công cụ C nếu có | Soạn đề thi + commit kiểm | Khoảng trống được người dùng xác nhận |
 |---|---|---|---|---|---|
 | Chèn công thức không nhớ lệnh | Chưa kiểm | Chưa kiểm | — | Chưa đo | — |
 | Sửa vùng, xem trước, hoàn tác | Chưa kiểm | Chưa kiểm | — | Chưa đo | — |

@@ -1,4 +1,4 @@
-# Mạch 6.0 — Thư viện lớp 1–12
+# Soạn đề thi 6.0 — Thư viện lớp 1–12
 
 Cập nhật ngày 19/10/2026. **485 mục trong 19 nhóm môn:** 401 công thức tham khảo, 28 công cụ ký hiệu và 56 mẫu văn bản/bảng. Có 429 mục chứa biểu thức toán/hóa. Đây là số mục của ứng dụng; không phải số công thức riêng biệt trong chương trình quốc gia. Một số nút tắt quen thuộc và mẫu theo chủ đề có thể cùng biểu diễn một quan hệ.
 

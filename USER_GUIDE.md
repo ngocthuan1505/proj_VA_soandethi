@@ -1,10 +1,10 @@
-# Mạch 6.0 — Bàn soạn thông minh
+# Soạn đề thi 6.0 — Bàn soạn thông minh
 
 Ứng dụng hỗ trợ chạy cục bộ và chế độ online có đăng nhập/phân quyền. Cấu hình triển khai tại [deploy/README.md](deploy/README.md); bản clone không kèm dữ liệu hay kết nối server của chủ dự án.
 
 Ứng dụng tiếng Việt chạy tại máy: **http://127.0.0.1:4173/**. Mở `START-DEMO.cmd` và giữ cửa sổ server mở. Sau khi khởi động lại máy cần mở launcher một lần. Đề và dữ liệu cũ được giữ trong kho.
 
-Trên Windows, sau khi cài phụ thuộc có thể mở `START-DEMO.cmd` hoặc `OPEN-MACH.ps1`. Shortcut của máy chủ dự án không đi kèm repo.
+Trên Windows, sau khi cài phụ thuộc có thể mở `START-DEMO.cmd` hoặc `OPEN-SOAN-DE.ps1`. Shortcut của máy chủ dự án không đi kèm repo.
 
 ## Công cụ theo môn, không cần nhớ mã
 
@@ -28,9 +28,9 @@ Ma trận, định thức, hàm từng khoảng, giới hạn, đạo hàm, tíc
 
 ## Giao diện riêng
 
-Nhận diện Mạch: thanh điều hướng bên trái, cột cấu trúc dạng thẻ, bàn giấy trung tâm và trợ lý màu xanh trầm. Nút **Tập trung** mở rộng bàn soạn; **Ctrl+K** tìm công cụ. Tạo đề mới có lựa chọn sáu môn và vẫn nhập được môn khác. Giữ định dạng trang đề trung tính để in.
+Nhận diện Soạn đề thi: thanh điều hướng bên trái, cột cấu trúc dạng thẻ, bàn giấy trung tâm và trợ lý màu xanh trầm. Nút **Tập trung** mở rộng bàn soạn; **Ctrl+K** tìm công cụ. Tạo đề mới có lựa chọn sáu môn và vẫn nhập được môn khác. Giữ định dạng trang đề trung tính để in.
 
-Cơ sở và đánh giá thiết kế: xem [tài liệu](docs/NGHIEN_CUU_UI_UX_MACH_5.0.md) đi kèm. Đây là nghiên cứu tài liệu + walkthrough/kiểm tra kỹ thuật, chưa phải thử nghiệm có giáo viên tham gia hoặc chứng nhận WCAG.
+Cơ sở và đánh giá thiết kế: xem [tài liệu](docs/NGHIEN_CUU_UI_UX_SOAN_DE_THI_5.0.md) đi kèm. Đây là nghiên cứu tài liệu + walkthrough/kiểm tra kỹ thuật, chưa phải thử nghiệm có giáo viên tham gia hoặc chứng nhận WCAG.
 
 ## Sửa bằng chat và vùng bôi đen — cập nhật 19/10/2026
 
@@ -74,3 +74,9 @@ Mẫu soạn đa môn không có nghĩa đã đánh giá chất lượng AI trê
 
 MVP có chế độ online và tài khoản riêng; chưa có đồng biên tập thời gian thực, email hoặc thanh toán thật. Link loopback chỉ dùng trên máy đang chạy app. Trang editor chia theo câu/dòng bảng, một block cực dài có thể làm trang dài ra; Word/PDF tự dàn trang riêng. DOCX chưa chuyển hoàn hảo mọi chart/shape và chưa kiểm trực quan bằng Microsoft Word. OCR ảnh chưa có mô hình nhận dạng công thức chuyên dụng.
 
+
+## Tên tạm và tương thích
+
+Từ 07/11/2026 dùng tên tạm **Soạn đề thi (Exam Maker)**; nhóm chưa chốt thương hiệu. Giao diện, đăng nhập, tài liệu và PDF hướng dẫn dùng tên này. Các định danh kỹ thuật cũ như `mach_backend`, `mach-python`, `MACH_DOMAIN`, `mach_data`, đường dẫn lưu trữ/khôi phục và marker issue được giữ để không làm hỏng lệnh chạy, dữ liệu hoặc tạo task trùng; chúng không phải tên sản phẩm. `OPEN-MACH.ps1` chỉ là lối mở tương thích cho shortcut cũ; dùng `OPEN-SOAN-DE.ps1` cho shortcut mới. Tên file log/ảnh và commit cũ là bằng chứng lịch sử, không đổi lại.
+
+Bản PDF chính là `docs/team/HUONG_DAN_NHOM_SOAN_DE_THI.pdf`. Đường dẫn PDF cũ được giữ làm bản sao cùng nội dung mới để các link đã gửi trước đó vẫn mở được.

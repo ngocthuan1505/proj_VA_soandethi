@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-app = FastAPI(title="Mạch Python API", version="0.1.0")
+app = FastAPI(title="Soạn đề thi Python API", version="0.1.0")
 
 
 @app.get("/api/health")
