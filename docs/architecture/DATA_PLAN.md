@@ -1,27 +1,39 @@
-# Kế hoạch dữ liệu — bản đề xuất cho BE-3
+# Kế hoạch dữ liệu — đặc tả thiết kế BE-3-001
 
-**Trạng thái: chưa triển khai schema/migration mới. Đích là repository/transaction/migration bằng Python; SQLite KV Node là nguồn tham chiếu.** Không tạo DB rỗng rồi coi dữ liệu thật đã chuyển xong; không thay source trước khi kiểm caller và fixtures.
+**Trạng thái: đã hoàn tất đặc tả thiết kế ERD, Python Repository Contracts, ADR và kế hoạch migration 5 pha của BE-3-001 tại [Hợp đồng dữ liệu (`docs/contracts/du-lieu.md`)](../contracts/du-lieu.md), đã kiểm chứng thực nghiệm DDL/migration/round-trip trên SQLite 3.49.1 (Python 3.12). Chưa thay thế runtime production sang schema mới khi các lát `BE-3-002` và `BE-3-003` chưa cắt nhánh.** Không tạo DB rỗng rồi coi dữ liệu thật đã chuyển xong; không thay source trước khi kiểm caller và fixtures.
 
-## Entity mục tiêu để thảo luận
+## Entity mục tiêu (15 bảng chuẩn hóa)
 
 ```mermaid
 erDiagram
- USERS ||--o{ SESSIONS : owns
- USERS ||--o{ EXAMS : owns
- EXAMS ||--o{ EXAM_VERSIONS : versions
- EXAMS ||--o{ DOCUMENTS : sources
- EXAMS ||--o{ AI_JOBS : requests
- EXAMS ||--o{ EXPORTS : generates
- EXAMS ||--o{ SHARE_SNAPSHOTS : shares
+    USERS ||--o{ SESSIONS : owns
+    USERS ||--o{ USER_SETTINGS : configures
+    USERS ||--o{ SOURCE_DOCUMENTS : uploads
+    USERS ||--o{ EXAMS : owns
+    EXAMS ||--o{ EXAM_DOCUMENTS : links
+    SOURCE_DOCUMENTS ||--o{ EXAM_DOCUMENTS : referenced_by
+    EXAMS ||--o{ QUESTIONS : contains
+    QUESTIONS ||--o{ QUESTION_VERSIONS : versions
+    EXAMS ||--o{ EXAM_REVISIONS : snapshots
+    EXAMS ||--o{ AI_JOBS : requests
+    EXAMS ||--o{ EXPORT_ARTIFACTS : generates
+    EXAMS ||--o{ SHARE_SNAPSHOTS : shares
+    EXAMS ||--o{ AUDIT_LOGS : tracks
 ```
 
-Mỗi tài nguyên cần owner/server-side scope; revision/version thuộc đề và được đối chiếu khi lưu/sửa AI. Snapshot chia sẻ là bản cố định, thu hồi được; không trả lại API key/prompt chứa thông tin riêng. RichDoc, UUID block, hình, đơn vị và nguồn phải bảo toàn qua migration.
+*(Ngoài 13 bảng nghiệp vụ trên còn 2 bảng vận hành di trú: `schema_migrations` và `migration_quarantine` — xem đầy đủ Data Dictionary 15 bảng tại [Mục 2 `docs/contracts/du-lieu.md`](../contracts/du-lieu.md)).*
 
-## Đầu ra BE-3-001
+Mỗi tài nguyên có `owner_id`/server-side scope; `revision` thuộc đề (`exams.revision`) và được kiểm tra nguyên tử (optimistic concurrency `WHERE id = :id AND owner_id = :owner_id AND revision = :expected_revision`) khi lưu/sửa AI; phiên bản từng câu lưu trong `question_versions` (7 trường chuẩn Abstraction + metadata mở rộng). Snapshot chia sẻ (`share_snapshots`) là bản cố định có `revoked` và `expires_at`, không bao giờ chứa `api_key_encrypted` hoặc prompt riêng tư. Toàn bộ `richDoc`, `optionDocs`, `rubric`, `blockIds` (8 UUID/câu + 3 UUID/đề), hình ảnh, công thức, đơn vị và nguồn tài liệu được bảo toàn 100% qua round-trip JSON (`points_q4 = round(points * 4)`).
 
-1. Inventory các key/prefix đang dùng trong backend/accounts/workbench; cột/index/constraint đích và dung lượng tệp.
-2. ADR SQLite local hay PostgreSQL, môi trường dev/test/prod, một hay nhiều process, transaction và optimistic concurrency. PostgreSQL là ứng viên, chưa là lựa chọn đã cài hoặc mua hosting.
-3. Fixture migration tự tạo, số lượng bản ghi/ID/revision trước-sau, checksum nội dung, test chạy lại hai lần.
-4. Kịch bản backup nhất quán, restore vào DB trống trên bản sao, rollback khi lỗi giữa migration. Không sao chép SQLite đang mở bằng `cp` đơn lẻ.
+## Đầu ra BE-3-001 đã nghiệm thu tại [`docs/contracts/du-lieu.md`](../contracts/du-lieu.md)
 
-Mặc định giữ SQLite local cho nhóm chạy editor. Thay driver/schema là task có PR riêng, test callers/import/export/session; không đưa tài nguyên DB của người khác lên server hoặc lưu trên NFS mặc định. Người vận hành dữ liệu thật vẫn là Thuận.
+1. **W01 — Inventory 12 nhóm key/prefix:** Kiểm kê đầy đủ `backend-store.mjs`, `storage.js`, `accounts.mjs`, `mvp-server.mjs`, `workbench-server.mjs`; lập bảng ánh xạ sang 15 bảng quan hệ kèm quy tắc bóc tách blob sang `.data/blobs/{sha256[:2]}/{sha256}.bin`.
+2. **W02 — ERD & Data Dictionary 15 bảng:** Tách rõ 3 trạng thái (`draft_status`, `verification_status`, `approval_status`), kế thừa 6 thực thể cốt lõi + `SessionContext` + 7 trường `QuestionVersion` từ [Hồ sơ đã có (`HO_SO_DA_CO.md`)](../course/HO_SO_DA_CO.md). Khóa chính kép `(owner_id, id)` cho `source_documents` và `ON DELETE SET NULL` cho `ai_jobs.exam_id` / `share_snapshots.exam_id` để chống lỗi đề gốc đã xóa.
+3. **W03 — ADR-001 (SQLite stdlib WAL vs PostgreSQL):** Giữ `sqlite3` (Python standard library) ở chế độ `WAL` + `synchronous=NORMAL` + `foreign_keys=ON` + `BEGIN IMMEDIATE` cho M1–M3, chưa thêm dependency ngoài vào `backend/pyproject.toml`. Đóng gói qua `UnitOfWork` và 8 Python Repository Protocols (đầy đủ 9 trường chuẩn [Khuôn mẫu hợp đồng (`CONTRACTS.md`)](../course/CONTRACTS.md)).
+4. **W04 — Kế hoạch migration 5 pha idempotent & Backup/Restore:** Quét `state` lập map tên file trước khi stream `file:*`, cô lập bản ghi hỏng vào `migration_quarantine`, sao lưu nhất quán qua `sqlite3.Connection.backup()`, chỉ tráo bảng `kv` thành `kv_legacy_backup` khi đạt đối soát.
+5. **W05 & Kiểm chứng T01–T03:** Đã kiểm chứng thực nghiệm trên SQLite `3.49.1` (Python `3.12.10`) với bộ fixture `18` bản ghi KV sạch + `2` bản ghi hỏng:
+   - `T01`: SHA-256 canonical state trước và sau di trú khớp tuyệt đối (`user_a`: `75fe5228...`, `user_b`: `51e480ea...`), `foreign_key_check = 0`, `integrity_check = ok`.
+   - `T02`: Cô lập đúng 2 bản ghi hỏng vào `migration_quarantine`, rollback nguyên tử khi lỗi I/O giả lập (bảng `kv` giữ nguyên 20 dòng), backup/restore qua `conn.backup()` đạt.
+   - `T03`: Chạy lại migration lần 2 giữ nguyên số dòng (`idempotent_equal = true`), xung đột `expected_revision` trả đúng `RevisionConflictError` (`409 Conflict`).
+
+Mặc định giữ SQLite local cho nhóm chạy editor. Việc viết code thực thi repository (`BE-3-002`) và CLI migration/locking (`BE-3-003`) sẽ thực hiện ở các PR riêng ở M2/M3; người vận hành dữ liệu thật trên GreenNode vẫn là Thuận.
