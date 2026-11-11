@@ -178,9 +178,115 @@ def test_check_reads_saved_answer_separately_and_does_not_write(sample):
             response = await client.post(path_for(job), headers=HEADERS, json=body)
             assert response.status_code == 200, response.text
             assert response.headers["cache-control"] == "no-store"
+            assert response.json()["method"] == "model"
             assert response.json()["comparison"] == "disagrees"
             assert response.json()["answer"] == 2
         assert len(requests) == 1
+        assert repo.snapshot(job)[0] == stored
+        assert repo.history_count() == 0
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("expression", "value", "options", "saved", "answer", "comparison", "reason"),
+    [
+        ("x+1", "2", ["1", "2", "3", "4"], 1, 2, "disagrees", "= 3."),
+        ("x+0,1", "0,2", ["0,1", "0,2", "$0,3$", "0,4"], 2, 2, "agrees", "= 3/10."),
+        (r"-2 \times x", "−3", ["5", "6", "7", "8"], None, 1, "needs_review", "= 6."),
+        ("x-1", "2", ["2", "3", "4", "5"], 0, None, "needs_review", "Không có phương án"),
+        ("x+0,1", "0,2", ["0.30", "$0,3$", "1", "2"], 0, None, "needs_review", "nhiều phương án"),
+        ("1/x", "0", ["0", "1", "2", "3"], 0, None, "needs_review", "bằng 0"),
+    ],
+)
+def test_local_check_calculates_without_a_provider(
+    sample, expression, value, options, saved, answer, comparison, reason
+):
+    repo, job, body, stored = sample
+    stored["questions"][0].update(
+        stem=f"Tính ${expression}$ khi $x={value}$.", options=options, answer=saved
+    )
+    repo.update_exam(job, stored)
+    body["sources"] = []
+
+    async def run():
+        transport = httpx.ASGITransport(app=check_app(repo, None))
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(path_for(job), headers=HEADERS, json=body)
+        assert response.status_code == 200, response.text
+        result = response.json()
+        assert result["method"] == "local_arithmetic"
+        assert result["answer"] == answer
+        assert result["comparison"] == comparison
+        assert result["uncertain"] is (answer is None)
+        assert result["evidence"] == []
+        assert reason in result["explanation"]
+        assert result["questionId"] == str(job.question.questionId)
+        assert result["questionVersion"] == 2
+        assert result["baseRevision"] == 4
+        assert repo.snapshot(job)[0] == stored
+        assert repo.history_count() == 0
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("case", ["additional_condition", "multi_operation", "selected_source"])
+def test_check_still_uses_model_outside_the_local_rule(sample, case):
+    repo, job, body, stored = sample
+    stem = "Tính $x+1$ khi $x=2$."
+    match case:
+        case "additional_condition":
+            stem += " Làm tròn kết quả đến hàng chục."
+        case "multi_operation":
+            stem = "Tính $x+1+1$ khi $x=2$."
+    if case != "selected_source":
+        body["sources"] = []
+    stored["questions"][0].update(stem=stem, options=["1", "2", "3", "4"])
+    repo.update_exam(job, stored)
+    requests = []
+
+    async def provider(current):
+        requests.append(current.question.stem)
+        reply = reply_for(current)
+        if not current.sources:
+            reply["evidence"] = []
+        return json.dumps(reply)
+
+    async def run():
+        transport = httpx.ASGITransport(app=check_app(repo, provider))
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(path_for(job), headers=HEADERS, json=body)
+        assert response.status_code == 200, response.text
+        assert response.json()["method"] == "model"
+        assert requests == [stem]
+        assert repo.snapshot(job)[0] == stored
+        assert repo.history_count() == 0
+
+    asyncio.run(run())
+
+
+def test_local_check_discards_result_when_saved_answer_changes(sample):
+    repo, job, body, stored = sample
+    stored["questions"][0].update(stem="Tính $x+1$ khi $x=2$.", options=["1", "2", "3", "4"])
+    repo.update_exam(job, stored)
+    body["sources"] = []
+    reads = 0
+
+    async def read_inputs(*args):
+        nonlocal reads
+        reads += 1
+        inputs = await repo.read_check(*args)
+        if reads == 3:
+            assert inputs is not None
+            return replace(inputs, saved_answer=2)
+        return inputs
+
+    async def run():
+        transport = httpx.ASGITransport(app=check_app(repo, None, read_inputs=read_inputs))
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(path_for(job), headers=HEADERS, json=body)
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"]["code"] == "stale_snapshot"
         assert repo.snapshot(job)[0] == stored
         assert repo.history_count() == 0
 

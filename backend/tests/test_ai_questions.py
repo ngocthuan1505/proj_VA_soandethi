@@ -211,6 +211,7 @@ def test_check_is_blind_and_compares_after_result(check, saved_answer, compariso
         assert set(data["question"]) == {"questionId", "questionVersion", "type", "stem", "options"}
         assert "saved_answer" not in data
         assert "comparison" not in schema
+        assert "method" not in schema
 
     report = asyncio.run(
         check_question(
@@ -241,6 +242,7 @@ def test_insufficient_evidence_requires_review(check):
         ({"questionVersion": 1}, "wrong_job"),
         ({"questionId": IDENTITY["examId"]}, "wrong_job"),
         ({"comparison": "agrees"}, "invalid_result"),
+        ({"method": "local_arithmetic"}, "invalid_result"),
         ({"evidence": []}, "missing_evidence"),
         ({"explanation": r"Kết quả $\frac{1}{2$."}, "invalid_math"),
     ],

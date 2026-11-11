@@ -85,6 +85,7 @@ class CheckProposal(JobIdentity):
 
 class CheckReport(CheckProposal):
     comparison: Literal["agrees", "disagrees", "needs_review"]
+    method: Literal["local_arithmetic", "model"] = "model"
 
 
 def validate_generation_plan(job: GenerateJob) -> None:

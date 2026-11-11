@@ -32,6 +32,7 @@ from mach_backend.ai_questions import (
     validate_generation_plan,
     validate_options,
 )
+from mach_backend.check_arithmetic import check_substitution
 from mach_backend.ollama_protocol import (
     OllamaPatchDraft,
     generation_format,
@@ -246,10 +247,31 @@ async def check_question(
     validate_options(job.question.type, job.question.options)
     if saved_answer is not None:
         validate_answer(job.question.type, saved_answer)
-    return await _run_ai(
+    calculated = None if job.sources or job.requireEvidence else check_substitution(job.question)
+    if calculated is not None:
+        answer, explanation = calculated
+
+        async def calculation(current: CheckJob) -> str:
+            return CheckProposal(
+                jobId=current.jobId,
+                examId=current.examId,
+                baseRevision=current.baseRevision,
+                questionId=current.question.questionId,
+                questionVersion=current.question.questionVersion,
+                answer=answer,
+                explanation=explanation,
+                uncertain=answer is None,
+                evidence=(),
+            ).model_dump_json()
+
+        provider = calculation
+    report = await _run_ai(
         job,
         provider,
         snapshot_is_current,
         lambda current, raw: validate_check(current, raw, saved_answer),
         timeout_seconds,
     )
+    if calculated is not None:
+        return report.model_copy(update={"method": "local_arithmetic"})
+    return report

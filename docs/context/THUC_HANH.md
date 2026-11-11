@@ -145,3 +145,10 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - PR #39 có `build_ai_router` để app đăng ký bảy đường dẫn Sinh, Sửa, Kiểm, xem trạng thái, SSE, hủy và xác nhận. Hàm nhận dependency phiên, reader và repository của ứng dụng. Các route dùng chung một provider, Sinh/Sửa dùng cùng runner. BE-2 và BE-3 có điểm ghép rõ để nối phiên và kho thật.
 - Bốn ca HTTP chạy trên một app với SQLite tạm và phản hồi Ollama giả lập. Kiểm cả hai chiều tranh suất, tài khoản sai, mã mới khi thử lại và xác nhận lưu đúng một revision. 202 pytest đạt, 5 ca model thật bỏ qua mặc định, 101 test Node và 14 test kế hoạch đạt. Hai ca fixture timeout cho SQLite tối đa một giây đọc snapshot trước khi thử hủy provider. Ca cũ dùng 50 ms đã lỗi do hết hạn trước lúc gọi provider khi máy bận.
 - Phần lý thuyết có thể dẫn bốn ca làm bằng chứng kỹ thuật tích hợp CT-03/04/05/06. Cần ghép phiên, kho và UI thật trước nghiệm thu candidate, cùng kho job bền vững nếu cần phục hồi sau restart.
+
+<!-- ban-giao-local-arithmetic-39 -->
+### 11/11/2026 — kiểm một dạng trắc nghiệm thay số bằng Python
+
+- [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) bổ sung phép kiểm số hữu tỉ chính xác cho mẫu trắc nghiệm thay x có một phép tính và phương án số. API ghi `method` để UI phân biệt Python tự tính và model giải lại. Mẫu ngoài phạm vi hoặc có nguồn chọn vẫn đi qua model. Thiếu phương án khớp, nhiều phương án cùng giá trị hoặc chia cho 0 trả cần xem lại.
+- Kiểm thử HTTP với phiên giả lập và SQLite tạm: chạy khi chưa cấu hình provider, đối chiếu thập phân chính xác, phát hiện bất đồng, yêu cầu model khi có nguồn và trả 409 nếu đáp án lưu đã đổi. Phép kiểm chỉ đọc, không thay đề, lịch sử hay trạng thái duyệt. Cục bộ 213 pytest đạt, 5 ca model thật bỏ qua mặc định, 101 test Node, 14 test kế hoạch, uv sync frozen và Ruff/format/ty đạt.
+- Dùng làm bằng chứng kỹ thuật cho nhận diện mẫu và đối chiếu độc lập ở CT-05/06. Luồng này chưa ghép UI và kho thật, chỉ hỗ trợ một mẫu thay số, chưa đo tỉ lệ câu ngoài fixture xử lý được.
