@@ -12,18 +12,15 @@ from mach_backend.ai_contract import (
     AIError,
     BlockTarget,
     ContractModel,
-    Locator,
     PatchJob,
     Revision,
     SourceFragment,
-    validate_locator,
     validate_patch_job,
     validate_sources,
 )
+from mach_backend.ai_sources import SourceKey, SourceSelection, WireUUID, read_selected_sources
 from mach_backend.patch_confirmation import ExamSnapshot, changed_snapshot
 
-type WireUUID = Annotated[UUID, Field(strict=False)]
-type SourceKey = tuple[UUID, Locator]
 type Selection = Annotated[list[Annotated[int, Field(ge=0)]], Field(min_length=2, max_length=2)]
 
 
@@ -34,24 +31,11 @@ class SelectedBlock(ContractModel):
     selection: Selection | None = None
 
 
-class SelectedSource(ContractModel):
-    sourceId: WireUUID
-    sourceVersion: Revision
-    locator: Locator
-
-    @property
-    def key(self) -> SourceKey:
-        return self.sourceId, self.locator
-
-
-class PatchSubmission(ContractModel):
+class PatchSubmission(SourceSelection):
     requestId: WireUUID
     baseRevision: Revision
     request: Annotated[str, Field(min_length=1, max_length=4000)]
-    consent: bool = False
     targets: Annotated[list[SelectedBlock], Field(min_length=1, max_length=12)]
-    sources: Annotated[list[SelectedSource], Field(max_length=12)] = Field(default_factory=list)
-    requireEvidence: bool = False
 
 
 @dataclass(frozen=True)
@@ -64,19 +48,6 @@ class PatchInputs:
 # Đọc đề và đúng các vị trí nguồn hiện hành bằng một snapshot của repository.
 # Không tra phiên bản cũ theo dữ liệu trình duyệt.
 type ReadPatchInputs = Callable[[str, UUID, tuple[SourceKey, ...]], Awaitable[PatchInputs | None]]
-
-
-def selected_source_keys(request: PatchSubmission) -> tuple[SourceKey, ...]:
-    if not request.consent:
-        raise AIError("consent_required", "Xác nhận dùng AI cho lượt sửa này trước khi gửi.")
-    keys = tuple(source.key for source in request.sources)
-    if len(set(keys)) != len(keys):
-        raise AIError("invalid_locator", "Vị trí nguồn bị chọn trùng.")
-    for _, locator in keys:
-        validate_locator(locator)
-    if request.requireEvidence and not keys:
-        raise AIError("missing_source", "Chọn nguồn trước khi yêu cầu kết quả có căn cứ.")
-    return keys
 
 
 def build_patch_job(
@@ -126,19 +97,7 @@ def build_patch_job(
             )
         )
 
-    sources: list[SourceFragment] = []
-    for selected_source in request.sources:
-        matches = [
-            source
-            for source in inputs.sources
-            if source.ownerId == owner_id
-            and (source.sourceId, source.locator) == selected_source.key
-        ]
-        if len(matches) != 1:
-            raise AIError("source_not_found", "Không tìm thấy đoạn nguồn đã chọn.")
-        if matches[0].sourceVersion != selected_source.sourceVersion:
-            raise changed_snapshot()
-        sources.append(matches[0])
+    sources = read_selected_sources(owner_id, request, inputs.sources)
 
     job = PatchJob(
         jobId=uuid4(),
@@ -147,7 +106,7 @@ def build_patch_job(
         ownerId=owner_id,
         request=request.request,
         targets=tuple(targets),
-        sources=tuple(sources),
+        sources=sources,
         requireEvidence=bool(sources) or request.requireEvidence,
     )
     validate_patch_job(job)

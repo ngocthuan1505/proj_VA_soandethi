@@ -93,3 +93,11 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) bổ sung ca opt-in hủy sau khi đã gửi request HTTP tới Qwen2.5 3B cục bộ. Tài khoản khác nhận 404. Hủy đúng phiên đóng kết nối phía app, SSE chỉ phát lại một sự kiện cuối, xác nhận job hủy trả 404. Giới hạn một suất vẫn nhận yêu cầu mới tới bản xem trước.
 - Đề mẫu giữ revision 4 và 0 lịch sử. [Cách chạy và số đo](../testing/KIEM_NHANH_AI.md) ghi đóng HTTP phía app 5,180 ms, tổng 28,010 giây gồm ca chạy lại. 93 pytest đạt, hai ca thật bỏ qua mặc định. 100 test Node, 14 test kế hoạch và Ruff/ty đạt cục bộ.
 - Bằng chứng bổ sung W04 #12, W03/T02 #16, #20 và #24. Phép thử dùng phiên giả lập và SQLite tạm. Thời điểm Ollama ngừng tính toán, phục hồi qua khởi động lại, UI/kho thật và GreenNode cần kiểm riêng.
+
+
+<!-- ban-giao-check-api-39 -->
+### 11/11/2026 — API Kiểm đáp án đọc câu từ kho
+
+- [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) thêm route POST kiểm đáp án theo đề/câu. Python đọc snapshot bằng phiên và tham chiếu nguồn, giữ đáp án lưu ngoài payload model, rồi so kết quả giải độc lập. Kiểm lại câu, nguồn và đáp án hiện hành trước khi trả. Route chỉ đọc.
+- Cục bộ đạt 123 pytest, ba ca model thật bỏ qua mặc định, 100 test Node, 14 test kế hoạch và Ruff/ty. 30 ca mới kiểm quyền/consent, nguồn giả, lệch phiên bản giữa chừng, giới hạn đồng thời, timeout/hủy và lỗi provider được lược nội dung. Ca HTTP thật với Qwen2.5 3B đạt trong 35,099 giây, báo bất đồng với đáp án mẫu cố ý sai và giữ nguyên kho.
+- BE-2 ghép phiên, BE-3 cung cấp reader theo hợp đồng, UI-3 nhận comparison/căn cứ. [Hợp đồng](../contracts/ai.md), [cách chạy](../testing/KIEM_NHANH_AI.md). Bên lý thuyết có thể dẫn ca HTTP/model thật làm bằng chứng kỹ thuật CT-03/04/05/06. Ca này dùng phiên giả lập, SQLite tạm. Cần kiểm giao diện và kho thật khi tích hợp.

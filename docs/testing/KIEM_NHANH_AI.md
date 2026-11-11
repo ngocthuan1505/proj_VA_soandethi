@@ -39,6 +39,16 @@ uv run pytest tests/test_patch_confirmation.py -k test_smoke_sua_va_luu_qua_http
 
 Ca này dùng FastAPI, phiên giả lập và SQLite tạm. Sau khi model trả đề xuất, kiểm đề vẫn nguyên trước khi bấm xác nhận. Sau xác nhận, kiểm revision, lịch sử, công thức và các câu ngoài vùng sửa. Chế độ pytest mặc định bỏ qua ca này.
 
+## Kiểm đáp án từ câu đã lưu qua HTTP
+
+Từ `backend`, có thể thử riêng route Kiểm với model đã tải:
+
+```sh
+uv run pytest tests/test_check_routes.py -k test_smoke_kiem_qua_http --smoke-ollama-model MODEL_DA_TAI --smoke-timeout 120 -o junit_family=legacy --junitxml ../.runtime/ai-check-http.xml
+```
+
+Ca mẫu lưu sẵn một đáp án sai. Backend đọc câu và nguồn theo phiên giả lập, model giải từ đề/phương án và kết quả được đối chiếu với đáp án trong SQLite tạm. Kết quả phải báo bất đồng, có trích dẫn và giữ nguyên đề/lịch sử. Các ca fixture cùng file kiểm sai quyền, ghi đè đáp án từ trình duyệt, đổi nguồn/câu giữa chừng, timeout và giới hạn đồng thời.
+
 ## Kiểm hủy khi Ollama đang nhận yêu cầu
 
 Từ `backend`, chọn đúng model đã tải:
@@ -80,3 +90,8 @@ Ca HTTP dùng model 3B xác nhận đề giữ nguyên trước khi bấm xác n
 Ca HTTP hủy đạt với `qwen2.5:3b` digest `357c53fb659c`, Ollama 0.40.16 trên CPU, cloud tắt và thời hạn 120 giây. Từ lúc gọi hủy đến khi transport phía app đóng và thoát là 5,180 ms ở lượt ghi JUnit. Cả ca mất 28,010 giây, gồm yêu cầu mới chạy tới bản xem trước. Tài khoản khác nhận 404 khi hủy. Sau khi hủy, SSE có đúng một sự kiện cuối và xác nhận nhận 404. Revision đề vẫn 4, số mục lịch sử vẫn 0.
 
 Phép thử dùng phiên giả lập và SQLite tạm. Số đo tính ở backend Python. Thời điểm Ollama ngừng tính toán bên server và luồng bấm Dừng trên giao diện thật còn cần đo riêng.
+
+
+### Kiểm đáp án từ kho qua HTTP với model thật
+
+Ca `test_smoke_kiem_qua_http` đạt với Qwen2.5 3B digest `357c53fb659c`, Ollama 0.40.16 CPU và cloud tắt. Thời gian pytest 35,099 giây. Kho mẫu cố ý lưu đáp án chỉ số 1. Model giải từ đề/phương án và nguồn rồi trả chỉ số đúng 2. API báo `disagrees`, kèm trích dẫn. Nội dung đề, revision và lịch sử giữ nguyên. Phiên và kho dùng fixture SQLite tạm.

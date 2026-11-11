@@ -9,13 +9,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
 
 from mach_backend.ai_contract import AIError, ContractModel, Revision
+from mach_backend.ai_sources import selected_source_keys
 from mach_backend.patch_confirmation import ConfirmationRepository, PatchReceipt, confirm_patch
 from mach_backend.patch_jobs import PatchJobRunner, PatchJobStatus
 from mach_backend.patch_submission import (
     PatchSubmission,
     ReadPatchInputs,
     build_patch_job,
-    selected_source_keys,
 )
 
 

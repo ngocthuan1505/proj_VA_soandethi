@@ -34,6 +34,14 @@ Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi 
 - `check_question` gửi `BlindQuestion` gồm ID, phiên bản, dạng, đề bài và phương án cùng nguồn được phép. Đáp án lưu đi qua tham số riêng để đối chiếu sau khi provider trả lời. `comparison` có thể là `agrees`, `disagrees` hoặc `needs_review`. Tự luận, trả lời ngắn, lời giải chưa chắc chắn hoặc thiếu đáp án lưu cần người xem lại. Kết quả trùng đáp án chỉ ghi nhận sự đồng thuận của hai giá trị.
 - Khi nối HTTP, BE-2 cần lấy snapshot và đáp án lưu từ repository theo phiên người dùng. BE-5 cần gắn deadline và hủy vào tác vụ đang chạy. UI-3 có thể dùng [fixture Sinh/Kiểm](../../tests/fixtures/ai-sinh-kiem.json) để dựng màn hình xem trước và cảnh báo. Sau bước xác nhận, service lưu cần kiểm lại phiên bản trong giao dịch. Điểm hiển thị bằng `pointsQ4 / 4`.
 
+## Kiểm đáp án qua HTTP
+
+- `POST /api/exams/{exam_id}/questions/{question_id}/check` nhận `baseRevision`, `questionVersion`, `consent`, `sources` và `requireEvidence`. Body chỉ nhận tham chiếu nguồn, dạng locator như luồng Sửa. Backend lấy câu và đáp án đã lưu bằng quyền của phiên.
+- [Router](../../backend/src/mach_backend/check_routes.py) nhận callback `read_inputs(owner, exam_id, question_id, source_keys)`. BE-3 trả `CheckInputs` có đúng chủ sở hữu, đề, revision, `BlindQuestion`, `saved_answer` và các đoạn nguồn hiện hành. `saved_answer` theo kiểu `Answer` được giữ ngoài payload provider. Bản chưa biết đáp án dùng `null`. Chỉ nguồn đã chọn được gửi model.
+- Kết quả là `CheckReport` với `comparison` bằng `agrees`, `disagrees` hoặc `needs_review`. Route chỉ đọc. Đề, trạng thái duyệt và lịch sử cần thao tác lưu riêng theo quyết định giáo viên. Trước khi trả, route đọc lại câu, đáp án và nguồn để đối chiếu snapshot.
+- Sai quyền hoặc thiếu câu/nguồn trả 404. Thiếu đồng ý trả 403, dữ liệu trình duyệt sai trả 422, câu/đáp án/nguồn đã đổi trả 409. Giới hạn provider trả 429, thiếu kết nối trả 503, quá hạn trả 504 và phản hồi model sai trả 502. Thời hạn bao gồm lần đọc kho ban đầu. Hủy hoặc lỗi trả lại suất xử lý của route.
+- Router hiện đã được thử với phiên và SQLite tạm. Khi ghép app, BE-2 inject phiên thật, BE-3 ánh xạ kho đã chốt, BE-5 phối hợp giới hạn tác vụ giữa các luồng. UI-3 có thể gọi route để hiện đồng thuận/bất đồng và căn cứ cho giáo viên xem lại.
+
 ## Tạo yêu cầu sửa lời giải và chọn nguồn
 
 - `POST /api/exams/{exam_id}/proposals` nhận `requestId`, `baseRevision`, `request`, `consent` và `targets`. Mỗi đích gồm `questionId`, `questionVersion`, `blockId` lời giải và `selection` theo UTF-16. Gửi `null` nếu chọn cả khối. `sources` là danh sách `sourceId`, `sourceVersion`, `locator`. Có thể dùng `requireEvidence` để yêu cầu căn cứ. Khi đã chọn nguồn, luôn kiểm trích dẫn.
