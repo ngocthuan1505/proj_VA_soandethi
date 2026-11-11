@@ -5,7 +5,7 @@ from contextlib import AbstractContextManager
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Protocol
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import JsonValue
 
@@ -22,7 +22,15 @@ from mach_backend.ai_contract import (
     validate_proposal,
     validate_sources,
 )
-from mach_backend.ai_service import Provider, propose_patch
+from mach_backend.ai_questions import (
+    GeneratedQuestion,
+    GenerateJob,
+    GenerateProposal,
+    GenerationPlan,
+    validate_generation,
+    validate_generation_plan,
+)
+from mach_backend.ai_service import Provider, propose_exam, propose_patch
 from mach_backend.rich_patch import update_rich
 
 type ExamSnapshot = dict[str, JsonValue]
@@ -33,6 +41,11 @@ class PendingPatch(ContractModel):
     proposal: PatchProposal
 
 
+class PendingGeneration(ContractModel):
+    job: GenerateJob
+    proposal: GenerateProposal
+
+
 class PatchReceipt(JobIdentity):
     revision: Revision
     changedQuestionIds: tuple[UUID, ...]
@@ -41,10 +54,11 @@ class PatchReceipt(JobIdentity):
 @dataclass(frozen=True)
 class ConfirmationState:
     owner_id: str
-    pending: PendingPatch
+    pending: PendingPatch | PendingGeneration
     exam: ExamSnapshot
     sources: tuple[SourceFragment, ...]
     receipt: PatchReceipt | None = None
+    approved_plan: GenerationPlan | None = None
 
 
 class PatchTransaction(Protocol):
@@ -82,6 +96,22 @@ async def prepare_patch(
     return proposal
 
 
+async def prepare_generation(
+    job: GenerateJob,
+    provider: Provider[GenerateJob] | None,
+    snapshot_is_current: SnapshotCheck[GenerateJob],
+    store_pending: Callable[[PendingGeneration], Awaitable[bool]],
+    *,
+    timeout_seconds: float,
+) -> GenerateProposal:
+    proposal = await propose_exam(
+        job, provider, snapshot_is_current, timeout_seconds=timeout_seconds
+    )
+    if not await store_pending(PendingGeneration(job=job, proposal=proposal)):
+        raise changed_snapshot()
+    return proposal
+
+
 def missing_patch() -> AIError:
     return AIError("proposal_not_found", "Không tìm thấy đề xuất có thể xác nhận.")
 
@@ -108,27 +138,23 @@ def confirm_patch(
             raise changed_snapshot()
         if state.receipt is not None:
             return state.receipt
-        exam, receipt = apply_patch(state)
+        if isinstance(state.pending, PendingGeneration):
+            exam, receipt = apply_generation(state)
+        else:
+            exam, receipt = apply_patch(state)
         tx.write(exam, receipt)
         return receipt
 
 
 def apply_patch(state: ConfirmationState) -> tuple[ExamSnapshot, PatchReceipt]:
+    if not isinstance(state.pending, PendingPatch):
+        raise AIError("invalid_result", "Đề xuất không thuộc thao tác sửa lời giải.")
     job = state.pending.job
     validate_sources(job)
     validate_patch_job(job)
     proposal = validate_proposal(job, state.pending.proposal.model_dump_json())
-    exam = deepcopy(state.exam)
-    revision = exam.get("revision")
-    if (
-        exam.get("id") != str(job.examId)
-        or type(revision) is not int
-        or revision != job.baseRevision
-        or not set(job.sources).issubset(state.sources)
-    ):
-        raise changed_snapshot()
-    if exam.get("draftStatus", "draft") not in ("draft", "ready"):
-        raise AIError("exam_read_only", "Trạng thái hiện tại của đề không cho phép sửa.")
+    exam = editable_snapshot(state)
+    revision = job.baseRevision
     questions = exam.get("questions")
     if not isinstance(questions, list):
         raise changed_snapshot()
@@ -174,4 +200,87 @@ def apply_patch(state: ConfirmationState) -> tuple[ExamSnapshot, PatchReceipt]:
         baseRevision=job.baseRevision,
         revision=revision + 1,
         changedQuestionIds=tuple(changed),
+    )
+
+
+def editable_snapshot(state: ConfirmationState) -> ExamSnapshot:
+    job = state.pending.job
+    exam = state.exam
+    revision = exam.get("revision")
+    if (
+        exam.get("id") != str(job.examId)
+        or type(revision) is not int
+        or revision != job.baseRevision
+        or not set(job.sources).issubset(state.sources)
+    ):
+        raise changed_snapshot()
+    if exam.get("draftStatus", "draft") not in ("draft", "ready"):
+        raise AIError("exam_read_only", "Trạng thái hiện tại của đề không cho phép sửa.")
+    return deepcopy(exam)
+
+
+def generated_question_snapshot(question: GeneratedQuestion) -> ExamSnapshot:
+    fields = {
+        "stem",
+        "explanation",
+        "rubric",
+        "figure",
+        "options",
+        "answer",
+        "answerText",
+        "truthValues",
+    }
+    data: ExamSnapshot = question.model_dump(mode="json", exclude={"rubric"})
+    answer = data.pop("answer")
+    data.update(
+        id=str(uuid4()),
+        v=1,
+        blockIds={field: str(uuid4()) for field in sorted(fields)},
+        points=question.pointsQ4 / 4,
+        answer=answer if question.type == "mcq" else 0,
+        answerText=answer if question.type == "short" else "",
+        truthValues=answer if question.type == "truefalse" else [],
+        answerKnown=question.type != "essay",
+        rubric=[
+            {**step.model_dump(mode="json"), "points": step.pointsQ4 / 4}
+            for step in question.rubric
+        ],
+        check=None,
+        verificationStatus="unverified",
+        approvalStatus="draft",
+    )
+    return data
+
+
+def apply_generation(state: ConfirmationState) -> tuple[ExamSnapshot, PatchReceipt]:
+    if not isinstance(state.pending, PendingGeneration):
+        raise AIError("invalid_result", "Đề xuất không thuộc thao tác sinh đề.")
+    job = state.pending.job
+    validate_sources(job)
+    validate_generation_plan(job)
+    proposal = validate_generation(job, state.pending.proposal.model_dump_json())
+    exam = editable_snapshot(state)
+    if state.approved_plan is None or state.approved_plan.model_dump() != job.model_dump(
+        include=set(GenerationPlan.model_fields)
+    ):
+        raise AIError("plan_not_approved", "Cấu trúc sinh đề chưa được duyệt hoặc đã thay đổi.")
+    questions = [generated_question_snapshot(question) for question in proposal.questions]
+    revision = job.baseRevision + 1
+    exam["questions"] = [question for question in questions]
+    exam.update(
+        revision=revision,
+        subject=job.subject,
+        grade=job.grade,
+        instructions=job.instructions,
+        draftStatus="draft",
+        fullExam=True,
+        sample=False,
+        aiPlan=None,
+    )
+    return exam, PatchReceipt(
+        jobId=job.jobId,
+        examId=job.examId,
+        baseRevision=job.baseRevision,
+        revision=revision,
+        changedQuestionIds=tuple(UUID(str(question["id"])) for question in questions),
     )

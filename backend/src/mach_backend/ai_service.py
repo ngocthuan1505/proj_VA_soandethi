@@ -81,7 +81,11 @@ class OllamaProvider:
             output_format = generation_format(job)
             instruction = (
                 "Sinh một câu cho mỗi slot theo đúng thứ tự, dạng, chủ đề, mức độ và điểm. "
-                "Điểm pointsQ4 là số đơn vị 0,25 điểm. Barem phải khớp điểm câu. "
+                "Mọi pointsQ4 đều tính bằng đơn vị 0,25 điểm, không phải điểm thập phân. "
+                "Tổng các rubric[].pointsQ4 phải bằng chính pointsQ4 của câu tương ứng. "
+                "Ví dụ câu pointsQ4=40 (10 điểm) có thể có một tiêu chí pointsQ4=40 "
+                "hoặc hai tiêu chí pointsQ4=16 và pointsQ4=24. "
+                "Rubric chỉ ghi tiêu chí được cộng điểm, không ghi dòng đáp án sai hay điểm trừ. "
                 "Đáp án là chỉ số 0–3 cho mcq, bốn boolean cho truefalse, "
                 "văn bản cho short và null cho essay."
             )

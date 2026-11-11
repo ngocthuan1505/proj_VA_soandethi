@@ -1,6 +1,6 @@
 # Hợp đồng AI Python cho Sinh, Sửa và Kiểm
 
-Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4). Các service Python của [BE-1-002 #12](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) đã có bộ kiểm cục bộ cho Sinh đề, Sửa lời giải và Kiểm đáp án. Đã có service và router ghép cho xác nhận sửa lời giải. Cần nối phiên xác thực, repository thật và UI. Hợp đồng kế thừa QuestionRef, SourceRef và thao tác đề xuất/xác nhận từ [mô hình Abstraction](../course/CONTRACTS.md).
+Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4). Các service Python của [BE-1-002 #12](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) đã có bộ kiểm cục bộ cho Sinh đề, Sửa lời giải và Kiểm đáp án. Đã có service và router ghép cho xác nhận sửa lời giải và đề mới. Cần nối phiên xác thực, repository thật và UI. Hợp đồng kế thừa QuestionRef, SourceRef và thao tác đề xuất/xác nhận từ [mô hình Abstraction](../course/CONTRACTS.md).
 
 ## Chọn cách xử lý
 
@@ -26,11 +26,19 @@ Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.c
 - Repository ghi bản đề, lịch sử và biên nhận cùng giao dịch. Job hủy hoặc hết hiệu lực phải bị loại trước khi xác nhận. Adapter test dùng SQLite tạm. Khi ghép BE-2/BE-3/BE-5, cần thay bằng phiên, trạng thái job và repository thật rồi mount router vào app.
 - Với rich document, có thể sửa trong một nút chữ cùng định dạng hoặc đổi LaTeX của một nút công thức có sẵn. Thay đổi vắt qua nhiều nút hoặc thêm nút công thức mới trả `rich_document_conflict` và không ghi dữ liệu. UI có thể hướng dẫn chọn đoạn nhỏ hơn.
 
+## Xác nhận lưu đề mới
+
+- Sau khi có `GenerateJob` từ ma trận đã duyệt, `prepare_generation` trả bản xem trước và gọi repository để ghi `PendingGeneration`. Repository kiểm lại revision, đoạn nguồn và ma trận hiện hành trước khi ghi bản xem trước.
+- Dùng cùng route `POST /api/exams/{exam_id}/proposals/{job_id}/confirm` với body `{"baseRevision": 4}`. Repository trả `ConfirmationState` có `approved_plan` kiểu `GenerationPlan`, được đọc trong cùng giao dịch. Backend kiểm chủ sở hữu, revision, nguồn và ma trận trước khi thay bộ câu của đề bằng kết quả đã xem trước.
+- Python cấp UUID cho câu và các khối, đặt phiên bản câu mới bằng 1, giữ điểm và barem theo đơn vị 0,25 điểm. Đáp án trắc nghiệm, đúng–sai, trả lời ngắn được ánh xạ sang các trường hiện có. Trích dẫn giữ trong `evidence`. Câu và cả đề về trạng thái chờ duyệt.
+- Repository lưu bản đề trước đó vào lịch sử, bộ câu mới và biên nhận trong cùng giao dịch. Đề tăng revision một lần. Xác nhận lại cùng job trả cùng UUID từ biên nhận. Lỗi ghi rollback cả đề và lịch sử. Tiêu đề và thiết lập trang được giữ từ bản hiện tại.
+- [Các ca xác nhận Sinh](../../backend/tests/test_generation_confirmation.py) kiểm bốn dạng câu, ma trận đổi, nguồn đổi, đề khóa, hủy, rollback, xác nhận đồng thời và đọc lại biên nhận bằng repository mới trên cùng SQLite tạm. Đường tạo job Sinh từ UI và reader ma trận đã duyệt của kho thật cần ghép.
+
 ## Sinh đề và Kiểm đáp án
 
 Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi gọi model, giới hạn thời gian, kiểm quyền nguồn và đối chiếu trích dẫn. Khi sinh, schema gửi Ollama ràng buộc dạng câu, chủ đề, mức độ, điểm đã duyệt và kiểu đáp án tương ứng. Python vẫn đối chiếu thứ tự, điểm, barem và kiểu đáp án sau khi nhận phản hồi. [Schema câu hỏi](../../backend/src/mach_backend/ai_questions.py) · [Service Python](../../backend/src/mach_backend/ai_service.py)
 
-- `propose_exam` nhận 1–30 vị trí câu đã duyệt trong `slots`. Mỗi vị trí có dạng, chủ đề, mức độ và `pointsQ4`, số đơn vị 0,25 điểm. Tổng đề là 40 đơn vị. Kết quả cần đúng thứ tự, không thiếu câu, mỗi barem cộng đúng điểm của câu và mỗi trích dẫn khớp nguồn đã chọn. Khi lưu sau xác nhận, repository cấp UUID cho câu mới. Bộ thử bao phủ trắc nghiệm, đúng sai, trả lời ngắn và tự luận.
+- `propose_exam` nhận 1–30 vị trí câu đã duyệt trong `slots`. Mỗi vị trí có dạng, chủ đề, mức độ và `pointsQ4`, số đơn vị 0,25 điểm. Tổng đề là 40 đơn vị. Kết quả cần đúng thứ tự, không thiếu câu, mỗi barem cộng đúng điểm của câu và mỗi trích dẫn khớp nguồn đã chọn. Khi xác nhận lưu, service cấp UUID cho câu và các khối rồi repository ghi cùng biên nhận. Bộ thử bao phủ trắc nghiệm, đúng sai, trả lời ngắn và tự luận.
 - `check_question` gửi `BlindQuestion` gồm ID, phiên bản, dạng, đề bài và phương án cùng nguồn được phép. Đáp án lưu đi qua tham số riêng để đối chiếu sau khi provider trả lời. `comparison` có thể là `agrees`, `disagrees` hoặc `needs_review`. Tự luận, trả lời ngắn, lời giải chưa chắc chắn hoặc thiếu đáp án lưu cần người xem lại. Kết quả trùng đáp án chỉ ghi nhận sự đồng thuận của hai giá trị.
 - Khi nối HTTP, BE-2 cần lấy snapshot và đáp án lưu từ repository theo phiên người dùng. BE-5 cần gắn deadline và hủy vào tác vụ đang chạy. UI-3 có thể dùng [fixture Sinh/Kiểm](../../tests/fixtures/ai-sinh-kiem.json) để dựng màn hình xem trước và cảnh báo. Sau bước xác nhận, service lưu cần kiểm lại phiên bản trong giao dịch. Điểm hiển thị bằng `pointsQ4 / 4`.
 
@@ -84,4 +92,4 @@ Test Python dùng HTTP provider giả lập, snapshot tự tạo và HTTP FastAP
 
 Mọi kết nối ngoài máy về sau cần được chọn rõ, xác nhận nguồn gửi đi và ghi model/căn cứ trước khi gọi. Khi không có provider phù hợp, vẫn dùng editor và phép thử fixture. Thuận dùng [runbook](../../ops/greennode/README.md) và [checklist phát hành](../team/RELEASE.md) để chuẩn bị hạ tầng khi có release tích hợp.
 
-Các kiểm tra cặp dấu, phạm vi và trích dẫn là bằng chứng kỹ thuật phục vụ CT-03/04/05/06. Chất lượng kiến thức cần chấm riêng theo PoC. Cần ghép phiên, repository, job và UI thật rồi mới đo luồng đầu cuối. Xác nhận Sinh đề vẫn cần service lưu riêng.
+Các kiểm tra cặp dấu, phạm vi và trích dẫn là bằng chứng kỹ thuật phục vụ CT-03/04/05/06. Chất lượng kiến thức cần chấm riêng theo PoC. Cần ghép phiên, repository, job và UI thật rồi mới đo luồng đầu cuối. Xác nhận Sinh đề dùng chung route giao dịch với Sửa, nhận snapshot ma trận đã duyệt từ repository.

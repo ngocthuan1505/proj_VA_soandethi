@@ -33,11 +33,15 @@ class ExamSlot(ContractModel):
     pointsQ4: PointsQ4
 
 
-class GenerateJob(AIJob):
+class GenerationPlan(ContractModel):
     subject: Annotated[str, Field(min_length=1, max_length=100)]
     grade: Annotated[str, Field(min_length=1, max_length=80)]
     instructions: Annotated[str, Field(max_length=4000)] = ""
     slots: Annotated[tuple[ExamSlot, ...], Field(min_length=1, max_length=30)]
+
+
+class GenerateJob(AIJob, GenerationPlan):
+    pass
 
 
 class RubricStep(ContractModel):

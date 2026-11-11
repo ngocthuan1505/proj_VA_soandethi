@@ -39,6 +39,16 @@ uv run pytest tests/test_patch_confirmation.py -k test_smoke_sua_va_luu_qua_http
 
 Ca này dùng FastAPI, phiên giả lập và SQLite tạm. Sau khi model trả đề xuất, kiểm đề vẫn nguyên trước khi bấm xác nhận. Sau xác nhận, kiểm revision, lịch sử, công thức và các câu ngoài vùng sửa. Chế độ pytest mặc định bỏ qua ca này.
 
+## Sinh đề rồi xác nhận qua HTTP
+
+Từ `backend`, có thể kiểm service Sinh và route xác nhận với model đã tải:
+
+```sh
+uv run pytest tests/test_generation_confirmation.py -k test_smoke_sinh_va_xac_nhan_qua_http --smoke-ollama-model MODEL_DA_TAI --smoke-timeout 120 -o junit_family=legacy --junitxml ../.runtime/ai-generate-confirm.xml
+```
+
+Ca mẫu dùng ma trận một câu trắc nghiệm 10 điểm đã duyệt. Service gọi Ollama, ghi bản xem trước rồi xác nhận qua FastAPI với SQLite tạm. Kiểm revision giữ nguyên trước xác nhận, UUID do Python cấp và một mục lịch sử sau xác nhận. Gửi lại xác nhận trả cùng biên nhận. Ca mẫu kiểm cấu trúc và lưu trữ, chất lượng nội dung cần chấm riêng.
+
 ## Kiểm đáp án từ câu đã lưu qua HTTP
 
 Từ `backend`, có thể thử riêng route Kiểm với model đã tải:
@@ -95,3 +105,9 @@ Phép thử dùng phiên giả lập và SQLite tạm. Số đo tính ở backen
 ### Kiểm đáp án từ kho qua HTTP với model thật
 
 Ca `test_smoke_kiem_qua_http` đạt với Qwen2.5 3B digest `357c53fb659c`, Ollama 0.40.16 CPU và cloud tắt. Thời gian pytest 35,099 giây. Kho mẫu cố ý lưu đáp án chỉ số 1. Model giải từ đề/phương án và nguồn rồi trả chỉ số đúng 2. API báo `disagrees`, kèm trích dẫn. Nội dung đề, revision và lịch sử giữ nguyên. Phiên và kho dùng fixture SQLite tạm.
+
+### Sinh và xác nhận lưu với model thật
+
+Ca `test_smoke_sinh_va_xac_nhan_qua_http` ban đầu bị chặn với `invalid_rubric`. Lượt chẩn đoán độc lập cho thấy model trả hai tiêu chí 1 và 3 đơn vị, trong khi câu yêu cầu 40 đơn vị. Chưa có bản đề mới được ghi. Yêu cầu gửi Ollama được làm rõ: mỗi đơn vị bằng 0,25 điểm, tổng barem bằng điểm câu và chỉ ghi tiêu chí cộng điểm. Bộ kiểm điểm Python giữ nguyên.
+
+Sau thay đổi, ca đạt với Qwen2.5 3B cùng digest và runtime nêu trên, thời hạn 120 giây. JUnit `smoke-generate-confirm-3b-fixed.xml` ghi thời gian ca pytest 44,699 giây. Đề giữ revision 4 trước xác nhận; sau xác nhận revision 5, câu mới có UUID và trích dẫn, một mục lịch sử giữ nguyên đề cũ. Xác nhận lần hai trả cùng biên nhận. Đây là một ca mẫu với một câu trắc nghiệm 10 điểm, phiên giả lập và SQLite tạm; chưa đo tỷ lệ ổn định hoặc chấm nội dung độc lập trên bộ đa môn.

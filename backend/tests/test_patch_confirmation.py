@@ -14,10 +14,12 @@ from fastapi.testclient import TestClient
 from pydantic import TypeAdapter
 
 from mach_backend.ai_contract import AIError, PatchJob, SourceFragment
+from mach_backend.ai_questions import GenerationPlan
 from mach_backend.ai_service import OLLAMA_CHAT, OllamaProvider
 from mach_backend.patch_confirmation import (
     ConfirmationState,
     PatchReceipt,
+    PendingGeneration,
     PendingPatch,
     prepare_patch,
 )
@@ -34,6 +36,7 @@ OWNER = "teacher-1"
 HEADERS = {"Authorization": "Bearer owner-fixture"}
 OTHER = {"Authorization": "Bearer second-fixture"}
 SOURCES = TypeAdapter(tuple[SourceFragment, ...])
+PENDING = TypeAdapter(PendingPatch | PendingGeneration)
 
 
 class SQLiteFixture:
@@ -45,11 +48,13 @@ class SQLiteFixture:
         with closing(sqlite3.connect(file)) as conn:
             conn.executescript(
                 """
-                CREATE TABLE exams(owner, exam, payload, sources, PRIMARY KEY(owner, exam));
-                CREATE TABLE proposals(
+                CREATE TABLE IF NOT EXISTS exams(
+                    owner, exam, payload, sources, PRIMARY KEY(owner, exam)
+                );
+                CREATE TABLE IF NOT EXISTS proposals(
                     owner, exam, job, pending, receipt, active, PRIMARY KEY(owner, exam, job)
                 );
-                CREATE TABLE history(
+                CREATE TABLE IF NOT EXISTS history(
                     owner, exam, revision, payload, PRIMARY KEY(owner, exam, revision)
                 );
                 """
@@ -93,6 +98,11 @@ class SQLiteFixture:
         exam, sources = self.snapshot(job)
         return exam["revision"] == job.baseRevision and set(job.sources).issubset(sources)
 
+    @staticmethod
+    def approved_plan(exam):
+        raw = exam.get("approvedGenerationPlan")
+        return GenerationPlan.model_validate_json(json.dumps(raw)) if raw is not None else None
+
     async def stage(self, pending):
         job = pending.job
         key = (job.ownerId, str(job.examId))
@@ -103,6 +113,12 @@ class SQLiteFixture:
                 SOURCES.validate_json(sources)
             ):
                 return False
+            if isinstance(pending, PendingGeneration):
+                plan = self.approved_plan(exam)
+                if plan is None or plan.model_dump() != job.model_dump(
+                    include=set(GenerationPlan.model_fields)
+                ):
+                    return False
             result = conn.execute(
                 "INSERT OR IGNORE INTO proposals VALUES(?, ?, ?, ?, NULL, 1)",
                 (*key, str(job.jobId), pending.model_dump_json()),
@@ -159,10 +175,11 @@ class SQLiteTransaction:
         exam, sources = SQLiteFixture.get_exam(self.conn, *self.key[:2])
         return ConfirmationState(
             owner_id=self.key[0],
-            pending=PendingPatch.model_validate_json(pending),
+            pending=PENDING.validate_json(pending),
             exam=exam,
             sources=SOURCES.validate_json(sources),
             receipt=PatchReceipt.model_validate_json(receipt) if receipt else None,
+            approved_plan=SQLiteFixture.approved_plan(exam),
         )
 
     def write(self, exam, receipt):
