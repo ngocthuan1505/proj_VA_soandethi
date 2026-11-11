@@ -18,6 +18,8 @@ Ba ca đi qua adapter Ollama và bộ kiểm Python với HTTP giả lập. Sinh
 
 Trước khi gọi model, có thể kiểm riêng cấu trúc công thức bằng `uv run pytest tests/test_math_structure.py` từ `backend`. Bộ dùng [fixture chung với Node](../../tests/fixtures/ai-math-structure.json), không cần provider. Các ca Sinh/Sửa/Kiểm và xác nhận trong bộ pytest đầy đủ còn kiểm công thức lỗi phải bị từ chối trước khi ghi. Kiểm này chưa thay renderer hoặc chấm độ đúng toán học.
 
+Kiểm giới hạn model dùng chung bằng `uv run pytest tests/test_ai_capacity.py`. Các ca dùng HTTP giả lập và SQLite tạm: một lượt Sinh/Sửa giữ suất khiến HTTP Kiểm trả 429 trước khi gửi thêm yêu cầu; hủy chưa thoát transport vẫn giữ suất; sau lỗi/thoát transport nhận được yêu cầu tiếp theo. Cần ghép cùng một instance provider cho runner và route Kiểm. Đây là kiểm hạn mức phía app một tiến trình, không phải phép đo CPU/GPU hoặc khả năng dừng model thật.
+
 Thuận chọn model đã tải, bật Ollama tại `127.0.0.1:11434` với `OLLAMA_NO_CLOUD=1` trong môi trường của tiến trình Ollama. Kiểm log có `Ollama cloud disabled: true`. Model phải xuất hiện trong danh sách cục bộ. Lệnh smoke dùng đúng ba ca mẫu ở trên và kiểm model trước khi gọi. [Cấu hình Ollama cục bộ](https://docs.ollama.com/faq#how-do-i-disable-ollamas-cloud-features)
 
 Từ thư mục `backend`, thay `MODEL_DA_TAI` bằng tên chính xác:

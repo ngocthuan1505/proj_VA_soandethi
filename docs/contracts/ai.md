@@ -94,6 +94,14 @@ Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi 
 
 ## Chạy, theo dõi và hủy bản sửa lời giải
 
+### Chia sẻ suất xử lý model giữa Sinh, Sửa và Kiểm
+
+Khi ghép app, tạo **một instance** `OllamaProvider(model, max_active=1)` rồi đưa cùng instance vào `PatchJobRunner` (Sinh/Sửa) và `build_check_router` (Kiểm). Provider mặc định có một suất, từ chối lượt vượt hạn mức bằng `job_limit` trước khi gửi HTTP. Giới hạn tại router/runner vẫn dùng để quản lý tác vụ; chúng không thay giới hạn chung tại provider.
+
+Suất được giữ đến khi lời gọi adapter thoát, gồm lúc xử lý lỗi hoặc bị hủy. Nếu transport bắt hủy và còn chưa thoát, yêu cầu khác vẫn bị chặn. Sau lỗi HTTP hoặc sau khi transport đã thoát, suất được trả trong `finally`. API Kiểm trả 429 nếu model đang đủ suất; tác vụ Sinh/Sửa đã nhận 202 báo `failed`/`job_limit` qua trạng thái hoặc SSE khi tới bước gọi provider. Không tự xếp thêm hàng đợi hoặc gọi provider khác.
+
+[Các ca giới hạn provider](../../backend/tests/test_ai_capacity.py) kiểm Sinh/Sửa cạnh tranh với HTTP Kiểm, lỗi 429/503, hủy và cấu hình hai suất. Giới hạn áp dụng trong một instance dùng chung trên cùng event loop. Tạo provider riêng cho từng route hoặc chạy nhiều process sẽ có các bộ đếm riêng; khi tích hợp nhiều worker cần tầng điều phối chung. Phép kiểm không đo thời điểm model ngừng tính toán phía Ollama.
+
 - [PatchJobRunner](../../backend/src/mach_backend/patch_jobs.py) nhận snapshot đã được backend tạo. Gửi lại cùng job và snapshot trong thời gian còn lưu trả trạng thái hiện tại. Dùng lại ID với snapshot khác báo `job_conflict`. Vượt giới hạn job đang chạy báo `job_limit`. Chỗ còn giữ được đặt qua `max_retained`, chỉ loại job đã kết thúc. Khi tích hợp, tầng lưu cần bảo đảm idempotency cả sau khi app khởi động lại.
 - Router của BE-2 dùng cùng tiền tố `/api/exams/{exam_id}/proposals/{job_id}`. `GET /status` đọc trạng thái, `GET /events` nhận SSE và `POST /cancel` yêu cầu hủy. Tất cả lấy chủ sở hữu từ phiên. Sai đề hoặc chủ sở hữu trả 404.
 - SSE phát sự kiện `patch` với ID 1 khi còn chạy và ID 2 khi hoàn tất, hủy hoặc lỗi. Khi nối lại, gửi `Last-Event-ID` để lấy sự kiện mới hơn. Tác vụ đã kết thúc có thể chỉ phát ID 2. `complete` chứa bản xem trước đã lưu. Chỉ nút xác nhận riêng ghi vào đề.

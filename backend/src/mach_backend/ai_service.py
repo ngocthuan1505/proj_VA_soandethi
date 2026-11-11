@@ -58,16 +58,35 @@ class OllamaResponse(BaseModel):
 
 
 class OllamaProvider:
-    def __init__(self, model: str, *, transport: httpx.AsyncBaseTransport | None = None):
+    def __init__(
+        self,
+        model: str,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
+        max_active: int = 1,
+    ):
         model = model.strip()
         if not model:
             raise AIError("provider_unconfigured", "Chọn mô hình Ollama cục bộ trước khi gửi.")
         if model.casefold().endswith((":cloud", "-cloud")):
             raise AIError("provider_unconfigured", "Hãy chọn mô hình Ollama đã tải về máy.")
+        if type(max_active) is not int or max_active < 1:
+            raise ValueError("Số yêu cầu đồng thời tới Ollama phải là số nguyên dương.")
         self.model = model
         self.transport = transport
+        self._max_active = max_active
+        self._active = 0
 
     async def __call__(self, job: PatchJob | GenerateJob | CheckJob) -> str:
+        if self._active >= self._max_active:
+            raise AIError("job_limit", "Ollama đang đủ suất xử lý. Hãy thử lại sau.")
+        self._active += 1
+        try:
+            return await self._call(job)
+        finally:
+            self._active -= 1
+
+    async def _call(self, job: PatchJob | GenerateJob | CheckJob) -> str:
         payload = job.model_dump(mode="json", exclude={"ownerId", "sources"})
         if isinstance(job, PatchJob):
             output_format = OllamaPatchDraft.model_json_schema()
