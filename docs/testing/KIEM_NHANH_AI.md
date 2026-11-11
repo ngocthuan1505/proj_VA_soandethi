@@ -131,3 +131,9 @@ Ca `test_smoke_sinh_tu_request_den_luu_qua_http` đạt với Qwen2.5 3B digest 
 Đã tái hiện 10 ca thiếu ngoặc hoặc lệch môi trường LaTeX lọt qua bộ kiểm chỉ có cặp dấu. Sau sửa, 17 ca fixture chung có cùng kết quả chấp nhận/từ chối trên Python và renderer Node. Các ca riêng giữ được ký hiệu escape, phản ứng hóa học, chú thích và ngoặc ngoài công thức. Ca xác nhận có đề xuất bị sửa thành công thức lỗi trả 409 và giữ nguyên đề/lịch sử.
 
 Phép kiểm cục bộ đọc trực tiếp `CATALOG` và `buildLatex` từ source, xuất các công thức cùng giá trị dựng mặc định vào `.runtime/math-catalog-structure.json`: 457 mục qua kiểm cấu trúc Python, không có mục bị chặn. Đây là mẫu mặc định trong danh mục ngày kiểm, không chứng minh mọi nội dung người dùng nhập hợp lệ hoặc mọi lệnh LaTeX được hỗ trợ. Lượt này không gọi model thật; bằng chứng model phía trên thuộc các lượt đã ghi riêng.
+
+### CI bị lỗi tải thư viện hệ thống
+
+Run `43044002628` của commit `bc33bf1` đã qua Python nhưng job Node dừng trước test do DNS không phân giải được các kho Ubuntu khi `playwright install --with-deps chromium` tải font. Đây là lỗi cài môi trường; không lấy kết quả đó để kết luận test Node đã chạy. Đã yêu cầu chạy lại riêng job lỗi một lần.
+
+Workflow sau đó chọn `ubuntu-24.04` cho job Node và lấy Chrome cài sẵn bằng `command -v`, kiểm đường dẫn và ghi `--version` vào log. [Danh sách phần mềm runner Ubuntu 24.04 của GitHub](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md) có Chrome. Bộ test PDF vẫn chạy qua `BROWSER_PATH` như trên máy phát triển; không bỏ test hoặc đổi thành test giả. Thay đổi bỏ bước cài apt/Chromium riêng, không giải quyết mọi lỗi mạng npm/GitHub về sau. Cần CI của commit workflow mới đạt trước khi xác nhận sửa xong.

@@ -30,7 +30,7 @@ jobs:
       - run: uv run ty check src
   test:
     name: Legacy UI baseline and team plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
@@ -39,10 +39,12 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Install Chromium for PDF regression tests
+      - name: Chọn Chrome có sẵn để kiểm tra PDF
         run: |
-          node node_modules/playwright-core/cli.js install --with-deps chromium
-          node -e "console.log('BROWSER_PATH='+require('playwright-core').chromium.executablePath())" >> "$GITHUB_ENV"
+          browser_path="$(command -v google-chrome || command -v google-chrome-stable)"
+          test -n "$browser_path"
+          "$browser_path" --version
+          echo "BROWSER_PATH=$browser_path" >> "$GITHUB_ENV"
       - run: npm test
       - run: npm run check:team
       - run: npm run build-editor
