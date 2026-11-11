@@ -21,6 +21,12 @@ Cập nhật: 07/11/2026.
 - Commit `361f1492c34df2ac48d1abfc4112a3d55e568115` đã đối chiếu hồ sơ chat nghiên cứu, ghi bằng chứng vào CT-01/02/03, sửa đầu vào bảy task để dùng lại thiết kế. CI commit đó thành công; không có nghĩa tính năng Python đã hoàn tất.
 - Quy ước liên kết hai chat đặt trong [điểm bắt đầu chung](README.md) và AGENTS.md. Cả hai đã được kiểm tra cùng thuộc một project/thư mục; bản bàn giao file thay việc phải đọc lại toàn bộ hội thoại.
 
+## 11/11/2026 — đối chiếu hợp đồng HTTP cho BE-2
+
+- Task #5 có [bản đồ API Node và quyền truy cập](../contracts/http.md) cho W01 và W03, kèm gợi ý review DTO, revision, lỗi, phiên và snapshot. Bản đồ phân biệt quyền guest/member/admin, owner của workspace và token chia sẻ.
+- Bổ sung hai kiểm tra trong bộ HTTP với DB tạm. PUT bằng revision cũ trả 409 và giữ bản đã lưu. Tệp riêng đọc được bằng phiên chủ tệp, phiên admin khác không thấy giá trị. Các phép thử chạy trên Node. OpenAPI đã review và kiểm quyền trên FastAPI là phần tiếp theo.
+- Bên lý thuyết có thể dùng đây làm bằng chứng baseline R2/R5/R6/R7 và CT-03/05/06. Không coi đây là nghiệm thu xác thực hoặc lưu đề Python.
+
 ## Chuyển cho bên lý thuyết
 
 - Trình bày riêng MVP kế thừa, thiết kế đích và phần Python thật sự đã chuyển. Chưa có bằng chứng kiểm thử thì không báo hoàn thành.
