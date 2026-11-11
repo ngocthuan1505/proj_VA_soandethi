@@ -47,13 +47,19 @@ def smoke_settings(pytestconfig):
 
 
 @pytest.fixture
-def run_smoke(smoke_settings, record_property):
+def smoke_evidence(smoke_settings, record_property):
     mode, model, digest, version, timeout = smoke_settings
     record_property("che_do", mode)
     record_property("model", model)
     record_property("model_digest", digest)
     record_property("ollama_version", version)
     record_property("timeout_giay", timeout)
+    return smoke_settings
+
+
+@pytest.fixture
+def run_smoke(smoke_evidence, record_property):
+    mode, model, _, _, timeout = smoke_evidence
 
     def run(call, fixture_output):
         transport = None

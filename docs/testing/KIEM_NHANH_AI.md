@@ -39,6 +39,16 @@ uv run pytest tests/test_patch_confirmation.py -k test_smoke_sua_va_luu_qua_http
 
 Ca này dùng FastAPI, phiên giả lập và SQLite tạm. Sau khi model trả đề xuất, kiểm đề vẫn nguyên trước khi bấm xác nhận. Sau xác nhận, kiểm revision, lịch sử, công thức và các câu ngoài vùng sửa. Chế độ pytest mặc định bỏ qua ca này.
 
+## Kiểm hủy khi Ollama đang nhận yêu cầu
+
+Từ `backend`, chọn đúng model đã tải:
+
+```sh
+uv run pytest tests/test_patch_confirmation.py -k test_smoke_huy_ollama_qua_http --smoke-ollama-model MODEL_DA_TAI --smoke-timeout 120 -o junit_family=legacy --junitxml ../.runtime/ai-cancel-smoke.xml
+```
+
+Ca thử đợi HTTPX gửi xong yêu cầu tới Ollama và bắt đầu chờ header phản hồi. Tài khoản khác bị từ chối hủy. Chủ đề thi hủy qua route FastAPI, kết nối HTTP từ app đóng, SSE chỉ phát lại một kết quả cuối và xác nhận trả 404. Với giới hạn một tác vụ, yêu cầu mới vẫn tới Ollama và nhận được đề xuất. Revision và lịch sử đề mẫu giữ nguyên. JUnit ghi thời gian đóng kết nối phía app sau khi hủy. [Trace HTTPX](https://www.python-httpx.org/advanced/extensions/#trace)
+
 ## Kết quả cục bộ ngày 11/11/2026
 
 Đo trên laptop Windows bằng CPU, Ollama 0.40.16, ngữ cảnh 4.096 token và thời hạn 120 giây mỗi ca. Ba ca gọi trực tiếp adapter Python từ commit nghiệp vụ `200724a`. Chạy tuần tự và giữ cấu hình mặc định của model. Thời gian bên dưới là từng ca pytest, gồm thời gian tải model vào bộ nhớ ở ca đầu khi cần.
@@ -63,3 +73,10 @@ Giữ cùng laptop, runtime, model digest và thời hạn. Adapter gửi riêng
 | `qwen2.5:3b` | Đạt · 27,320 giây | Đạt · 37,945 giây | Đạt · 23,370 giây | Đạt · 28,008 giây |
 
 Ca HTTP dùng model 3B xác nhận đề giữ nguyên trước khi bấm xác nhận. Sau xác nhận, revision đề 4→5, phiên bản câu 2→3, thêm một mục lịch sử và giữ nguyên công thức, định dạng, câu khác. Bộ mẫu này có một câu Sinh, một vùng Sửa và một câu Kiểm. Cần thêm bộ mẫu đa môn, kho dữ liệu thật và giao diện để nghiệm thu candidate.
+
+
+### Hủy và chạy lại với Ollama thật
+
+Ca HTTP hủy đạt với `qwen2.5:3b` digest `357c53fb659c`, Ollama 0.40.16 trên CPU, cloud tắt và thời hạn 120 giây. Từ lúc gọi hủy đến khi transport phía app đóng và thoát là 5,180 ms ở lượt ghi JUnit. Cả ca mất 28,010 giây, gồm yêu cầu mới chạy tới bản xem trước. Tài khoản khác nhận 404 khi hủy. Sau khi hủy, SSE có đúng một sự kiện cuối và xác nhận nhận 404. Revision đề vẫn 4, số mục lịch sử vẫn 0.
+
+Phép thử dùng phiên giả lập và SQLite tạm. Số đo tính ở backend Python. Thời điểm Ollama ngừng tính toán bên server và luồng bấm Dừng trên giao diện thật còn cần đo riêng.

@@ -4,6 +4,7 @@ import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing, contextmanager
 from pathlib import Path
+from time import perf_counter
 from uuid import UUID, uuid4
 
 import httpx
@@ -813,24 +814,22 @@ def test_http_submit_refuses_invalid_scope_source_or_consent(tmp_path, sample, c
     asyncio.run(run())
 
 
-def test_smoke_sua_va_luu_qua_http(tmp_path, sample, smoke_settings, record_property):
-    mode, model, digest, version, timeout = smoke_settings
+LIVE_PATCH_REQUEST = (
+    "Thay đúng 'Câu cũ.' bằng 'Viết lại lời giải.' "
+    "Dẫn nguyên văn 'Thay giá trị để kiểm kết quả' từ nguồn đã chọn."
+)
+
+
+def test_smoke_sua_va_luu_qua_http(tmp_path, sample, smoke_evidence):
+    mode, model, _, _, timeout = smoke_evidence
     if mode == "fixture":
         pytest.skip("Chạy khi chọn --smoke-ollama-model.")
-    record_property("che_do", mode)
-    record_property("model", model)
-    record_property("model_digest", digest)
-    record_property("ollama_version", version)
-    record_property("timeout_giay", timeout)
 
     job, exam, result = sample
     repo = SQLiteFixture(tmp_path / "local-model.sqlite")
     repo.seed(job, exam)
     body = submission_body(job)
-    body["request"] = (
-        "Thay đúng 'Câu cũ.' bằng 'Viết lại lời giải.' "
-        "Dẫn nguyên văn 'Thay giá trị để kiểm kết quả' từ nguồn đã chọn."
-    )
+    body["request"] = LIVE_PATCH_REQUEST
 
     async def run():
         runner = PatchJobRunner(
@@ -872,3 +871,101 @@ def test_smoke_sua_va_luu_qua_http(tmp_path, sample, smoke_settings, record_prop
         assert repo.history_count() == 1
 
     asyncio.run(asyncio.wait_for(run(), timeout=timeout + 10))
+
+
+def test_smoke_huy_ollama_qua_http(tmp_path, sample, smoke_evidence, record_property):
+    mode, model, _, _, timeout = smoke_evidence
+    if mode == "fixture":
+        pytest.skip("Chạy khi chọn --smoke-ollama-model.")
+
+    job, exam, result = sample
+    repo = SQLiteFixture(tmp_path / "cancel-local-model.sqlite")
+    repo.seed(job, exam)
+    body = submission_body(job)
+    body["request"] = LIVE_PATCH_REQUEST
+
+    async def run():
+        sent, connection_closed, cancelled_exit = (asyncio.Event() for _ in range(3))
+
+        class ObservedTransport(httpx.AsyncHTTPTransport):
+            async def handle_async_request(self, request):
+                assert str(request.url) == OLLAMA_CHAT
+
+                async def trace(name, _info):
+                    if name == "http11.receive_response_headers.started":
+                        sent.set()
+                    elif name == "http11.response_closed.complete":
+                        connection_closed.set()
+
+                request.extensions["trace"] = trace
+                return await super().handle_async_request(request)
+
+            async def __aexit__(self, exc_type, exc_value, traceback):
+                await super().__aexit__(exc_type, exc_value, traceback)
+                if exc_type is asyncio.CancelledError:
+                    cancelled_exit.set()
+
+        observed = OllamaProvider(model, transport=ObservedTransport(trust_env=False))
+        retry_provider = OllamaProvider(model)
+        calls = 0
+
+        async def provider(current):
+            nonlocal calls
+            calls += 1
+            return await (observed if calls == 1 else retry_provider)(current)
+
+        runner = PatchJobRunner(
+            provider,
+            repo.current,
+            repo.stage,
+            timeout_seconds=timeout,
+            max_active=1,
+            max_retained=2,
+        )
+        transport = httpx.ASGITransport(app=fixture_app(repo, runner))
+        collection = f"/api/exams/{job.examId}/proposals"
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            created = await client.post(collection, headers=HEADERS, json=body)
+            assert created.status_code == 202, created.text
+            base = collection + "/" + created.json()["jobId"]
+            await asyncio.wait_for(sent.wait(), timeout=min(timeout, 10))
+            assert (await client.post(base + "/cancel", headers=OTHER)).status_code == 404
+
+            started_cancel = perf_counter()
+            cancelled = await client.post(base + "/cancel", headers=HEADERS)
+            assert cancelled.status_code == 200
+            terminal = cancelled.json()
+            assert terminal["status"] == "cancelled"
+            assert terminal["proposal"] is None
+            await asyncio.wait_for(cancelled_exit.wait(), timeout=5)
+            assert connection_closed.is_set()
+            record_property(
+                "dong_http_sau_huy_ms", round(1000 * (perf_counter() - started_cancel), 3)
+            )
+
+            replay = await client.get(base + "/events", headers={**HEADERS, "Last-Event-ID": "1"})
+            assert replay.status_code == 200
+            assert replay.text.count("event: patch") == 1
+            assert json.loads(replay.text.split("data: ", 1)[1]) == terminal
+            assert (await client.post(base + "/cancel", headers=HEADERS)).json() == terminal
+
+            body["requestId"] = str(uuid4())
+            retried = await client.post(collection, headers=HEADERS, json=body)
+            assert retried.status_code == 202, retried.text
+            assert retried.json()["jobId"] != terminal["jobId"]
+            retry_base = collection + "/" + retried.json()["jobId"]
+            retry_events = await client.get(retry_base + "/events", headers=HEADERS)
+            assert retry_events.status_code == 200
+            retry_terminal = json.loads(retry_events.text.rsplit("data: ", 1)[1])
+            assert retry_terminal["status"] == "complete", retry_terminal["errorCode"]
+            assert retry_terminal["proposal"]["edits"] == result["edits"]
+            assert calls == 2
+
+            refused = await client.post(
+                base + "/confirm", headers=HEADERS, json={"baseRevision": job.baseRevision}
+            )
+            assert refused.status_code == 404
+        assert repo.snapshot(job)[0] == exam
+        assert repo.history_count() == 0
+
+    asyncio.run(asyncio.wait_for(run(), timeout=timeout + 15))
