@@ -61,3 +61,11 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) bổ sung runner Python và route trạng thái, SSE, hủy. API chỉ phục vụ đúng chủ sở hữu/đề/job. Nối lại SSE bằng Last-Event-ID. Hủy và quá hạn chặn bản xem trước đến muộn. Giới hạn đồng thời giữ suất đến lúc adapter thoát.
 - Cục bộ đạt 70 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty. Có ca ngắt HTTP khi đang nhận SSE, nối lại và xác nhận lưu với SQLite tạm, cùng ca quá hạn/hủy mà provider vẫn cố trả kết quả. Đây là bằng chứng kỹ thuật E07 cho CT-04/05/06. Phép thử mô hình thật vẫn riêng.
 - [Hợp đồng](../contracts/ai.md) để UI-3, BE-2, BE-3 và BE-5 ghép. Runner hiện giữ job trong bộ nhớ của một tiến trình. Cần nối tạo job từ UI, phiên thật, lưu job bền vững, phục hồi sau khởi động lại và kiểm đầu cuối. Bản xem trước chỉ ghi vào đề sau thao tác xác nhận riêng.
+
+
+<!-- ban-giao-tao-job-nguon-39 -->
+### 11/11/2026 — tạo đề xuất với vùng chọn và đoạn nguồn đã xác thực
+
+- [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) có route tạo job sửa lời giải. Python lấy owner từ phiên, đọc đề và đoạn nguồn theo ID, phiên bản và locator. Chỉ truyền đoạn đã chọn cho adapter. Gửi lặp cùng requestId và nội dung nhận job cũ trong giới hạn lưu của runner.
+- Cục bộ đạt 86 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty. Ca HTTP chạy tạo → SSE → xác nhận với SQLite tạm và adapter Ollama qua HTTP giả lập. Có ca từ chối nguồn người khác, payload giả, thiếu đồng ý, sai phiên bản và đổi nguồn trong lúc AI xử lý.
+- [Hợp đồng](../contracts/ai.md) bàn giao cho BE-2, BE-4 và UI-3. Bên lý thuyết có thể dùng ca kỹ thuật cho SourceRef, quyền và CT-04/05/06. Cần ghép phiên thật, repository của nhóm, giao diện, khôi phục job và chạy model thật. Không dùng số ca kiểm này thay kết quả PoC.

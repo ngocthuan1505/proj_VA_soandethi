@@ -26,6 +26,7 @@ class PatchJobStatus(JobIdentity):
 class _Run:
     job: PatchJob
     state: PatchJobStatus
+    submission: tuple[UUID, str] | None
     finished: asyncio.Event = field(default_factory=asyncio.Event)
     publishing: asyncio.Lock = field(default_factory=asyncio.Lock)
     task: asyncio.Task[None] | None = None
@@ -55,7 +56,22 @@ class PatchJobRunner:
         self._max_retained = max_retained
         self._runs: dict[UUID, _Run] = {}
 
-    def submit(self, job: PatchJob) -> PatchJobStatus:
+    def replay(
+        self, owner_id: str, exam_id: UUID, request_id: UUID, digest: str
+    ) -> PatchJobStatus | None:
+        for run in self._runs.values():
+            if (run.job.ownerId, run.job.examId) != (owner_id, exam_id) or run.submission is None:
+                continue
+            original_id, original_digest = run.submission
+            if original_id == request_id:
+                if original_digest != digest:
+                    raise AIError("job_conflict", "Mã yêu cầu đã dùng cho nội dung khác.")
+                return run.state
+        return None
+
+    def submit(
+        self, job: PatchJob, *, submission: tuple[UUID, str] | None = None
+    ) -> PatchJobStatus:
         """Nhận snapshot do backend tạo. Gửi lại cùng job trả trạng thái hiện tại."""
         if job.jobId in self._runs:
             prior = self._owned(job.ownerId, job.examId, job.jobId)
@@ -70,7 +86,9 @@ class PatchJobRunner:
             del self._runs[expired]
 
         run = _Run(
-            job, PatchJobStatus(jobId=job.jobId, examId=job.examId, baseRevision=job.baseRevision)
+            job,
+            PatchJobStatus(jobId=job.jobId, examId=job.examId, baseRevision=job.baseRevision),
+            submission,
         )
         loop = asyncio.get_running_loop()
         self._runs[job.jobId] = run

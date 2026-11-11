@@ -34,13 +34,19 @@ Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi 
 - `check_question` gửi `BlindQuestion` gồm ID, phiên bản, dạng, đề bài và phương án cùng nguồn được phép. Đáp án lưu đi qua tham số riêng để đối chiếu sau khi provider trả lời. `comparison` có thể là `agrees`, `disagrees` hoặc `needs_review`. Tự luận, trả lời ngắn, lời giải chưa chắc chắn hoặc thiếu đáp án lưu cần người xem lại. Kết quả trùng đáp án chỉ ghi nhận sự đồng thuận của hai giá trị.
 - Khi nối HTTP, BE-2 cần lấy snapshot và đáp án lưu từ repository theo phiên người dùng. BE-5 cần gắn deadline và hủy vào tác vụ đang chạy. UI-3 có thể dùng [fixture Sinh/Kiểm](../../tests/fixtures/ai-sinh-kiem.json) để dựng màn hình xem trước và cảnh báo. Sau bước xác nhận, service lưu cần kiểm lại phiên bản trong giao dịch. Điểm hiển thị bằng `pointsQ4 / 4`.
 
+## Tạo yêu cầu sửa lời giải và chọn nguồn
+
+- `POST /api/exams/{exam_id}/proposals` nhận `requestId`, `baseRevision`, `request`, `consent` và `targets`. Mỗi đích gồm `questionId`, `questionVersion`, `blockId` lời giải và `selection` theo UTF-16. Gửi `null` nếu chọn cả khối. `sources` là danh sách `sourceId`, `sourceVersion`, `locator`. Có thể dùng `requireEvidence` để yêu cầu căn cứ. Khi đã chọn nguồn, luôn kiểm trích dẫn.
+- [Service tạo snapshot](../../backend/src/mach_backend/patch_submission.py) lấy chủ sở hữu từ phiên. BE-3 cung cấp `read_inputs(owner, exam_id, source_keys)` đọc đề và các đoạn hiện hành trong cùng một snapshot. Mỗi đoạn cần ID, phiên bản, locator và văn bản trích. Request chỉ được chứa tham chiếu. Khóa đoạn nguồn là cặp ID và locator. Đoạn bị xóa, thiếu, hoặc của người khác trả 404. Phiên bản lệch trả 409. Chỉ đoạn đã chọn được gửi provider.
+- API trả 202 cùng `jobId` do server tạo. Gửi lại cùng `requestId` và nội dung trong phạm vi tài khoản/đề sẽ nhận lại job cũ khi còn lưu trong runner. Đổi nội dung với cùng mã trả 409. Khi chủ động bấm Thử lại sau lỗi, tạo `requestId` mới. Thiếu đồng ý trả 403, sai phạm vi đầu vào trả 422, hết suất trả 429.
+
 ## Chạy, theo dõi và hủy bản sửa lời giải
 
 - [PatchJobRunner](../../backend/src/mach_backend/patch_jobs.py) nhận snapshot đã được backend tạo. Gửi lại cùng job và snapshot trong thời gian còn lưu trả trạng thái hiện tại. Dùng lại ID với snapshot khác báo `job_conflict`. Vượt giới hạn job đang chạy báo `job_limit`. Chỗ còn giữ được đặt qua `max_retained`, chỉ loại job đã kết thúc. Khi tích hợp, tầng lưu cần bảo đảm idempotency cả sau khi app khởi động lại.
 - Router của BE-2 dùng cùng tiền tố `/api/exams/{exam_id}/proposals/{job_id}`. `GET /status` đọc trạng thái, `GET /events` nhận SSE và `POST /cancel` yêu cầu hủy. Tất cả lấy chủ sở hữu từ phiên. Sai đề hoặc chủ sở hữu trả 404.
 - SSE phát sự kiện `patch` với ID 1 khi còn chạy và ID 2 khi hoàn tất, hủy hoặc lỗi. Khi nối lại, gửi `Last-Event-ID` để lấy sự kiện mới hơn. Tác vụ đã kết thúc có thể chỉ phát ID 2. `complete` chứa bản xem trước đã lưu. Chỉ nút xác nhận riêng ghi vào đề.
 - Ngắt kết nối SSE cho phép nối lại. Khi bấm Dừng hoặc quá thời hạn xử lý, kết quả về sau bị bỏ và API chỉ có một trạng thái cuối. Suất chạy vẫn được tính cho tới khi coroutine provider thoát. Hủy và lưu bản xem trước cùng dùng một khóa. Nếu bản xem trước đã ghi thì trả `complete` để người dùng tự chọn xác nhận. Repository kiểm revision khi ghi bản xem trước.
-- Runtime hiện dùng một event loop và giữ trạng thái job trong bộ nhớ. Phiên, đường tạo job từ UI, kho job bền vững và phục hồi khi tiến trình khởi động lại cần ghép với BE-2/BE-3/BE-5. Ca kiểm hiện chạy qua HTTP với SQLite tạm cho bản xem trước và xác nhận.
+- Runtime hiện dùng một event loop và giữ trạng thái job trong bộ nhớ. UI còn cần gọi route tạo job. Phiên, reader dữ liệu thật, kho job bền vững và phục hồi khi tiến trình khởi động lại cần ghép với BE-2/BE-3/BE-5. Ca kiểm hiện chạy qua HTTP với SQLite tạm cho bản xem trước và xác nhận.
 
 ## Lỗi và phần BE-5/UI-3 cần ghép
 
@@ -53,7 +59,7 @@ Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi 
 | Chưa cấu hình, quá hạn hoặc provider lỗi | `provider_unconfigured`, `timeout`, `rate_limited`, `provider_unavailable` | Ghi lỗi có thể xử lý, chỉ gọi lại khi người dùng yêu cầu. |
 | Người dùng hủy | `cancelled` ở API job | UI kết thúc chờ khi nhận trạng thái này. Phản hồi muộn không tạo bản xem trước. |
 
-Deadline được áp trong service và bao gồm cả hai lần đọc snapshot. Người gọi chọn thời hạn từ cấu hình đã review, tối đa 300 giây. Giới hạn hiện tại là 12 khối, 12 đoạn nguồn, tổng 50.000 ký tự nguồn và phản hồi 256 KiB. SSE và hủy bản sửa đã có router ghép. HTTP tạo tác vụ, quyền lưu thật và retry bền vững cần phối hợp BE-2/BE-3/BE-5. Khi đưa vào API, mã trạng thái phải phản ánh lỗi và không trả nội dung thô từ model. Ghi provider, model do backend cấu hình, revision, trạng thái và thời gian vào log kỹ thuật khi ghép job.
+Deadline được áp trong service và bao gồm cả hai lần đọc snapshot. Người gọi chọn thời hạn từ cấu hình đã review, tối đa 300 giây. Giới hạn hiện tại là 12 khối, 12 đoạn nguồn, tổng 50.000 ký tự nguồn và phản hồi 256 KiB. Các route tạo, SSE và hủy bản sửa đã có. Ghép quyền lưu thật và retry bền vững cần phối hợp BE-2/BE-3/BE-5. Khi đưa vào API, mã trạng thái phải phản ánh lỗi và không trả nội dung thô từ model. Ghi provider, model do backend cấu hình, revision, trạng thái và thời gian vào log kỹ thuật khi ghép job.
 
 ## Chạy trên máy và chuẩn bị cho Thuận
 

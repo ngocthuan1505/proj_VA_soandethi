@@ -9,7 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 Revision = Annotated[int, Field(ge=1)]
 LocatorIndex = Annotated[int, Field(ge=1)]
-BlockText = Annotated[str, Field(min_length=1, max_length=12000)]
+MAX_BLOCK_TEXT = 12000
+BlockText = Annotated[str, Field(min_length=1, max_length=MAX_BLOCK_TEXT)]
 Quote = Annotated[str, Field(min_length=8, max_length=1000)]
 
 
@@ -101,6 +102,11 @@ def selection_parts(target: BlockTarget) -> tuple[str, str]:
         raise AIError("invalid_scope", "Vùng chọn cắt ngang một ký tự. Hãy chọn lại.") from None
 
 
+def validate_locator(locator: Locator) -> None:
+    if (locator.kind == "region") != (locator.regionId is not None):
+        raise AIError("invalid_locator", "Vị trí nguồn chưa đủ thông tin.")
+
+
 def validate_sources(job: AIJob) -> None:
     if not job.ownerId.strip():
         raise AIError("invalid_request", "Yêu cầu thiếu chủ sở hữu đề.")
@@ -109,9 +115,7 @@ def validate_sources(job: AIJob) -> None:
     for source in job.sources:
         if source.ownerId != job.ownerId:
             raise AIError("forbidden_source", "Nguồn nằm ngoài phạm vi được phép dùng.")
-        locator = source.locator
-        if (locator.kind == "region") != (locator.regionId is not None):
-            raise AIError("invalid_locator", "Vị trí nguồn chưa đủ thông tin.")
+        validate_locator(source.locator)
         if not source.text.strip():
             raise AIError("missing_source", "Đoạn nguồn chưa có văn bản để đối chiếu.")
     if job.requireEvidence and not job.sources:

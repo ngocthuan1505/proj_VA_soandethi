@@ -1,6 +1,7 @@
 """Router xác nhận đề xuất dành cho app đã cấu hình phiên và repository."""
 
 from collections.abc import AsyncIterator, Awaitable, Callable
+from hashlib import sha256
 from typing import Annotated
 from uuid import UUID
 
@@ -10,6 +11,12 @@ from fastapi.responses import StreamingResponse
 from mach_backend.ai_contract import AIError, ContractModel, Revision
 from mach_backend.patch_confirmation import ConfirmationRepository, PatchReceipt, confirm_patch
 from mach_backend.patch_jobs import PatchJobRunner, PatchJobStatus
+from mach_backend.patch_submission import (
+    PatchSubmission,
+    ReadPatchInputs,
+    build_patch_job,
+    selected_source_keys,
+)
 
 
 class ConfirmPatchRequest(ContractModel):
@@ -49,10 +56,43 @@ def build_patch_confirmation_router(
 def build_patch_job_router(
     runner: PatchJobRunner,
     authenticated_owner: Callable[..., str | Awaitable[str]],
+    read_inputs: ReadPatchInputs,
 ) -> APIRouter:
-    router = APIRouter(prefix="/api/exams/{exam_id}/proposals/{job_id}")
+    router = APIRouter(prefix="/api/exams/{exam_id}/proposals")
 
-    @router.get("/status")
+    @router.post("", status_code=202)
+    async def submit(
+        exam_id: UUID,
+        request: PatchSubmission,
+        owner_id: Annotated[str, Depends(authenticated_owner)],
+    ) -> PatchJobStatus:
+        try:
+            sources = selected_source_keys(request)
+            digest = sha256(request.model_dump_json().encode()).hexdigest()
+            if prior := runner.replay(owner_id, exam_id, request.requestId, digest):
+                return prior
+            inputs = await read_inputs(owner_id, exam_id, sources)
+            if prior := runner.replay(owner_id, exam_id, request.requestId, digest):
+                return prior
+            job = build_patch_job(owner_id, exam_id, request, inputs)
+            return runner.submit(job, submission=(request.requestId, digest))
+        except AIError as error:
+            match error.code:
+                case "exam_not_found" | "source_not_found":
+                    status_code = 404
+                case "consent_required":
+                    status_code = 403
+                case "stale_snapshot" | "exam_read_only" | "job_conflict":
+                    status_code = 409
+                case "job_limit":
+                    status_code = 429
+                case _:
+                    status_code = 422
+            raise HTTPException(
+                status_code, detail={"code": error.code, "message": str(error)}
+            ) from None
+
+    @router.get("/{job_id}/status")
     async def status(
         exam_id: UUID, job_id: UUID, owner_id: Annotated[str, Depends(authenticated_owner)]
     ) -> PatchJobStatus:
@@ -61,7 +101,7 @@ def build_patch_job_router(
         except AIError as error:
             raise HTTPException(404, detail={"code": error.code, "message": str(error)}) from None
 
-    @router.post("/cancel")
+    @router.post("/{job_id}/cancel")
     async def cancel(
         exam_id: UUID, job_id: UUID, owner_id: Annotated[str, Depends(authenticated_owner)]
     ) -> PatchJobStatus:
@@ -70,7 +110,7 @@ def build_patch_job_router(
         except AIError as error:
             raise HTTPException(404, detail={"code": error.code, "message": str(error)}) from None
 
-    @router.get("/events")
+    @router.get("/{job_id}/events")
     async def events(
         exam_id: UUID,
         job_id: UUID,
