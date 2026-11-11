@@ -77,3 +77,11 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) thêm [bộ kiểm Sinh, Sửa, Kiểm](../testing/KIEM_NHANH_AI.md) dùng chung dữ liệu mẫu. Mặc định 3/3 fixture đạt. Toàn bộ đạt 89 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty cục bộ.
 - Ollama 0.40.16 chạy CPU, cloud tắt, dữ liệu synthetic. Qwen2.5 1.5B đạt 0/3. Qwen2.5 3B đạt 1/3 ở Kiểm. Cả hai bị chặn khi sửa ngoài vùng hoặc sinh đáp án trắc nghiệm sai kiểu. Đã lưu thời gian từng ca và digest trong bảng kết quả/JUnit. Tiến trình thử đã dừng.
 - Bên lý thuyết có thể dẫn phép đo này làm bằng chứng adapter và các lớp kiểm, tách với 48 lượt PoC. Chưa chốt model mặc định. Cần xử lý hai lỗi ở Sửa/Sinh và kiểm tích hợp tới lưu với model thật. Kết quả không thuộc đợt diễn tập GreenNode.
+
+
+<!-- ban-giao-rang-buoc-ollama-39 -->
+### 11/11/2026 — sửa phạm vi Ollama và kiểm đến bước lưu
+
+- [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) giới hạn dữ liệu gửi Ollama ở đoạn chọn của từng khối rồi Python ghép lại. Schema Sinh ràng buộc thông tin ma trận và kiểu đáp án. DTO đề xuất ra API giữ toàn văn khối sau khi ghép.
+- [Kết quả đo](../testing/KIEM_NHANH_AI.md): Qwen2.5 3B đạt 3/3 ca Sinh/Sửa/Kiểm, đạt thêm ca model thật qua FastAPI và SQLite tạm tới xác nhận lưu. Đề giữ nguyên trước xác nhận. Sau xác nhận có đúng một lịch sử, tăng revision và phiên bản câu, giữ công thức và câu khác. 1.5B qua Sửa, còn lệch barem và bất đồng đáp án. Cục bộ 93 pytest đạt, 1 ca model thật bỏ qua mặc định, 100 test Node, 14 test kế hoạch và Ruff/ty đạt.
+- Có thể dùng ca lưu làm bằng chứng kỹ thuật cho phạm vi sửa và xác nhận ở CT-03/04/05/06. Kết quả dùng dữ liệu mẫu và phiên giả lập. Cần ghép UI, kho thật, kiểm hủy model thật và nghiệm thu GreenNode riêng.

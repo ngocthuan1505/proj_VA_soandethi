@@ -32,6 +32,12 @@ from mach_backend.ai_questions import (
     validate_generation_plan,
     validate_options,
 )
+from mach_backend.ollama_protocol import (
+    OllamaPatchDraft,
+    generation_format,
+    rebuild_patch,
+    selected_targets,
+)
 
 type Provider[JobT: AIJob] = Callable[[JobT], Awaitable[str]]
 OLLAMA_CHAT = "http://127.0.0.1:11434/api/chat"
@@ -62,13 +68,17 @@ class OllamaProvider:
         self.transport = transport
 
     async def __call__(self, job: PatchJob | GenerateJob | CheckJob) -> str:
+        payload = job.model_dump(mode="json", exclude={"ownerId", "sources"})
         if isinstance(job, PatchJob):
-            schema = PatchProposal
+            output_format = OllamaPatchDraft.model_json_schema()
+            payload["targets"] = selected_targets(job)
             instruction = (
-                "Đề xuất sửa đúng khối và vùng đã chọn. Vị trí selection tính theo đơn vị UTF-16."
+                "Mỗi targets[].text là đoạn được chọn. "
+                "Trong edits[].replacement chỉ viết văn bản mới thay cho đoạn đó. "
+                "Chép đúng blockId. Python sẽ giữ và ghép phần ngoài vùng chọn."
             )
         elif isinstance(job, GenerateJob):
-            schema = GenerateProposal
+            output_format = generation_format(job)
             instruction = (
                 "Sinh một câu cho mỗi slot theo đúng thứ tự, dạng, chủ đề, mức độ và điểm. "
                 "Điểm pointsQ4 là số đơn vị 0,25 điểm. Barem phải khớp điểm câu. "
@@ -76,7 +86,7 @@ class OllamaProvider:
                 "văn bản cho short và null cho essay."
             )
         else:
-            schema = CheckProposal
+            output_format = CheckProposal.model_json_schema()
             instruction = (
                 "Giải độc lập câu hỏi từ đề bài, phương án và nguồn. "
                 "Giữ questionId và questionVersion. Đặt uncertain=true khi chưa đủ căn cứ. "
@@ -89,7 +99,6 @@ class OllamaProvider:
             "Khi dùng nguồn, chép đúng locator, phiên bản và trích đoạn. "
             "Nếu requireEvidence=true, mỗi kết quả cần trích đoạn đã đối chiếu. " + instruction
         )
-        payload = job.model_dump(mode="json", exclude={"ownerId", "sources"})
         payload["sources"] = [
             source.model_dump(mode="json", exclude={"ownerId"}) for source in job.sources
         ]
@@ -103,7 +112,7 @@ class OllamaProvider:
                     json={
                         "model": self.model,
                         "stream": False,
-                        "format": schema.model_json_schema(),
+                        "format": output_format,
                         "messages": [
                             {
                                 "role": "system",
@@ -130,7 +139,8 @@ class OllamaProvider:
             raise AIError("invalid_result", "Ollama trả phản hồi sai cấu trúc.") from None
         if not reply.done or reply.done_reason not in (None, "stop"):
             raise AIError("invalid_result", "Ollama chưa hoàn tất đề xuất.")
-        return reply.message.content
+        raw = reply.message.content
+        return rebuild_patch(job, raw) if isinstance(job, PatchJob) else raw
 
 
 async def _run_ai[JobT: AIJob, ResultT](

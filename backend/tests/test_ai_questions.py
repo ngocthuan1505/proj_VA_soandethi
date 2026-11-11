@@ -119,6 +119,25 @@ def test_generate_four_types_in_approved_order_without_mutating_plan(generation)
     def check_payload(data, schema):
         assert data["slots"] == job.model_dump(mode="json")["slots"]
         assert "questions" in schema and "edits" not in schema
+        questions = schema["questions"]
+        assert questions["minItems"] == questions["maxItems"] == 4
+        by_type = {}
+        for variant, slot in zip(questions["items"]["anyOf"], job.slots, strict=True):
+            properties = variant["properties"]
+            assert all(
+                properties[key] == {"const": value} for key, value in slot.model_dump().items()
+            )
+            by_type[slot.type] = properties["answer"]
+        assert {kind: answer["type"] for kind, answer in by_type.items()} == {
+            "mcq": "integer",
+            "truefalse": "array",
+            "short": "string",
+            "essay": "null",
+        }
+        assert (by_type["mcq"]["minimum"], by_type["mcq"]["maximum"]) == (0, 3)
+        flags = by_type["truefalse"]
+        assert flags["items"] == {"type": "boolean"}
+        assert flags["minItems"] == flags["maxItems"] == 4
 
     before = job.model_dump()
     provider = ollama_fixture(result, check_payload)

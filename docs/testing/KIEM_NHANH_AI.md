@@ -29,6 +29,16 @@ JUnit ghi chế độ, tên và digest model, phiên bản Ollama, thời hạn,
 Ba ca kiểm giao tiếp và quy tắc đầu ra trên dữ liệu mẫu. Bằng chứng chấm nội dung, UI và cơ sở dữ liệu thật, hủy model thật, GreenNode và vận hành candidate cần ghi riêng theo [checklist phát hành](../team/RELEASE.md).
 
 
+## Kiểm model thật đến bước lưu lời giải
+
+Từ thư mục `backend`, có thể kiểm riêng route tạo đề xuất, SSE và xác nhận bằng cùng model đã tải:
+
+```sh
+uv run pytest tests/test_patch_confirmation.py -k test_smoke_sua_va_luu_qua_http --smoke-ollama-model MODEL_DA_TAI --smoke-timeout 120 -o junit_family=legacy --junitxml ../.runtime/ai-save-smoke.xml
+```
+
+Ca này dùng FastAPI, phiên giả lập và SQLite tạm. Sau khi model trả đề xuất, kiểm đề vẫn nguyên trước khi bấm xác nhận. Sau xác nhận, kiểm revision, lịch sử, công thức và các câu ngoài vùng sửa. Chế độ pytest mặc định bỏ qua ca này.
+
 ## Kết quả cục bộ ngày 11/11/2026
 
 Đo trên laptop Windows bằng CPU, Ollama 0.40.16, ngữ cảnh 4.096 token và thời hạn 120 giây mỗi ca. Ba ca gọi trực tiếp adapter Python từ commit nghiệp vụ `200724a`. Chạy tuần tự và giữ cấu hình mặc định của model. Thời gian bên dưới là từng ca pytest, gồm thời gian tải model vào bộ nhớ ở ca đầu khi cần.
@@ -41,3 +51,15 @@ Ba ca kiểm giao tiếp và quy tắc đầu ra trên dữ liệu mẫu. Bằng
 Lượt chẩn đoán riêng với 1.5B thấy bản sửa lệch cả hai đầu vùng được phép. Ca Sinh trả chuỗi cho đáp án trắc nghiệm. Ca Kiểm trả chỉ số 3 trong khi chỉ số đúng là 2. Bộ kiểm giữ trạng thái lỗi hoặc bất đồng tương ứng.
 
 Ba ca dùng phản hồi mẫu đều đạt. Trên model thật, 1.5B đạt 0/3 và 3B đạt 1/3. Chưa chốt model mặc định. Hai lỗi lặp lại cần kiểm tiếp là yêu cầu model chép toàn khối lời giải và kiểu đáp án trắc nghiệm trong schema gửi model.
+
+
+### Sau khi giới hạn vùng sửa và ràng buộc ma trận
+
+Giữ cùng laptop, runtime, model digest và thời hạn. Adapter gửi riêng phần cần sửa rồi Python ghép lại từ snapshot. Schema Sinh ràng buộc dạng, chủ đề, mức độ, điểm và kiểu đáp án theo ma trận. Bộ kiểm phía Python tiếp tục kiểm tổng điểm barem, vị trí nguồn và nội dung trích dẫn.
+
+| Model | Sửa lời giải | Sinh đề | Kiểm đáp án | Sửa rồi lưu qua HTTP |
+|---|---|---|---|---|
+| `qwen2.5:1.5b` | Đạt · 17,357 giây | `invalid_rubric` · 24,711 giây | `disagrees` · 14,992 giây | Chưa chạy |
+| `qwen2.5:3b` | Đạt · 27,320 giây | Đạt · 37,945 giây | Đạt · 23,370 giây | Đạt · 28,008 giây |
+
+Ca HTTP dùng model 3B xác nhận đề giữ nguyên trước khi bấm xác nhận. Sau xác nhận, revision đề 4→5, phiên bản câu 2→3, thêm một mục lịch sử và giữ nguyên công thức, định dạng, câu khác. Bộ mẫu này có một câu Sinh, một vùng Sửa và một câu Kiểm. Cần thêm bộ mẫu đa môn, kho dữ liệu thật và giao diện để nghiệm thu candidate.

@@ -253,6 +253,17 @@ def test_cancel_interrupts_pending_provider(job):
 
 
 def test_ollama_adapter_sends_only_selected_payload(job, proposal):
+    draft = {
+        **proposal.model_dump(mode="json"),
+        "edits": [
+            {
+                "op": "replace",
+                "blockId": str(job.targets[0].blockId),
+                "replacement": "Viết lại lời giải.",
+            }
+        ],
+    }
+
     def reply(request: httpx.Request) -> httpx.Response:
         assert str(request.url) == OLLAMA_CHAT
         data = json.loads(request.content)
@@ -260,7 +271,9 @@ def test_ollama_adapter_sends_only_selected_payload(job, proposal):
         assert data["stream"] is False
         assert data["format"]["properties"]["edits"]
         prompt = json.loads(data["messages"][1]["content"])
-        assert prompt["targets"][0]["blockId"] == str(job.targets[0].blockId)
+        assert prompt["targets"] == [
+            {"blockId": str(job.targets[0].blockId), "text": FIXTURE["selectionText"]}
+        ]
         assert prompt["sources"][0]["text"] == job.sources[0].text
         assert "ownerId" not in prompt and "ownerId" not in prompt["sources"][0]
         assert data["messages"][0]["role"] == "system"
@@ -269,7 +282,7 @@ def test_ollama_adapter_sends_only_selected_payload(job, proposal):
             json={
                 "done": True,
                 "done_reason": "stop",
-                "message": {"role": "assistant", "content": proposal.model_dump_json()},
+                "message": {"role": "assistant", "content": json.dumps(draft)},
             },
         )
 
@@ -313,6 +326,44 @@ def test_cloud_model_names_and_missing_model_are_rejected(model):
     assert raised.value.code == "provider_unconfigured"
 
 
+@pytest.mark.parametrize(
+    ("replacement", "whole_block", "error"),
+    [
+        ("", False, None),
+        ("Lời giải mới.", True, None),
+        ("", True, "invalid_result"),
+        ("$công thức lỗi", False, "invalid_math"),
+    ],
+)
+def test_ollama_applies_replacement_only_inside_approved_scope(
+    job, proposal, replacement, whole_block, error
+):
+    target = job.targets[0]
+    if whole_block:
+        job = job.model_copy(update={"targets": (target.model_copy(update={"selection": None}),)})
+    raw = {
+        **proposal.model_dump(mode="json"),
+        "edits": [{"op": "replace", "blockId": str(target.blockId), "replacement": replacement}],
+    }
+    transport = httpx.MockTransport(
+        lambda request: httpx.Response(
+            200, json={"done": True, "message": {"role": "assistant", "content": json.dumps(raw)}}
+        )
+    )
+    provider = OllamaProvider("mo-hinh-fixture", transport=transport)
+    if error:
+        with pytest.raises(AIError) as raised:
+            asyncio.run(propose_patch(job, provider, current, timeout_seconds=1))
+        assert raised.value.code == error
+        return
+
+    result = asyncio.run(propose_patch(job, provider, current, timeout_seconds=1))
+    expected = (
+        replacement if whole_block else target.text.replace(FIXTURE["selectionText"], replacement)
+    )
+    assert result.edits[0].content == expected
+
+
 def test_smoke_sua_loi_giai(job, proposal, run_smoke):
     job = job.model_copy(
         update={
@@ -326,7 +377,17 @@ def test_smoke_sua_loi_giai(job, proposal, run_smoke):
     async def call(provider, timeout):
         return await propose_patch(job, provider, current, timeout_seconds=timeout)
 
-    result = run_smoke(call, proposal.model_dump(mode="json"))
+    draft = {
+        **proposal.model_dump(mode="json"),
+        "edits": [
+            {
+                "op": "replace",
+                "blockId": str(job.targets[0].blockId),
+                "replacement": "Viết lại lời giải.",
+            }
+        ],
+    }
+    result = run_smoke(call, draft)
     if result.edits[0].content != FIXTURE["cases"][0]["content"]:
         pytest.fail("Nội dung thay thế không khớp yêu cầu của ca mẫu.", pytrace=False)
     assert result.evidence

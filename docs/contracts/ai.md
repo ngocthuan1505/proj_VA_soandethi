@@ -16,7 +16,7 @@ Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.c
 - Job giữ `jobId`, `examId` và `baseRevision`. Mỗi đích giữ `questionId`, `questionVersion`, `blockId`, `field` và văn bản gốc. `selection` gồm vị trí đầu và cuối không bao gồm ký tự cuối, theo đơn vị UTF-16 của JavaScript. Đích toàn khối dùng giá trị null. Khâu đọc snapshot chỉ cấp khối lời giải dạng văn bản mà editor có thể hiển thị an toàn.
 - Mỗi đoạn nguồn có `sourceId`, `sourceVersion`, `locator` và văn bản. `locator.kind` là `page`, `passage` hoặc `region`. `index` bắt đầu từ 1. Vị trí vùng ảnh có thêm `regionId`. Giáo viên hoặc lớp truy xuất chọn đoạn cần dùng trước khi gọi service.
 - Service kiểm đúng snapshot cả trước và sau lời gọi. Adapter gửi chỉ dẫn hệ thống và dữ liệu được chọn tới Ollama. Nội dung nguồn đi dưới dạng dữ liệu. Adapter không cấp công cụ hay gửi ID chủ sở hữu.
-- `PatchProposal` giữ ba mã của job, danh sách `edits` với thao tác `replace`, `blockId` và toàn bộ văn bản khối sau sửa. Backend kiểm phần ngoài vùng, khối lặp, schema và cặp dấu công thức. Trích dẫn phải khớp ID, phiên bản, vị trí và đoạn văn thật sau khi chuẩn hóa khoảng trắng.
+- Với mỗi khối cần sửa, Ollama chỉ nhận đoạn được chọn và trả `replacement` theo `blockId`. Python ghép phần thay thế vào snapshot gốc. `PatchProposal` giữ ba mã của job, danh sách `edits` với thao tác `replace`, `blockId` và toàn bộ văn bản khối sau sửa. Backend kiểm phần ngoài vùng, khối lặp, schema và cặp dấu công thức. Trích dẫn phải khớp ID, phiên bản, vị trí và đoạn văn thật sau khi chuẩn hóa khoảng trắng.
 - Gọi `prepare_patch` để tạo và ghi bản xem trước. Callback lưu chỉ nhận đề xuất nếu snapshot và tác vụ vẫn còn hiệu lực tại thời điểm ghi. Bản xem trước chưa sửa đề. UI escape văn bản và dựng preview theo block ID. Khi gặp lỗi phiên bản, giữ phần nhập để giáo viên thử lại.
 
 ## Xác nhận sửa lời giải
@@ -28,7 +28,7 @@ Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.c
 
 ## Sinh đề và Kiểm đáp án
 
-Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi gọi model, giới hạn thời gian, kiểm quyền nguồn và đối chiếu trích dẫn. [Schema câu hỏi](../../backend/src/mach_backend/ai_questions.py) · [Service Python](../../backend/src/mach_backend/ai_service.py)
+Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi gọi model, giới hạn thời gian, kiểm quyền nguồn và đối chiếu trích dẫn. Khi sinh, schema gửi Ollama ràng buộc dạng câu, chủ đề, mức độ, điểm đã duyệt và kiểu đáp án tương ứng. Python vẫn đối chiếu thứ tự, điểm, barem và kiểu đáp án sau khi nhận phản hồi. [Schema câu hỏi](../../backend/src/mach_backend/ai_questions.py) · [Service Python](../../backend/src/mach_backend/ai_service.py)
 
 - `propose_exam` nhận 1–30 vị trí câu đã duyệt trong `slots`. Mỗi vị trí có dạng, chủ đề, mức độ và `pointsQ4`, số đơn vị 0,25 điểm. Tổng đề là 40 đơn vị. Kết quả cần đúng thứ tự, không thiếu câu, mỗi barem cộng đúng điểm của câu và mỗi trích dẫn khớp nguồn đã chọn. Khi lưu sau xác nhận, repository cấp UUID cho câu mới. Bộ thử bao phủ trắc nghiệm, đúng sai, trả lời ngắn và tự luận.
 - `check_question` gửi `BlindQuestion` gồm ID, phiên bản, dạng, đề bài và phương án cùng nguồn được phép. Đáp án lưu đi qua tham số riêng để đối chiếu sau khi provider trả lời. `comparison` có thể là `agrees`, `disagrees` hoặc `needs_review`. Tự luận, trả lời ngắn, lời giải chưa chắc chắn hoặc thiếu đáp án lưu cần người xem lại. Kết quả trùng đáp án chỉ ghi nhận sự đồng thuận của hai giá trị.

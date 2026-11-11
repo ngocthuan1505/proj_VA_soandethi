@@ -560,11 +560,24 @@ def test_http_submit_resume_checks_selected_source_until_confirm(tmp_path, sampl
             assert injection not in messages[0]["content"]
             payload = json.loads(messages[1]["content"])
             assert payload["sources"] == [source.model_dump(mode="json", exclude={"ownerId"})]
-            assert payload["targets"][0]["text"] == job.targets[0].text
+            assert payload["targets"][0]["text"] == FIXTURE["selectionText"]
             assert payload["requireEvidence"] is True
             started.set()
             await released.wait()
-            content = json.dumps({**result, "jobId": payload["jobId"]})
+            edit = result["edits"][0]
+            content = json.dumps(
+                {
+                    **result,
+                    "jobId": payload["jobId"],
+                    "edits": [
+                        {
+                            "op": edit["op"],
+                            "blockId": edit["blockId"],
+                            "replacement": "Viết lại lời giải.",
+                        }
+                    ],
+                }
+            )
             return httpx.Response(
                 200, json={"done": True, "message": {"role": "assistant", "content": content}}
             )
@@ -798,3 +811,64 @@ def test_http_submit_refuses_invalid_scope_source_or_consent(tmp_path, sample, c
             assert repo.history_count() == 0
 
     asyncio.run(run())
+
+
+def test_smoke_sua_va_luu_qua_http(tmp_path, sample, smoke_settings, record_property):
+    mode, model, digest, version, timeout = smoke_settings
+    if mode == "fixture":
+        pytest.skip("Chạy khi chọn --smoke-ollama-model.")
+    record_property("che_do", mode)
+    record_property("model", model)
+    record_property("model_digest", digest)
+    record_property("ollama_version", version)
+    record_property("timeout_giay", timeout)
+
+    job, exam, result = sample
+    repo = SQLiteFixture(tmp_path / "local-model.sqlite")
+    repo.seed(job, exam)
+    body = submission_body(job)
+    body["request"] = (
+        "Thay đúng 'Câu cũ.' bằng 'Viết lại lời giải.' "
+        "Dẫn nguyên văn 'Thay giá trị để kiểm kết quả' từ nguồn đã chọn."
+    )
+
+    async def run():
+        runner = PatchJobRunner(
+            OllamaProvider(model),
+            repo.current,
+            repo.stage,
+            timeout_seconds=timeout,
+            max_active=1,
+            max_retained=1,
+        )
+        transport = httpx.ASGITransport(app=fixture_app(repo, runner))
+        collection = f"/api/exams/{job.examId}/proposals"
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            created = await client.post(collection, headers=HEADERS, json=body)
+            assert created.status_code == 202, created.text
+            base = collection + "/" + created.json()["jobId"]
+            events = await client.get(base + "/events", headers=HEADERS)
+            assert events.status_code == 200
+            terminal = json.loads(events.text.rsplit("data: ", 1)[1])
+            assert terminal["status"] == "complete", terminal["errorCode"]
+            assert terminal["proposal"]["edits"] == result["edits"]
+            assert repo.snapshot(job)[0] == exam
+            saved = await client.post(
+                base + "/confirm", headers=HEADERS, json={"baseRevision": job.baseRevision}
+            )
+            assert saved.status_code == 200, saved.text
+
+        current, _ = repo.snapshot(job)
+        assert current["revision"] == job.baseRevision + 1
+        changed = current["questions"][0]
+        original = exam["questions"][0]
+        assert changed["v"] == original["v"] + 1
+        assert changed["explanation"] == result["edits"][0]["content"]
+        nodes = changed["explanationDoc"]["content"][0]["content"]
+        old_nodes = original["explanationDoc"]["content"][0]["content"]
+        assert nodes[:3] == old_nodes[:3]
+        assert nodes[4:] == old_nodes[4:]
+        assert current["questions"][1:] == exam["questions"][1:]
+        assert repo.history_count() == 1
+
+    asyncio.run(asyncio.wait_for(run(), timeout=timeout + 10))
