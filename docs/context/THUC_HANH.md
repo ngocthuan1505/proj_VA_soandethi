@@ -45,3 +45,11 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - PR #39 thêm service Sinh đề theo ma trận đã duyệt và Kiểm đáp án bằng lời giải độc lập. Đầu vào có mã tác vụ, revision, chủ sở hữu và nguồn có phiên bản. Sinh kiểm bốn dạng câu, 40 đơn vị 0,25 điểm, barem và trích dẫn. Kiểm chỉ gửi đề và phương án, dùng đáp án lưu sau khi nhận kết quả. Trạng thái đồng thuận cần người xem lại trước khi duyệt.
 - Đã chạy 52 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty. [Fixture Sinh/Kiểm](../../tests/fixtures/ai-sinh-kiem.json) dùng cho Python và đối chiếu trắc nghiệm/tự luận với Node. Kết nối Ollama trong phép thử dùng HTTP giả lập.
 - Hợp đồng và fixture hỗ trợ BE-2 ghép snapshot theo phiên, BE-5 kiểm job cũ/hủy, UI-3 dựng preview. Bên lý thuyết dùng số ca này cho kiểm kỹ thuật CT-03/04/05/06. Phần còn lại gồm tuyến API xác thực, xác nhận lưu, hủy job phía server, các kiểu sửa có phụ thuộc và chấm đầu ra model thật.
+
+
+<!-- ban-giao-xac-nhan-ai-39 -->
+### 11/11/2026 — xác nhận lưu bản sửa lời giải
+
+- [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) thêm service xác nhận và router để BE-2 ghép phiên cho #13, BE-3 ghép repository/giao dịch cho #14. Bản xem trước chưa đổi đề. Xác nhận kiểm chủ sở hữu, phiên bản đề/câu, phạm vi và nguồn. Ghi đề, lịch sử và biên nhận cùng giao dịch. Gửi lại cùng job và revision trả biên nhận cũ. [Hợp đồng AI](../contracts/ai.md).
+- 13 ca mới kiểm qua FastAPI và SQLite tạm, gồm giữ định dạng/nút công thức, đề hoặc nguồn đã đổi, job mất hiệu lực, truy cập chéo, xác nhận đồng thời và rollback. Tổng cục bộ đạt 65 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty. Starlette báo deprecation trong TestClient, các ca vẫn đạt.
+- Bên lý thuyết có thể dùng các ca này làm bằng chứng kỹ thuật cho ADT đề xuất/xác nhận và CT-03/04/05/06. Router mới chạy với phiên và SQLite test. Cần ghép phiên, schema dữ liệu, job và UI thật. Kiểm model thật, xác nhận sinh đề và sửa các vùng phức tạp vẫn đang chờ.

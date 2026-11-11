@@ -127,9 +127,12 @@ def validate_patch_job(job: PatchJob) -> None:
         selection_parts(target)
 
 
+MATH_DELIMITERS = re.compile(r"(?<!\\)(?:\\\\)*?(\$\$?|\\[()[\]])")
+
+
 def validate_math_markers(text: str) -> None:
     # shortcut: chỉ kiểm cặp dấu công thức, bổ sung parser khi nhóm chốt renderer Python.
-    delimiters = re.findall(r"(?<!\\)(?:\\\\)*?(\$\$?|\\[()[\]])", text)
+    delimiters = MATH_DELIMITERS.findall(text)
     closing = {"$": "$", "$$": "$$", r"\(": r"\)", r"\[": r"\]"}
     pending = None
     for delimiter in delimiters:

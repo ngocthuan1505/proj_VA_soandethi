@@ -1,6 +1,6 @@
 # Hợp đồng AI Python cho Sinh, Sửa và Kiểm
 
-Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4). Các service Python của [BE-1-002 #12](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) đã có bộ kiểm cục bộ cho Sinh đề, Sửa lời giải và Kiểm đáp án. API xác thực và bước xác nhận lưu còn cần ghép. Hợp đồng kế thừa QuestionRef, SourceRef và thao tác đề xuất/xác nhận từ [mô hình Abstraction](../course/CONTRACTS.md).
+Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4). Các service Python của [BE-1-002 #12](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) đã có bộ kiểm cục bộ cho Sinh đề, Sửa lời giải và Kiểm đáp án. Đã có service và router ghép cho xác nhận sửa lời giải. Cần nối phiên xác thực, repository thật và UI. Hợp đồng kế thừa QuestionRef, SourceRef và thao tác đề xuất/xác nhận từ [mô hình Abstraction](../course/CONTRACTS.md).
 
 ## Chọn cách xử lý
 
@@ -17,7 +17,14 @@ Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.c
 - Mỗi đoạn nguồn có `sourceId`, `sourceVersion`, `locator` và văn bản. `locator.kind` là `page`, `passage` hoặc `region`. `index` bắt đầu từ 1. Vị trí vùng ảnh có thêm `regionId`. Giáo viên hoặc lớp truy xuất chọn đoạn cần dùng trước khi gọi service.
 - Service kiểm đúng snapshot cả trước và sau lời gọi. Adapter gửi chỉ dẫn hệ thống và dữ liệu được chọn tới Ollama. Nội dung nguồn đi dưới dạng dữ liệu. Adapter không cấp công cụ hay gửi ID chủ sở hữu.
 - `PatchProposal` giữ ba mã của job, danh sách `edits` với thao tác `replace`, `blockId` và toàn bộ văn bản khối sau sửa. Backend kiểm phần ngoài vùng, khối lặp, schema và cặp dấu công thức. Trích dẫn phải khớp ID, phiên bản, vị trí và đoạn văn thật sau khi chuẩn hóa khoảng trắng.
-- Gọi `propose_patch` trả đề xuất để UI xem trước. Khâu xác nhận cần đọc lại revision trong giao dịch của repository, dùng chuyển đổi rich document hiện có hoặc chặn nếu không bảo toàn được định dạng. UI cần escape văn bản và dựng preview theo block ID. Lỗi stale cần giữ phần nhập để giáo viên thử lại.
+- Gọi `prepare_patch` để tạo và ghi bản xem trước. Callback lưu chỉ nhận đề xuất nếu snapshot và tác vụ vẫn còn hiệu lực tại thời điểm ghi. Bản xem trước chưa sửa đề. UI escape văn bản và dựng preview theo block ID. Khi gặp lỗi phiên bản, giữ phần nhập để giáo viên thử lại.
+
+## Xác nhận sửa lời giải
+
+- [Router](../../backend/src/mach_backend/patch_routes.py) cung cấp `POST /api/exams/{exam_id}/proposals/{job_id}/confirm`, body `{"baseRevision": 4}`. Chủ sở hữu lấy từ dependency phiên. API tìm đề xuất theo chủ sở hữu, đề và job. Trả 404 nếu không tìm thấy trong phạm vi, 409 nếu đề/nguồn đã đổi hoặc không thể giữ định dạng. Body sai schema trả 422.
+- [Service](../../backend/src/mach_backend/patch_confirmation.py) kiểm lại đề, câu, khối, vùng chọn và nguồn trong giao dịch của BE-3. Sau khi lưu, tăng revision của đề và phiên bản các câu đổi, giữ UUID, đặt lại kết quả kiểm/duyệt của những câu đó. Trả `jobId`, `examId`, `baseRevision`, `revision` và `changedQuestionIds`. Xác nhận lại cùng job và base revision trả biên nhận cũ.
+- Repository ghi bản đề, lịch sử và biên nhận cùng giao dịch. Job hủy hoặc hết hiệu lực phải bị loại trước khi xác nhận. Adapter test dùng SQLite tạm. Khi ghép BE-2/BE-3/BE-5, cần thay bằng phiên, trạng thái job và repository thật rồi mount router vào app.
+- Với rich document, có thể sửa trong một nút chữ cùng định dạng hoặc đổi LaTeX của một nút công thức có sẵn. Thay đổi vắt qua nhiều nút hoặc thêm nút công thức mới trả `rich_document_conflict` và không ghi dữ liệu. UI có thể hướng dẫn chọn đoạn nhỏ hơn.
 
 ## Sinh đề và Kiểm đáp án
 
@@ -48,11 +55,11 @@ Từ gốc repo, đối chiếu hành vi vùng chọn của Node và Python trê
 node --test tests/selection.test.mjs tests/mvp-backend.test.mjs tests/greennode.test.mjs tests/cloud-ai.test.mjs
 cd backend
 uv sync --frozen
-uv run pytest tests/test_ai_patch.py tests/test_ai_questions.py
+uv run pytest tests/test_ai_patch.py tests/test_ai_questions.py tests/test_patch_confirmation.py
 ```
 
-Test Python dùng HTTP giả lập và các snapshot tự tạo. Để thử model thật sau khi API đã ghép, Thuận chọn model có sẵn trên máy và dùng Ollama ở `127.0.0.1:11434`. Tắt tính năng cloud ở tiến trình Ollama bằng `OLLAMA_NO_CLOUD=1`, rồi xác nhận log đã tắt cloud trước khi dùng dữ liệu ngoài fixture. Chọn model đã tải, thử trước với dữ liệu mẫu. Adapter gọi endpoint cố định và chỉ dùng kết nối được chọn. [API Ollama](https://docs.ollama.com/api/chat) · [Cấu hình chỉ chạy cục bộ](https://docs.ollama.com/faq#how-do-i-disable-ollamas-cloud-features)
+Test Python dùng HTTP provider giả lập, snapshot tự tạo và HTTP FastAPI với SQLite tạm cho xác nhận. Để thử model thật sau khi API đã ghép, Thuận chọn model có sẵn trên máy và dùng Ollama ở `127.0.0.1:11434`. Tắt tính năng cloud ở tiến trình Ollama bằng `OLLAMA_NO_CLOUD=1`, rồi xác nhận log đã tắt cloud trước khi dùng dữ liệu ngoài fixture. Chọn model đã tải, thử trước với dữ liệu mẫu. Adapter gọi endpoint cố định và chỉ dùng kết nối được chọn. [API Ollama](https://docs.ollama.com/api/chat) · [Cấu hình chỉ chạy cục bộ](https://docs.ollama.com/faq#how-do-i-disable-ollamas-cloud-features)
 
 Mọi kết nối ngoài máy về sau cần được chọn rõ, xác nhận nguồn gửi đi và ghi model/căn cứ trước khi gọi. Khi không có provider phù hợp, vẫn dùng editor và phép thử fixture. Thuận dùng [runbook](../../ops/greennode/README.md) và [checklist phát hành](../team/RELEASE.md) để chuẩn bị hạ tầng khi có release tích hợp.
 
-Các kiểm tra cặp dấu, phạm vi và trích dẫn là bằng chứng kỹ thuật phục vụ CT-03/04/05/06. Chất lượng kiến thức cần chấm riêng theo PoC. Cần nối repository xác thực, lưu xác nhận, job và UI rồi mới đo luồng đầu cuối.
+Các kiểm tra cặp dấu, phạm vi và trích dẫn là bằng chứng kỹ thuật phục vụ CT-03/04/05/06. Chất lượng kiến thức cần chấm riêng theo PoC. Cần ghép phiên, repository, job và UI thật rồi mới đo luồng đầu cuối. Xác nhận Sinh đề vẫn cần service lưu riêng.
