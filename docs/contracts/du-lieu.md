@@ -26,9 +26,9 @@ Hệ thống Node hiện tại dùng SQLite bảng đơn `kv(key TEXT PRIMARY KE
 | 8 | `u:<userId>:file:<fileId>`<br>`guest:file:<fileId>`<br>`file:<fileId>` | `mvp-server.mjs:28,41,42`<br>`mvp.js:48` | `3` | Chuỗi `data:<mime>;base64,...` (tối đa 20 MB sau giải mã). **Không chứa `filename`**; tên file nằm ở `exam.docs[].name` trong `state`. |
 | 9 | `export-owner:<filename>` | `mvp-server.mjs:58,62`<br>`accounts.mjs:11` | `1` | `string` (`currentOwner`: `'local'` hoặc `userId`). Kiểm quyền tải tệp tại `/exports/<filename>`. |
 | 10 | `u:<userId>:job:<jobId>`<br>`guest:job:<jobId>`<br>`job:<jobId>` | `workbench-server.mjs:21-23` | `2` | `{id, examId, baseRevision, status, plan, questions, created, completed?, cost?, error?}`. `examId` có thể trỏ tới đề đã bị xóa. |
-| 11 | `u:<userId>:last-job:<examId>`<br>`guest:last-job:<examId>`<br>`last-job:<examId>` | `workbench-server.mjs:21,23` | `1` | `string` (`jobId`). Con trỏ tìm job AI gần nhất của một đề thi. |
-| 12 | `share:<sha256(token)>` | `workbench-server.mjs:24-26`<br>`mvp-server.mjs:39` | `2` | `{owner, examId, exam, answers, allowCopy, created, revoked?}`. Bản chụp đề độc lập; `examId` gốc có thể đã bị xóa khỏi `state.exams`. |
-| **Tổng** | **12 nhóm khóa** | **Toàn bộ ứng dụng** | **18 dòng `kv` chuẩn** (+2 dòng lỗi ở ca `T02`) | Ánh xạ sang **15 bảng quan hệ đích** mà không mất bất kỳ trường nào. |
+| **11** | `u:<userId>:last-job:<examId>`<br>`guest:last-job:<examId>`<br>`last-job:<examId>` | `workbench-server.mjs:21,23` | `1` | `string` (`jobId`). Con trỏ tìm job AI gần nhất của một đề thi. |
+| **12** | `share:<sha256(token)>` | `workbench-server.mjs:24-26`<br>`mvp-server.mjs:39` | `2` | `{owner, examId, exam, answers, allowCopy, created, revoked?}`. Bản chụp đề độc lập; `examId` gốc có thể đã bị xóa khỏi `state.exams`. |
+| **Tổng** | **12 nhóm khóa** | **Toàn bộ ứng dụng** | **21 dòng `kv` chuẩn** (+2 dòng lỗi ở ca `T02` trong [`tests/fixtures/be3-legacy-kv.json`](../../tests/fixtures/be3-legacy-kv.json)) | Ánh xạ sang **15 bảng quan hệ đích** mà không mất bất kỳ trường nào. |
 
 ### 1.2. Kiểm kê chính xác toàn bộ trường của `state`, `Exam` và `Question` trong mã nguồn thật
 
@@ -192,6 +192,8 @@ erDiagram
         string id PK "UUID câu hỏi (Bất biến)"
         string exam_id FK "Liên kết EXAMS.id (CASCADE)"
         int order_index "Vị trí câu (0..N-1)"
+        int is_active "1 (đang hiển thị) | 0 (đã thay thế khi sinh lại đề)"
+        int archived_at_revision "Revision đề lúc câu chuyển sang is_active=0"
         int version "q.v (>= 1)"
         string question_type "mcq | essay | short | truefalse"
         string topic "Chủ đề ma trận"
@@ -238,7 +240,7 @@ erDiagram
         string question_id FK "Liên kết QUESTIONS.id"
         int version_number "Số phiên bản"
         string question_type "mcq | essay | short | truefalse"
-        json content_payload "Snapshot nội dung & richDoc"
+        json content_payload "Snapshot đầy đủ (stem, richDoc, options, optionDocs, explanation, explanationDoc, rubric, blockIds)"
         json evidence_list "Căn cứ trích dẫn"
         string verification_status "unverified | consistent | review | error"
         string approval_status "draft | approved | rejected"
@@ -250,7 +252,10 @@ erDiagram
         string owner_id FK "Liên kết USERS.id"
         string exam_id FK "Nullable (ON DELETE SET NULL)"
         string origin_exam_id "UUID đề gốc lúc chạy job"
+        string job_kind "patch | generate | check"
         string request_id "requestId chống gửi lặp (idempotency)"
+        string request_digest "SHA-256 canonical payload đối chiếu 409 job_conflict"
+        int sequence "Lượt thử (1 | 2)"
         int base_revision "Revision gốc"
         string status "running | cancelling | cancelled | complete | failed"
         int active "0 | 1 (còn hiệu lực xác nhận)"
@@ -259,6 +264,7 @@ erDiagram
         json pending_payload "PendingPatch | PendingGeneration"
         json receipt_payload "PatchReceipt sau khi confirm"
         int cost_points "Điểm MVP"
+        string error_code "Mã lỗi chuẩn nếu failed"
         text error_message "Lỗi nếu có"
         int is_last_for_exam "0 | 1"
         int created_at "Epoch ms"
@@ -299,10 +305,10 @@ erDiagram
 | `teacher_preferences` | `PK(owner_id, id)`, `FK(owner_id -> users.id ON DELETE CASCADE)` | `order_index INT NOT NULL`, `kind TEXT NOT NULL`, `content_text TEXT NOT NULL`, `max_words INT NULL` (số từ), `confirmed_at INT NOT NULL` | Bảo toàn thứ tự `state.prefs[]` qua `order_index`. |
 | `source_documents` | `PK(owner_id, id)`, `FK(owner_id -> users.id ON DELETE CASCADE)` | `filename TEXT NOT NULL`, `kind TEXT NOT NULL` (`pdf\|slides\|text\|image`), `mime_type TEXT NOT NULL`, `byte_size INT NOT NULL` (bytes), `sha256_hash TEXT NOT NULL`, `blob_rel_path TEXT NOT NULL`, `is_orphan INT NOT NULL` (`0\|1`), `rev INT NOT NULL`, `created_at INT NOT NULL` | `CHECK(byte_size > 0 AND byte_size <= 20971520)`. `INDEX idx_docs_sha256(sha256_hash)` (**Không UNIQUE toàn cục** để nhiều giáo viên cùng tải 1 tệp không bị xung đột). |
 | `exams` | `PK(id)`, `FK(owner_id -> users.id ON DELETE CASCADE)` | `order_index INT NOT NULL`, `title TEXT NOT NULL`, `subject TEXT NOT NULL`, `grade TEXT NOT NULL`, `minutes INT NOT NULL` (phút), `department TEXT NOT NULL`, `school TEXT NOT NULL`, `instructions TEXT NOT NULL`, `marking_guidance TEXT NOT NULL`, `draft_status TEXT NOT NULL`, `is_sample INT NOT NULL`, `is_full_exam INT NOT NULL`, `revision INT NOT NULL`, cùng 11 cột JSON (`block_ids` ... `ai_state` chứa `approvedGenerationPlan`, `aiPlan`, `aiClarification`, `activeAIJob`, và `undo_redo_stack`), `updated_at INT NOT NULL` | `CHECK(minutes > 0)`, `CHECK(revision >= 1)`, `CHECK(draft_status IN ('draft','ready','finalized','archived'))`. `INDEX idx_exams_owner(owner_id, order_index)`. |
-| `questions` | `PK(id)`, `FK(exam_id -> exams.id ON DELETE CASCADE)` | `order_index INT NOT NULL`, `version INT NOT NULL`, `question_type TEXT NOT NULL`, `topic TEXT NOT NULL`, `cognitive_level INT NOT NULL` (`0\|1\|2`), `points_q4 INT NOT NULL` (1/4 điểm), `verification_status TEXT NOT NULL`, `approval_status TEXT NOT NULL`, `block_ids TEXT NOT NULL` (8 UUID gồm `stem`, `explanation`, `rubric`, `figure`, `options`, `answer`, `answerText`, `truthValues`), `stem_text TEXT NOT NULL`, `rich_doc TEXT NULL`, `runs_data TEXT NULL`, `options_text TEXT NOT NULL`, `option_docs TEXT NOT NULL`, `answer_index INT NOT NULL`, `answer_known INT NOT NULL`, `answer_text TEXT NOT NULL`, `truth_values TEXT NOT NULL`, `explanation_text TEXT NOT NULL`, `explanation_doc TEXT NULL`, `rubric_items TEXT NOT NULL`, `rule_type TEXT NULL`, `data_linked INT NOT NULL`, `figure_spec TEXT NULL`, `figure_doc TEXT NULL`, `extra_assets TEXT NOT NULL`, `source_ref TEXT NULL`, `check_state TEXT NULL`, `verification_data TEXT NOT NULL`, `updated_at INT NOT NULL` | `UNIQUE(exam_id, order_index)`, `INDEX idx_questions_exam_order(exam_id, order_index)`, `CHECK(points_q4 >= 0)`. |
+| `questions` | `PK(id)`, `FK(exam_id -> exams.id ON DELETE CASCADE)` | `order_index INT NOT NULL`, `is_active INT NOT NULL DEFAULT 1` (`1` đang hiển thị trên đề, `0` đã lưu trữ khi sinh lại đề), `archived_at_revision INT NULL`, `version INT NOT NULL`, `question_type TEXT NOT NULL`, `topic TEXT NOT NULL`, `cognitive_level INT NOT NULL` (`0\|1\|2`), `points_q4 INT NOT NULL` (1/4 điểm), `verification_status TEXT NOT NULL`, `approval_status TEXT NOT NULL`, `block_ids TEXT NOT NULL` (8 UUID gồm `stem`, `explanation`, `rubric`, `figure`, `options`, `answer`, `answerText`, `truthValues`), `stem_text TEXT NOT NULL`, `rich_doc TEXT NULL`, `runs_data TEXT NULL`, `options_text TEXT NOT NULL`, `option_docs TEXT NOT NULL`, `answer_index INT NOT NULL`, `answer_known INT NOT NULL`, `answer_text TEXT NOT NULL`, `truth_values TEXT NOT NULL`, `explanation_text TEXT NOT NULL`, `explanation_doc TEXT NULL`, `rubric_items TEXT NOT NULL`, `rule_type TEXT NULL`, `data_linked INT NOT NULL`, `figure_spec TEXT NULL`, `figure_doc TEXT NULL`, `extra_assets TEXT NOT NULL`, `source_ref TEXT NULL`, `check_state TEXT NULL`, `verification_data TEXT NOT NULL`, `updated_at INT NOT NULL` | Partial Unique Index `CREATE UNIQUE INDEX idx_questions_active_order ON questions(exam_id, order_index) WHERE is_active = 1` (tránh đụng độ `order_index` giữa câu cũ đã lưu trữ `is_active = 0` và câu mới `is_active = 1` khi sinh lại đề), `CHECK(points_q4 >= 0)`. |
 | `exam_versions` | `PK(id)`, `FK(exam_id -> exams.id ON DELETE CASCADE)` | `seq_index INT NOT NULL`, `revision INT NOT NULL`, `label TEXT NOT NULL`, `snapshot_state TEXT NOT NULL` (JSON), `created_at INT NOT NULL` | `INDEX idx_exam_versions_exam(exam_id, seq_index)`. Ánh xạ 1-1 với `exam.history[]`. |
-| `question_versions` | `PK(id)`, `FK(question_id -> questions.id ON DELETE CASCADE)` | `version_number INT NOT NULL`, `question_type TEXT NOT NULL`, `content_payload TEXT NOT NULL`, `evidence_list TEXT NOT NULL`, `verification_status TEXT NOT NULL`, `approval_status TEXT NOT NULL`, `created_at INT NOT NULL` | `UNIQUE(question_id, version_number)`. Khớp 7 trường của Schema `QuestionVersion` trong Abstraction. |
-| `ai_jobs` | `PK(id)`, `FK(owner_id -> users.id)`, `FK(exam_id -> exams.id ON DELETE SET NULL)` | `origin_exam_id TEXT NOT NULL`, `request_id TEXT NULL` (idempotency key từ client), `base_revision INT NOT NULL`, `status TEXT NOT NULL`, `active INT NOT NULL DEFAULT 1` (`0\|1`), `plan_data TEXT NOT NULL`, `questions_data TEXT NOT NULL`, `pending_payload TEXT NULL` (`PendingPatch\|PendingGeneration` JSON), `receipt_payload TEXT NULL` (`PatchReceipt` JSON bền vững sau khi xác nhận), `cost_points INT NULL`, `error_message TEXT NULL`, `is_last_for_exam INT NOT NULL`, `created_at INT NOT NULL`, `completed_at INT NULL` | `INDEX idx_ai_jobs_owner_exam(owner_id, origin_exam_id)`, `UNIQUE(owner_id, origin_exam_id, request_id)`. `exam_id` cho phép `NULL` khi đề gốc đã xóa khỏi kho. |
+| `question_versions` | `PK(id)`, `FK(question_id -> questions.id ON DELETE CASCADE)` | `version_number INT NOT NULL`, `question_type TEXT NOT NULL`, `content_payload TEXT NOT NULL` (JSON đầy đủ gồm `stem`, `richDoc`, `options`, `optionDocs`, `explanation`, `explanationDoc`, `rubric`, `blockIds`, `points`), `evidence_list TEXT NOT NULL`, `verification_status TEXT NOT NULL`, `approval_status TEXT NOT NULL`, `created_at INT NOT NULL` | `UNIQUE(question_id, version_number)`. Khớp 7 trường của Schema `QuestionVersion` trong Abstraction. Khi sinh lại đề (`apply_generation`), câu cũ `Q1` chuyển sang `questions.is_active = 0` thay vì `DELETE` vật lý nên toàn bộ lịch sử `Q1 v1, v2...` vẫn được bảo toàn nguyên vẹn. |
+| `ai_jobs` | `PK(id)`, `FK(owner_id -> users.id)`, `FK(exam_id -> exams.id ON DELETE SET NULL)` | `origin_exam_id TEXT NOT NULL`, `job_kind TEXT NOT NULL DEFAULT 'generate'` (`'patch'\|'generate'\|'check'`), `request_id TEXT NULL` (idempotency key từ client), `request_digest TEXT NULL` (SHA-256 canonical payload của request), `sequence INT NOT NULL DEFAULT 1` (`1\|2`), `base_revision INT NOT NULL`, `status TEXT NOT NULL`, `active INT NOT NULL DEFAULT 1` (`0\|1`), `plan_data TEXT NOT NULL`, `questions_data TEXT NOT NULL`, `pending_payload TEXT NULL` (`PendingPatch\|PendingGeneration` JSON), `receipt_payload TEXT NULL` (`PatchReceipt` JSON bền vững sau khi xác nhận), `cost_points INT NULL`, `error_code TEXT NULL`, `error_message TEXT NULL`, `is_last_for_exam INT NOT NULL`, `created_at INT NOT NULL`, `completed_at INT NULL` | `INDEX idx_ai_jobs_owner_exam(owner_id, origin_exam_id)`, `UNIQUE(owner_id, origin_exam_id, request_id)`. Nhờ lưu cặp `(job_kind, request_digest)`, sau khi khởi động lại repository vẫn phân biệt chính xác giữa gửi lặp hợp lệ và tái sử dụng `requestId` khác nội dung/khác thao tác (`409 job_conflict`). |
 | `share_snapshots` | `PK(token_hash)`, `FK(owner_id -> users.id)`, `FK(exam_id -> exams.id ON DELETE SET NULL)` | `origin_exam_id TEXT NOT NULL`, `exam_snapshot TEXT NOT NULL` (JSON độc lập), `include_answers INT NOT NULL`, `allow_copy INT NOT NULL`, `revoked INT NOT NULL`, `created_at INT NOT NULL` | Cho phép `exam_id NULL` để link chia sẻ không bị hỏng hay lỗi FK khi giáo viên xóa đề gốc. |
 | `exports` | `PK(filename)`, `FK(owner_id -> users.id)` | `export_type TEXT NOT NULL` (`exam\|backup`), `format TEXT NOT NULL` (`docx\|pdf\|html\|json`), `is_teacher_copy INT NOT NULL`, `created_at INT NOT NULL` | Kiểm quyền tải tệp `/exports/<filename>` theo `owner_id`. |
 | `quarantine_legacy_items` | `PK(legacy_key)` | `raw_value TEXT NOT NULL`, `rev INT NOT NULL`, `updated INT NOT NULL`, `error_reason TEXT NOT NULL`, `quarantined_at INT NOT NULL` | Lưu trữ cách ly các dòng KV lỗi JSON/Base64 để không làm sập toàn bộ quá trình di trú. |
@@ -329,7 +335,7 @@ erDiagram
    * `idx_sessions_user ON sessions(user_id)` — Thu hồi nhanh phiên đăng nhập của người dùng.
    * `idx_docs_sha256 ON source_documents(sha256_hash)` — Kiểm tra chống trùng tệp vật lý (`ref_count`) trong $O(\log N)$.
    * `idx_exams_owner ON exams(owner_id, order_index)` — Truy vấn danh sách đề thi của một giáo viên theo đúng thứ tự.
-   * `idx_questions_exam_order ON questions(exam_id, order_index)` — Đọc toàn bộ câu hỏi của đề theo thứ tự hiển thị.
+   * `idx_questions_active_order ON questions(exam_id, order_index) WHERE is_active = 1` — Partial Unique Index đảm bảo các câu hỏi đang hiển thị trên đề (`is_active = 1`) không trùng thứ tự `order_index`, đồng thời cho phép giữ lại các câu hỏi cũ đã lưu trữ (`is_active = 0`) cùng lịch sử `question_versions` khi sinh lại đề.
    * `idx_exam_versions_exam ON exam_versions(exam_id, seq_index)` — Mở nhanh lịch sử 100 phiên bản của đề.
    * `idx_ai_jobs_owner_exam ON ai_jobs(owner_id, origin_exam_id)` — Tìm nhanh job AI đang chạy hoặc cần khôi phục của đề.
 2. **Quy tắc Transaction & Khóa Lạc quan (OCC):**
@@ -367,7 +373,20 @@ flowchart TD
 
 ---
 
-## 5. W05 — Hợp đồng Python Repository, Kết quả Thực nghiệm (T01–T03) & Checklist Review
+## 5. W05 — Hợp đồng Python Repository, Kết quả Thực nghiệm (T01–T05) & Checklist Review
+
+> **Mã nguồn thực thi & Bộ kiểm thử tự động đi kèm trên nhánh:**
+> - Module DDL, Migration 5 pha, Khôi phục State & Giao dịch AI: [`backend/src/mach_backend/be3_schema_migration.py`](../../backend/src/mach_backend/be3_schema_migration.py)
+> - Fixture KV tổng hợp (21 bản ghi sạch đủ 12 prefix + 2 bản ghi hỏng JSON/Base64): [`tests/fixtures/be3-legacy-kv.json`](../../tests/fixtures/be3-legacy-kv.json)
+> - Bộ kiểm thử Pytest tự động (`T01`–`T05`): [`backend/tests/test_be3_migration.py`](../../backend/tests/test_be3_migration.py)
+> - Lệnh chạy kiểm chứng độc lập trên máy bất kỳ / CI:
+>   ```bash
+>   cd backend
+>   uv run pytest -v
+>   uv run ruff check .
+>   uv run ruff format --check .
+>   uv run ty check src
+>   ```
 
 ### 5.1. Hợp đồng Python Repository (Theo mẫu 9 mục của [CONTRACTS.md](../course/CONTRACTS.md))
 
@@ -463,41 +482,50 @@ Output thành công:
 Lỗi có thể trả + status/code:
   - 404 proposal_not_found / exam_not_found / question_not_found / source_not_found: Không tìm thấy trong phạm vi owner_id hoặc active = 0.
   - 409 stale_snapshot / plan_not_approved / exam_read_only / rich_document_conflict: Đề (baseRevision), câu (questionVersion), đoạn nguồn (sourceVersion) hoặc ma trận duyệt (approvedGenerationPlan) đã đổi trước hoặc trong lúc chờ model.
-Quy tắc quyền/revision/idempotency:
-  - Mọi thao tác đọc snapshot (read_inputs, current) và ghi xác nhận (stage, tx.write) đều lọc cứng theo owner_id của phiên.
-  - Trong tx.write(exam, receipt), thực hiện nguyên tử trong 1 giao dịch BEGIN IMMEDIATE:
-    1. Chèn bản đề cũ (old_exam ở base_revision) vào bảng exam_versions (history).
-    2. Cập nhật bảng exams (tăng revision = base_revision + 1; với Sinh đề thì xóa aiPlan, đặt draft_status = 'draft', is_full_exam = 1, is_sample = 0) và bảng questions / question_versions (tăng q.v thêm 1 ở Sửa hoặc tạo bộ câu UUID mới ở Sinh, đặt verification_status = 'unverified', approval_status = 'draft').
-    3. Ghi biên nhận receipt.model_dump_json() vào ai_jobs.receipt_payload.
-  - Idempotency bền vững: Nếu tx.read() thấy ai_jobs.receipt_payload khác NULL, confirm_patch trả ngay PatchReceipt cũ (giữ nguyên cùng danh sách changedQuestionIds / UUID câu mới kể cả sau khi khởi động lại tiến trình).
-  - Phục hồi/hủy job: Khi job bị hủy (/cancel) hoặc hết hạn, cập nhật ai_jobs.active = 0 và status = 'cancelled' để chặn mọi phản hồi muộn từ provider hoặc yêu cầu confirm về sau.
-Ví dụ input → output:
-  - confirm_patch(repo, owner_id="teacher-1", exam_id=UUID("..."), job_id=UUID("..."), base_revision=4) -> PatchReceipt(jobId=..., examId=..., baseRevision=4, revision=5, changedQuestionIds=(UUID("..."),))
-Ca rỗng / biên / sai quyền / stale:
-  - Gửi confirm lần 2 với cùng (owner_id, exam_id, job_id, base_revision=4): trả lại đúng PatchReceipt(revision=5) từ ai_jobs.receipt_payload, không ghi thêm dòng thứ 2 vào exam_versions.
-  - Lỗi giữa lúc ghi tx.write (ví dụ lỗi I/O trước khi cập nhật receipt_payload): SQLite tự động ROLLBACK cả exam_versions, exams và questions về base_revision=4.
-Fixture và test chứng minh:
-  - Đối chiếu trực tiếp với SQLiteFixture / SQLiteTransaction trong backend/tests/test_patch_confirmation.py, test_generation_confirmation.py, test_generation_submission.py, test_check_routes.py (PR #39).
+  - Quy tắc quyền/revision/idempotency:
+    - Mọi thao tác đọc snapshot (read_inputs, current) và ghi xác nhận (stage, tx.write) đều lọc cứng theo owner_id của phiên.
+    - Đối chiếu gửi lặp bền vững qua khởi động lại (`replay_or_register_submission`):
+      + Lưu `(owner_id, origin_exam_id, request_id, job_kind, request_digest, sequence, status)` vào bảng `ai_jobs`, trong đó `request_digest = sha256(canonical_payload)` với `patch` và `sha256(b"generate:" + canonical_payload)` với `generate` (khớp `patch_routes.py` trong PR #39).
+      + Khi client gửi lại cùng `(owner_id, origin_exam_id, request_id)` (kể cả sau khi đóng/mở lại SQLite repository): nếu `(job_kind, request_digest)` khớp 100% thì trả lại đúng `job` đã lưu (không gọi lại model, không tạo job mới); nếu `request_digest` khác (sửa nội dung nhưng giữ `requestId` cũ) hoặc `job_kind` khác (dùng lại `requestId` của Patch sang Generate hoặc ngược lại) thì ném `JobConflictError` (`409 job_conflict`).
+    - Trong `tx.write(exam, receipt)` (`confirm_patch_or_generation_tx`), thực hiện nguyên tử trong 1 giao dịch `BEGIN IMMEDIATE`:
+      1. Chèn bản đề cũ (`old_exam` ở `base_revision`) vào bảng `exam_versions` (`history`).
+      2. Cập nhật bảng `exams` (tăng `revision = base_revision + 1`; với Sinh đề thì xóa `aiPlan` / `approvedGenerationPlan`, đặt `draft_status = 'draft'`, `is_full_exam = 1`, `is_sample = 0`).
+      3. Bảo toàn lịch sử `QuestionVersion` qua cả Sửa câu (`patch`) và Sinh lại đề (`generate`):
+         - Với **Sửa câu (`patch`)**: cập nhật dòng `questions` hiện hữu (`version = q.v + 1`, `is_active = 1`) và chèn thêm phiên bản mới `question_id:v{N}` vào `question_versions` (chứa đầy đủ `stem`, `richDoc`, `options`, `optionDocs`, `explanation`, `explanationDoc`, `rubric`, `blockIds`).
+         - Với **Sinh lại đề (`generate`)**: đánh dấu các câu hỏi cũ không còn trong bộ câu mới thành `questions.is_active = 0, archived_at_revision = new_revision` (**không xóa vật lý dòng `questions` cũ**), chèn các câu UUID mới với `is_active = 1`, và ghi `question_versions` (`v1`) cho các câu mới. Nhờ Partial Unique Index `idx_questions_active_order WHERE is_active = 1`, các câu mới ở `order_index = 0..N-1` không đụng độ với câu cũ đã lưu trữ, trong khi toàn bộ lịch sử `Q1 v1`, `Q1 v2` cùng `richDoc`/`explanationDoc` vẫn đọc lại được nguyên vẹn qua `get_question_version_history()`.
+      4. Ghi biên nhận `receipt.model_dump_json()` vào `ai_jobs.receipt_payload`.
+    - Idempotency bền vững khi xác nhận: Nếu `tx.read()` thấy `ai_jobs.receipt_payload` khác `NULL`, trả ngay `PatchReceipt` cũ (giữ nguyên cùng danh sách `changedQuestionIds` / UUID câu mới kể cả sau khi khởi động lại tiến trình).
+    - Phục hồi/hủy job: Khi job bị hủy (`/cancel`) hoặc hết hạn, cập nhật `ai_jobs.active = 0` và `status = 'cancelled'` để chặn mọi phản hồi muộn từ provider hoặc yêu cầu confirm về sau.
+  - Ví dụ input → output:
+    - confirm_patch(repo, owner_id="teacher-1", exam_id=UUID("..."), job_id=UUID("..."), base_revision=4) -> PatchReceipt(jobId=..., examId=..., baseRevision=4, revision=5, changedQuestionIds=(UUID("..."),))
+  - Ca rỗng / biên / sai quyền / stale:
+    - Gửi confirm lần 2 với cùng (owner_id, exam_id, job_id, base_revision=4): trả lại đúng PatchReceipt(revision=5) từ ai_jobs.receipt_payload, không ghi thêm dòng thứ 2 vào exam_versions.
+    - Lỗi giữa lúc ghi tx.write (ví dụ lỗi I/O trước khi cập nhật receipt_payload): SQLite tự động ROLLBACK cả exam_versions, exams, questions và question_versions về trạng thái trước giao dịch.
+  - Fixture và test chứng minh:
+    - Kiểm chứng tự động tại `test_t04_preserve_question_versions_across_patch_and_regeneration` và `test_t05_persistent_replay_and_cross_operation_conflict_after_restart` trong [`backend/tests/test_be3_migration.py`](../../backend/tests/test_be3_migration.py).
 ```
 
-### 5.2. Báo cáo Thực nghiệm Kiểm chứng T01, T02, T03 (Chạy thật trên Python 3.12 / SQLite 3.49.1)
+### 5.2. Báo cáo Thực nghiệm Kiểm chứng T01 – T05 (Chạy tự động qua `pytest` trên Python 3.12 / SQLite 3.49.1)
 
-Bộ dữ liệu mẫu đã được khởi tạo bằng chính `openStore()` ([backend-store.mjs](../../backend-store.mjs)) của dự án và kiểm chứng bằng Python 3.12 (`sqlite3` `3.49.1`). Dưới đây là số liệu thực nghiệm chính xác (`expected == actual`):
+Bộ dữ liệu mẫu trong [`tests/fixtures/be3-legacy-kv.json`](../../tests/fixtures/be3-legacy-kv.json) và module thực thi [`backend/src/mach_backend/be3_schema_migration.py`](../../backend/src/mach_backend/be3_schema_migration.py) được kiểm thử tự động bằng [`backend/tests/test_be3_migration.py`](../../backend/tests/test_be3_migration.py). Dưới đây là số liệu thực nghiệm chính xác (`expected == actual`):
 
-1. **Thống kê kiểm đếm bản ghi (`18` dòng KV nguồn $\rightarrow$ `15` bảng đích ở cả Lần chạy 1 và Lần chạy 2 Idempotent):**
+1. **Thống kê kiểm đếm bản ghi (`21` dòng KV nguồn sạch $\rightarrow$ `15` bảng đích ở cả Lần chạy 1 và Lần chạy 2 Idempotent):**
    * `app_configs`: `1` | `users`: `4` (`local`, `guest`, `userA`, `userB`) | `sessions`: `2` (1 đang hoạt động, 1 đã logout `{expires: 0}` có `revoked = 1, user_id = NULL`)
    * `credit_accounts`: `2` | `credit_ledgers`: `1` | `teacher_preferences`: `1`
    * `source_documents`: `3` (2 tài liệu PDF của 2 giáo viên có cùng nội dung + 1 ảnh mồ côi `is_orphan = 1`) $\rightarrow$ Số file vật lý trong `blobs/`: **`2` file `.bin`** (đã chống trùng theo SHA-256).
    * `exams`: `2` (`exam-math-001` với `revision = 2`; `exam-geo-001` với `revision = 1`) | `questions`: `3` (`q-math-001` `0.25đ -> points_q4 = 1`; `q-math-002` `2.0đ -> points_q4 = 8`; `q-geo-001` `0.5đ -> points_q4 = 2`)
    * `exam_versions`: `2` | `question_versions`: `3` | `ai_jobs`: `2` (gồm 1 job trỏ tới đề đã xóa `exam_id = NULL, origin_exam_id = 'exam-deleted-999'`) | `share_snapshots`: `2` (gồm 1 share trỏ tới đề đã xóa `exam_id = NULL`) | `exports`: `1` | `quarantine_legacy_items`: `0` (trên kho sạch).
+   * **Lưu ý kỹ thuật Pha 1:** Khi đọc bảng `kv` với `PRAGMA foreign_keys = ON`, truy vấn Pha 1 bắt buộc sắp xếp `ORDER BY CASE WHEN key = 'config' THEN 0 WHEN key LIKE 'user:%' THEN 1 ELSE 2 END, key` để các dòng `user:*` luôn được nạp trước `credits:*` và `session:*` (tránh lỗi khóa ngoại do thứ tự bảng chữ cái `'c' < 'u'`).
 
-2. **Bảng kết quả thực chạy 3 ca kiểm thử (T01 – T03):**
+2. **Bảng kết quả thực chạy 5 ca kiểm thử tự động (`T01` – `T05`):**
 
-| Ca | Thao tác thực nghiệm | Expected (Kỳ vọng) | Actual (Thực tế đo được trên SQLite 3.49.1) | Kết luận |
+| Ca | Thao tác thực nghiệm (`backend/tests/test_be3_migration.py`) | Expected (Kỳ vọng) | Actual (Thực tế đo được trên SQLite 3.49.1) | Kết luận |
 |---|---|---|---|---|
-| **T01** | Di trú kho sạch `18` dòng KV sang `15` bảng mới, sau đó gọi `reconstruct_workspace_state()` tái tạo lại `state` của Giáo viên A (Toán, có `richDoc`, `optionDocs`, `rubric[].richDoc`, `blockIds`, `figure`, `formulas`, `tables`, `history`) và Giáo viên B (Địa lí, có `data`, `quote`). | Checksum SHA-256 của JSON canonical trước và sau di trú khớp 100%; `PRAGMA foreign_key_check` = `[]`; `PRAGMA integrity_check` = `'ok'`. | - `state_a` SHA-256: `75fe5228d005d4216023c5a24844a06f07abe5d51b1df08429a9db0c071f06c6` (Khớp 100%)<br>- `state_b` SHA-256: `51e480ea2462b5445ff24b02666af7b2b4a0a47eda20ef4f898184f8ad78f6da` (Khớp 100%)<br>- FK & Integrity: `'ok'` | **ĐẠT (PASS)** |
-| **T02** | 1. Bơm thêm 2 dòng hỏng (`u:corrupt-user:state` cụt JSON và `file:file-corrupt-b64` sai Base64) rồi chạy di trú.<br>2. Giả lập lỗi giữa chừng (`simulate_mid_failure=True`).<br>3. Chạy `conn.backup()` sang DB sao lưu. | 1. Cách ly đúng 2 dòng hỏng vào `quarantine_legacy_items`, 2 đề hợp lệ vẫn sống.<br>2. Khi lỗi giữa chừng, xóa sạch file đích tạm, file nguồn giữ nguyên SHA-256.<br>3. Bản backup đạt `integrity_check = 'ok'`. | 1. `quarantined_count = 2`, `surviving_exams_count = 2`.<br>2. SHA-256 file nguồn trước & sau đều là `36eb898892161f435ad94891d784def8d2ba8c6760803da96ca243317d56d9b5`.<br>3. `online_backup_test`: `integrity = 'ok'`, `counts_match = true`. | **ĐẠT (PASS)** |
-| **T03** | 1. Chạy lại `migrate_legacy_store()` lần thứ 2 trên cùng DB đích.<br>2. Hai phiên cùng đọc `exam-math-001` ở `revision = 2`: Phiên 1 cập nhật lên `revision = 3`; Phiên 2 gửi cập nhật với `base_revision = 2`. | 1. Số bản ghi cả 15 bảng ở lần 2 bằng hệt lần 1.<br>2. Phiên 2 bị từ chối với `RevisionConflictError(status=409, current_revision=3)`. | 1. `table_counts_run1 == table_counts_run2_idempotent` (`True`).<br>2. Phiên 1 nhận `revision = 3`; Phiên 2 nhận `status = 409, current_revision = 3`. | **ĐẠT (PASS)** |
+| **T01** | Di trú kho sạch `21` dòng KV sang `15` bảng mới, sau đó gọi `reconstruct_workspace_state()` tái tạo lại `state` của Giáo viên A (Toán, có `richDoc`, `optionDocs`, `rubric[].richDoc`, `blockIds`, `figure`, `formulas`, `tables`, `history`) và Giáo viên B (Địa lí, có `data`, `quote`). | Checksum SHA-256 của JSON canonical trước và sau di trú khớp 100%; `PRAGMA foreign_key_check` = `[]`; `PRAGMA integrity_check` = `'ok'`. | - `state_a` SHA-256: `75fe5228d005d4216023c5a24844a06f07abe5d51b1df08429a9db0c071f06c6` (Khớp 100%)<br>- `state_b` SHA-256: `51e480ea2462b5445ff24b02666af7b2b4a0a47eda20ef4f898184f8ad78f6da` (Khớp 100%)<br>- FK & Integrity: `'ok'` | **ĐẠT (PASS)** |
+| **T02** | 1. Bơm thêm 2 dòng hỏng (`u:corrupt-user:state` cụt JSON và `file:file-corrupt-b64` sai Base64) rồi chạy di trú.<br>2. Giả lập lỗi giữa chừng (`simulate_mid_failure=True`).<br>3. Chạy `conn.backup()` sang DB sao lưu. | 1. Cách ly đúng 2 dòng hỏng vào `quarantine_legacy_items`, 2 đề hợp lệ vẫn sống.<br>2. Khi lỗi giữa chừng, xóa sạch file đích tạm, file nguồn giữ nguyên SHA-256.<br>3. Bản backup đạt `integrity_check = 'ok'`. | 1. `quarantined_count = 2`, `surviving_exams_count = 2`.<br>2. SHA-256 file nguồn trước & sau giữ nguyên tuyệt đối.<br>3. `online_backup_test`: `integrity = 'ok'`, `counts_match = true`. | **ĐẠT (PASS)** |
+| **T03** | 1. Chạy lại `migrate_legacy_store()` lần thứ 2 trên cùng DB đích.<br>2. Hai phiên cùng đọc `exam-math-001` ở `revision = 2`: Phiên 1 cập nhật lên `revision = 3`; Phiên 2 gửi cập nhật với `base_revision = 2`. | 1. Số bản ghi cả 15 bảng ở lần 2 bằng hệt lần 1.<br>2. Phiên 2 bị từ chối với `RevisionConflictError(status=409, current_revision=3)`. | 1. `table_counts_run1 == table_counts_run2` (`True`).<br>2. Phiên 1 nhận `revision = 3`; Phiên 2 nhận `status = 409, current_revision = 3`. | **ĐẠT (PASS)** |
+| **T04** | 1. Câu `q-math-001` đang ở `v1` $\rightarrow$ xác nhận Patch tăng lên `v2` (có `richDoc` và `explanationDoc` mới).<br>2. Xác nhận Generate thay thế đề bằng câu mới `q-math-gen-001` ở cùng `order_index = 0`.<br>3. Giả lập lỗi giữa giao dịch (`simulate_mid_write_failure=True`). | 1. Đề hiện hành chỉ hiển thị `q-math-gen-001` (`is_active = 1`).<br>2. Mở lại lịch sử câu `q-math-001` vẫn đọc được nguyên vẹn cả `v1` và `v2` cùng `richDoc`/`explanationDoc`.<br>3. Khi lỗi giữa chừng, rollback sạch cả `exams`, `exam_versions`, `questions`, `question_versions` và `receipt_payload`. | 1. `reconstruct_workspace_state` trả đúng `["q-math-gen-001"]`.<br>2. `get_question_version_history("q-math-001")` trả đủ `[v1, v2]` kèm `richDoc` & `explanationDoc`.<br>3. Giao dịch lỗi tự động rollback về đúng `revision = 4`, không rò rỉ dữ liệu dở dang. | **ĐẠT (PASS)** |
+| **T05** | 1. Đăng ký `requestId = "req-patch-001"` cho thao tác `patch`, sau đó **đóng kết nối SQLite và mở lại từ file**.<br>2. Gửi lại đúng `(owner, exam, requestId, payload)` sau khi mở lại DB.<br>3. Gửi lại cùng `requestId` nhưng đổi nội dung `prompt`.<br>4. Gửi lại cùng `requestId` nhưng đổi sang thao tác `generate`. | 1. Lần gửi lặp hợp lệ sau khi khởi động lại trả về đúng `job_id` cũ (`replayed = True`).<br>2. Đổi nội dung hoặc dùng chéo `requestId` giữa `patch` và `generate` bị chặn ngay với `JobConflictError(status=409, code="job_conflict")`, số dòng `ai_jobs` không tăng. | 1. `replay["replayed"] == True`, `job_id == "job-patch-101"`.<br>2. Cả 2 trường hợp đổi nội dung và đổi `job_kind` đều ném `409 job_conflict`; tổng số dòng `ai_jobs` cho `requestId` đó giữ nguyên bằng `1`. | **ĐẠT (PASS)** |
 
 ### 5.3. Truy vết Hồ sơ Môn học (CT-03, CT-05, CT-06)
 
