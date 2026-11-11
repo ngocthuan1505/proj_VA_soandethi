@@ -16,6 +16,8 @@ Ba ca đi qua adapter Ollama và bộ kiểm Python với HTTP giả lập. Sinh
 
 ## Chạy model thật trên laptop
 
+Trước khi gọi model, có thể kiểm riêng cấu trúc công thức bằng `uv run pytest tests/test_math_structure.py` từ `backend`. Bộ dùng [fixture chung với Node](../../tests/fixtures/ai-math-structure.json), không cần provider. Các ca Sinh/Sửa/Kiểm và xác nhận trong bộ pytest đầy đủ còn kiểm công thức lỗi phải bị từ chối trước khi ghi. Kiểm này chưa thay renderer hoặc chấm độ đúng toán học.
+
 Thuận chọn model đã tải, bật Ollama tại `127.0.0.1:11434` với `OLLAMA_NO_CLOUD=1` trong môi trường của tiến trình Ollama. Kiểm log có `Ollama cloud disabled: true`. Model phải xuất hiện trong danh sách cục bộ. Lệnh smoke dùng đúng ba ca mẫu ở trên và kiểm model trước khi gọi. [Cấu hình Ollama cục bộ](https://docs.ollama.com/faq#how-do-i-disable-ollamas-cloud-features)
 
 Từ thư mục `backend`, thay `MODEL_DA_TAI` bằng tên chính xác:
@@ -123,3 +125,9 @@ Sau thay đổi, ca đạt với Qwen2.5 3B cùng digest và runtime nêu trên,
 ### Từ request tạo tác vụ Sinh đến lưu qua HTTP
 
 Ca `test_smoke_sinh_tu_request_den_luu_qua_http` đạt với Qwen2.5 3B digest `357c53fb659c`, Ollama 0.40.16 CPU, cloud tắt, thời hạn 120 giây. JUnit `smoke-generate-request-3b.xml` ghi 52,066 giây cho ca pytest. HTTP 202 tạo job, SSE nhận đề xuất có trích dẫn, đề giữ revision 4 và không có lịch sử trước xác nhận. Xác nhận tăng revision lên 5, lưu câu có UUID và căn cứ, thêm một lịch sử; xác nhận lần hai trả cùng biên nhận. Ca dùng ma trận một câu trắc nghiệm 10 điểm với phiên giả lập và SQLite tạm, chưa ghép UI/kho thật hoặc đánh giá chất lượng đa môn.
+
+### Rà cấu trúc công thức trên thư viện hiện hành
+
+Đã tái hiện 10 ca thiếu ngoặc hoặc lệch môi trường LaTeX lọt qua bộ kiểm chỉ có cặp dấu. Sau sửa, 17 ca fixture chung có cùng kết quả chấp nhận/từ chối trên Python và renderer Node. Các ca riêng giữ được ký hiệu escape, phản ứng hóa học, chú thích và ngoặc ngoài công thức. Ca xác nhận có đề xuất bị sửa thành công thức lỗi trả 409 và giữ nguyên đề/lịch sử.
+
+Phép kiểm cục bộ đọc trực tiếp `CATALOG` và `buildLatex` từ source, xuất các công thức cùng giá trị dựng mặc định vào `.runtime/math-catalog-structure.json`: 457 mục qua kiểm cấu trúc Python, không có mục bị chặn. Đây là mẫu mặc định trong danh mục ngày kiểm, không chứng minh mọi nội dung người dùng nhập hợp lệ hoặc mọi lệnh LaTeX được hỗ trợ. Lượt này không gọi model thật; bằng chứng model phía trên thuộc các lượt đã ghi riêng.

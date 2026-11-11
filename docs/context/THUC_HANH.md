@@ -117,3 +117,10 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - 158 pytest đạt, năm ca model thật bỏ qua mặc định; Ruff/format/ty, 100 test Node và 14 test kế hoạch đạt. 24 ca mới kiểm bốn dạng câu qua HTTP tới lưu, quyền, payload giả, nguồn chọn, ma trận đổi trước/trong lúc chạy, replay, hủy/quá hạn và chặn kết quả muộn. Các ca mặc định dùng SQLite tạm và model giả lập.
 - Qwen2.5 3B thật qua request HTTP tạo job → SSE → xem trước → xác nhận lưu trong 52,066 giây, cùng digest/runtime/cấu hình ghi ở docs/testing/KIEM_NHANH_AI.md. Đề không đổi trước xác nhận, gửi lại xác nhận trả cùng biên nhận. Một ca mẫu không thay kết quả PoC A/B hoặc chấm nội dung đa môn. Tiến trình Ollama thử nghiệm đã dừng.
 - BE-2 ghép dependency phiên; BE-3 cung cấp ReadGenerationInputs/snapshot ma trận đã duyệt và transaction; UI-3 nối luồng duyệt ma trận, request, preview và confirm. BE-5 dùng chung event/cancel nhưng còn cần kho job bền vững/restart. Hợp đồng và ca kiểm có trong PR; main chưa mount các router này, chưa ghép UI/kho thật, chưa triển khai GreenNode. PR còn chờ review.
+
+<!-- ban-giao-math-structure-39 -->
+### 11/11/2026 — chặn công thức thiếu ngoặc hoặc lệch môi trường
+
+- PR #39 bổ sung bộ kiểm cấu trúc LaTeX dùng chung cho Sinh/Sửa/Kiểm và xác nhận. Đã tái hiện 10 ca công thức lỗi từng lọt qua kiểm cặp dấu. Sau sửa, Python kiểm ngoặc nhóm và thứ tự/tên begin/end, giữ ký hiệu escape, verb, chú thích và ngoặc ngoài công thức. Không thêm dependency hoặc chuyển xử lý sang Node.
+- 188 pytest đạt, năm ca model thật bỏ qua mặc định; 101 test Node, 14 test kế hoạch, uv sync frozen và Ruff/format/ty đạt. Fixture 17 ca chung đối chiếu với renderer Node; các ca service và xác nhận chặn công thức lỗi, không ghi đề/lịch sử. Phép kiểm cục bộ đọc danh mục hiện hành cho 457 công thức/mẫu dựng mặc định đều qua cấu trúc Python.
+- Bàn giao W03/W05 #12, editor #10, nhập/xuất #15 và QA #24. Đây là kiểm cấu trúc, chưa là parser đầy đủ mọi lệnh/đối số, khả năng render hoặc độ đúng toán học. UI/BE-4 vẫn kiểm renderer/xuất riêng. Lượt này không chạy AI thật/GreenNode, không thay số liệu PoC; PR đang chờ review và chưa ghép phiên/kho/UI thật.

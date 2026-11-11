@@ -132,20 +132,51 @@ def validate_patch_job(job: PatchJob) -> None:
 
 
 MATH_DELIMITERS = re.compile(r"(?<!\\)(?:\\\\)*?(\$\$?|\\[()[\]])")
+MATH_STRUCTURE = re.compile(
+    r"\\verb\*?(?P<literal>[^A-Za-z\s]).*?(?P=literal)"
+    r"|\\(?P<environment>begin|end)\s*\{(?P<name>[^{}]+)\}"
+    r"|\\[A-Za-z]+|\\[\s\S]|%[^\r\n]*|[{}]"
+)
+
+
+def validate_math_structure(latex: str) -> None:
+    stack: list[tuple[str, str]] = []
+    for token in MATH_STRUCTURE.finditer(latex):
+        value = token.group()
+        environment, name = token.group("environment", "name")
+        if environment == "begin":
+            stack.append(("environment", name))
+        elif environment == "end":
+            if not stack or stack.pop() != ("environment", name):
+                raise AIError("invalid_math", "Môi trường công thức mở và đóng không khớp.")
+        elif value == "{":
+            stack.append(("group", ""))
+        elif value == "}":
+            if not stack or stack.pop() != ("group", ""):
+                raise AIError("invalid_math", "Ngoặc nhóm trong công thức không khớp.")
+        elif value in (r"\begin", r"\end", r"\verb"):
+            raise AIError(
+                "invalid_math", "Lệnh môi trường hoặc văn bản nguyên dạng chưa đủ cú pháp."
+            )
+    if stack:
+        raise AIError("invalid_math", "Công thức còn thiếu ngoặc nhóm hoặc lệnh đóng môi trường.")
 
 
 def validate_math_markers(text: str) -> None:
-    # shortcut: chỉ kiểm cặp dấu công thức, bổ sung parser khi nhóm chốt renderer Python.
-    delimiters = MATH_DELIMITERS.findall(text)
+    # shortcut: kiểm cấu trúc, chưa biên dịch đầy đủ lệnh/đối số theo renderer.
     closing = {"$": "$", "$$": "$$", r"\(": r"\)", r"\[": r"\]"}
     pending = None
-    for delimiter in delimiters:
+    start = 0
+    for match in MATH_DELIMITERS.finditer(text):
+        delimiter = match.group(1)
         if pending:
             if delimiter != pending:
                 raise AIError("invalid_math", "Dấu mở và đóng công thức không khớp.")
+            validate_math_structure(text[start : match.start(1)])
             pending = None
         elif delimiter in closing:
             pending = closing[delimiter]
+            start = match.end(1)
         else:
             raise AIError("invalid_math", "Công thức thiếu dấu mở.")
     if pending:

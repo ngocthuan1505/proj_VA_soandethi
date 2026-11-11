@@ -168,7 +168,16 @@ def test_generation_preview_confirm_and_replay_preserve_history_and_question_typ
 
 @pytest.mark.parametrize(
     "mutation",
-    ["revision", "source", "changed_plan", "unapproved_plan", "finalized", "cancelled", "proposal"],
+    [
+        "revision",
+        "source",
+        "changed_plan",
+        "unapproved_plan",
+        "finalized",
+        "cancelled",
+        "proposal",
+        "formula",
+    ],
 )
 def test_generation_refuses_stale_unapproved_or_invalid_state(generated, mutation):
     repo, job, old, _, path = generated
@@ -191,10 +200,17 @@ def test_generation_refuses_stale_unapproved_or_invalid_state(generated, mutatio
                 pending = json.loads(conn.execute("SELECT pending FROM proposals").fetchone()[0])
                 pending["proposal"]["questions"][0]["pointsQ4"] = 1
                 conn.execute("UPDATE proposals SET pending=?", (json.dumps(pending),))
+        case "formula":
+            with closing(sqlite3.connect(repo.file)) as conn, conn:
+                pending = json.loads(conn.execute("SELECT pending FROM proposals").fetchone()[0])
+                pending["proposal"]["questions"][0]["stem"] = r"Tính $\frac{1}{2$."
+                conn.execute("UPDATE proposals SET pending=?", (json.dumps(pending),))
     repo.update_exam(job, expected)
     with app_client(repo) as client:
         response = client.post(path, headers=HEADERS, json={"baseRevision": 4})
         assert response.status_code == (404 if mutation == "cancelled" else 409), response.text
+        if mutation == "formula":
+            assert response.json()["detail"]["code"] == "invalid_math"
     assert repo.snapshot(job)[0] == expected
     assert repo.history_count() == 0
 

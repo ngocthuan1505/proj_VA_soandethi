@@ -16,7 +16,7 @@ Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.c
 - Job giữ `jobId`, `examId` và `baseRevision`. Mỗi đích giữ `questionId`, `questionVersion`, `blockId`, `field` và văn bản gốc. `selection` gồm vị trí đầu và cuối không bao gồm ký tự cuối, theo đơn vị UTF-16 của JavaScript. Đích toàn khối dùng giá trị null. Khâu đọc snapshot chỉ cấp khối lời giải dạng văn bản mà editor có thể hiển thị an toàn.
 - Mỗi đoạn nguồn có `sourceId`, `sourceVersion`, `locator` và văn bản. `locator.kind` là `page`, `passage` hoặc `region`. `index` bắt đầu từ 1. Vị trí vùng ảnh có thêm `regionId`. Giáo viên hoặc lớp truy xuất chọn đoạn cần dùng trước khi gọi service.
 - Service kiểm đúng snapshot cả trước và sau lời gọi. Adapter gửi chỉ dẫn hệ thống và dữ liệu được chọn tới Ollama. Nội dung nguồn đi dưới dạng dữ liệu. Adapter không cấp công cụ hay gửi ID chủ sở hữu.
-- Với mỗi khối cần sửa, Ollama chỉ nhận đoạn được chọn và trả `replacement` theo `blockId`. Python ghép phần thay thế vào snapshot gốc. `PatchProposal` giữ ba mã của job, danh sách `edits` với thao tác `replace`, `blockId` và toàn bộ văn bản khối sau sửa. Backend kiểm phần ngoài vùng, khối lặp, schema và cặp dấu công thức. Trích dẫn phải khớp ID, phiên bản, vị trí và đoạn văn thật sau khi chuẩn hóa khoảng trắng.
+- Với mỗi khối cần sửa, Ollama chỉ nhận đoạn được chọn và trả `replacement` theo `blockId`. Python ghép phần thay thế vào snapshot gốc. `PatchProposal` giữ ba mã của job, danh sách `edits` với thao tác `replace`, `blockId` và toàn bộ văn bản khối sau sửa. Backend kiểm phần ngoài vùng, khối lặp, schema và cấu trúc công thức. Trích dẫn phải khớp ID, phiên bản, vị trí và đoạn văn thật sau khi chuẩn hóa khoảng trắng.
 - Gọi `prepare_patch` để tạo và ghi bản xem trước. Callback lưu chỉ nhận đề xuất nếu snapshot và tác vụ vẫn còn hiệu lực tại thời điểm ghi. Bản xem trước chưa sửa đề. UI escape văn bản và dựng preview theo block ID. Khi gặp lỗi phiên bản, giữ phần nhập để giáo viên thử lại.
 
 ## Xác nhận sửa lời giải
@@ -25,6 +25,12 @@ Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.c
 - [Service](../../backend/src/mach_backend/patch_confirmation.py) kiểm lại đề, câu, khối, vùng chọn và nguồn trong giao dịch của BE-3. Sau khi lưu, tăng revision của đề và phiên bản các câu đổi, giữ UUID, đặt lại kết quả kiểm/duyệt của những câu đó. Trả `jobId`, `examId`, `baseRevision`, `revision` và `changedQuestionIds`. Xác nhận lại cùng job và base revision trả biên nhận cũ.
 - Repository ghi bản đề, lịch sử và biên nhận cùng giao dịch. Job hủy hoặc hết hiệu lực phải bị loại trước khi xác nhận. Adapter test dùng SQLite tạm. Khi ghép BE-2/BE-3/BE-5, cần thay bằng phiên, trạng thái job và repository thật rồi mount router vào app.
 - Với rich document, có thể sửa trong một nút chữ cùng định dạng hoặc đổi LaTeX của một nút công thức có sẵn. Thay đổi vắt qua nhiều nút hoặc thêm nút công thức mới trả `rich_document_conflict` và không ghi dữ liệu. UI có thể hướng dẫn chọn đoạn nhỏ hơn.
+
+## Kiểm cấu trúc công thức
+
+`validate_ai_text` dùng chung cho đầu ra Sinh/Sửa/Kiểm. Trong các đoạn công thức `$…$`, `$$…$$`, `\(…\)` và `\[…\]`, Python kiểm cặp dấu, ngoặc nhóm `{…}` và tên/thứ tự lồng nhau của `\begin{…}` / `\end{…}`. Ký hiệu escape, văn bản nguyên dạng `\verb` hợp lệ và chú thích `%` không làm lệch bộ đếm nhóm. Ngoặc trong văn bản ngoài công thức được giữ nguyên. Lỗi trả `invalid_math`; bước xác nhận Sinh/Sửa kiểm lại trước khi repository ghi và trả HTTP 409 nếu bản đề xuất không còn hợp lệ.
+
+[17 ca chung với renderer Node](../../tests/fixtures/ai-math-structure.json) và [pytest cấu trúc](../../backend/tests/test_math_structure.py) bao phủ phân số, căn, hệ, ma trận, nhóm/môi trường lồng nhau và các trường hợp bị cắt. Bộ kiểm này chưa biên dịch mọi lệnh/đối số LaTeX, chưa chứng minh công thức render được hoặc đúng kiến thức. UI vẫn cần renderer hiện hành; BE-4 kiểm bản xuất riêng. Không dùng kết quả cấu trúc để gắn nhãn giáo viên đã duyệt hoặc đáp án đúng.
 
 ## Xác nhận lưu đề mới
 
@@ -122,4 +128,4 @@ Test Python dùng HTTP provider giả lập, snapshot tự tạo và HTTP FastAP
 
 Mọi kết nối ngoài máy về sau cần được chọn rõ, xác nhận nguồn gửi đi và ghi model/căn cứ trước khi gọi. Khi không có provider phù hợp, vẫn dùng editor và phép thử fixture. Thuận dùng [runbook](../../ops/greennode/README.md) và [checklist phát hành](../team/RELEASE.md) để chuẩn bị hạ tầng khi có release tích hợp.
 
-Các kiểm tra cặp dấu, phạm vi và trích dẫn là bằng chứng kỹ thuật phục vụ CT-03/04/05/06. Chất lượng kiến thức cần chấm riêng theo PoC. Cần ghép phiên, repository, kho job bền vững và UI thật rồi mới nghiệm thu luồng đầu cuối. Xác nhận Sinh đề dùng chung route giao dịch với Sửa, nhận snapshot ma trận đã duyệt từ repository.
+Các kiểm tra cấu trúc công thức, phạm vi và trích dẫn là bằng chứng kỹ thuật phục vụ CT-03/04/05/06. Chất lượng kiến thức cần chấm riêng theo PoC. Cần ghép phiên, repository, kho job bền vững và UI thật rồi mới nghiệm thu luồng đầu cuối. Xác nhận Sinh đề dùng chung route giao dịch với Sửa, nhận snapshot ma trận đã duyệt từ repository.

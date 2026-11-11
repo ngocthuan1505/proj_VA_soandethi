@@ -435,6 +435,22 @@ def test_http_owner_session_and_body_boundaries(staged):
     assert repo.history_count() == 0
 
 
+def test_confirm_rechecks_formula_before_any_write(staged):
+    repo, path, job, exam, _ = staged
+    with closing(sqlite3.connect(repo.file)) as conn, conn:
+        pending = json.loads(conn.execute("SELECT pending FROM proposals").fetchone()[0])
+        pending["proposal"]["edits"][0]["content"] = (
+            r"🔎 Giữ $x^2$. $\frac{1}{2$ Kết luận giữ nguyên."
+        )
+        conn.execute("UPDATE proposals SET pending=?", (json.dumps(pending),))
+    with app_client(repo) as client:
+        result = client.post(path, headers=HEADERS, json={"baseRevision": 4})
+        assert result.status_code == 409, result.text
+        assert result.json()["detail"]["code"] == "invalid_math"
+    assert repo.snapshot(job)[0] == exam
+    assert repo.history_count() == 0
+
+
 @pytest.mark.parametrize(
     "change", ["exam", "question", "block", "source", "finalized", "cancelled"]
 )

@@ -128,6 +128,12 @@ def test_node_and_python_share_scope_cases(job, proposal, case):
         (lambda p: p.update(evidence=[]), "missing_evidence"),
         (
             lambda p: p["edits"][0].update(
+                content=r"🔎 Giữ $x^2$. $\frac{1}{2$ Kết luận giữ nguyên."
+            ),
+            "invalid_math",
+        ),
+        (
+            lambda p: p["edits"][0].update(
                 content="🔎 Giữ $x^2$. $Thiếu dấu. Kết luận giữ nguyên."
             ),
             "invalid_math",

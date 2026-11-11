@@ -161,6 +161,9 @@ def test_generate_four_types_in_approved_order_without_mutating_plan(generation)
         (lambda p: p["questions"][3].update(answer=0), "invalid_answer"),
         (lambda p: p["questions"][0].update(options=["a", " a ", "c", "d"]), "invalid_options"),
         (lambda p: p["questions"][0].update(stem="Thiếu dấu $x+1."), "invalid_math"),
+        (lambda p: p["questions"][0].update(stem=r"Tính $\frac{1}{2$."), "invalid_math"),
+        (lambda p: p["questions"][0].update(options=[r"$x^{2}}$", "2", "3", "4"]), "invalid_math"),
+        (lambda p: p["questions"][0]["rubric"][0].update(text=r"Tính $\sqrt{{2}$"), "invalid_math"),
         (lambda p: p["questions"][0].update(evidence=[]), "missing_evidence"),
         (
             lambda p: p["questions"][0]["evidence"][0].update(quote="Nguồn tự chế"),
@@ -239,6 +242,7 @@ def test_insufficient_evidence_requires_review(check):
         ({"questionId": IDENTITY["examId"]}, "wrong_job"),
         ({"comparison": "agrees"}, "invalid_result"),
         ({"evidence": []}, "missing_evidence"),
+        ({"explanation": r"Kết quả $\frac{1}{2$."}, "invalid_math"),
     ],
 )
 def test_check_rejects_wrong_question_or_claims_without_evidence(check, change, code):
