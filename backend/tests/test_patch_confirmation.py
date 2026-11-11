@@ -736,7 +736,8 @@ def test_job_discards_late_result_and_holds_slot(tmp_path, sample, timed_out):
             provider,
             repo.current,
             repo.stage,
-            timeout_seconds=0.05 if timed_out else 2,
+            # Cho SQLite đủ thời gian đọc snapshot trước khi thử hủy provider.
+            timeout_seconds=1 if timed_out else 2,
             max_active=1,
             max_retained=1,
         )

@@ -138,3 +138,10 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - PR #39 bổ sung `max_active` tại OllamaProvider, mặc định một suất. Khi ghép, runner Sinh/Sửa và route Kiểm dùng cùng instance provider trên một event loop. Đủ suất trả job_limit trước HTTP, không tự xếp thêm hàng đợi hoặc gọi provider khác. Suất được giữ tới khi adapter thoát, gồm trường hợp transport còn xử lý sau hủy; lỗi/thoát trả suất trong finally.
 - 198 pytest đạt, năm ca model thật bỏ qua mặc định; 101 test Node, 14 test kế hoạch, uv sync frozen và Ruff/format/ty đạt. Mười ca mới gồm cạnh tranh Sinh/Sửa với HTTP Kiểm (429, chưa gửi model), hủy chưa thoát giữ suất, trả suất sau lỗi HTTP, cấu hình hai suất và cấu hình không hợp lệ. Dữ liệu đề/lịch sử giữ nguyên trong ca Kiểm.
 - Bàn giao BE-2 ghép cùng provider cho các router, BE-5 giữ giới hạn tác vụ và xử lý job_limit qua SSE, UI giữ yêu cầu để thử lại. Chỉ áp dụng một instance dùng chung trong một tiến trình; chưa có hạn mức toàn cụm hoặc kho job bền vững. Lượt này dùng fixture/SQLite tạm, không đo CPU/GPU hay thời điểm model thật ngừng tính; không chạy GreenNode, PR vẫn chờ review.
+
+<!-- ban-giao-ai-router-39 -->
+### 11/11/2026 — ghép các route AI trên cùng ứng dụng FastAPI
+
+- PR #39 có `build_ai_router` để app đăng ký bảy đường dẫn Sinh, Sửa, Kiểm, xem trạng thái, SSE, hủy và xác nhận. Hàm nhận dependency phiên, reader và repository của ứng dụng. Các route dùng chung một provider, Sinh/Sửa dùng cùng runner. BE-2 và BE-3 có điểm ghép rõ để nối phiên và kho thật.
+- Bốn ca HTTP chạy trên một app với SQLite tạm và phản hồi Ollama giả lập. Kiểm cả hai chiều tranh suất, tài khoản sai, mã mới khi thử lại và xác nhận lưu đúng một revision. 202 pytest đạt, 5 ca model thật bỏ qua mặc định, 101 test Node và 14 test kế hoạch đạt. Hai ca fixture timeout cho SQLite tối đa một giây đọc snapshot trước khi thử hủy provider. Ca cũ dùng 50 ms đã lỗi do hết hạn trước lúc gọi provider khi máy bận.
+- Phần lý thuyết có thể dẫn bốn ca làm bằng chứng kỹ thuật tích hợp CT-03/04/05/06. Cần ghép phiên, kho và UI thật trước nghiệm thu candidate, cùng kho job bền vững nếu cần phục hồi sau restart.

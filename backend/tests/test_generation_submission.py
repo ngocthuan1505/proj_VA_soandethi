@@ -252,7 +252,7 @@ def test_generation_drops_late_or_stale_result_before_storing_preview(generated,
             provider,
             repo.current,
             repo.stage,
-            timeout_seconds=0.08 if mutation == "timeout" else 2,
+            timeout_seconds=1 if mutation == "timeout" else 2,
             max_active=1,
             max_retained=2,
         )

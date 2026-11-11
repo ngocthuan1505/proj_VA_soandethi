@@ -96,11 +96,15 @@ Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi 
 
 ### Chia sẻ suất xử lý model giữa Sinh, Sửa và Kiểm
 
-Khi ghép app, tạo **một instance** `OllamaProvider(model, max_active=1)` rồi đưa cùng instance vào `PatchJobRunner` (Sinh/Sửa) và `build_check_router` (Kiểm). Provider mặc định có một suất, từ chối lượt vượt hạn mức bằng `job_limit` trước khi gửi HTTP. Giới hạn tại router/runner vẫn dùng để quản lý tác vụ; chúng không thay giới hạn chung tại provider.
+Khi ghép app, gọi `app.include_router(build_ai_router(...))` một lần, với phiên xác thực, repository xác nhận, ba reader, callback kiểm snapshot và callback lưu bản xem trước. [Điểm ghép FastAPI](../../backend/src/mach_backend/ai_routes.py)
+
+Truyền một `OllamaProvider(model, max_active=1)` vào điểm ghép. Router dùng chung provider cho cả Sinh, Sửa và Kiểm, đồng thời tạo một runner cho Sinh/Sửa. Tham số `max_active` của router quản lý số tác vụ trong từng nhóm route. Tham số cùng tên của provider giới hạn tổng số lượt gọi model. Có thể truyền `provider=None` để hiển thị lỗi chưa cấu hình. App mặc định cần phiên và repository thật trước khi bật các route này.
 
 Suất được giữ đến khi lời gọi adapter thoát, gồm lúc xử lý lỗi hoặc bị hủy. Nếu transport bắt hủy và còn chưa thoát, yêu cầu khác vẫn bị chặn. Sau lỗi HTTP hoặc sau khi transport đã thoát, suất được trả trong `finally`. API Kiểm trả 429 nếu model đang đủ suất; tác vụ Sinh/Sửa đã nhận 202 báo `failed`/`job_limit` qua trạng thái hoặc SSE khi tới bước gọi provider. Không tự xếp thêm hàng đợi hoặc gọi provider khác.
 
 [Các ca giới hạn provider](../../backend/tests/test_ai_capacity.py) kiểm Sinh/Sửa cạnh tranh với HTTP Kiểm, lỗi 429/503, hủy và cấu hình hai suất. Giới hạn áp dụng trong một instance dùng chung trên cùng event loop. Tạo provider riêng cho từng route hoặc chạy nhiều process sẽ có các bộ đếm riêng; khi tích hợp nhiều worker cần tầng điều phối chung. Phép kiểm không đo thời điểm model ngừng tính toán phía Ollama.
+
+[Ca tích hợp router](../../backend/tests/test_ai_routes.py) ghép đủ bảy đường dẫn trên một app. Kiểm cả hai chiều tranh suất, sai quyền, tạo lại tác vụ với mã mới, xem trước và xác nhận vào SQLite tạm.
 
 - [PatchJobRunner](../../backend/src/mach_backend/patch_jobs.py) nhận snapshot đã được backend tạo. Gửi lại cùng job và snapshot trong thời gian còn lưu trả trạng thái hiện tại. Dùng lại ID với snapshot khác báo `job_conflict`. Vượt giới hạn job đang chạy báo `job_limit`. Chỗ còn giữ được đặt qua `max_retained`, chỉ loại job đã kết thúc. Khi tích hợp, tầng lưu cần bảo đảm idempotency cả sau khi app khởi động lại.
 - Router của BE-2 dùng cùng tiền tố `/api/exams/{exam_id}/proposals/{job_id}`. `GET /status` đọc trạng thái, `GET /events` nhận SSE và `POST /cancel` yêu cầu hủy. Tất cả lấy chủ sở hữu từ phiên. Sai đề hoặc chủ sở hữu trả 404.
