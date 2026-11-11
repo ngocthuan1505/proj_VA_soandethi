@@ -10,6 +10,11 @@ from fastapi.responses import StreamingResponse
 
 from mach_backend.ai_contract import AIError, ContractModel, Revision
 from mach_backend.ai_sources import selected_source_keys
+from mach_backend.generation_submission import (
+    GenerationSubmission,
+    ReadGenerationInputs,
+    build_generation_job,
+)
 from mach_backend.patch_confirmation import ConfirmationRepository, PatchReceipt, confirm_patch
 from mach_backend.patch_jobs import PatchJobRunner, PatchJobStatus
 from mach_backend.patch_submission import (
@@ -77,20 +82,7 @@ def build_patch_job_router(
             job = build_patch_job(owner_id, exam_id, request, inputs)
             return runner.submit(job, submission=(request.requestId, digest))
         except AIError as error:
-            match error.code:
-                case "exam_not_found" | "source_not_found":
-                    status_code = 404
-                case "consent_required":
-                    status_code = 403
-                case "stale_snapshot" | "exam_read_only" | "job_conflict":
-                    status_code = 409
-                case "job_limit":
-                    status_code = 429
-                case _:
-                    status_code = 422
-            raise HTTPException(
-                status_code, detail={"code": error.code, "message": str(error)}
-            ) from None
+            raise submission_error(error) from None
 
     @router.get("/{job_id}/status")
     async def status(
@@ -133,3 +125,47 @@ def build_patch_job_router(
         )
 
     return router
+
+
+def build_generation_router(
+    runner: PatchJobRunner,
+    authenticated_owner: Callable[..., str | Awaitable[str]],
+    read_inputs: ReadGenerationInputs,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/api/exams/{exam_id}/proposals/generate", status_code=202)
+    async def generate(
+        exam_id: UUID,
+        request: GenerationSubmission,
+        owner_id: Annotated[str, Depends(authenticated_owner)],
+    ) -> PatchJobStatus:
+        try:
+            keys = selected_source_keys(request)
+            digest = sha256(b"generate:" + request.model_dump_json().encode()).hexdigest()
+            if prior := runner.replay(owner_id, exam_id, request.requestId, digest):
+                return prior
+            inputs = await read_inputs(owner_id, exam_id, keys)
+            if prior := runner.replay(owner_id, exam_id, request.requestId, digest):
+                return prior
+            job = build_generation_job(owner_id, exam_id, request, inputs)
+            return runner.submit(job, submission=(request.requestId, digest))
+        except AIError as error:
+            raise submission_error(error) from None
+
+    return router
+
+
+def submission_error(error: AIError) -> HTTPException:
+    match error.code:
+        case "exam_not_found" | "source_not_found":
+            code = 404
+        case "consent_required":
+            code = 403
+        case "stale_snapshot" | "exam_read_only" | "job_conflict" | "plan_not_approved":
+            code = 409
+        case "job_limit":
+            code = 429
+        case _:
+            code = 422
+    return HTTPException(code, detail={"code": error.code, "message": str(error)})

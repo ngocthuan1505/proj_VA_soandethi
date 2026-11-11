@@ -32,7 +32,37 @@ Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.c
 - Dùng cùng route `POST /api/exams/{exam_id}/proposals/{job_id}/confirm` với body `{"baseRevision": 4}`. Repository trả `ConfirmationState` có `approved_plan` kiểu `GenerationPlan`, được đọc trong cùng giao dịch. Backend kiểm chủ sở hữu, revision, nguồn và ma trận trước khi thay bộ câu của đề bằng kết quả đã xem trước.
 - Python cấp UUID cho câu và các khối, đặt phiên bản câu mới bằng 1, giữ điểm và barem theo đơn vị 0,25 điểm. Đáp án trắc nghiệm, đúng–sai, trả lời ngắn được ánh xạ sang các trường hiện có. Trích dẫn giữ trong `evidence`. Câu và cả đề về trạng thái chờ duyệt.
 - Repository lưu bản đề trước đó vào lịch sử, bộ câu mới và biên nhận trong cùng giao dịch. Đề tăng revision một lần. Xác nhận lại cùng job trả cùng UUID từ biên nhận. Lỗi ghi rollback cả đề và lịch sử. Tiêu đề và thiết lập trang được giữ từ bản hiện tại.
-- [Các ca xác nhận Sinh](../../backend/tests/test_generation_confirmation.py) kiểm bốn dạng câu, ma trận đổi, nguồn đổi, đề khóa, hủy, rollback, xác nhận đồng thời và đọc lại biên nhận bằng repository mới trên cùng SQLite tạm. Đường tạo job Sinh từ UI và reader ma trận đã duyệt của kho thật cần ghép.
+- [Các ca xác nhận Sinh](../../backend/tests/test_generation_confirmation.py) kiểm bốn dạng câu, ma trận đổi, nguồn đổi, đề khóa, hủy, rollback, xác nhận đồng thời và đọc lại biên nhận bằng repository mới trên cùng SQLite tạm. Route tạo job Sinh được mô tả bên dưới; cần nối UI và reader ma trận đã duyệt của kho thật.
+
+## Tạo tác vụ Sinh qua HTTP
+
+`build_generation_router` nhận runner dùng chung, dependency phiên và `read_inputs` theo [GenerationInputs](../../backend/src/mach_backend/generation_submission.py). Mount cùng `build_patch_job_router` và router xác nhận trên một app/event loop. Reader đọc đề, ma trận đã duyệt và đúng các đoạn nguồn theo owner trong cùng snapshot; không dùng ma trận của request làm bản phê duyệt. Reader và phiên thật vẫn do BE-2/BE-3 ghép, chưa mount vào app foundation mặc định.
+
+`POST /api/exams/{exam_id}/proposals/generate` nhận ví dụ:
+
+```json
+{
+  "requestId": "6cdd6c81-8024-4f26-a487-f818f6be71ae",
+  "baseRevision": 4,
+  "consent": true,
+  "plan": {
+    "subject": "Toán",
+    "grade": "6",
+    "instructions": "Sinh câu theo ma trận đã duyệt.",
+    "slots": [{"type": "mcq", "topic": "Thay giá trị", "level": 0, "pointsQ4": 40}]
+  },
+  "sources": [],
+  "requireEvidence": false
+}
+```
+
+- `plan` là bản giáo viên đang xem để so với ma trận đã duyệt trong kho. Khác bản đã duyệt hoặc chưa có bản duyệt trả 409 `plan_not_approved`, không gọi AI. Kiểm revision, trạng thái đề, tổng 10 điểm, quyền/phiên bản nguồn trước khi xếp tác vụ. Nếu chọn nguồn, gửi tham chiếu `sourceId`, `sourceVersion`, `locator` như Sửa; backend tự đọc nội dung. Không nhận owner/jobId hoặc nội dung nguồn từ trình duyệt.
+- Thành công trả 202 với `jobId` do Python tạo và trạng thái. Cùng owner/đề/requestId/nội dung trả cùng tác vụ trong phạm vi runner còn giữ; dùng lại requestId cho nội dung khác hoặc thao tác Sửa trả 409 `job_conflict`.
+- Dùng chung `/proposals/{job_id}/status`, `/events`, `/cancel` và `/confirm`. SSE giữ tên sự kiện `patch` để tương thích bộ nhận hiện có; đề xuất Sinh chứa `questions`, đề xuất Sửa chứa `edits`. `Last-Event-ID` giữ quy tắc 1/2. Runner dùng chung hạn mức đồng thời và thời hạn cho Sinh/Sửa, giữ suất tới khi adapter thoát; hủy/quá hạn loại phản hồi muộn.
+- Callback snapshot phải kiểm cả ma trận đã duyệt khi job là `GenerateJob`, ngoài revision và nguồn. Repository kiểm lại chúng cùng trạng thái tác vụ khi ghi `PendingGeneration` và khi xác nhận. Ma trận đổi khi đang chờ model khiến tác vụ thất bại, không tạo bản xem trước để lưu.
+- Các lỗi trước tạo tác vụ: 401 chưa đăng nhập, 403 chưa đồng ý, 404 đề/nguồn ngoài quyền, 409 xung đột/ma trận chưa duyệt/đề khóa, 422 payload hoặc ma trận không hợp lệ, 429 hết suất. Lỗi model sau 202 nằm trong trạng thái/SSE `failed` và `errorCode`, không thay đổi đề.
+
+[Các ca HTTP tạo Sinh](../../backend/tests/test_generation_submission.py) kiểm bốn dạng câu đến lưu, chỉ gửi nguồn đã chọn, replay, hủy/quá hạn, giả mạo payload và ma trận đổi trước/trong khi gọi model. Runner hiện giữ tác vụ trong RAM một tiến trình; receipt chỉ bền vững nếu repository được ghép lưu bền vững. Cần kiểm UI/phiên/kho thật và phục hồi tác vụ sau restart.
 
 ## Sinh đề và Kiểm đáp án
 
@@ -92,4 +122,4 @@ Test Python dùng HTTP provider giả lập, snapshot tự tạo và HTTP FastAP
 
 Mọi kết nối ngoài máy về sau cần được chọn rõ, xác nhận nguồn gửi đi và ghi model/căn cứ trước khi gọi. Khi không có provider phù hợp, vẫn dùng editor và phép thử fixture. Thuận dùng [runbook](../../ops/greennode/README.md) và [checklist phát hành](../team/RELEASE.md) để chuẩn bị hạ tầng khi có release tích hợp.
 
-Các kiểm tra cặp dấu, phạm vi và trích dẫn là bằng chứng kỹ thuật phục vụ CT-03/04/05/06. Chất lượng kiến thức cần chấm riêng theo PoC. Cần ghép phiên, repository, job và UI thật rồi mới đo luồng đầu cuối. Xác nhận Sinh đề dùng chung route giao dịch với Sửa, nhận snapshot ma trận đã duyệt từ repository.
+Các kiểm tra cặp dấu, phạm vi và trích dẫn là bằng chứng kỹ thuật phục vụ CT-03/04/05/06. Chất lượng kiến thức cần chấm riêng theo PoC. Cần ghép phiên, repository, kho job bền vững và UI thật rồi mới nghiệm thu luồng đầu cuối. Xác nhận Sinh đề dùng chung route giao dịch với Sửa, nhận snapshot ma trận đã duyệt từ repository.

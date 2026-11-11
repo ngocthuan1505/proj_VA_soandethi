@@ -49,6 +49,14 @@ uv run pytest tests/test_generation_confirmation.py -k test_smoke_sinh_va_xac_nh
 
 Ca mẫu dùng ma trận một câu trắc nghiệm 10 điểm đã duyệt. Service gọi Ollama, ghi bản xem trước rồi xác nhận qua FastAPI với SQLite tạm. Kiểm revision giữ nguyên trước xác nhận, UUID do Python cấp và một mục lịch sử sau xác nhận. Gửi lại xác nhận trả cùng biên nhận. Ca mẫu kiểm cấu trúc và lưu trữ, chất lượng nội dung cần chấm riêng.
 
+Để bắt đầu từ request HTTP tạo tác vụ, kiểm thêm route Sinh và runner/SSE dùng chung:
+
+```sh
+uv run pytest tests/test_generation_submission.py -k test_smoke_sinh_tu_request_den_luu_qua_http --smoke-ollama-model MODEL_DA_TAI --smoke-timeout 120 -o junit_family=legacy --junitxml ../.runtime/ai-generate-request.xml
+```
+
+Ca này gửi ma trận đang xem và tham chiếu nguồn; reader fixture đối chiếu bản đã duyệt trong SQLite tạm. HTTP trả 202, SSE trả đề xuất, đề chưa đổi trước xác nhận. Xác nhận lặp chỉ ghi một bộ câu và một lịch sử. Các ca mặc định cùng file kiểm từ chối payload giả, ma trận đổi trước/trong lúc chạy, hủy/quá hạn và replay, dùng phản hồi model giả lập.
+
 ## Kiểm đáp án từ câu đã lưu qua HTTP
 
 Từ `backend`, có thể thử riêng route Kiểm với model đã tải:
@@ -111,3 +119,7 @@ Ca `test_smoke_kiem_qua_http` đạt với Qwen2.5 3B digest `357c53fb659c`, Oll
 Ca `test_smoke_sinh_va_xac_nhan_qua_http` ban đầu bị chặn với `invalid_rubric`. Lượt chẩn đoán độc lập cho thấy model trả hai tiêu chí 1 và 3 đơn vị, trong khi câu yêu cầu 40 đơn vị. Chưa có bản đề mới được ghi. Yêu cầu gửi Ollama được làm rõ: mỗi đơn vị bằng 0,25 điểm, tổng barem bằng điểm câu và chỉ ghi tiêu chí cộng điểm. Bộ kiểm điểm Python giữ nguyên.
 
 Sau thay đổi, ca đạt với Qwen2.5 3B cùng digest và runtime nêu trên, thời hạn 120 giây. JUnit `smoke-generate-confirm-3b-fixed.xml` ghi thời gian ca pytest 44,699 giây. Đề giữ revision 4 trước xác nhận; sau xác nhận revision 5, câu mới có UUID và trích dẫn, một mục lịch sử giữ nguyên đề cũ. Xác nhận lần hai trả cùng biên nhận. Đây là một ca mẫu với một câu trắc nghiệm 10 điểm, phiên giả lập và SQLite tạm; chưa đo tỷ lệ ổn định hoặc chấm nội dung độc lập trên bộ đa môn.
+
+### Từ request tạo tác vụ Sinh đến lưu qua HTTP
+
+Ca `test_smoke_sinh_tu_request_den_luu_qua_http` đạt với Qwen2.5 3B digest `357c53fb659c`, Ollama 0.40.16 CPU, cloud tắt, thời hạn 120 giây. JUnit `smoke-generate-request-3b.xml` ghi 52,066 giây cho ca pytest. HTTP 202 tạo job, SSE nhận đề xuất có trích dẫn, đề giữ revision 4 và không có lịch sử trước xác nhận. Xác nhận tăng revision lên 5, lưu câu có UUID và căn cứ, thêm một lịch sử; xác nhận lần hai trả cùng biên nhận. Ca dùng ma trận một câu trắc nghiệm 10 điểm với phiên giả lập và SQLite tạm, chưa ghép UI/kho thật hoặc đánh giá chất lượng đa môn.

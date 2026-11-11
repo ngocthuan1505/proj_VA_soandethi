@@ -14,8 +14,9 @@ from fastapi.testclient import TestClient
 from pydantic import TypeAdapter
 
 from mach_backend.ai_contract import AIError, PatchJob, SourceFragment
-from mach_backend.ai_questions import GenerationPlan
+from mach_backend.ai_questions import GenerateJob, GenerationPlan
 from mach_backend.ai_service import OLLAMA_CHAT, OllamaProvider
+from mach_backend.generation_submission import GenerationInputs
 from mach_backend.patch_confirmation import (
     ConfirmationState,
     PatchReceipt,
@@ -24,7 +25,11 @@ from mach_backend.patch_confirmation import (
     prepare_patch,
 )
 from mach_backend.patch_jobs import PatchJobRunner
-from mach_backend.patch_routes import build_patch_confirmation_router, build_patch_job_router
+from mach_backend.patch_routes import (
+    build_generation_router,
+    build_patch_confirmation_router,
+    build_patch_job_router,
+)
 from mach_backend.patch_submission import PatchInputs
 
 FIXTURE = json.loads(
@@ -94,9 +99,25 @@ class SQLiteFixture:
         )
         return PatchInputs(owner, json.loads(payload), sources)
 
+    async def read_generation_inputs(self, owner, exam, keys):
+        inputs = await self.read_inputs(owner, exam, keys)
+        if inputs is None:
+            return None
+        return GenerationInputs(
+            inputs.owner_id, inputs.exam, self.approved_plan(inputs.exam), inputs.sources
+        )
+
     async def current(self, job):
         exam, sources = self.snapshot(job)
-        return exam["revision"] == job.baseRevision and set(job.sources).issubset(sources)
+        valid = exam["revision"] == job.baseRevision and set(job.sources).issubset(sources)
+        if isinstance(job, GenerateJob):
+            plan = self.approved_plan(exam)
+            return (
+                valid
+                and plan is not None
+                and plan.model_dump() == job.model_dump(include=set(GenerationPlan.model_fields))
+            )
+        return valid
 
     @staticmethod
     def approved_plan(exam):
@@ -307,6 +328,9 @@ def fixture_app(repo, runner=None):
     app.include_router(build_patch_confirmation_router(repo, authenticated_owner))
     if runner is not None:
         app.include_router(build_patch_job_router(runner, authenticated_owner, repo.read_inputs))
+        app.include_router(
+            build_generation_router(runner, authenticated_owner, repo.read_generation_inputs)
+        )
     return app
 
 

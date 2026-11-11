@@ -1,4 +1,4 @@
-"""Chạy đề xuất sửa lời giải và loại phản hồi đến sau khi đã hủy."""
+"""Chạy đề xuất Sinh/Sửa và loại phản hồi đến sau khi đã hủy."""
 
 import asyncio
 import logging
@@ -8,8 +8,14 @@ from typing import Literal
 from uuid import UUID
 
 from mach_backend.ai_contract import AIError, JobIdentity, PatchJob, PatchProposal, SnapshotCheck
+from mach_backend.ai_questions import GenerateJob, GenerateProposal
 from mach_backend.ai_service import Provider
-from mach_backend.patch_confirmation import PendingPatch, prepare_patch
+from mach_backend.patch_confirmation import (
+    PendingGeneration,
+    PendingPatch,
+    prepare_generation,
+    prepare_patch,
+)
 
 type TerminalStatus = Literal["complete", "cancelled", "failed"]
 logger = logging.getLogger(__name__)
@@ -18,13 +24,13 @@ logger = logging.getLogger(__name__)
 class PatchJobStatus(JobIdentity):
     sequence: Literal[1, 2] = 1
     status: Literal["running", "complete", "cancelled", "failed"] = "running"
-    proposal: PatchProposal | None = None
+    proposal: PatchProposal | GenerateProposal | None = None
     errorCode: str | None = None
 
 
 @dataclass
 class _Run:
-    job: PatchJob
+    job: PatchJob | GenerateJob
     state: PatchJobStatus
     submission: tuple[UUID, str] | None
     finished: asyncio.Event = field(default_factory=asyncio.Event)
@@ -38,9 +44,9 @@ class PatchJobRunner:
 
     def __init__(
         self,
-        provider: Provider[PatchJob] | None,
-        snapshot_is_current: SnapshotCheck[PatchJob],
-        store_pending: Callable[[PendingPatch], Awaitable[bool]],
+        provider: Provider[PatchJob | GenerateJob] | None,
+        snapshot_is_current: SnapshotCheck[PatchJob | GenerateJob],
+        store_pending: Callable[[PendingPatch | PendingGeneration], Awaitable[bool]],
         *,
         timeout_seconds: float,
         max_active: int,
@@ -70,7 +76,7 @@ class PatchJobRunner:
         return None
 
     def submit(
-        self, job: PatchJob, *, submission: tuple[UUID, str] | None = None
+        self, job: PatchJob | GenerateJob, *, submission: tuple[UUID, str] | None = None
     ) -> PatchJobStatus:
         """Nhận snapshot do backend tạo. Gửi lại cùng job trả trạng thái hiện tại."""
         if job.jobId in self._runs:
@@ -139,7 +145,7 @@ class PatchJobRunner:
         run: _Run,
         status: TerminalStatus,
         *,
-        proposal: PatchProposal | None = None,
+        proposal: PatchProposal | GenerateProposal | None = None,
         error_code: str | None = None,
     ) -> None:
         if run.state.status != "running":
@@ -158,7 +164,7 @@ class PatchJobRunner:
         run.finished.set()
 
     async def _execute(self, run: _Run) -> None:
-        async def publish(pending: PendingPatch) -> bool:
+        async def publish(pending: PendingPatch | PendingGeneration) -> bool:
             # Hủy và ghi preview dùng cùng khóa để chỉ một bên quyết định trạng thái cuối.
             async with run.publishing:
                 if run.state.status != "running":
@@ -172,13 +178,22 @@ class PatchJobRunner:
                 return True
 
         try:
-            await prepare_patch(
-                run.job,
-                self._provider,
-                self._snapshot_is_current,
-                publish,
-                timeout_seconds=self._timeout_seconds,
-            )
+            if isinstance(run.job, GenerateJob):
+                await prepare_generation(
+                    run.job,
+                    self._provider,
+                    self._snapshot_is_current,
+                    publish,
+                    timeout_seconds=self._timeout_seconds,
+                )
+            else:
+                await prepare_patch(
+                    run.job,
+                    self._provider,
+                    self._snapshot_is_current,
+                    publish,
+                    timeout_seconds=self._timeout_seconds,
+                )
         except asyncio.CancelledError:
             self._finish(run, "cancelled")
             raise
