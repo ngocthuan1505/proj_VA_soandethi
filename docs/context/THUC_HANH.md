@@ -33,3 +33,9 @@ Cập nhật: 07/11/2026.
 Theo task đã nhận trong [backlog](../team/BACKLOG.md), chốt contracts/fixture rồi port theo từng lát chức năng sang Python. Khi hoàn tất mỗi lát, bổ sung commit, test, hành vi và giới hạn để bên nghiên cứu cập nhật đúng báo cáo. Ngôn ngữ/tỉ lệ GitHub không phải bằng chứng core đã chuyển.
 
 Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả có bằng chứng, ghi tác động tới hồ sơ môn và việc còn thiếu; không gom log test dài hoặc thông tin bí mật vào đây.
+
+## 11/11/2026 — hợp đồng AI và phần sửa lời giải cục bộ
+
+- BE-1-001 (#4) có [hợp đồng AI](../contracts/ai.md) để nhóm review. BE-1-002 (#12) có service Python và adapter Ollama cho đề xuất thay văn bản lời giải. Service kiểm mã job, revision, vùng UTF-16, chủ sở hữu nguồn, locator và trích dẫn. Job, lưu xác nhận và UI sẽ ghép qua các hợp đồng BE-2/3/5.
+- Bằng chứng cho UI-3 (#3) và BE-5 (#8): 29 pytest, 99 test Node, 14 test kế hoạch, 9 ca trình duyệt selection và kiểm tra Ruff/ty đều đạt. [Fixture chung](../../tests/fixtures/ai-patch-local.json) chạy qua validator Node và Python. Pytest kiểm lỗi sai job/nguồn/vùng, timeout, hủy coroutine và lỗi HTTP giả lập. Starlette còn cảnh báo deprecation từ TestClient.
+- Bên lý thuyết có thể dẫn kết quả cho phần kiểm kỹ thuật CT-03/04/05/06. Không cộng ca fixture vào 48 lượt thí nghiệm. Cần ghép FastAPI/repository/UI, triển khai các loại sửa có phụ thuộc, Sinh/Kiểm và chấm kiến thức. Máy chưa thấy Ollama ở cổng 11434 trong lượt kiểm, bằng chứng adapter hiện tại là HTTP giả lập.
