@@ -246,3 +246,40 @@ def test_check_discards_answer_after_question_changes(check):
     with pytest.raises(AIError) as error:
         asyncio.run(check_question(job, provider, read, saved_answer=2, timeout_seconds=1))
     assert error.value.code == "stale_snapshot"
+
+
+def test_smoke_sinh_de(generation, run_smoke):
+    job, fixture = generation
+    slot = job.slots[0].model_copy(update={"pointsQ4": 40})
+    job = job.model_copy(
+        update={
+            "slots": (slot,),
+            "instructions": "Sinh một câu trắc nghiệm tính x + 1 khi x = 2 theo nguồn đã chọn.",
+        }
+    )
+    expected = {
+        **fixture["questions"][0],
+        "pointsQ4": 40,
+        "rubric": [{"text": "Tính đúng giá trị biểu thức.", "pointsQ4": 40}],
+    }
+
+    async def call(provider, timeout):
+        return await propose_exam(job, provider, current, timeout_seconds=timeout)
+
+    result = run_smoke(call, {**fixture, "questions": [expected]})
+    assert len(result.questions) == 1
+    assert result.questions[0].pointsQ4 == 40
+    assert result.questions[0].evidence
+
+
+def test_smoke_kiem_dap_an(check, run_smoke):
+    job, fixture = check
+
+    async def call(provider, timeout):
+        return await check_question(
+            job, provider, current, saved_answer=fixture["answer"], timeout_seconds=timeout
+        )
+
+    result = run_smoke(call, fixture)
+    assert result.comparison == "agrees"
+    assert result.evidence

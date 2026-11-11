@@ -311,3 +311,22 @@ def test_cloud_model_names_and_missing_model_are_rejected(model):
     with pytest.raises(AIError) as raised:
         OllamaProvider(model)
     assert raised.value.code == "provider_unconfigured"
+
+
+def test_smoke_sua_loi_giai(job, proposal, run_smoke):
+    job = job.model_copy(
+        update={
+            "request": (
+                "Thay đúng 'Câu cũ.' bằng 'Viết lại lời giải.' "
+                "Giữ nguyên toàn bộ phần trước, phần sau và dẫn nguồn đã chọn."
+            )
+        }
+    )
+
+    async def call(provider, timeout):
+        return await propose_patch(job, provider, current, timeout_seconds=timeout)
+
+    result = run_smoke(call, proposal.model_dump(mode="json"))
+    if result.edits[0].content != FIXTURE["cases"][0]["content"]:
+        pytest.fail("Nội dung thay thế không khớp yêu cầu của ca mẫu.", pytrace=False)
+    assert result.evidence

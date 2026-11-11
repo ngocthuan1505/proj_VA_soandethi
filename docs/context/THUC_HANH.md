@@ -69,3 +69,11 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) có route tạo job sửa lời giải. Python lấy owner từ phiên, đọc đề và đoạn nguồn theo ID, phiên bản và locator. Chỉ truyền đoạn đã chọn cho adapter. Gửi lặp cùng requestId và nội dung nhận job cũ trong giới hạn lưu của runner.
 - Cục bộ đạt 86 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty. Ca HTTP chạy tạo → SSE → xác nhận với SQLite tạm và adapter Ollama qua HTTP giả lập. Có ca từ chối nguồn người khác, payload giả, thiếu đồng ý, sai phiên bản và đổi nguồn trong lúc AI xử lý.
 - [Hợp đồng](../contracts/ai.md) bàn giao cho BE-2, BE-4 và UI-3. Bên lý thuyết có thể dùng ca kỹ thuật cho SourceRef, quyền và CT-04/05/06. Cần ghép phiên thật, repository của nhóm, giao diện, khôi phục job và chạy model thật. Không dùng số ca kiểm này thay kết quả PoC.
+
+
+<!-- ban-giao-smoke-ollama-39 -->
+### 11/11/2026 — kiểm nhanh AI với Ollama thật trên laptop
+
+- [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) thêm [bộ kiểm Sinh, Sửa, Kiểm](../testing/KIEM_NHANH_AI.md) dùng chung dữ liệu mẫu. Mặc định 3/3 fixture đạt. Toàn bộ đạt 89 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty cục bộ.
+- Ollama 0.40.16 chạy CPU, cloud tắt, dữ liệu synthetic. Qwen2.5 1.5B đạt 0/3. Qwen2.5 3B đạt 1/3 ở Kiểm. Cả hai bị chặn khi sửa ngoài vùng hoặc sinh đáp án trắc nghiệm sai kiểu. Đã lưu thời gian từng ca và digest trong bảng kết quả/JUnit. Tiến trình thử đã dừng.
+- Bên lý thuyết có thể dẫn phép đo này làm bằng chứng adapter và các lớp kiểm, tách với 48 lượt PoC. Chưa chốt model mặc định. Cần xử lý hai lỗi ở Sửa/Sinh và kiểm tích hợp tới lưu với model thật. Kết quả không thuộc đợt diễn tập GreenNode.

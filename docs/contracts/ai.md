@@ -63,7 +63,7 @@ Deadline được áp trong service và bao gồm cả hai lần đọc snapshot
 
 ## Chạy trên máy và chuẩn bị cho Thuận
 
-Từ gốc repo, đối chiếu hành vi vùng chọn của Node và Python trên [fixture chung](../../tests/fixtures/ai-patch-local.json).
+Từ gốc repo, đối chiếu hành vi vùng chọn của Node và Python trên [fixture chung](../../tests/fixtures/ai-patch-local.json). [Kiểm nhanh ba luồng và xuất JUnit](../testing/KIEM_NHANH_AI.md) dùng cùng các ca mẫu với adapter giả lập hoặc model đã tải ở máy.
 
 ```sh
 node --test tests/selection.test.mjs tests/mvp-backend.test.mjs tests/greennode.test.mjs tests/cloud-ai.test.mjs
