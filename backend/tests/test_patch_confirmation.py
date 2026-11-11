@@ -6,6 +6,7 @@ from contextlib import closing, contextmanager
 from pathlib import Path
 from uuid import UUID, uuid4
 
+import httpx
 import pytest
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
@@ -18,7 +19,8 @@ from mach_backend.patch_confirmation import (
     PendingPatch,
     prepare_patch,
 )
-from mach_backend.patch_routes import build_patch_confirmation_router
+from mach_backend.patch_jobs import PatchJobRunner
+from mach_backend.patch_routes import build_patch_confirmation_router, build_patch_job_router
 
 FIXTURE = json.loads(
     (Path(__file__).resolve().parents[2] / "tests/fixtures/ai-patch-local.json").read_text(
@@ -257,7 +259,7 @@ def sample():
     return job, exam, result
 
 
-def app_client(repo):
+def fixture_app(repo, runner=None):
     def authenticated_owner(request: Request) -> str:
         match request.headers.get("Authorization"):
             case "Bearer owner-fixture":
@@ -269,7 +271,13 @@ def app_client(repo):
 
     app = FastAPI()
     app.include_router(build_patch_confirmation_router(repo, authenticated_owner))
-    return TestClient(app, raise_server_exceptions=False)
+    if runner is not None:
+        app.include_router(build_patch_job_router(runner, authenticated_owner))
+    return app
+
+
+def app_client(repo):
+    return TestClient(fixture_app(repo), raise_server_exceptions=False)
 
 
 def stage(repo, job, result):
@@ -465,3 +473,162 @@ def test_stage_refuses_revision_changed_after_provider_check(tmp_path, sample):
     assert raised.value.code == "stale_snapshot"
     with repo.transaction(job.ownerId, job.examId, UUID(result["jobId"])) as tx:
         assert tx.read() is None
+
+
+async def disconnect_after_first_event(app, path):
+    first = asyncio.Event()
+    frames = []
+
+    async def receive():
+        await first.wait()
+        return {"type": "http.disconnect"}
+
+    async def send(message):
+        if message["type"] == "http.response.body" and message.get("body"):
+            frames.append(message["body"])
+            first.set()
+
+    await app(
+        {
+            "type": "http",
+            "asgi": {"version": "3.0", "spec_version": "2.3"},
+            "http_version": "1.1",
+            "method": "GET",
+            "scheme": "http",
+            "path": path,
+            "query_string": b"",
+            "headers": [(b"authorization", HEADERS["Authorization"].encode())],
+        },
+        receive,
+        send,
+    )
+    return b"".join(frames).decode()
+
+
+def test_job_events_resume_and_confirm_same_proposal(tmp_path, sample):
+    job, exam, result = sample
+    repo = SQLiteFixture(tmp_path / "job.sqlite")
+    repo.seed(job, exam)
+
+    async def run():
+        released = asyncio.Event()
+        calls = 0
+
+        async def provider(_job):
+            nonlocal calls
+            calls += 1
+            await released.wait()
+            return json.dumps(result)
+
+        runner = PatchJobRunner(
+            provider, repo.current, repo.stage, timeout_seconds=2, max_active=1, max_retained=2
+        )
+        assert runner.submit(job) == runner.submit(job)
+        with pytest.raises(AIError, match="Mã tác vụ"):
+            runner.submit(job.model_copy(update={"request": "Yêu cầu khác"}))
+
+        base = f"/api/exams/{job.examId}/proposals/{job.jobId}"
+        app = fixture_app(repo, runner)
+        initial = await disconnect_after_first_event(app, base + "/events")
+        assert initial.startswith("id: 1\n")
+        assert json.loads(initial.split("data: ", 1)[1])["status"] == "running"
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            assert (await client.get(base + "/events", headers=OTHER)).status_code == 404
+            assert (await client.get(base + "/status")).status_code == 401
+            status = await client.get(base + "/status", headers=HEADERS)
+            assert status.json()["status"] == "running"
+            released.set()
+
+            resumed = await client.get(base + "/events", headers={**HEADERS, "Last-Event-ID": "1"})
+            assert resumed.status_code == 200
+            assert resumed.headers["content-type"].startswith("text/event-stream")
+            assert resumed.text.count("event: patch") == 1
+            assert resumed.text.startswith("id: 2\n")
+            terminal = json.loads(resumed.text.split("data: ", 1)[1])
+            assert terminal["status"] == "complete"
+            assert terminal["proposal"]["edits"] == result["edits"]
+            replay = await client.get(base + "/events", headers={**HEADERS, "Last-Event-ID": "2"})
+            assert replay.text == ""
+
+            assert repo.snapshot(job)[0] == exam
+            stopped = await client.post(base + "/cancel", headers=HEADERS)
+            assert stopped.json() == terminal
+            receipt = await client.post(
+                base + "/confirm", headers=HEADERS, json={"baseRevision": 4}
+            )
+            assert receipt.status_code == 200
+            assert receipt.json()["revision"] == 5
+            assert calls == 1
+
+    asyncio.run(asyncio.wait_for(run(), timeout=5))
+
+
+@pytest.mark.parametrize("timed_out", [False, True])
+def test_job_discards_late_result_and_holds_slot(tmp_path, sample, timed_out):
+    job, exam, result = sample
+    repo = SQLiteFixture(tmp_path / "cancel.sqlite")
+    repo.seed(job, exam)
+
+    async def run():
+        started, caught, released, exited = (asyncio.Event() for _ in range(4))
+
+        async def provider(_job):
+            started.set()
+            try:
+                await asyncio.Future()
+            except asyncio.CancelledError:
+                caught.set()
+                await released.wait()
+                return json.dumps(result)
+            finally:
+                exited.set()
+
+        runner = PatchJobRunner(
+            provider,
+            repo.current,
+            repo.stage,
+            timeout_seconds=0.05 if timed_out else 2,
+            max_active=1,
+            max_retained=1,
+        )
+        runner.submit(job)
+        await started.wait()
+        base = f"/api/exams/{job.examId}/proposals/{job.jobId}"
+        transport = httpx.ASGITransport(app=fixture_app(repo, runner))
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            assert (await client.post(base + "/cancel", headers=OTHER)).status_code == 404
+            if timed_out:
+                await caught.wait()
+                stopped = await client.get(base + "/status", headers=HEADERS)
+                assert stopped.json()["status"] == "failed"
+                assert stopped.json()["errorCode"] == "timeout"
+            else:
+                stopped = await client.post(base + "/cancel", headers=HEADERS)
+                assert stopped.json()["status"] == "cancelled"
+                await caught.wait()
+            assert stopped.status_code == 200
+            assert (await client.post(base + "/cancel", headers=HEADERS)).json() == stopped.json()
+
+            other = job.model_copy(update={"jobId": uuid4()})
+            with pytest.raises(AIError) as limit:
+                runner.submit(other)
+            assert limit.value.code == "job_limit"
+            released.set()
+            await exited.wait()
+
+            events = await client.get(base + "/events", headers=HEADERS)
+            assert events.text.count("event: patch") == 1
+            assert json.loads(events.text.split("data: ", 1)[1]) == stopped.json()
+            refused = await client.post(
+                base + "/confirm", headers=HEADERS, json={"baseRevision": 4}
+            )
+            assert refused.status_code == 404
+            assert repo.snapshot(job)[0] == exam
+            assert repo.history_count() == 0
+            assert runner.submit(other).status == "running"
+            assert (await runner.cancel(other.ownerId, other.examId, other.jobId)).status == (
+                "cancelled"
+            )
+
+    asyncio.run(asyncio.wait_for(run(), timeout=5))

@@ -146,15 +146,33 @@ async def _run_ai[JobT: AIJob, ResultT](
     if not 0 < timeout_seconds <= 300:
         raise ValueError("Thời hạn xử lý phải lớn hơn 0 và tối đa 300 giây.")
 
+    task = asyncio.current_task()
+    assert task is not None
+    initial_cancels = task.cancelling()
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_seconds
+
+    def check_interruption() -> None:
+        if task.cancelling() > initial_cancels:
+            raise asyncio.CancelledError
+        if loop.time() >= deadline:
+            raise TimeoutError
+
     try:
-        async with asyncio.timeout(timeout_seconds):
-            if not await snapshot_is_current(job):
+        async with asyncio.timeout_at(deadline):
+            current = await snapshot_is_current(job)
+            check_interruption()
+            if not current:
                 raise AIError("stale_snapshot", "Đề hoặc nguồn đã đổi. Hãy tải lại.")
             raw = await provider(job)
+            check_interruption()
             if len(raw.encode("utf-8")) > MAX_RESPONSE_BYTES:
                 raise AIError("result_limit", "Phản hồi AI vượt giới hạn kích thước.")
             result = read(job, raw)
-            if not await snapshot_is_current(job):
+            check_interruption()
+            current = await snapshot_is_current(job)
+            check_interruption()
+            if not current:
                 raise AIError("stale_snapshot", "Đề hoặc nguồn đã đổi trong lúc AI xử lý.")
             return result
     except TimeoutError:

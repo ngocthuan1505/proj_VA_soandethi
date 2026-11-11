@@ -53,3 +53,11 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) thêm service xác nhận và router để BE-2 ghép phiên cho #13, BE-3 ghép repository/giao dịch cho #14. Bản xem trước chưa đổi đề. Xác nhận kiểm chủ sở hữu, phiên bản đề/câu, phạm vi và nguồn. Ghi đề, lịch sử và biên nhận cùng giao dịch. Gửi lại cùng job và revision trả biên nhận cũ. [Hợp đồng AI](../contracts/ai.md).
 - 13 ca mới kiểm qua FastAPI và SQLite tạm, gồm giữ định dạng/nút công thức, đề hoặc nguồn đã đổi, job mất hiệu lực, truy cập chéo, xác nhận đồng thời và rollback. Tổng cục bộ đạt 65 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty. Starlette báo deprecation trong TestClient, các ca vẫn đạt.
 - Bên lý thuyết có thể dùng các ca này làm bằng chứng kỹ thuật cho ADT đề xuất/xác nhận và CT-03/04/05/06. Router mới chạy với phiên và SQLite test. Cần ghép phiên, schema dữ liệu, job và UI thật. Kiểm model thật, xác nhận sinh đề và sửa các vùng phức tạp vẫn đang chờ.
+
+
+<!-- ban-giao-huy-job-ai-39 -->
+### 11/11/2026 — hủy và theo dõi tác vụ sửa lời giải
+
+- [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) bổ sung runner Python và route trạng thái, SSE, hủy. API chỉ phục vụ đúng chủ sở hữu/đề/job. Nối lại SSE bằng Last-Event-ID. Hủy và quá hạn chặn bản xem trước đến muộn. Giới hạn đồng thời giữ suất đến lúc adapter thoát.
+- Cục bộ đạt 70 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty. Có ca ngắt HTTP khi đang nhận SSE, nối lại và xác nhận lưu với SQLite tạm, cùng ca quá hạn/hủy mà provider vẫn cố trả kết quả. Đây là bằng chứng kỹ thuật E07 cho CT-04/05/06. Phép thử mô hình thật vẫn riêng.
+- [Hợp đồng](../contracts/ai.md) để UI-3, BE-2, BE-3 và BE-5 ghép. Runner hiện giữ job trong bộ nhớ của một tiến trình. Cần nối tạo job từ UI, phiên thật, lưu job bền vững, phục hồi sau khởi động lại và kiểm đầu cuối. Bản xem trước chỉ ghi vào đề sau thao tác xác nhận riêng.

@@ -196,6 +196,41 @@ def test_unconfigured_and_timeout(job):
     assert raised.value.code == "timeout"
 
 
+@pytest.mark.parametrize("external", [False, True])
+def test_late_result_is_discarded_after_timeout_or_cancel(job, proposal, external):
+    async def run():
+        started = asyncio.Event()
+        snapshots = 0
+
+        async def snapshot(_job):
+            nonlocal snapshots
+            snapshots += 1
+            return True
+
+        async def provider(_job):
+            started.set()
+            try:
+                await asyncio.Future()
+            except asyncio.CancelledError:
+                return proposal.model_dump_json()
+
+        task = asyncio.create_task(
+            propose_patch(job, provider, snapshot, timeout_seconds=1 if external else 0.02)
+        )
+        await started.wait()
+        if external:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+        else:
+            with pytest.raises(AIError) as error:
+                await task
+            assert error.value.code == "timeout"
+        assert snapshots == 1
+
+    asyncio.run(run())
+
+
 def test_cancel_interrupts_pending_provider(job):
     async def run():
         started, exited = asyncio.Event(), asyncio.Event()
