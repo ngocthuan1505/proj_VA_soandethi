@@ -17,7 +17,7 @@ from mach_backend.ai_contract import (
     TextEdit,
     validate_math_markers,
 )
-from mach_backend.ai_service import OLLAMA_CHAT, OllamaPatchProvider, propose_patch
+from mach_backend.ai_service import OLLAMA_CHAT, OllamaProvider, propose_patch
 
 FIXTURE = json.loads(
     (Path(__file__).resolve().parents[2] / "tests/fixtures/ai-patch-local.json").read_text(
@@ -238,7 +238,7 @@ def test_ollama_adapter_sends_only_selected_payload(job, proposal):
             },
         )
 
-    provider = OllamaPatchProvider("mo-hinh-fixture", transport=httpx.MockTransport(reply))
+    provider = OllamaProvider("mo-hinh-fixture", transport=httpx.MockTransport(reply))
     assert asyncio.run(propose_patch(job, provider, current, timeout_seconds=1)) == proposal
 
 
@@ -258,7 +258,7 @@ def test_ollama_adapter_sends_only_selected_payload(job, proposal):
 )
 def test_ollama_errors_are_bounded_and_do_not_echo_response(job, status, response, code):
     transport = httpx.MockTransport(lambda _request: httpx.Response(status, text=response))
-    provider = OllamaPatchProvider("mo-hinh-fixture", transport=transport)
+    provider = OllamaProvider("mo-hinh-fixture", transport=transport)
     with pytest.raises(AIError) as raised:
         asyncio.run(propose_patch(job, provider, current, timeout_seconds=1))
     assert raised.value.code == code
@@ -274,5 +274,5 @@ def test_math_markers_preserve_escaped_dollars_and_inline_display_formulas():
 @pytest.mark.parametrize("model", ["", "model:cloud", "model-cloud"])
 def test_cloud_model_names_and_missing_model_are_rejected(model):
     with pytest.raises(AIError) as raised:
-        OllamaPatchProvider(model)
+        OllamaProvider(model)
     assert raised.value.code == "provider_unconfigured"

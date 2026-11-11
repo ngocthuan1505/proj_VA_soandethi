@@ -1,23 +1,31 @@
-# Hợp đồng AI Python cho đề xuất sửa
+# Hợp đồng AI Python cho Sinh, Sửa và Kiểm
 
-Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4). Lát cắt Python đã kiểm được trong [BE-1-002 #12](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) là đề xuất sửa phần lời giải trước khi xác nhận. Hợp đồng kế thừa QuestionRef, SourceRef và thao tác đề xuất/xác nhận từ [mô hình Abstraction](../course/CONTRACTS.md).
+Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/4). Các service Python của [BE-1-002 #12](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/12) đã có bộ kiểm cục bộ cho Sinh đề, Sửa lời giải và Kiểm đáp án. API xác thực và bước xác nhận lưu còn cần ghép. Hợp đồng kế thừa QuestionRef, SourceRef và thao tác đề xuất/xác nhận từ [mô hình Abstraction](../course/CONTRACTS.md).
 
 ## Chọn cách xử lý
 
 | Ý định | Kiểm tra trước khi chạy | Kết quả dự kiến |
 |---|---|---|
-| Sinh đề | Làm rõ môn, lớp, số câu, cấu trúc điểm và nguồn nếu thiếu. Dùng quy tắc cục bộ để kiểm cấu trúc trước khi yêu cầu model sinh. | Đề xuất sinh khớp ô ma trận và số câu, kèm căn cứ đã đối chiếu. API Python còn cần triển khai. |
+| Sinh đề | Làm rõ môn, lớp, số câu, cấu trúc điểm và nguồn nếu thiếu. Dùng quy tắc cục bộ để kiểm cấu trúc trước khi yêu cầu model sinh. | Service Python trả đề xuất khớp từng ô ma trận, điểm, barem và trích dẫn đã đối chiếu. |
 | Sửa | Xác định đúng đề, revision, câu và đoạn giáo viên chọn. Nếu không xác định được phạm vi thì yêu cầu chọn lại. | Đề xuất sửa lời giải đã có trong Python. Các dạng sửa đề bài, đáp án, barem, bảng hoặc hình cần bổ sung quy tắc phụ thuộc và bảo toàn rich document. |
-| Kiểm đáp án | Dùng bộ kiểm cục bộ cho dạng hỗ trợ. Nếu cần model giải lại, chỉ gửi đề bài, phương án và nguồn đã chọn. | Lời giải độc lập kèm bất đồng hoặc thiếu căn cứ. Đối chiếu với đáp án lưu sau khi nhận lời giải. API Python còn cần triển khai. |
+| Kiểm đáp án | Dùng bộ kiểm cục bộ cho dạng hỗ trợ. Nếu cần model giải lại, chỉ gửi đề bài, phương án và nguồn đã chọn. | Service Python nhận lời giải độc lập rồi đối chiếu câu trắc nghiệm hoặc đúng sai với đáp án lưu. |
 
 ## Đầu vào và đầu ra đã có
 
-- BE-2 lấy chủ sở hữu từ phiên đã xác thực. BE-3 đọc đề và các nguồn bằng quyền của người đó, rồi tạo snapshot cho [PatchJob](../../backend/src/mach_backend/ai_contract.py). Trình duyệt gửi vùng chọn và yêu cầu. Backend tự xác định nội dung khối, chủ sở hữu, nguồn được phép và mã job. Không nhận snapshot tùy ý từ trình duyệt để gửi model.
+- BE-2 lấy chủ sở hữu từ phiên đã xác thực. BE-3 đọc đề và các nguồn bằng quyền của người đó, rồi tạo snapshot cho [AIJob](../../backend/src/mach_backend/ai_contract.py). Trình duyệt gửi vùng chọn và yêu cầu. Backend tự xác định nội dung khối, chủ sở hữu, nguồn được phép và mã job. Không nhận snapshot tùy ý từ trình duyệt để gửi model.
 - Job giữ `jobId`, `examId` và `baseRevision`. Mỗi đích giữ `questionId`, `questionVersion`, `blockId`, `field` và văn bản gốc. `selection` gồm vị trí đầu và cuối không bao gồm ký tự cuối, theo đơn vị UTF-16 của JavaScript. Đích toàn khối dùng giá trị null. Khâu đọc snapshot chỉ cấp khối lời giải dạng văn bản mà editor có thể hiển thị an toàn.
 - Mỗi đoạn nguồn có `sourceId`, `sourceVersion`, `locator` và văn bản. `locator.kind` là `page`, `passage` hoặc `region`. `index` bắt đầu từ 1. Vị trí vùng ảnh có thêm `regionId`. Giáo viên hoặc lớp truy xuất chọn đoạn cần dùng trước khi gọi service.
 - Service kiểm đúng snapshot cả trước và sau lời gọi. Adapter gửi chỉ dẫn hệ thống và dữ liệu được chọn tới Ollama. Nội dung nguồn đi dưới dạng dữ liệu. Adapter không cấp công cụ hay gửi ID chủ sở hữu.
 - `PatchProposal` giữ ba mã của job, danh sách `edits` với thao tác `replace`, `blockId` và toàn bộ văn bản khối sau sửa. Backend kiểm phần ngoài vùng, khối lặp, schema và cặp dấu công thức. Trích dẫn phải khớp ID, phiên bản, vị trí và đoạn văn thật sau khi chuẩn hóa khoảng trắng.
 - Gọi `propose_patch` trả đề xuất để UI xem trước. Khâu xác nhận cần đọc lại revision trong giao dịch của repository, dùng chuyển đổi rich document hiện có hoặc chặn nếu không bảo toàn được định dạng. UI cần escape văn bản và dựng preview theo block ID. Lỗi stale cần giữ phần nhập để giáo viên thử lại.
+
+## Sinh đề và Kiểm đáp án
+
+Hai luồng dùng chung mã tác vụ, kiểm phiên bản trước và sau khi gọi model, giới hạn thời gian, kiểm quyền nguồn và đối chiếu trích dẫn. [Schema câu hỏi](../../backend/src/mach_backend/ai_questions.py) · [Service Python](../../backend/src/mach_backend/ai_service.py)
+
+- `propose_exam` nhận 1–30 vị trí câu đã duyệt trong `slots`. Mỗi vị trí có dạng, chủ đề, mức độ và `pointsQ4`, số đơn vị 0,25 điểm. Tổng đề là 40 đơn vị. Kết quả cần đúng thứ tự, không thiếu câu, mỗi barem cộng đúng điểm của câu và mỗi trích dẫn khớp nguồn đã chọn. Khi lưu sau xác nhận, repository cấp UUID cho câu mới. Bộ thử bao phủ trắc nghiệm, đúng sai, trả lời ngắn và tự luận.
+- `check_question` gửi `BlindQuestion` gồm ID, phiên bản, dạng, đề bài và phương án cùng nguồn được phép. Đáp án lưu đi qua tham số riêng để đối chiếu sau khi provider trả lời. `comparison` có thể là `agrees`, `disagrees` hoặc `needs_review`. Tự luận, trả lời ngắn, lời giải chưa chắc chắn hoặc thiếu đáp án lưu cần người xem lại. Kết quả trùng đáp án chỉ ghi nhận sự đồng thuận của hai giá trị.
+- Khi nối HTTP, BE-2 cần lấy snapshot và đáp án lưu từ repository theo phiên người dùng. BE-5 cần gắn deadline và hủy vào tác vụ đang chạy. UI-3 có thể dùng [fixture Sinh/Kiểm](../../tests/fixtures/ai-sinh-kiem.json) để dựng màn hình xem trước và cảnh báo. Sau bước xác nhận, service lưu cần kiểm lại phiên bản trong giao dịch. Điểm hiển thị bằng `pointsQ4 / 4`.
 
 ## Lỗi và phần BE-5/UI-3 cần ghép
 
@@ -25,6 +33,7 @@ Bản để BE-2, BE-3, BE-5 và UI-3 review theo [BE-1-001 #4](https://github.c
 |---|---|---|
 | Lệch phiên bản đề hoặc nguồn | `stale_snapshot` | Yêu cầu chọn lại. Không mở nút xác nhận trên phản hồi cũ. |
 | Khối ngoài phạm vi, lệch job hoặc schema hỏng | `invalid_scope`, `wrong_job`, `invalid_result` | Hiển thị thông báo chung, giữ bản soạn và cho thử lại. |
+| Ma trận, phương án, đáp án hoặc barem lệch | `invalid_plan`, `invalid_options`, `invalid_answer`, `invalid_rubric` | Chỉ rõ phần cần sửa trước khi thử lại. |
 | Thiếu hoặc sai trích dẫn | `missing_source`, `missing_evidence`, `invalid_evidence` | Hướng dẫn chọn hoặc đối chiếu lại nguồn. |
 | Chưa cấu hình, quá hạn hoặc provider lỗi | `provider_unconfigured`, `timeout`, `rate_limited`, `provider_unavailable` | Ghi lỗi có thể xử lý, chỉ gọi lại khi người dùng yêu cầu. |
 | Người dùng hủy | `CancelledError` ở tầng Python | Job chịu trách nhiệm hủy task đang chạy và phát đúng một sự kiện cuối. UI bỏ kết quả muộn. |
@@ -36,10 +45,10 @@ Deadline được áp trong service và bao gồm cả hai lần đọc snapshot
 Từ gốc repo, đối chiếu hành vi vùng chọn của Node và Python trên [fixture chung](../../tests/fixtures/ai-patch-local.json).
 
 ```sh
-node --test tests/selection.test.mjs tests/greennode.test.mjs tests/cloud-ai.test.mjs
+node --test tests/selection.test.mjs tests/mvp-backend.test.mjs tests/greennode.test.mjs tests/cloud-ai.test.mjs
 cd backend
 uv sync --frozen
-uv run pytest tests/test_ai_patch.py
+uv run pytest tests/test_ai_patch.py tests/test_ai_questions.py
 ```
 
 Test Python dùng HTTP giả lập và các snapshot tự tạo. Để thử model thật sau khi API đã ghép, Thuận chọn model có sẵn trên máy và dùng Ollama ở `127.0.0.1:11434`. Tắt tính năng cloud ở tiến trình Ollama bằng `OLLAMA_NO_CLOUD=1`, rồi xác nhận log đã tắt cloud trước khi dùng dữ liệu ngoài fixture. Chọn model đã tải, thử trước với dữ liệu mẫu. Adapter gọi endpoint cố định và chỉ dùng kết nối được chọn. [API Ollama](https://docs.ollama.com/api/chat) · [Cấu hình chỉ chạy cục bộ](https://docs.ollama.com/faq#how-do-i-disable-ollamas-cloud-features)

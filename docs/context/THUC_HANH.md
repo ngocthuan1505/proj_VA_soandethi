@@ -39,3 +39,9 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - BE-1-001 (#4) có [hợp đồng AI](../contracts/ai.md) để nhóm review. BE-1-002 (#12) có service Python và adapter Ollama cho đề xuất thay văn bản lời giải. Service kiểm mã job, revision, vùng UTF-16, chủ sở hữu nguồn, locator và trích dẫn. Job, lưu xác nhận và UI sẽ ghép qua các hợp đồng BE-2/3/5.
 - Bằng chứng cho UI-3 (#3) và BE-5 (#8): 29 pytest, 99 test Node, 14 test kế hoạch, 9 ca trình duyệt selection và kiểm tra Ruff/ty đều đạt. [Fixture chung](../../tests/fixtures/ai-patch-local.json) chạy qua validator Node và Python. Pytest kiểm lỗi sai job/nguồn/vùng, timeout, hủy coroutine và lỗi HTTP giả lập. Starlette còn cảnh báo deprecation từ TestClient.
 - Bên lý thuyết có thể dẫn kết quả cho phần kiểm kỹ thuật CT-03/04/05/06. Không cộng ca fixture vào 48 lượt thí nghiệm. Cần ghép FastAPI/repository/UI, triển khai các loại sửa có phụ thuộc, Sinh/Kiểm và chấm kiến thức. Máy chưa thấy Ollama ở cổng 11434 trong lượt kiểm, bằng chứng adapter hiện tại là HTTP giả lập.
+
+### 11/11/2026 — bổ sung Sinh và Kiểm cho BE-1
+
+- PR #39 thêm service Sinh đề theo ma trận đã duyệt và Kiểm đáp án bằng lời giải độc lập. Đầu vào có mã tác vụ, revision, chủ sở hữu và nguồn có phiên bản. Sinh kiểm bốn dạng câu, 40 đơn vị 0,25 điểm, barem và trích dẫn. Kiểm chỉ gửi đề và phương án, dùng đáp án lưu sau khi nhận kết quả. Trạng thái đồng thuận cần người xem lại trước khi duyệt.
+- Đã chạy 52 pytest, 100 test Node, 14 test kế hoạch và Ruff/ty. [Fixture Sinh/Kiểm](../../tests/fixtures/ai-sinh-kiem.json) dùng cho Python và đối chiếu trắc nghiệm/tự luận với Node. Kết nối Ollama trong phép thử dùng HTTP giả lập.
+- Hợp đồng và fixture hỗ trợ BE-2 ghép snapshot theo phiên, BE-5 kiểm job cũ/hủy, UI-3 dựng preview. Bên lý thuyết dùng số ca này cho kiểm kỹ thuật CT-03/04/05/06. Phần còn lại gồm tuyến API xác thực, xác nhận lưu, hủy job phía server, các kiểu sửa có phụ thuộc và chấm đầu ra model thật.

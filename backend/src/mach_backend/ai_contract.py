@@ -1,4 +1,4 @@
-"""Hợp đồng cho đề xuất sửa văn bản từ AI trước bước xác nhận."""
+"""Hợp đồng Sinh, Sửa và Kiểm trước bước xác nhận."""
 
 import re
 from collections.abc import Awaitable, Callable
@@ -47,15 +47,21 @@ class BlockTarget(ContractModel):
     selection: tuple[int, int] | None = None
 
 
-class PatchJob(ContractModel):
-    ownerId: str
+class JobIdentity(ContractModel):
     jobId: UUID
     examId: UUID
     baseRevision: Revision
-    request: Annotated[str, Field(min_length=1, max_length=4000)]
-    targets: Annotated[tuple[BlockTarget, ...], Field(min_length=1, max_length=12)]
+
+
+class AIJob(JobIdentity):
+    ownerId: str
     sources: Annotated[tuple[SourceFragment, ...], Field(max_length=12)] = ()
     requireEvidence: bool = False
+
+
+class PatchJob(AIJob):
+    request: Annotated[str, Field(min_length=1, max_length=4000)]
+    targets: Annotated[tuple[BlockTarget, ...], Field(min_length=1, max_length=12)]
 
 
 class TextEdit(ContractModel):
@@ -64,10 +70,7 @@ class TextEdit(ContractModel):
     content: BlockText
 
 
-class PatchProposal(ContractModel):
-    jobId: UUID
-    examId: UUID
-    baseRevision: Revision
+class PatchProposal(JobIdentity):
     edits: Annotated[tuple[TextEdit, ...], Field(min_length=1, max_length=12)]
     evidence: Annotated[tuple[Evidence, ...], Field(max_length=12)]
     message: Annotated[str, Field(min_length=1, max_length=1000)]
@@ -80,7 +83,7 @@ class AIError(ValueError):
 
 
 # Đọc snapshot hiện tại bằng quyền của chủ sở hữu đề. Repository trả False nếu đề/khối/nguồn đã đổi.
-SnapshotCheck = Callable[[PatchJob], Awaitable[bool]]
+type SnapshotCheck[JobT: AIJob] = Callable[[JobT], Awaitable[bool]]
 
 
 def selection_parts(target: BlockTarget) -> tuple[str, str]:
@@ -98,11 +101,9 @@ def selection_parts(target: BlockTarget) -> tuple[str, str]:
         raise AIError("invalid_scope", "Vùng chọn cắt ngang một ký tự. Hãy chọn lại.") from None
 
 
-def validate_job(job: PatchJob) -> None:
-    if not job.ownerId or not job.request.strip():
-        raise AIError("invalid_request", "Yêu cầu sửa còn thiếu nội dung.")
-    if len({target.blockId for target in job.targets}) != len(job.targets):
-        raise AIError("invalid_scope", "Vùng chọn bị lặp.")
+def validate_sources(job: AIJob) -> None:
+    if not job.ownerId.strip():
+        raise AIError("invalid_request", "Yêu cầu thiếu chủ sở hữu đề.")
     if sum(len(source.text) for source in job.sources) > 50000:
         raise AIError("source_limit", "Mỗi lượt dùng tối đa 50.000 ký tự nguồn.")
     for source in job.sources:
@@ -111,8 +112,17 @@ def validate_job(job: PatchJob) -> None:
         locator = source.locator
         if (locator.kind == "region") != (locator.regionId is not None):
             raise AIError("invalid_locator", "Vị trí nguồn chưa đủ thông tin.")
+        if not source.text.strip():
+            raise AIError("missing_source", "Đoạn nguồn chưa có văn bản để đối chiếu.")
     if job.requireEvidence and not job.sources:
-        raise AIError("missing_source", "Chọn nguồn trước khi yêu cầu sửa có căn cứ.")
+        raise AIError("missing_source", "Chọn nguồn trước khi yêu cầu kết quả có căn cứ.")
+
+
+def validate_patch_job(job: PatchJob) -> None:
+    if not job.request.strip():
+        raise AIError("invalid_request", "Yêu cầu sửa còn thiếu nội dung.")
+    if len({target.blockId for target in job.targets}) != len(job.targets):
+        raise AIError("invalid_scope", "Vùng chọn bị lặp.")
     for target in job.targets:
         selection_parts(target)
 
@@ -135,18 +145,28 @@ def validate_math_markers(text: str) -> None:
         raise AIError("invalid_math", "Công thức thiếu dấu đóng.")
 
 
-def validate_proposal(job: PatchJob, raw: str) -> PatchProposal:
+def read_result[ResultT: JobIdentity](job: AIJob, raw: str, schema: type[ResultT]) -> ResultT:
     try:
-        proposal = PatchProposal.model_validate_json(raw)
+        result = schema.model_validate_json(raw)
     except ValidationError:
-        raise AIError("invalid_result", "Phản hồi AI sai cấu trúc đề xuất sửa.") from None
-    if (proposal.jobId, proposal.examId, proposal.baseRevision) != (
+        raise AIError("invalid_result", "Phản hồi AI sai cấu trúc.") from None
+    if (result.jobId, result.examId, result.baseRevision) != (
         job.jobId,
         job.examId,
         job.baseRevision,
     ):
-        raise AIError("wrong_job", "Phản hồi không khớp lượt sửa hoặc phiên bản đề.")
+        raise AIError("wrong_job", "Phản hồi không khớp tác vụ hoặc phiên bản đề.")
+    return result
 
+
+def validate_ai_text(text: str) -> None:
+    if not text.strip() or "```" in text:
+        raise AIError("invalid_result", "Văn bản AI còn thiếu hoặc chứa khối mã.")
+    validate_math_markers(text)
+
+
+def validate_proposal(job: PatchJob, raw: str) -> PatchProposal:
+    proposal = read_result(job, raw, PatchProposal)
     targets = {target.blockId: target for target in job.targets}
     seen: set[UUID] = set()
     for edit in proposal.edits:
@@ -154,8 +174,8 @@ def validate_proposal(job: PatchJob, raw: str) -> PatchProposal:
         if target is None or edit.blockId in seen:
             raise AIError("invalid_scope", "Đề xuất sửa ngoài vùng chọn hoặc lặp khối.")
         seen.add(edit.blockId)
-        if not edit.content.strip() or "```" in edit.content or edit.content == target.text:
-            raise AIError("invalid_result", "Đề xuất cần thay đổi văn bản và không chứa khối mã.")
+        if edit.content == target.text:
+            raise AIError("invalid_result", "Đề xuất chưa thay đổi văn bản.")
         prefix, suffix = selection_parts(target)
         if (
             len(edit.content) < len(prefix) + len(suffix)
@@ -163,11 +183,18 @@ def validate_proposal(job: PatchJob, raw: str) -> PatchProposal:
             or not edit.content.endswith(suffix)
         ):
             raise AIError("invalid_scope", "Đề xuất thay đổi chữ nằm ngoài vùng chọn.")
-        validate_math_markers(edit.content)
+        validate_ai_text(edit.content)
 
-    if job.requireEvidence and not proposal.evidence:
+    validate_evidence(job, proposal.evidence)
+    return proposal
+
+
+def validate_evidence(
+    job: AIJob, evidence_items: tuple[Evidence, ...], *, allow_missing: bool = False
+) -> None:
+    if job.requireEvidence and not evidence_items and not allow_missing:
         raise AIError("missing_evidence", "Đề xuất chưa có trích dẫn để đối chiếu.")
-    for evidence in proposal.evidence:
+    for evidence in evidence_items:
         quote = " ".join(evidence.quote.split())
         if len(quote) < 8 or not any(
             source.sourceId == evidence.sourceId
@@ -177,4 +204,3 @@ def validate_proposal(job: PatchJob, raw: str) -> PatchProposal:
             for source in job.sources
         ):
             raise AIError("invalid_evidence", "Trích dẫn không khớp phiên bản hoặc vị trí nguồn.")
-    return proposal
