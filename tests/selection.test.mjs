@@ -12,3 +12,19 @@ test('Kiểm tra đáp án không cho thay stem/options; sửa explanation khôn
 test('Áp dụng nhiều thay đổi là một giao dịch nguyên vẹn khi giữ định dạng bị lỗi',()=>{const e=exam(),before=clone(e),a=e.questions[0],b=e.questions[1];a.richDoc={type:'doc',content:[]};b.richDoc={type:'doc',content:[]};const initial=clone(e);let calls=0;assert.throws(()=>applyEdits(e,[{questionId:a.id,field:'stem',op:'replace',content:'Mới 1'},{questionId:b.id,field:'stem',op:'replace',content:'Mới 2'}],{richTransform:()=>{if(++calls===2)throw Error('Cannot preserve structure');return null;}}));assert.deepEqual(e,initial);const version=a.v;applyEdits(e,[{questionId:a.id,field:'stem',op:'replace',content:a.stem}]);assert.equal(a.v,version);});
 
 test('Yêu cầu câu khác hoặc áp dụng gợi ý được chuyển sang sửa đúng phạm vi',()=>{for(const text of ['Cho 1 câu khác có độ khó cao hơn đi','Tạo câu hỏi khác khó hơn đi','Áp dụng vào bài đi','Ok sửa vào đi','Đưa vào đề giúp tui'])assert.equal(intentOf(text,[{id:'x'}]),'edit',text);});
+
+test('Lời giải giữ chữ và công thức ngoài đoạn chọn theo fixture chung với Python', async () => {
+ const {readFile}=await import('node:fs/promises');
+ const fixture=JSON.parse(await readFile(new URL('./fixtures/ai-patch-local.json',import.meta.url),'utf8'));
+ const e=exam(),q=e.questions[0];
+ q.id=fixture.questionId;
+ q.blockIds.explanation=fixture.blockId;
+ q.explanation=fixture.text;
+ const start=q.explanation.indexOf(fixture.selectionText);
+ const scope=partial(q,'explanation',start,start+fixture.selectionText.length);
+ for(const item of fixture.cases){
+  const run=()=>validateEdits(e,{edits:[{op:'replace',blockId:fixture.blockId,content:item.content}]},[scope]);
+  if(item.accepted)assert.equal(run().edits[0].content,item.content,item.id);
+  else assert.throws(run,/ngoài/,item.id);
+ }
+});
