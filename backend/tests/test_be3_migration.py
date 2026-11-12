@@ -1,12 +1,18 @@
 """Kiểm thử thực nghiệm T01–T05 cho thiết kế schema, migration và hợp đồng BE-3."""
 
+import base64
 import copy
 import json
 import sqlite3
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from pathlib import Path
+from threading import Barrier
 from typing import Any
+
+import pytest
 
 from mach_backend.be3_schema_migration import (
     JobConflictError,
@@ -494,6 +500,122 @@ class TestBE3MigrationAndContracts(unittest.TestCase):
                 )
             self.assertEqual(ctx_cross_op.exception.status, 409)
             self.assertEqual(ctx_cross_op.exception.code, "job_conflict")
+
+
+@pytest.fixture
+def migrated_store(tmp_path):
+    source, target, blobs = (
+        tmp_path / "source.sqlite",
+        tmp_path / "target.sqlite",
+        tmp_path / "blobs",
+    )
+    create_legacy_kv_sqlite(source)
+    migrate_legacy_store(source, target, blobs)
+    return source, target, blobs
+
+
+def test_concurrent_revision_updates_report_one_conflict(migrated_store):
+    _, target, _ = migrated_store
+    ready = Barrier(2)
+
+    class Connection(sqlite3.Connection):
+        def execute(self, sql, params=()):
+            if sql.lstrip().startswith("UPDATE exams SET title"):
+                ready.wait(timeout=5)
+            return super().execute(sql, params)
+
+    def update(title):
+        with closing(sqlite3.connect(target, factory=Connection)) as conn:
+            try:
+                return (
+                    "saved",
+                    update_exam_with_occ(conn, "exam-math-001", USER_A_ID, title, 2),
+                    title,
+                )
+            except RevisionConflictError as error:
+                return "conflict", error.current_revision, title
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(update, ["Thay đổi thứ nhất", "Thay đổi thứ hai"]))
+    assert sorted((status, revision) for status, revision, _ in results) == [
+        ("conflict", 3),
+        ("saved", 3),
+    ]
+    winner = next(title for status, _, title in results if status == "saved")
+    with closing(sqlite3.connect(target)) as conn:
+        assert conn.execute(
+            "SELECT title,revision FROM exams WHERE id='exam-math-001'"
+        ).fetchone() == (winner, 3)
+
+
+def test_locked_exam_and_question_statuses_survive_roundtrip(migrated_store):
+    source, target, blobs = migrated_store
+    with closing(sqlite3.connect(source)) as conn, conn:
+        key = f"u:{USER_A_ID}:state"
+        state = json.loads(conn.execute("SELECT value FROM kv WHERE key=?", (key,)).fetchone()[0])
+        exam = state["exams"][0]
+        exam["draftStatus"] = "finalized"
+        question = exam["questions"][0]
+        question.update(
+            verificationStatus="review",
+            approvalStatus="rejected",
+            evidence=[{"quote": "Trích đoạn tổng hợp chỉ dùng để thử."}],
+        )
+        conn.execute("UPDATE kv SET value=? WHERE key=?", (json.dumps(state), key))
+    migrate_legacy_store(source, target, blobs)
+    with closing(sqlite3.connect(target)) as conn:
+        conn.row_factory = sqlite3.Row
+        rebuilt = reconstruct_workspace_state(conn, USER_A_ID)["exams"][0]
+    assert rebuilt == exam
+
+
+@pytest.mark.parametrize("failure", ["blob", "database"])
+def test_failed_publication_preserves_existing_store(migrated_store, monkeypatch, failure):
+    source, target, blobs = migrated_store
+    before_db = target.read_bytes()
+    before_blobs = {p.relative_to(blobs): p.read_bytes() for p in blobs.rglob("*.bin")}
+    added_data = b"PDF synthetic contents for migration publication test"
+    with closing(sqlite3.connect(source)) as conn, conn:
+        value = "data:application/pdf;base64," + base64.b64encode(added_data).decode()
+        conn.execute(
+            "INSERT INTO kv VALUES(?,?,1,0)",
+            (f"u:{USER_A_ID}:file:publication-test", json.dumps(value)),
+        )
+    replace = Path.replace
+    reached_failure = False
+
+    def failing_replace(path, destination):
+        nonlocal reached_failure
+        is_database = path == target.with_suffix(".tmp.sqlite")
+        is_blob = path.suffix == ".bin" or path == blobs.with_name("blobs_tmp")
+        if (failure == "database" and is_database) or (failure == "blob" and is_blob):
+            reached_failure = True
+            raise OSError("Lỗi công bố bản di trú giả lập.")
+        return replace(path, destination)
+
+    with monkeypatch.context() as scoped:
+        scoped.setattr(Path, "replace", failing_replace)
+        with pytest.raises(OSError, match="giả lập"):
+            migrate_legacy_store(source, target, blobs)
+    assert reached_failure
+    assert target.read_bytes() == before_db
+    for relative, contents in before_blobs.items():
+        assert (blobs / relative).read_bytes() == contents
+    with closing(sqlite3.connect(target)) as conn:
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert (
+            conn.execute(
+                "SELECT COUNT(*) FROM source_documents WHERE id='publication-test'"
+            ).fetchone()[0]
+            == 0
+        )
+
+    migrate_legacy_store(source, target, blobs)
+    with closing(sqlite3.connect(target)) as conn:
+        relative = conn.execute(
+            "SELECT blob_rel_path FROM source_documents WHERE id='publication-test'"
+        ).fetchone()[0]
+    assert (blobs.parent / relative).read_bytes() == added_data
 
 
 if __name__ == "__main__":

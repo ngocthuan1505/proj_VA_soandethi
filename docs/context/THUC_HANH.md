@@ -40,3 +40,10 @@ Cập nhật: 11/11/2026.
 Theo task đã nhận trong [backlog](../team/BACKLOG.md), chốt contracts/fixture rồi port theo từng lát chức năng sang Python. Khi hoàn tất mỗi lát, bổ sung commit, test, hành vi và giới hạn để bên nghiên cứu cập nhật đúng báo cáo. Ngôn ngữ/tỉ lệ GitHub không phải bằng chứng core đã chuyển.
 
 Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả có bằng chứng, ghi tác động tới hồ sơ môn và việc còn thiếu; không gom log test dài hoặc thông tin bí mật vào đây.
+
+<!-- ban-giao-db38-support-fix -->
+## 12/11/2026 — hỗ trợ sửa dữ liệu trên nhánh riêng kế thừa PR #38
+
+- Nhánh codex/be-3-sua-migration-dong-thoi bắt đầu từ 6a71be8 của BE-3. UPDATE dùng điều kiện owner/revision và RETURNING, lượt ghi không khớp báo xung đột. Bản dựng lại giữ trạng thái khóa/duyệt và evidence đã khai báo, đồng thời giữ nguyên checksum fixture legacy.
+- Công bố migration thêm blob theo hash trước, giữ các blob đang có rồi thay file DB bằng replace nguyên tử. Lỗi trước bước thay DB giữ kho đích cũ. Blob mới chưa được tham chiếu có thể còn sau lỗi công bố và được dùng lại khi chạy lại. Phép thử dùng bản sao không có tiến trình khác đang ghi, chưa kiểm mất điện hoặc migration trực tiếp trên kho đang chạy.
+- Bốn ca hồi quy mới từng lỗi ở 6a71be8 nay đạt: hai cập nhật đồng thời, roundtrip đề khóa/trạng thái/căn cứ và lỗi công bố tại blob/database. Cục bộ 11 pytest gồm năm ca migration gốc và hai ca foundation, Ruff/format/ty đạt. Chờ review từ người phụ trách BE-3 và ghép với các service AI ở PR #39.
