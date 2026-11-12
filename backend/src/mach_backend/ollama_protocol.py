@@ -32,12 +32,15 @@ class OllamaPatchDraft(JobIdentity):
     message: Annotated[str, Field(min_length=1, max_length=1000)]
 
 
-def selected_targets(job: PatchJob) -> list[dict[str, str]]:
+def selected_targets(job: PatchJob) -> list[dict[str, object]]:
     targets = []
     for target in job.targets:
         prefix, suffix = selection_parts(target)
         selected = target.text[len(prefix) : len(target.text) - len(suffix)]
-        targets.append({"blockId": str(target.blockId), "text": selected})
+        payload: dict[str, object] = {"blockId": str(target.blockId), "text": selected}
+        if target.context is not None:
+            payload["context"] = target.context.model_dump(mode="json")
+        targets.append(payload)
     return targets
 
 

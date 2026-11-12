@@ -152,3 +152,10 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
 - [PR #39](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/39) bổ sung phép kiểm số hữu tỉ chính xác cho mẫu trắc nghiệm thay x có một phép tính và phương án số. API ghi `method` để UI phân biệt Python tự tính và model giải lại. Mẫu ngoài phạm vi hoặc có nguồn chọn vẫn đi qua model. Thiếu phương án khớp, nhiều phương án cùng giá trị hoặc chia cho 0 trả cần xem lại.
 - Kiểm thử HTTP với phiên giả lập và SQLite tạm: chạy khi chưa cấu hình provider, đối chiếu thập phân chính xác, phát hiện bất đồng, yêu cầu model khi có nguồn và trả 409 nếu đáp án lưu đã đổi. Phép kiểm chỉ đọc, không thay đề, lịch sử hay trạng thái duyệt. Cục bộ 213 pytest đạt, 5 ca model thật bỏ qua mặc định, 101 test Node, 14 test kế hoạch, uv sync frozen và Ruff/format/ty đạt.
 - Dùng làm bằng chứng kỹ thuật cho nhận diện mẫu và đối chiếu độc lập ở CT-05/06. Luồng này chưa ghép UI và kho thật, chỉ hỗ trợ một mẫu thay số, chưa đo tỉ lệ câu ngoài fixture xử lý được.
+
+<!-- ban-giao-patch-context-39 -->
+### 12/11/2026 — cấp dữ kiện cùng câu cho luồng sửa lời giải
+
+- PR #39 thêm ngữ cảnh chỉ đọc gồm đề bài và phương án của đúng câu đang sửa vào payload Ollama. Backend lấy ngữ cảnh từ snapshot theo phiên, giữ đoạn sửa theo UTF-16. Trình duyệt tự gửi context bị từ chối. Job cũ thiếu trường context vẫn đọc được; bản chữ không hợp lệ hoặc quá 12.000 ký tự tiếp tục dùng đoạn đã chọn.
+- Hàm current_patch_questions kiểm ID, phiên bản, khối, lời giải và ngữ cảnh. BE-3 dùng trong callback snapshot và giao dịch ghi bản xem trước. Xác nhận gọi lại hàm trong giao dịch trước khi ghi. Ca HTTP kiểm đề bài đổi khi provider đang chạy, phương án đổi trước xác nhận, giữ câu khác/đáp án/định dạng và chỉ sửa sau xác nhận.
+- Cục bộ đạt 220 pytest, năm ca model thật bỏ qua mặc định; 101 test Node, 14 test kế hoạch, uv sync frozen và Ruff/format/ty đạt. Các ca dùng phiên giả lập, phản hồi Ollama soạn sẵn và SQLite tạm. Chưa đo chất lượng lời giải với model thật hoặc ghép phiên/kho/UI thật. Bên lý thuyết chỉ dùng làm bằng chứng kỹ thuật về ngữ cảnh và kiểm phiên bản, tách khỏi kết quả thử ma trận đang dừng ở worktree khác.

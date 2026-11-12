@@ -18,6 +18,7 @@ from mach_backend.ai_contract import (
     Revision,
     SnapshotCheck,
     SourceFragment,
+    read_patch_context,
     validate_patch_job,
     validate_proposal,
     validate_sources,
@@ -146,23 +147,13 @@ def confirm_patch(
         return receipt
 
 
-def apply_patch(state: ConfirmationState) -> tuple[ExamSnapshot, PatchReceipt]:
-    if not isinstance(state.pending, PendingPatch):
-        raise AIError("invalid_result", "Đề xuất không thuộc thao tác sửa lời giải.")
-    job = state.pending.job
-    validate_sources(job)
-    validate_patch_job(job)
-    proposal = validate_proposal(job, state.pending.proposal.model_dump_json())
-    exam = editable_snapshot(state)
-    revision = job.baseRevision
+def current_patch_questions(job: PatchJob, exam: ExamSnapshot) -> dict[UUID, ExamSnapshot]:
     questions = exam.get("questions")
     if not isinstance(questions, list):
         raise changed_snapshot()
 
-    targets = {target.blockId: target for target in job.targets}
-    changed: list[UUID] = []
-    for edit in proposal.edits:
-        target = targets[edit.blockId]
+    by_block = {}
+    for target in job.targets:
         matches = [
             question
             for question in questions
@@ -178,14 +169,33 @@ def apply_patch(state: ConfirmationState) -> tuple[ExamSnapshot, PatchReceipt]:
             or not isinstance(blocks, dict)
             or blocks.get(target.field) != str(target.blockId)
             or question.get(target.field) != target.text
+            or (target.context is not None and read_patch_context(question) != target.context)
         ):
             raise changed_snapshot()
+        by_block[target.blockId] = question
+    return by_block
 
+
+def apply_patch(state: ConfirmationState) -> tuple[ExamSnapshot, PatchReceipt]:
+    if not isinstance(state.pending, PendingPatch):
+        raise AIError("invalid_result", "Đề xuất không thuộc thao tác sửa lời giải.")
+    job = state.pending.job
+    validate_sources(job)
+    validate_patch_job(job)
+    proposal = validate_proposal(job, state.pending.proposal.model_dump_json())
+    exam = editable_snapshot(state)
+    revision = job.baseRevision
+    questions = current_patch_questions(job, exam)
+    targets = {target.blockId: target for target in job.targets}
+    changed: list[UUID] = []
+    for edit in proposal.edits:
+        target = targets[edit.blockId]
+        question = questions[edit.blockId]
         rich = question.get("explanationDoc")
         if rich is not None:
             question["explanationDoc"] = update_rich(rich, target, edit.content)
         question[target.field] = edit.content
-        question["v"] = version + 1
+        question["v"] = target.questionVersion + 1
         question["check"] = None
         if "verification" in question:
             question["verification"] = None

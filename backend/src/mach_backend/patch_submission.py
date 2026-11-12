@@ -15,6 +15,7 @@ from mach_backend.ai_contract import (
     PatchJob,
     Revision,
     SourceFragment,
+    read_patch_context,
     validate_patch_job,
     validate_sources,
 )
@@ -94,6 +95,7 @@ def build_patch_job(
                 field="explanation",
                 text=text,
                 selection=(offsets[0], offsets[1]) if offsets is not None else None,
+                context=read_patch_context(q),
             )
         )
 

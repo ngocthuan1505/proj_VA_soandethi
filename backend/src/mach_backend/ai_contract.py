@@ -1,7 +1,7 @@
 """Hợp đồng Sinh, Sửa và Kiểm trước bước xác nhận."""
 
 import re
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -39,6 +39,11 @@ class SourceFragment(ContractModel):
     text: BlockText
 
 
+class PatchQuestionContext(ContractModel):
+    stem: BlockText
+    options: Annotated[tuple[BlockText, ...], Field(max_length=4)]
+
+
 class BlockTarget(ContractModel):
     questionId: UUID
     questionVersion: Revision
@@ -46,6 +51,7 @@ class BlockTarget(ContractModel):
     field: Literal["explanation"]
     text: BlockText
     selection: tuple[int, int] | None = None
+    context: PatchQuestionContext | None = None
 
 
 class JobIdentity(ContractModel):
@@ -85,6 +91,20 @@ class AIError(ValueError):
 
 # Đọc snapshot hiện tại bằng quyền của chủ sở hữu đề. Repository trả False nếu đề/khối/nguồn đã đổi.
 type SnapshotCheck[JobT: AIJob] = Callable[[JobT], Awaitable[bool]]
+
+
+def read_patch_context(question: Mapping[str, object]) -> PatchQuestionContext | None:
+    stem, options = question.get("stem"), question.get("options", [])
+    if not isinstance(stem, str) or not stem.strip() or not isinstance(options, list):
+        return None
+    try:
+        context = PatchQuestionContext(stem=stem, options=tuple(options))
+    except ValidationError:
+        return None
+    # shortcut: dùng bản chữ tối đa một khối; mở rộng khi hỗ trợ ngữ liệu hoặc hình riêng.
+    if len(context.stem) + sum(map(len, context.options)) > MAX_BLOCK_TEXT:
+        return None
+    return context
 
 
 def selection_parts(target: BlockTarget) -> tuple[str, str]:
