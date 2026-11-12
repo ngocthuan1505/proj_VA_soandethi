@@ -33,3 +33,11 @@ Cập nhật: 07/11/2026.
 Theo task đã nhận trong [backlog](../team/BACKLOG.md), chốt contracts/fixture rồi port theo từng lát chức năng sang Python. Khi hoàn tất mỗi lát, bổ sung commit, test, hành vi và giới hạn để bên nghiên cứu cập nhật đúng báo cáo. Ngôn ngữ/tỉ lệ GitHub không phải bằng chứng core đã chuyển.
 
 Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả có bằng chứng, ghi tác động tới hồ sơ môn và việc còn thiếu; không gom log test dài hoặc thông tin bí mật vào đây.
+
+<!-- poc-review-packet:2026-11-13 -->
+## 13/11/2026 — kiểm log mới và chuẩn bị phiếu rà đầu ra PoC thật
+
+- PR #43/bd6de8a có CI 43247519600 đã đạt đúng commit. Đã dùng công cụ đối chiếu thêm các lượt v4/v5 của PoC_agent_cmd. Lượt v5 Qwen2.5 1.5B nhận lỗi rồi nộp nguyên bộ cũ. Lượt v5 Qwen2.5 3B đổi bộ câu, nhận kiểm lại nhưng vẫn attempt_limit. Không gộp các bản thử thành một tỷ lệ thành công.
+- Từ call-04-response.json của trial b690f677-3592-4141-882e-043443823f2e, tạo bốn thẻ rà tại docs/course/poc-ra-doc-lap. Phiếu đầu cho người rà tự giải và nhận định mức trước khi xem đáp án/nhãn model. Phiếu sau đối chiếu chủ đề, mức yêu cầu, đáp án/lời giải, độ đủ căn cứ và trùng ý cả bộ. Manifest giữ input/response SHA-256, vị trí câu và review=null.
+- Đã đối chiếu nguyên văn từng đề bài, bốn phương án, lời giải và trích đoạn với request/response đã lưu. Nguồn là ngữ liệu nhóm tự viết. Chưa có người chấm, điểm chất lượng, ngưỡng nghiệm thu hoặc kết quả đối chứng mới. docs/course/POC.md dẫn thẳng tới phiếu và giữ kế hoạch sửa vùng cũ để tham khảo.
+- Bên lý thuyết có thể gửi phiếu cho người rà và dùng log để trình bày vòng tự sửa có/không đổi nội dung. Bộ chạy/app đang được bên đó phát triển tại app-ma-tran-that. Lượt này chỉ đọc log và chuẩn bị đầu vào rà độc lập, không gọi model hoặc sửa các module đang làm bên kia.
