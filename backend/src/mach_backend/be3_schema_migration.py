@@ -381,6 +381,9 @@ def _upsert_question_and_version(
         "algebra": q.get("algebra"),
         "generated": q.get("generated"),
     }
+    ver_data.update(
+        {key: q[key] for key in ("verificationStatus", "approvalStatus", "evidence") if key in q}
+    )
     conn.execute(
         """
         INSERT INTO questions(
@@ -871,6 +874,8 @@ def migrate_legacy_store(
                     }
                     if "approvedGenerationPlan" in ex:
                         ai_state["approvedGenerationPlan"] = ex["approvedGenerationPlan"]
+                    if "draftStatus" in ex:
+                        ai_state["draftStatus"] = ex["draftStatus"]
                     undo_redo = {
                         "undo": (ex.get("undo") or [])[-60:],
                         "redo": (ex.get("redo") or [])[-60:],
@@ -1125,12 +1130,15 @@ def migrate_legacy_store(
         dst_conn.close()
         src_conn.close()
 
-        if dst_sqlite.exists():
-            dst_sqlite.unlink()
+        # Blob theo hash được thêm trước; DB cũ vẫn dùng nguyên các blob đã có nếu công bố lỗi.
+        for blob in tmp_blobs.rglob("*"):
+            if blob.is_file():
+                destination = blobs_dir / blob.relative_to(tmp_blobs)
+                if not destination.exists():
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    blob.replace(destination)
         tmp_sqlite.replace(dst_sqlite)
-        if blobs_dir.exists():
-            shutil.rmtree(blobs_dir)
-        tmp_blobs.replace(blobs_dir)
+        shutil.rmtree(tmp_blobs, ignore_errors=True)
         return {"ok": True}
 
     except Exception:
@@ -1228,6 +1236,15 @@ def reconstruct_workspace_state(conn: sqlite3.Connection, owner_id: str) -> dict
                     "algebra": ver["algebra"],
                     "generated": ver["generated"],
                     "blockIds": json.loads(q_row["block_ids"]),
+                    **{
+                        key: value
+                        for key, value in (
+                            ("verificationStatus", q_row["verification_status"]),
+                            ("approvalStatus", q_row["approval_status"]),
+                            ("evidence", ver.get("evidence")),
+                        )
+                        if key in ver
+                    },
                 }
             )
 
@@ -1285,6 +1302,8 @@ def reconstruct_workspace_state(conn: sqlite3.Connection, owner_id: str) -> dict
         }
         if "approvedGenerationPlan" in ai_state:
             exam_dict["approvedGenerationPlan"] = ai_state["approvedGenerationPlan"]
+        if "draftStatus" in ai_state or ex_row["draft_status"] != "draft":
+            exam_dict["draftStatus"] = ex_row["draft_status"]
         exams.append(exam_dict)
 
     out: dict[str, Any] = {
@@ -1308,6 +1327,13 @@ def update_exam_with_occ(
 ) -> int:
     """Cập nhật đề thi với kiểm tra khóa lạc quan (Optimistic Concurrency Control)."""
     with conn:
+        updated = conn.execute(
+            "UPDATE exams SET title = ?, revision = revision + 1 "
+            "WHERE id = ? AND owner_id = ? AND revision = ? RETURNING revision",
+            (new_title, exam_id, owner_id, base_revision),
+        ).fetchone()
+        if updated is not None:
+            return int(updated[0])
         row = conn.execute(
             "SELECT revision FROM exams WHERE id = ? AND owner_id = ?",
             (exam_id, owner_id),
@@ -1315,17 +1341,10 @@ def update_exam_with_occ(
         if not row:
             raise KeyError(exam_id)
         current_rev = int(row[0])
-        if current_rev != base_revision:
-            raise RevisionConflictError(
-                "Dữ liệu đã được thay đổi ở cửa sổ khác. Hãy tải lại trước khi tiếp tục.",
-                current_revision=current_rev,
-            )
-        next_rev = current_rev + 1
-        conn.execute(
-            "UPDATE exams SET title = ?, revision = ? WHERE id = ? AND revision = ?",
-            (new_title, next_rev, exam_id, base_revision),
+        raise RevisionConflictError(
+            "Dữ liệu đã được thay đổi ở cửa sổ khác. Hãy tải lại trước khi tiếp tục.",
+            current_revision=current_rev,
         )
-        return next_rev
 
 
 def replay_or_register_submission(
