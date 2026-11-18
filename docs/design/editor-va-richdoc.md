@@ -159,3 +159,5 @@ node tests/ui2-baseline-browser.mjs
 ```
 
 Đặt `QA_PYTHON` thành đường dẫn `backend/.venv/bin/python` trên Linux/macOS. Script tự chọn cổng loopback và tạo kho thử riêng. Báo cáo lỗi A–D ở trên thuộc baseline Node ban đầu. Đợt FastAPI này dùng các ca T01–T03 để xác nhận trình soạn và lưu đề.
+
+Tiếp tục kiểm Bug A bằng thao tác chuột thật trên phương án chưa được khởi tạo. Tọa độ lần bấm đầu được ánh xạ vào editor, và vị trí chữ được đối chiếu sau khi lưu qua FastAPI.

@@ -293,49 +293,59 @@ try {
   assert.ok(chipContent.includes('Đề bài') || chipContent.includes('Bài 1'));
   pass('T03: Hai công thức trùng & tiếng Việt nhiều dấu: scopeForFormula chọn đúng công thức thứ hai và đóng sạch popup');
 
+  let firstPointerCaret;
+  if (python) {
+    const pendingPage = await browser.newPage({ viewport: { width: 1366, height: 850 } });
+    pendingPage.on('pageerror', error => errors.push(error.message));
+    await pendingPage.addInitScript(() => {
+      const observe = IntersectionObserver.prototype.observe;
+      IntersectionObserver.prototype.observe = function (element) {
+        if (!element.matches('.rich-field-editor')) observe.call(this, element);
+      };
+    });
+    await pendingPage.goto(base);
+    const option = pendingPage.locator('[data-rich-field="option"]').first();
+    await option.scrollIntoViewIfNeeded();
+    const position = await option.evaluate((element) => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      const text = walker.nextNode();
+      const range = document.createRange();
+      range.setStart(text, 1);
+      range.setEnd(text, 2);
+      const rect = range.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    });
+    assert(await option.evaluate(element => element.classList.contains('rich-pending')));
+    await pendingPage.mouse.click(position.x, position.y);
+    await option.locator('.tiptap').waitFor();
+    await pendingPage.waitForFunction(() => Boolean(document.activeElement?.matches('.tiptap')));
+    firstPointerCaret = await option.evaluate((element) => {
+      const editable = element.querySelector('.tiptap');
+      const range = document.createRange();
+      range.selectNodeContents(editable);
+      const selection = getSelection();
+      range.setEnd(selection.focusNode, selection.focusOffset);
+      return { offset: range.toString().length, length: editable.textContent.length };
+    });
+    assert.ok(firstPointerCaret.offset <= 3 && firstPointerCaret.offset < firstPointerCaret.length,
+      JSON.stringify(firstPointerCaret));
+    await pendingPage.keyboard.insertText('[Thử]');
+    await pendingPage.waitForFunction(() =>
+      /^Đã lưu/.test(document.querySelector('[data-save-status]')?.textContent || '')
+    );
+    const { id, index } = await option.evaluate(element => ({
+      id: element.dataset.richId, index: Number(element.dataset.richIndex)
+    }));
+    const state = await getState();
+    const question = state.exams.flatMap(exam => exam.questions).find(question => question.id === id);
+    assert.equal(question.options[index].indexOf('[Thử]'), firstPointerCaret.offset);
+    await pendingPage.close();
+    pass('FastAPI: lần bấm đầu đặt con trỏ gần ký tự đã bấm và lưu chữ gõ đúng vị trí');
+  }
+
   let bugBaselineEvidence;
   if (!python) {
     // --- Step 5: Bug Baseline Evidence Collection ---
-
-    // Bug A: .rich-pending pointerdown/click mount behavior
-    const bugA_richPendingFocus = await page.evaluate(() => {
-      // Look for unmounted rich-field-editor with .rich-pending
-      const pending = document.querySelector('.rich-field-editor.rich-pending:not([data-editor-mounted="true"])');
-      if (!pending) {
-        return {
-          found: false,
-          message: 'No unmounted rich field remaining in viewport/scroll margin',
-        };
-      }
-      const qid = pending.dataset.richId;
-      const field = pending.dataset.richField;
-      const beforeState = {
-        isPending: pending.classList.contains('rich-pending'),
-        editorMounted: pending.dataset.editorMounted === 'true',
-        hasTipTap: Boolean(pending.querySelector('.tiptap')),
-      };
-
-      // Dispatch pointerdown
-      pending.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-
-      const afterState = {
-        isPending: pending.classList.contains('rich-pending'),
-        editorMounted: pending.dataset.editorMounted === 'true',
-        hasTipTap: Boolean(pending.querySelector('.tiptap')),
-        focusBehavior: "editor?.commands.focus('end') was called, forcing selection to document end",
-      };
-
-      return {
-        found: true,
-        qid,
-        field,
-        before: beforeState,
-        after: afterState,
-        rootCause:
-          "editor.js mounts rich-pending editors on pointerdown with editor?.commands.focus('end'), placing caret at the end instead of user click target coordinates",
-      };
-    });
-    pass('Ghi nhận hiện trạng Bug A: .rich-pending mount khi pointerdown và ép con trỏ về cuối đoạn');
 
     // Bug B: Intercept PUT /api/kv with HTTP 409 Conflict
     let intercepted409 = false;
@@ -444,7 +454,7 @@ try {
     });
     pass('Ghi nhận hiện trạng Bug D: Thao tác toolbar tức thời trước debounce 550ms thiếu flushEditor()');
     bugBaselineEvidence = {
-      bugA_richPendingFocus, bugB_swallowedConflict409, bugC_composerLayout1366, bugD_rapidToolbarActionDebounce,
+      bugB_swallowedConflict409, bugC_composerLayout1366, bugD_rapidToolbarActionDebounce,
     };
   }
 
@@ -476,6 +486,7 @@ try {
         selectedSecondOccurrence: t03ScopeResult.scope.start === expectedLastIndex,
       },
     },
+    ...(firstPointerCaret ? { firstPointerCaret } : {}),
     ...(bugBaselineEvidence ? { bugBaselineEvidence } : {}),
     reports,
     errors,
