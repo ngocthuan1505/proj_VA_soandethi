@@ -1,6 +1,6 @@
 const contexts=new Map();
 function contextFor(id){
- if(!contexts.has(id))contexts.set(id,{id,revision:0,pending:new Map(),inflight:new WeakMap(),disk:Promise.resolve(),remote:Promise.resolve()});
+ if(!contexts.has(id))contexts.set(id,{id,revision:0,stateConflict:false,pending:new Map(),inflight:new WeakMap(),disk:Promise.resolve(),remote:Promise.resolve()});
  return contexts.get(id);
 }
 let active=contextFor('local');
@@ -25,6 +25,20 @@ async function localPut(ctx,key,value){
   tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Không lưu được bản tạm.'));
  });
 }
+async function updatePending(ctx,key,record,next){
+ const db=await dbp;
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv'),name=ctx.id+':__pending:'+key;
+  const request=store.get(name);
+  request.onsuccess=()=>{
+   if(!request.result||request.result.id!==record.id){resolve();return;}
+   store.put(next,name);
+  };
+  tx.oncomplete=()=>resolve();
+  tx.onerror=()=>reject(tx.error);
+  tx.onabort=()=>reject(tx.error||Error('Không lưu được bản tạm.'));
+ });
+}
 function disk(ctx,work){const operation=ctx.disk.then(work);ctx.disk=operation.catch(()=>{});return operation;}
 function sameIdentity(ctx){if(ctx!==active)throw Error('Tài khoản đã đổi. Bản nháp được giữ riêng; đăng nhập lại đúng tài khoản để đồng bộ.');}
 export function workspaceHeaders(ctx=active){return ctx.id.startsWith('team:')?{'X-Workspace-Context':ctx.id}:{};}
@@ -34,15 +48,18 @@ function send(ctx,key,record,saved=Promise.resolve()){
   await saved;sameIdentity(ctx);
   const response=await fetch('/api/kv',{method:'PUT',headers:{...workspaceHeaders(ctx),'Content-Type':'application/json',...(key==='state'?{'If-Match':String(record.base)}:{})},body:JSON.stringify({key,value:record.value})});
   let result;try{result=await response.json();}catch{throw Error('Máy chủ chưa trả kết quả lưu hợp lệ. Bản tạm vẫn được giữ.');}
-  if(!response.ok)throw Error(result.error||'Không lưu được dữ liệu trên máy chủ. Bản tạm vẫn được giữ.');
-  if(key==='state')ctx.revision=result.revision;
+  if(!response.ok){
+   if(key==='state'&&response.status===409&&result.code==='stale_snapshot')ctx.stateConflict=true;
+   throw Error(result.error||'Không lưu được dữ liệu trên máy chủ. Bản tạm vẫn được giữ.');
+  }
+  if(key==='state'){ctx.revision=result.revision;ctx.stateConflict=false;}
   await disk(ctx,async()=>{
    const latest=ctx.pending.get(key);
-   if(latest===record){ctx.pending.delete(key);await localPut(ctx,'__pending:'+key,null);}
+   if(latest===record){ctx.pending.delete(key);await updatePending(ctx,key,record,null);}
    else if(latest){
     // Lần lưu cũ chỉ được cập nhật base, không xóa nháp mới hơn đang chờ.
     if(key==='state')latest.base=result.revision;
-    await localPut(ctx,'__pending:'+key,latest);
+    await updatePending(ctx,key,latest,latest);
    }
   });
  });
@@ -50,6 +67,7 @@ function send(ctx,key,record,saved=Promise.resolve()){
  operation.then(()=>ctx.inflight.delete(record),()=>ctx.inflight.delete(record));
  ctx.remote=operation.catch(()=>{});return operation;
 }
+export function hasStateConflict(){return active.stateConflict;}
 export function hasPendingWrites(){return active.pending.size>0;}
 export async function retryPendingWrites(){
  const ctx=active;
@@ -73,11 +91,12 @@ export async function get(key,{requireRemote=false}={}){
   if(!response.ok)throw Error('Máy chủ chưa sẵn sàng.');
   const result=await response.json();sameIdentity(ctx);const latest=ctx.pending.get(key);
   if(latest){
+   if(key==='state')ctx.stateConflict=result.revision!==(latest.base||0);
    if(result.revision===(latest.base||0))try{await send(ctx,key,latest);}catch{}
    return latest.value;
   }
   if(key==='state'&&result.revision<ctx.revision)return localGet(ctx,key);
-  if(key==='state')ctx.revision=result.revision;
+  if(key==='state'){ctx.revision=result.revision;ctx.stateConflict=false;}
   if(result.value!==null){await disk(ctx,()=>localPut(ctx,key,result.value));return result.value;}
   const legacy=await localGet(ctx,key);
   if(legacy!==undefined&&key.startsWith('file:')){sameIdentity(ctx);await put(key,legacy);}
@@ -89,7 +108,7 @@ export async function get(key,{requireRemote=false}={}){
  return ctx.pending.get(key)?.value??localGet(ctx,key);
 }
 export function put(key,value){
- const ctx=active,record={value:structuredClone(value),base:key==='state'?ctx.revision:0};
+ const ctx=active,record={id:crypto.randomUUID(),value:structuredClone(value),base:key==='state'?ctx.revision:0};
  if(ctx.restoring)return Promise.reject(Error('Đang khôi phục kho. Chờ hoàn tất trước khi sửa.'));
  ctx.pending.set(key,record);
  const saved=disk(ctx,async()=>{await localPut(ctx,key,record.value);await localPut(ctx,'__pending:'+key,record);});

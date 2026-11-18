@@ -343,6 +343,51 @@ try {
     pass('FastAPI: lần bấm đầu đặt con trỏ gần ký tự đã bấm và lưu chữ gõ đúng vị trí');
   }
 
+  let saveConflict;
+  if (python) {
+    const context = await browser.newContext();
+    const first = await context.newPage();
+    const second = await context.newPage();
+    for (const tab of [first, second]) {
+      tab.on('pageerror', error => errors.push(error.message));
+      await tab.goto(base);
+      await tab.locator('.title-input').first().waitFor();
+    }
+    async function rename(tab, title) {
+      const saved = tab.waitForResponse(response =>
+        response.url() === base + '/api/kv' && response.request().method() === 'PUT'
+      );
+      const input = tab.locator('.title-input').first();
+      await input.fill(title);
+      await input.blur();
+      return saved;
+    }
+    const winner = 'Bản đã lưu ở tab thứ hai';
+    const draft = 'Bản nháp ở tab đã mở trước';
+    assert.equal((await rename(second, winner)).status(), 200);
+    await second.waitForFunction(() => /^Đã lưu/.test(
+      document.querySelector('[data-save-status]')?.textContent || ''
+    ));
+    const rejected = await rename(first, draft);
+    assert.equal(rejected.status(), 409);
+    assert.equal((await rejected.json()).code, 'stale_snapshot');
+    const warning = first.locator('[data-save-warning]');
+    await warning.getByText('Xung đột lưu').waitFor({ timeout: 5000 });
+    await first.reload();
+    await warning.getByText('Xung đột lưu').waitFor({ timeout: 5000 });
+    assert.equal(await first.locator('.title-input').first().inputValue(), draft);
+    const downloadReady = first.waitForEvent('download');
+    await warning.getByRole('button', { name: 'Tải bản nháp' }).click();
+    const download = await downloadReady;
+    const snapshot = JSON.parse(await readFile(await download.path(), 'utf8'));
+    assert.equal(snapshot.state.exams.find(exam => exam.id === snapshot.state.current).title, draft);
+    const state = await getState();
+    assert.equal(state.exams.find(exam => exam.id === state.current).title, winner);
+    saveConflict = { serverPreserved: true, draftRestoredAfterReload: true, draftDownloaded: true };
+    await context.close();
+    pass('FastAPI: xung đột hai tab giữ bản trên máy chủ và cho tải bản nháp');
+  }
+
   let bugBaselineEvidence;
   if (!python) {
     // --- Step 5: Bug Baseline Evidence Collection ---
@@ -486,6 +531,7 @@ try {
         selectedSecondOccurrence: t03ScopeResult.scope.start === expectedLastIndex,
       },
     },
+    ...(saveConflict ? { saveConflict } : {}),
     ...(firstPointerCaret ? { firstPointerCaret } : {}),
     ...(bugBaselineEvidence ? { bugBaselineEvidence } : {}),
     reports,

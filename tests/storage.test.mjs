@@ -75,13 +75,29 @@ test('Tab kho nhóm ràng buộc các yêu cầu với tài khoản đã mở v�
 test('Conflict giữ bản mới offline và không ghi đè server khi tự retry',async()=>{
  const h=await harness();try{
   await h.storage.get('state');
-  const conflict=()=>({ok:false,status:409,json:async()=>({error:'Đề đã đổi ở cửa sổ khác'})});
+  const conflict=()=>({ok:false,status:409,json:async()=>({error:'Đề đã đổi ở cửa sổ khác',code:'stale_snapshot'})});
   h.responses.push(conflict,conflict);
   await assert.rejects(h.storage.put('state',{title:'Bản cần khôi phục'}),/cửa sổ khác/);
   await assert.rejects(h.storage.retryPendingWrites(),/cửa sổ khác/);
   assert(h.storage.hasPendingWrites());
   assert.equal(h.writes[1].headers['If-Match'],'1');
+  assert(h.storage.hasStateConflict());
   assert.deepEqual(h.data.get('local:__pending:state').value,{title:'Bản cần khôi phục'});
+ }finally{h.restore();}
+});
+
+test('Lượt lưu cũ đã xong không xóa bản nháp mới ghi từ tab khác',async()=>{
+ const h=await harness();try{
+  await h.storage.get('state');
+  let release;
+  h.responses.push(()=>new Promise(resolve=>{release=()=>resolve({ok:true,status:200,json:async()=>({revision:2})});}));
+  const oldSave=h.storage.put('state',{title:'Bản lưu cũ'});
+  await new Promise(resolve=>setImmediate(resolve));
+  const newer={id:crypto.randomUUID(),base:1,value:{title:'Bản nháp ở tab khác'}};
+  h.data.set('local:__pending:state',newer);
+  release();
+  await oldSave;
+  assert.deepEqual(h.data.get('local:__pending:state'),newer);
  }finally{h.restore();}
 });
 
@@ -130,7 +146,8 @@ for(const [scenario,failPreview] of [
    finishPreview();
    await preview;
    assert(h.storage.hasPendingWrites());
-   assert.deepEqual(h.data.get('local:__pending:state'),{value:draft,base:1});
+   assert.deepEqual(h.data.get('local:__pending:state').value,draft);
+  assert.equal(h.data.get('local:__pending:state').base,1);
    assert.deepEqual(h.data.get('local:state'),draft);
    assert.equal(h.writes.length,2);
    await h.storage.retryPendingWrites();
@@ -151,7 +168,8 @@ test('Nháp đang chờ đồng bộ chặn yêu cầu xem trước và vẫn c�
   await assert.rejects(h.storage.previewRestore({state:{title:'Bản sao thử'}}),/Còn bản nháp chưa đồng bộ/);
   assert.equal(h.writes.length,1);
   assert(h.storage.hasPendingWrites());
-  assert.deepEqual(h.data.get('local:__pending:state'),{value:draft,base:1});
+  assert.deepEqual(h.data.get('local:__pending:state').value,draft);
+  assert.equal(h.data.get('local:__pending:state').base,1);
  }finally{h.restore();}
 });
 
