@@ -80,6 +80,12 @@ Chrome kiểm chat → xác nhận ma trận → đồng ý gửi nguồn → si
 
 FastAPI chạy riêng ca **6 câu, 4 dạng, 10 điểm** từ ngữ liệu tự viết. Trace có một vòng không đạt rồi một vòng đạt. Sáu câu có căn cứ trỏ về đúng ID nguồn. Đề cũ giữ nguyên tới khi xác nhận; lần xác nhận tăng một revision. Bộ kiểm riêng còn qua xác nhận SSE phát lại, thiếu quyền, hạn mức, hủy và kết quả đến muộn. Dùng model mẫu và mô phỏng lỗi mạng trong Chrome. Chưa đối chiếu chất lượng model thật trên ứng viên này. [Ca Chrome](../../scripts/kiem-ui-matrix-chat.mjs) · [Ca sáu câu](../../backend/tests/test_exam_planning.py)
 
+## Kiểm lại IT-05 trên bàn soạn
+
+Chrome và FastAPI giữ đúng ID khối, bảng và ảnh khi sửa nội dung, tải lại và hoàn tác trên đề mẫu nhiều trang. Sửa chú thích ảnh làm tăng phiên bản câu và bỏ dấu duyệt cũ. Hoàn tác khôi phục cả ảnh và trạng thái duyệt. Bàn soạn chặn một thao tác sửa cắt ngang ranh giới bảng và chọn đúng công thức thứ hai khi hai công thức giống chữ.
+
+Cũng đã kiểm hai tab lưu cạnh tranh, sửa rồi chuyển chế độ xem, hoàn tác ngay sau gõ và ghép dấu bằng Chrome DevTools Protocol. Ngữ liệu tự tạo và màn hình mobile mô phỏng. Chưa chạy bằng bộ gõ tiếng Việt của người dùng hoặc điện thoại thật. [Ca Chrome](../../tests/ui2-baseline-browser.mjs)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

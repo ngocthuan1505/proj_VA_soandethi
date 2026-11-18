@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { dependency, chromePath } from '../runtime.mjs';
 import { documentPlain } from '../rich-document.js';
 import { ensureBlocks } from '../blocks.js';
+import { approveQuestion } from '../core.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const python = process.env.QA_PYTHON;
@@ -98,6 +99,16 @@ try {
   longPaginatedExam.chat = [];
   longPaginatedExam.autoUpdate = false;
   longPaginatedExam.layout = { font: 'Times New Roman', fontSize: 15 };
+  const assets = {
+    tables: [{ id: 'qa-bang', rows: [['Đại lượng', 'Giá trị'], ['Vận tốc', '40 km/h']] }],
+    images: [{
+      id: 'qa-anh',
+      caption: 'Ảnh mẫu để kiểm lưu',
+      data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAIAAADZSiLoAAAAE0lEQVR4nGMUT7RjAAMmCIXCAgAUOQC8Mi3TIwAAAABJRU5ErkJggg==',
+    }],
+  };
+  Object.assign(longPaginatedExam.questions[0], assets);
+  approveQuestion(longPaginatedExam.questions[0], 1);
 
   const initialState = {
     version: 1,
@@ -188,6 +199,14 @@ try {
   assert.equal(currentQ0.stem, editedStemText);
   assert.deepEqual(currentQ0.blockIds, originalQ0BlockIds);
   assert.equal(Object.keys(currentQ0.blockIds).length, 8);
+  assert.deepEqual(currentQ0.tables, assets.tables);
+  assert.deepEqual(currentQ0.images, assets.images);
+  const firstQuestion = page.locator(`.question[data-q="${q0.id}"]`);
+  await firstQuestion.locator('.inserted-table').getByText('40 km/h', { exact: true }).waitFor();
+  await page.waitForFunction(({ questionId, caption }) => {
+    const image = document.querySelector(`.question[data-q="${questionId}"] img[alt="${caption}"]`);
+    return image?.naturalWidth === 3;
+  }, { questionId: q0.id, caption: assets.images[0].caption });
 
   // Trigger undo to revert richDoc
   await page.locator('[data-action="undo"]').first().click();
@@ -199,8 +218,30 @@ try {
   assert.deepEqual(currentQ0.richDoc, originalQ0RichDoc);
   assert.equal(currentQ0.stem, originalQ0Stem);
   assert.deepEqual(currentQ0.blockIds, originalQ0BlockIds);
+  assert.deepEqual(currentQ0.tables, assets.tables);
+  assert.deepEqual(currentQ0.images, assets.images);
 
   pass('T01: Phân trang đề dài (>= 3 trang, >= 1 oversize), sửa trực tiếp, reload giữ 8 blockIds và undo khôi phục richDoc');
+
+  assert.equal(currentQ0.approval?.version, currentQ0.v);
+  const caption = 'Chú thích đã sửa';
+  await firstQuestion.locator('[data-action="edit-image"][data-image="qa-anh"]').click();
+  const imageForm = page.locator('#image-form');
+  await imageForm.locator('[name="caption"]').fill(caption);
+  await imageForm.getByRole('button', { name: 'Lưu chú thích', exact: true }).click();
+  await saved();
+  const afterCaption = (await getState()).exams.find(e => e.id === longPaginatedExam.id)
+    .questions.find(q => q.id === q0.id);
+  assert.equal(afterCaption.images[0].caption, caption);
+  assert.equal(afterCaption.v, currentQ0.v + 1);
+  assert.equal(afterCaption.approval, null);
+  assert.deepEqual(afterCaption.tables, assets.tables);
+  await page.locator('[data-action="undo"]').first().click();
+  await saved();
+  const afterCaptionUndo = (await getState()).exams.find(e => e.id === longPaginatedExam.id)
+    .questions.find(q => q.id === q0.id);
+  assert.deepEqual(afterCaptionUndo, currentQ0);
+  pass('IT-05: Sửa chú thích hình làm mới phiên bản câu, hoàn tác phục hồi cả chú thích và duyệt');
 
   // --- Step 3: T02 - reconcileEditorRich rejects cross-table edits ---
   const t02Result = await page.evaluate(async (fixture) => {
@@ -591,6 +632,8 @@ try {
         blockIdsCount: Object.keys(originalQ0BlockIds).length,
         blockIdsPreservedAcrossReload: true,
         undoRestoredRichDoc: true,
+        tableAndImagePreservedAcrossReloadAndUndo: true,
+        captionChangeInvalidatedReview: true,
       },
       T02: {
         passed: true,

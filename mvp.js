@@ -173,7 +173,18 @@ export async function handleMVPAction(action,node){flushEditor();if(await handle
  default:return false;
 }}
 export async function handleMVPSubmit(f){if(handleReferenceSubmit(f)||handleRubricSubmit(f))return true;switch(f.id){
- case 'image-form':{const q=c.qget(prepared.id),im=q.images.find(im=>im.id===prepared.imageId);c.change('Sửa chú thích hình',()=>im.caption=new FormData(f).get('caption'));$('#dialog').close();return true;}
+ case 'image-form':{
+  const q=c.qget(prepared.id),im=q?.images?.find(im=>im.id===prepared.imageId);
+  if(!im)throw Error('Hình đã đổi. Mở lại hình để sửa chú thích.');
+  const caption=new FormData(f).get('caption');
+  if(caption!==(im.caption||''))c.change('Sửa chú thích hình',()=>{
+   im.caption=caption;
+   touch(q);
+   check(current(),q);
+  });
+  $('#dialog').close();
+  return true;
+ }
  case 'connections-form':await saveConfig();c.toast(config.localPoC?'Đã lưu kết nối. Cần chạy tác vụ thật để kiểm quyền gọi model.':'Đã lưu đường xử lý. Bấm kiểm tra để xác nhận dịch vụ đang chạy.');return true;
  case 'generate-form':await generateSubmit(f);return true;
  case 'source-ocr-form':{
