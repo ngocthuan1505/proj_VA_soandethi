@@ -28,6 +28,22 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run ty check src
+      - name: Kiểm đường chạy Docker bằng FastAPI
+        shell: bash
+        run: |
+          docker build --tag soande-python:ci .
+          trap 'docker rm -f -v soande-python-ci >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name soande-python-ci --publish 127.0.0.1::4182 soande-python:ci
+          address="$(docker port soande-python-ci 4182/tcp)"
+          base="http://$address"
+          curl --fail --silent --show-error --retry 20 --retry-connrefused --retry-delay 1 "$base/openapi.json" > openapi.json
+          jq -e '.paths["/api/exams/{exam_id}/matrix/approve"].post' openapi.json >/dev/null
+          curl --fail --silent --show-error "$base/" | grep -F 'bootstrap.js' >/dev/null
+          curl --fail --silent --show-error --request PUT \
+            --header "Origin: $base" --header 'Content-Type: application/json' --header 'If-Match: 0' \
+            --data '{"key":"state","value":{"exams":[],"prefs":[]}}' "$base/api/kv" >/dev/null
+          curl --fail --silent --show-error "$base/api/kv?key=state" | jq -e '.value.exams == []'
+          docker exec soande-python-ci sh -c '! command -v node && test "$(id -u)" = 10001'
   test:
     name: Legacy UI baseline and team plan
     runs-on: ubuntu-24.04

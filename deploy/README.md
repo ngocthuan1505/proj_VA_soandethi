@@ -1,6 +1,6 @@
 # Triển khai máy chủ riêng
 
-**Tài liệu này áp dụng prototype Node cũ, không phải backend Python chính của đồ án. Xem [kế hoạch Python](../docs/architecture/PYTHON_MIGRATION.md) và [backend](../backend/README.md). Không triển khai scaffold thay app hoàn chỉnh; GreenNode do riêng Thuận vận hành.**
+**Compose trong thư mục này dùng `Dockerfile.legacy` cho prototype Node cũ, không phải backend Python chính của đồ án. Xem [kế hoạch Python](../docs/architecture/PYTHON_MIGRATION.md) và [backend](../backend/README.md). Không triển khai scaffold thay app hoàn chỉnh; GreenNode do riêng Thuận vận hành.**
 
 Dùng Ubuntu/Debian x86_64, ưu tiên 4 GB RAM cho PDF/OCR; chưa kiểm tra tải nhiều giáo viên. Cài Docker Engine và Compose theo [hướng dẫn chính thức](https://docs.docker.com/engine/install/ubuntu/). Docker phải tự chạy sau reboot. Chỉ mở SSH, TCP 80/443; không công khai cổng 4173. Trỏ bản ghi DNS A về IPv4 VPS, chỉ tạo AAAA khi IPv6 đã cấu hình đúng. Caddy tự xin/gia hạn chứng chỉ khi tên miền và hai cổng truy cập được.
 

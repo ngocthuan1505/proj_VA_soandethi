@@ -17,6 +17,19 @@ Mở `http://127.0.0.1:4188/`. Lệnh trên dùng cú pháp shell Linux/macOS. T
 
 Từ thư mục gốc, `npm start` cũng mở bàn soạn FastAPI ở cổng 4182. uv cài thư viện Python theo lockfile. Nếu cổng bận, dùng `npm start -- --port 4188`.
 
+## Docker tại máy
+
+Từ thư mục gốc, chạy:
+
+```sh
+docker build -t soande-python .
+docker run --rm --publish 127.0.0.1:4182:4182 --volume soande-python-data:/var/lib/soande soande-python
+```
+
+Mở `http://127.0.0.1:4182/`. Image chạy FastAPI cùng Chromium để hỗ trợ xuất tài liệu. Volume giữ dữ liệu Python riêng. Cú pháp publish ở trên giới hạn truy cập vào máy đang chạy. Nếu cổng bận, đổi số 4182 đầu tiên và mở URL ứng với cổng mới.
+
+[Compose triển khai cũ](../deploy/README.md) giữ image Node và volume legacy để đối chiếu. Chuyển dữ liệu giữa hai bản là công việc migration riêng.
+
 ## Kiểm tra
 
 ```sh
