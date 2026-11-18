@@ -33,11 +33,11 @@ jobs:
         shell: bash
         run: |
           docker build --tag soande-python:ci .
-          trap 'docker rm -f -v soande-python-ci >/dev/null 2>&1 || true' EXIT
+          trap 'result=$?; if [ $result -ne 0 ]; then docker logs soande-python-ci || true; fi; docker rm -f -v soande-python-ci >/dev/null 2>&1 || true' EXIT
           docker run --detach --name soande-python-ci --publish 127.0.0.1::4182 soande-python:ci
           address="$(docker port soande-python-ci 4182/tcp)"
           base="http://$address"
-          curl --fail --silent --show-error --retry 20 --retry-connrefused --retry-delay 1 "$base/openapi.json" > openapi.json
+          curl --fail --silent --show-error --retry 20 --retry-all-errors --retry-delay 1 --max-time 5 --retry-max-time 30 "$base/openapi.json" > openapi.json
           jq -e '.paths["/api/exams/{exam_id}/matrix/approve"].post' openapi.json >/dev/null
           curl --fail --silent --show-error "$base/" | grep -F 'bootstrap.js' >/dev/null
           curl --fail --silent --show-error --request PUT \
