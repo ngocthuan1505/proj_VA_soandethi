@@ -14,8 +14,28 @@ from test_mixed_questions import mixed as mixed
 
 from mach_backend.ai_contract import AIError
 from mach_backend.exam_planning import PlanRequest, propose_structure
-from mach_backend.local_workspace import create_app
+from mach_backend.local_workspace import create_app, plan_from_exam
 from mach_backend.matrix_agent import run_matrix_agent
+
+
+def test_generation_plan_uses_only_confirmed_preferences_and_latest_request():
+    exam = {
+        "subject": "Toán",
+        "grade": "5",
+        "matrixConfirmed": True,
+        "matrix": [{"topic": "Phân số", "targets": [2, 1, 1, 0]}],
+        "generationRequest": "Bản đã sửa: tập trung vào phân số.",
+        "appliedPrefs": [
+            {"text": "Tránh phủ định kép", "confirmedAt": 1},
+            {"text": "Quy tắc vẫn là bản nháp"},
+        ],
+    }
+    plan = plan_from_exam(exam, general=True)
+    assert "Bản đã sửa: tập trung vào phân số." in plan.instructions
+    assert "Tránh phủ định kép" in plan.instructions
+    assert "Quy tắc vẫn là bản nháp" not in plan.instructions
+    assert len(plan.slots) == 4
+    assert sum(slot.pointsQ4 for slot in plan.slots) == 40
 
 
 def test_teacher_can_leave_count_minutes_and_question_types_to_assistant():

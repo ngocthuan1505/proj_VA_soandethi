@@ -68,6 +68,12 @@ FastAPI kiểm được định dạng và dữ liệu ảnh trước bước xi
 
 Trong Chrome, PDF hai trang tự tạo đọc tại máy. Chọn trang 2 mở đúng văn bản, tài liệu có phiên bản 1 và tệp gốc khớp từng byte khi tải lại. PNG hỏng báo lỗi, giữ nguyên đề và không mở hộp xin phép OCR. Script dùng tệp `nguon-2-trang.pdf` trong thư mục đầu ra, tạo bằng hàm `pdf("Nguon trang mot", "Nguon trang hai")` trong bộ test. Chất lượng nhận dạng trên ảnh thật chưa được đánh giá trong lượt này. [Ca Chrome](../../scripts/kiem-ui-nhap-nguon.mjs) · [Ca API và ảnh mẫu](../../backend/tests/test_source_documents.py)
 
+## Kiểm lại IT-03 khi gợi ý cơ cấu đề
+
+Chrome gửi yêu cầu Toán lớp 5 mà không điền số câu hoặc thời gian. Khi sửa nội dung yêu cầu, FastAPI nhận bản đã sửa. Bản xem trước có 4 câu và 10 điểm, giữ đề đang soạn. Sau khi bấm dùng gợi ý, kho chỉ cập nhật cơ cấu và yêu cầu làm căn cứ cho lượt sinh. Câu hiện có giữ nguyên.
+
+Pytest kiểm phần hướng dẫn lượt sinh giữ quy tắc có xác nhận, bỏ quy tắc còn nháp và phân đúng 10 điểm. Ca Chrome dùng phản hồi mẫu từ `scripts/chay-fixture-poc.py`. Chưa đánh giá mức phù hợp với bộ sách bằng model thật. [Ca Chrome](../../scripts/kiem-ui-co-cau.mjs) · [Ca FastAPI](../../backend/tests/test_exam_planning.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

@@ -54,7 +54,7 @@ function quickPlanForm(c,flow){
   const data=Object.fromEntries(new FormData(form));data.grade=Number(data.grade);for(const key of ['count','minutes'])data[key]=data[key]?Number(data[key]):null;data.types=data.types?data.types.split(','):null;data.consent=form.elements.consent.checked;
   const response=await fetch('/api/ai/exam-plan',{method:'POST',headers:{'Content-Type':'application/json',...workspaceHeaders()},body:JSON.stringify(data)});const result=await response.json();if(!response.ok)throw Error(result.error||'Chưa đề xuất được cơ cấu.');
   if(c.exam().id!==flow.examId||!form.isConnected)throw Error('Đã chuyển đề hoặc đóng yêu cầu.');
-  flow.rows=result.matrix;flow.metadata=result.metadata;flow.notes=result.notes;flow.autoPreview=true;matrixForm(c,flow);
+  flow.request=data.request;flow.rows=result.matrix;flow.metadata=result.metadata;flow.notes=result.notes;flow.autoPreview=true;matrixForm(c,flow);
  }catch(e){error.textContent=e.message;}finally{button.disabled=false;}};
 }
 

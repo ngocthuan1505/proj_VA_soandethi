@@ -34,6 +34,21 @@ class FixtureCase:
         self.slots = []
 
     async def __call__(self, purpose, body):
+        if purpose == "exam_planning":
+            return {
+                "content": json.dumps(
+                    {
+                        "slots": [
+                            {"topic": "Phân số", "type": "mcq", "level": 0},
+                            {"topic": "Phân số", "type": "mcq", "level": 1},
+                            {"topic": "Đổi đơn vị", "type": "essay", "level": 2},
+                            {"topic": "Hình học", "type": "essay", "level": 2},
+                        ],
+                        "notes": "Chỉ là gợi ý mẫu.",
+                        "minutes": 40,
+                    }
+                )
+            }
         if purpose == "question_check":
             data = json.loads(body["messages"][1]["content"])
             kind = data["question"]["type"]
