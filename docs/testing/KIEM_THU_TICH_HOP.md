@@ -56,6 +56,12 @@ Ngày 19/11/2026, Chrome và FastAPI chạy ở chế độ tài khoản với k
 
 Ở viewport 390 × 844, nút xác nhận lấy được focus bằng bàn phím và nằm trong khung. Escape đóng bản xem trước và giữ kho. Kiểm hồi quy Python riêng bao gồm rollback lỗi ghi, chủ sở hữu, đề xuất cũ sau khôi phục, hủy khi trình duyệt ngắt và phát lại xác nhận sinh. Ca này dùng model mẫu và chưa kiểm toàn bộ IT-11 trên một gói cài. [Script kiểm Chrome](../../scripts/kiem-ui-khoi-phuc.mjs) · [Kiểm rollback khôi phục](../../backend/tests/test_workspace_backup.py)
 
+## Kiểm lại IT-01 với hai tab và hai tài khoản
+
+Ngày 19/11/2026, Chrome tạo, đổi tên, tìm và mở đề với tài khoản A. Tab khác trong cùng hồ sơ trình duyệt đăng nhập B và không tìm thấy đề của A. Lệnh đăng xuất hoặc lưu nháp từ tab A cũ nhận 409. Kho và phiên B còn nguyên sau tải lại. Khách bị từ chối mở kho.
+
+Giao diện gắn mã kho vào các yêu cầu API của bàn soạn. FastAPI kiểm mã kho trước khi chuyển tới route tài khoản, kho, AI, xuất đề hoặc chia sẻ. Pytest riêng kiểm thêm phiên hết hạn và quyền của từng tài khoản. Lượt Chrome dùng kho thử tại máy. [Script kiểm hai tab](../../scripts/kiem-ui-kho-nhom.mjs) · [Kiểm quyền và phiên](../../backend/tests/test_team_workspace.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

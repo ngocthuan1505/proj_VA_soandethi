@@ -3,7 +3,10 @@ import {esc, LEVELS, QUESTION_TYPES} from './core.js';
 import * as db from './storage.js';
 
 async function api(url, body, headers={}){
- const response=await fetch(url,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
+ const response=await fetch(url,{
+  headers:{...db.workspaceHeaders(),...headers,...(body===undefined?{}:{'Content-Type':'application/json'})},
+  ...(body===undefined?{}:{method:'POST',body:JSON.stringify(body)}),
+ });
  const result=await response.json();
  if(!response.ok)throw Error(result.error||result.detail?.message||JSON.stringify(result.detail||result));
  return result;
@@ -228,7 +231,7 @@ export async function openMatrixSynthesis(c, options={}){
   const link=document.createElement('a');link.href=url;link.download='Sinh_ma_tran_'+job.jobId+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
  $('matrix-review-pack').onclick=guard(async()=>{
-  const response=await fetch(base()+'/review-pack');
+  const response=await fetch(base()+'/review-pack',{headers:db.workspaceHeaders()});
   if(!response.ok){const error=await response.json();throw Error(error.error||'Chưa tạo được phiếu rà.');}
   const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');
   link.href=url;link.download='Phieu_ra_'+job.jobId+'.zip';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

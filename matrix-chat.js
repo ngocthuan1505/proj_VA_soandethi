@@ -3,6 +3,7 @@ import {esc, LEVELS, QUESTION_TYPES, validateMatrixRows} from './core.js';
 import {richTextHTML} from './math-content.js';
 import {openMatrixSynthesis} from './matrix-synthesis.js';
 import {flushEditor} from './editor.js';
+import {workspaceHeaders} from './storage.js';
 
 const flows=new Map(),restoring=new Set();
 export const matrixChatRunning=c=>flows.get(c.exam().id)?.phase==='running';
@@ -51,7 +52,7 @@ function quickPlanForm(c,flow){
  form.querySelector('[data-manual]').onclick=()=>matrixForm(c,flow);
  form.onsubmit=async event=>{event.preventDefault();event.stopPropagation();const button=form.querySelector('[type=submit]');if(button.disabled)return;button.disabled=true;const error=form.querySelector('[role=alert]');error.textContent='Đang đề xuất số câu, dạng câu và thời gian phù hợp…';try{
   const data=Object.fromEntries(new FormData(form));data.grade=Number(data.grade);for(const key of ['count','minutes'])data[key]=data[key]?Number(data[key]):null;data.types=data.types?data.types.split(','):null;data.consent=form.elements.consent.checked;
-  const response=await fetch('/api/ai/exam-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await response.json();if(!response.ok)throw Error(result.error||'Chưa đề xuất được cơ cấu.');
+  const response=await fetch('/api/ai/exam-plan',{method:'POST',headers:{'Content-Type':'application/json',...workspaceHeaders()},body:JSON.stringify(data)});const result=await response.json();if(!response.ok)throw Error(result.error||'Chưa đề xuất được cơ cấu.');
   if(c.exam().id!==flow.examId||!form.isConnected)throw Error('Đã chuyển đề hoặc đóng yêu cầu.');
   flow.rows=result.matrix;flow.metadata=result.metadata;flow.notes=result.notes;flow.autoPreview=true;matrixForm(c,flow);
  }catch(e){error.textContent=e.message;}finally{button.disabled=false;}};
@@ -88,7 +89,7 @@ function matrixForm(c,flow){
   readButton.disabled=true;fileStatus.textContent='Đang đọc file ma trận…';
   try{
    const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});
-   const response=await fetch('/api/ai/matrix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:file.name,data,consent:filePanel.querySelector('[data-matrix-file-consent]').checked})});
+   const response=await fetch('/api/ai/matrix',{method:'POST',headers:{'Content-Type':'application/json',...workspaceHeaders()},body:JSON.stringify({name:file.name,data,consent:filePanel.querySelector('[data-matrix-file-consent]').checked})});
    const result=await response.json();if(!response.ok)throw Error(result.error||result.detail?.message||'Chưa đọc được ma trận.');
    if(c.exam().id!==flow.examId||!form.isConnected)throw Error('Đã chuyển đề hoặc đóng bảng. Chọn lại tệp ở đúng đề.');
    if(flow.fileURL)URL.revokeObjectURL(flow.fileURL);flow.fileURL=URL.createObjectURL(file);flow.rows=result.matrix;flow.metadata=result.metadata;flow.notes=result.notes;flow.fromFile=true;flow.autoPreview=true;matrixForm(c,flow);const currentStatus=flow.root.querySelector('[data-matrix-file-status]');currentStatus.textContent=`Đã đọc ${result.count} câu/ý · ${result.sentToAI?'có gửi AI':'xử lý tại máy'}. Xem bảng, chọn thông tin đề và xác nhận trước khi sinh.`;return;

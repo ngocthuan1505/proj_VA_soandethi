@@ -48,8 +48,13 @@ def test_stale_tab_cannot_read_or_change_another_account_workspace(team):
         stale = {"X-Workspace-Context": f"team:{admin['id']}", "If-Match": "0"}
         backup = backup_fixture()
         for method, path, payload in (
+            ("GET", "/api/account", None),
+            ("POST", "/api/account/logout", {}),
             ("GET", "/api/kv?key=state", None),
             ("PUT", "/api/kv", {"key": "state", "value": backup["state"]}),
+            ("POST", "/api/save-export", {"type": "backup", "state": backup["state"]}),
+            ("POST", "/api/share", {}),
+            ("POST", "/api/assistant/chat", {}),
             ("POST", "/api/workspace/restore/preview", backup),
             ("POST", "/api/workspace/restore", backup),
         ):

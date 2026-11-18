@@ -13,7 +13,15 @@ const foot=s=>`<div class="modal-foot">${s}</div>`;
 const field=(label,html)=>`<label>${label}${html}</label>`;
 const note=s=>`<p class="hint">${s}</p>`;
 const consent=id=>`<label class="consent"><input type="checkbox" id="${id}"> Cho phép gửi nội dung đã chọn đến dịch vụ ngoài nếu tác vụ dùng API hoặc máy chủ ngoài máy.</label>`;
-async function api(path,data){const response=await fetch(path,{method:data===undefined?'GET':'POST',...(data===undefined?{}:{headers:{'Content-Type':'application/json',...db.workspaceHeaders()},body:JSON.stringify(data)})});const result=await response.json();if(!response.ok){const error=await aiRequestError(path,result.error||'Tác vụ chưa thực hiện được.');error.code=result.code;throw error;}return result;}
+async function api(path,data){
+ const response=await fetch(path,{headers:{...db.workspaceHeaders(),...(data===undefined?{}:{'Content-Type':'application/json'})},...(data===undefined?{}:{method:'POST',body:JSON.stringify(data)})});
+ const result=await response.json();
+ if(!response.ok){
+  const error=await aiRequestError(path,result.error||'Tác vụ chưa thực hiện được.',()=>api('/api/status'));
+  error.code=result.code;throw error;
+ }
+ return result;
+}
 const current=()=>c.exam();
 function pagesOf(d){return d.pages?.length?d.pages:d.text?[{number:1,text:d.text,method:'text'}]:[];}
 function sourcePageNeedsReview(d,p){return p.needsReview??Boolean(d.needsReview||p.uncertain===true||p.uncertain?.length);}
@@ -126,7 +134,7 @@ export async function handleMVPAction(action,node){flushEditor();if(await handle
  case 'apply-generated':{const p=prepared;if(p?.type!=='generated'||p.examId!==current().id||p.revision!==current().revision)throw Error('Đề đã thay đổi; cần tạo hoặc xem lại đề xuất.');let generatedIds=[];c.change('Đưa câu AI vào đề',e=>{const qs=p.questions.map(q=>({...q,id:uid(),v:1,check:null,generated:{provider:p.provider,model:p.model,at:Date.now()}}));if(p.mode==='replace')e.questions=qs;else e.questions.push(...qs);generatedIds=qs.map(q=>q.id);qs.forEach(q=>check(e,q));});$('#dialog').close();if(p.autoCheck)void autoCheckQuestions(generatedIds,current().id,p.consent).catch(error=>c.toast(error.message));return true;}
  case 'request-patch':await requestPatch();return true;
  case 'apply-ai-patch':{const p=prepared,q=c.qget(p?.scope?.id);if(p?.type!=='ai-patch'||p.examId!==current().id||q?.v!==p.scope.version)throw Error('Đề xuất đã cũ. Chọn lại câu để sửa.');c.change('Sửa vùng chọn và phần phụ thuộc qua AI',()=>{q.stem=p.stem;q.runs=null;q.options=p.result.options;q.answer=p.result.answer;q.explanation=p.result.explanation;if(q.type==='essay')q.rubric=[];if(q.rule&&!q.rule.startsWith('math-')){q.dataLinked=true;q.rule=null;}touch(q);check(current(),q);});$('#dialog').close();void autoCheckQuestions([q.id],current().id,p.consent).catch(error=>c.toast(error.message));return true;}
- case 'ai-check':if(status?.localPoC)await openQuestionCheck(c);else showAICheck();return true;
+ case 'ai-check':if(status?.localPoC)await openQuestionCheck(c,db.workspaceHeaders());else showAICheck();return true;
  case 'request-ai-check':await requestCheck();return true;
  case 'apply-ai-answer':{const p=prepared,q=c.qget(p?.id);if(p?.type!=='ai-check-result'||current().id!==p.examId||q?.v!==p.version)throw Error('Lời giải thuộc phiên bản cũ.');c.change('Dùng lời giải AI sau khi đối chiếu',()=>{q.answer=p.result.answer;q.explanation=p.result.explanation;if(q.type==='essay')q.rubric=[];touch(q);check(current(),q);});$('#dialog').close();return true;}
  case 'formula':case 'formula-edit':showFormula(node.dataset.id,node.dataset.formula);return true;

@@ -8,10 +8,10 @@ export function selectedCheckSources(exam,q){
  return exam.docs.filter(d=>chosen.has(d.id)).flatMap(d=>(d.pages?.length?d.pages:[{number:1,text:d.text||''}]).filter(p=>p.text?.trim()).map(p=>({sourceId:d.id,sourceVersion:d.version||1,locator:{kind:'page',index:p.number},label:`${d.name} · trang ${p.number}`,length:p.text.length})));
 }
 const errorMessage=result=>result.error||result.detail?.message||(typeof result.detail==='string'?result.detail:'Chưa kiểm được câu. Hãy mở lại và thử lại.');
-export async function openQuestionCheck(c){
+export async function openQuestionCheck(c,workspaceHeaders){
  const exam=c.exam(),q=c.qget(c.getSelected());if(!q)throw Error('Chọn một câu trước khi giải lại.');
  const identity={examId:exam.id,questionId:q.id,version:q.v,revision:exam.revision};
- await c.persist();const response=await fetch('/api/status'),status=await response.json();if(!response.ok)throw Error(errorMessage(status));
+ await c.persist();const response=await fetch('/api/status',{headers:workspaceHeaders}),status=await response.json();if(!response.ok)throw Error(errorMessage(status));
  const current=()=>c.exam().id===identity.examId&&c.qget(identity.questionId)?.v===identity.version;
  if(!current()||c.exam().revision!==identity.revision)throw Error('Đề đã đổi; mở lại câu cần kiểm.');
  const sources=selectedCheckSources(exam,q),reviewer=status.reviewer||{provider:status.aiProvider,model:status.model};
@@ -28,7 +28,7 @@ export async function openQuestionCheck(c){
    running=true;form.querySelector('[type=submit]').disabled=true;
    c.modal('Đang giải lại','<p role="status" data-check-running>Đang giải độc lập, chưa gửi đáp án hoặc lời giải đang lưu…</p><p class="hint">Đóng hộp này không tự hủy yêu cầu đang chạy. Kết quả không đổi nội dung câu.</p>');
    busyMessage=document.querySelector('[data-check-running]');
-   const reply=await fetch(`/api/exams/${identity.examId}/questions/${identity.questionId}/check`,{method:'POST',headers:{'Content-Type':'application/json','X-PoC-Config':status.config.fingerprint},body:JSON.stringify({baseRevision:identity.revision,questionVersion:identity.version,consent:true,requireEvidence:selected.length>0,sources:selected.map(({sourceId,sourceVersion,locator})=>({sourceId,sourceVersion,locator}))})});
+   const reply=await fetch(`/api/exams/${identity.examId}/questions/${identity.questionId}/check`,{method:'POST',headers:{...workspaceHeaders,'Content-Type':'application/json','X-PoC-Config':status.config.fingerprint},body:JSON.stringify({baseRevision:identity.revision,questionVersion:identity.version,consent:true,requireEvidence:selected.length>0,sources:selected.map(({sourceId,sourceVersion,locator})=>({sourceId,sourceVersion,locator}))})});
    const result=await reply.json();if(!reply.ok)throw Error(errorMessage(result));
    if(!current()||c.exam().revision!==identity.revision)throw Error('Câu hoặc đề đã đổi trong lúc giải; chưa lưu kết quả cũ.');
    const problems=[];

@@ -67,7 +67,9 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
         return workspaces[user_id]
 
     def user(request):
-        return accounts.user(request.cookies.get(COOKIE))
+        if not hasattr(request.state, "team_user"):
+            request.state.team_user = accounts.user(request.cookies.get(COOKIE))
+        return request.state.team_user
 
     def administrator(request):
         current = user(request)
@@ -92,6 +94,19 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
             limit = MAX_BACKUP
         if not length.isdigit() or int(length) > limit:
             return JSONResponse({"error": "Yêu cầu quá lớn."}, 413)
+        expected = request.headers.get("X-Workspace-Context")
+        if expected is not None and request.url.path.startswith("/api/"):
+            current = user(request)
+            if current is None:
+                return JSONResponse({"error": "Phiên hết hạn. Đăng nhập lại."}, 401)
+            if expected != "team:" + current["id"]:
+                return JSONResponse(
+                    {
+                        "error": "Tài khoản đã đổi ở tab khác. Tải lại trang để mở đúng kho.",
+                        "code": "workspace_context_changed",
+                    },
+                    409,
+                )
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -232,16 +247,6 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
                     else JSONResponse({"error": "Không tìm thấy."}, 404)
                 )
                 await response(scope, receive, send)
-                return
-            expected = request.headers.get("X-Workspace-Context")
-            if expected is not None and expected != account_info(current)["workspace"]:
-                await JSONResponse(
-                    {
-                        "error": "Tài khoản đã đổi ở tab khác. Tải lại trang để mở đúng kho.",
-                        "code": "workspace_context_changed",
-                    },
-                    409,
-                )(scope, receive, send)
                 return
             child = workspace(current)
             if path == "/api/config" and request.method != "GET" and current["role"] != "admin":
