@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,rm}from'node:fs/promises';import path from'node:path';import os from'node:os';
-import {makePlan,intentOf,SUBJECT_PROFILES} from '../subject-profiles.js';import {ensureBlocks,blocksOf,validateEdits,applyEdits} from '../blocks.js';import {solveFigure,triangleFigure,renderFigure,distance} from '../geometry.js';import {validateMath,verifyAlgebra,solvePolynomial,mathParts} from '../math-content.js';import '../assets/katex/contrib/mhchem.mjs';import {retryValidated} from '../workbench-server.mjs';import {essaySample} from '../reference.js';import {clone,commit,undo,exportHTML} from '../core.js';import {makeDocx,formattedHTML}from'../exports.mjs';import {dependency}from'../runtime.mjs';import {openStore}from'../backend-store.mjs';import {accountService}from'../accounts.mjs';
+import {makePlan,intentOf,SUBJECT_PROFILES,examRequestDefaults} from '../subject-profiles.js';import {ensureBlocks,blocksOf,validateEdits,applyEdits} from '../blocks.js';import {solveFigure,triangleFigure,renderFigure,distance} from '../geometry.js';import {validateMath,verifyAlgebra,solvePolynomial,mathParts} from '../math-content.js';import '../assets/katex/contrib/mhchem.mjs';import {retryValidated} from '../workbench-server.mjs';import {essaySample} from '../reference.js';import {clone,commit,undo,exportHTML} from '../core.js';import {makeDocx,formattedHTML}from'../exports.mjs';import {dependency}from'../runtime.mjs';import {openStore}from'../backend-store.mjs';import {accountService}from'../accounts.mjs';
 const scope=(q)=>({id:q.id,version:q.v,field:'stem',start:0,end:q.stem.length,text:q.stem});
 test('01 — Tạo đề mơ hồ: hỏi một lượt, câu trả lời ngắn dùng mặc định',()=>{const first=makePlan('Soạn đề Toán lớp 9',{});assert.equal(first.kind,'clarify');const p=makePlan('yeah đề tuyển sinh',{},first);assert.equal(p.kind,'plan');assert.equal(p.subject,'Toán');assert.equal(p.grade,'9');assert.equal(p.period,'Tuyển sinh vào lớp 10');});
 test('02 — Cấu trúc mới ưu tiên câu trả lời vừa sửa',()=>{const first=makePlan('Soạn đề Toán lớp 9 tuyển sinh 5 bài',{});const p=makePlan('Đổi thành giữa kỳ, 4 bài 60 phút',{}, {request:first.request});assert.equal(p.period,'Giữa kỳ');assert.equal(p.slots.length,4);assert.equal(p.minutes,60);});
@@ -31,3 +31,35 @@ test('25 — Hệ phương trình trong Word dùng ma trận OMML, không in mã
 test('26 — Thay nghiệm chặn sai số ở căn thức và phương trình phân thức trong lời giải',()=>{assert.throws(()=>verifyQuestionMath({stem:'Giải $\\sqrt{x+3}=x-1$.',explanation:'Kết luận $x=3$.'}),/Thay nghiệm/);const correct=verifyQuestionMath({stem:'Giải $\\sqrt{x+3}=x-1$.',explanation:'Nghiệm $x=\\frac{3+\\sqrt{17}}{2}$.'});assert.ok(correct.substitutionChecks>0);assert.throws(()=>verifyQuestionMath({stem:'Tìm vận tốc ban đầu.',explanation:'Ta có $\\frac{120-x}{x+10}=2$. Suy ra $x=40$.'}),/Thay nghiệm/);assert.ok(verifyQuestionMath({stem:'Tìm vận tốc ban đầu.',explanation:'Ta có $\\frac{120-x}{x+10}=2$. Suy ra $x=\\frac{100}{3}$.'}).supported);});
 
 test('27 — Hai nghiệm của cùng đa thức không bị nhầm với hai nhánh biến đổi',()=>{const r=verifyQuestionMath({stem:'Giải $x^2-5x+6=0$.',explanation:'Ta có $(x-2)(x-3)=0$, nên $x-2=0$ hoặc $x-3=0$. Nghiệm $x_1=2$, $x_2=3$.'});assert.deepEqual(r.roots,[2,3]);assert.equal(r.substitutionChecks,2);});
+
+test('Xuất Word legacy đọc dấu duyệt riêng khi chưa có báo cáo kiểm',async()=>{
+ const e=essaySample();e.questions[0].check=null;e.questions[0].approval={version:e.questions[0].v,status:'approved'};
+ const zip=await dependency('jszip').loadAsync(await makeDocx(e,true));const xml=await zip.file('word/document.xml').async('string');assert(xml.includes('Giáo viên đã duyệt'));
+});
+
+
+import {diffContentHTML} from '../math-content.js';
+test('So sánh đề xuất dựng công thức trong lời giải, phương án và barem, không in JSON hoặc thực thi HTML',()=>{
+ const explanation=String.raw`Gọi $x$ km ($x>0$). Thời gian là $\frac{x}{40}$ giờ.
+$\Leftrightarrow 9x=720$`;
+ const html=diffContentHTML('explanation',explanation);
+ assert(html.includes('class="katex"')&&html.includes('mfrac'));assert(html.includes('<br>'));
+ const rubric=diffContentHTML('rubric',[{text:explanation,points:0.5}]);
+ assert(rubric.includes('Bước 1.')&&rubric.includes('0.5 điểm')&&rubric.includes('mfrac'));
+ const options=diffContentHTML('options',[String.raw`$\sqrt{49}$`,'<img src=x onerror=alert(1)>']);
+ assert(options.includes('<b>A.</b>')&&options.includes('msqrt'));assert(!options.includes('<img'));
+ assert(options.includes('&lt;img'));assert.equal(diffContentHTML('answer',2),'C');
+ assert.equal(diffContentHTML('truthValues',[true,false]),'1. Đúng · 2. Sai');
+ assert(!diffContentHTML('stem',String.raw`$\href{javascript:alert(1)}{x}$`).includes('href="javascript:'));
+});
+
+test('Một đề không bị hiểu thành một câu; số câu/thời gian để trợ lý đề xuất',()=>{
+ const d=examRequestDefaults('Tạo 1 đề toán lớp 5 cuối kì',{subject:'Sinh học',grade:'9',minutes:90});
+ assert.equal(d.grade,'5');assert.equal(d.subject,'Toán');assert.equal(d.count,'');assert.equal(d.minutes,'');assert.equal(d.types,'');
+ assert.equal(d.term,'cuối kì (chưa nêu học kì)');
+});
+
+test('Giữ yêu cầu rõ về số câu, thời gian, dạng và học kì',()=>{
+ const d=examRequestDefaults('Tạo đề Toán lớp 12 cuối kì II gồm 5 câu, chỉ tự luận, 60 phút',{});
+ assert.equal(d.count,'5');assert.equal(d.minutes,'60');assert.equal(d.types,'essay');assert.equal(d.term,'cuối học kì II');
+});

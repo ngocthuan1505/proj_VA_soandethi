@@ -32,3 +32,10 @@ Không bắt buộc chuyển frontend sang Python vì trình duyệt vẫn cần
 - [ ] Báo cáo đồ án phân biệt source kế thừa, phần chuyển Python và giới hạn chưa làm.
 
 Framework chọn: [FastAPI](https://fastapi.tiangolo.com/tutorial/first-steps/); môi trường khóa bằng [uv](https://docs.astral.sh/uv/guides/projects/). Đây là lựa chọn triển khai của nhóm theo quyền dùng framework trong ảnh, không phải xác nhận riêng của giảng viên về stack này.
+
+
+## Ứng viên local có tài khoản — 16/11/2026
+
+Working tree app-ma-tran-that đã thêm team_workspace.py và team_accounts.py, tái sử dụng cùng local_workspace.create_app theo tài khoản, không sao chép nghiệp vụ hoặc chạy Node API. Tài khoản/phiên/lời mời nằm trong SQLite; mỗi UUID tài khoản có một WorkspaceStore và thư mục nguồn/tệp xuất riêng. Owner trong job/nguồn/feedback là ID tài khoản thật; chế độ PoC cũ giữ owner local. Quản trị cấu hình AI; các thành viên nhận cấu hình trong bộ nhớ, không nhận khóa qua API hoặc file cấu hình riêng.
+
+Đây là lát ứng viên tại máy, một tiến trình Uvicorn; chưa thay quyết định ERD/migration trung tâm của BE-2/BE-3, chưa chuyển dữ liệu thật hoặc thay main.py foundation thành bản production. Bộ app của các thành viên được giữ tới khi tắt tiến trình; cần đánh giá eviction/tài nguyên trước phục vụ nhiều nhóm. Dùng CHAY_NHOM_CO_TAI_KHOAN.cmd; PoC cũ và dữ liệu cũ vẫn chạy theo hướng dẫn trước. Chia sẻ snapshot thu hồi, Internet/TLS, email recovery, migration/restore và nghiệm thu toàn IT vẫn mở; không tự đánh dấu checklist tổng trên đây.

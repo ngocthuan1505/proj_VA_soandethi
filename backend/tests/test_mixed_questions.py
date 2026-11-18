@@ -1,0 +1,202 @@
+"""Bốn dạng câu qua cùng vòng công cụ; fixture không là kết quả AI thật."""
+
+import asyncio
+import copy
+import json
+from uuid import uuid4
+
+import pytest
+
+from mach_backend.ai_contract import AIError
+from mach_backend.ai_questions import GenerateJob
+from mach_backend.matrix_agent import candidate_proposal, inspect_candidate, run_matrix_agent
+from mach_backend.mixed_questions import decode_answer
+from mach_backend.workspace_agent import local_model_call
+
+
+@pytest.fixture
+def mixed():
+    job = GenerateJob.model_validate_json(
+        json.dumps(
+            {
+                "jobId": str(uuid4()),
+                "examId": str(uuid4()),
+                "baseRevision": 1,
+                "ownerId": "fixture",
+                "subject": "Ngữ văn",
+                "grade": "6",
+                "requireEvidence": True,
+                "slots": [
+                    {"type": kind, "topic": "Đọc hiểu", "level": i % 3, "pointsQ4": 10}
+                    for i, kind in enumerate(["mcq", "truefalse", "short", "essay"])
+                ],
+                "sources": [
+                    {
+                        "ownerId": "fixture",
+                        "sourceId": str(uuid4()),
+                        "sourceVersion": 1,
+                        "locator": {"kind": "passage", "index": 1},
+                        "text": "Mai báo cô Loan về cửa sổ hỏng. Nam mang sách đến thư viện.",
+                    }
+                ],
+            }
+        )
+    )
+    questions = [
+        {
+            "stem": f"Câu giả lập {i + 1}: {slot.type}?",
+            "options": ["Lan", "Nam", "Cô Loan", "Hà"] if slot.type in {"mcq", "truefalse"} else [],
+            "answer": ["2", "1010", "Mai", ""][i],
+            "explanation": "Lời giải giả lập có căn cứ.",
+            "rubric": [{"text": "Bước giải giả lập.", "pointsQ4": 10}],
+            "evidenceIds": [0],
+        }
+        for i, slot in enumerate(job.slots)
+    ]
+    return job, {"questions": questions}
+
+
+class MixedModel:
+    def __init__(self, job, arguments, *, fail_verdict=False, fail_essay=False):
+        self.job, self.arguments = job, arguments
+        self.calls, self.attempts = [], 0
+        self.fail_verdict, self.fail_essay = fail_verdict, fail_essay
+
+    async def __call__(self, purpose, body):
+        self.calls.append((purpose, copy.deepcopy(body)))
+        if purpose == "agent":
+            if (
+                body["messages"][-1]["role"] == "tool"
+                and json.loads(body["messages"][-1]["content"])["ok"]
+            ):
+                return {"tool_calls": [{"function": {"name": "finish_exam", "arguments": {}}}]}
+            self.attempts += 1
+            args = copy.deepcopy(self.arguments)
+            if self.attempts == 1:
+                args["questions"][0]["answer"] = "1"
+            return {"tool_calls": [{"function": {"name": "check_exam", "arguments": args}}]}
+        data = json.loads(body["messages"][1]["content"])
+        if purpose == "blind_content_check":
+            assert all(
+                set(q) == {"ordinal", "stem", "options", "topic", "type"} for q in data["questions"]
+            )
+            return {
+                "content": json.dumps(
+                    {
+                        "reviews": [
+                            {
+                                "ordinal": i,
+                                "answer": q["answer"],
+                                "solution": "Tự giải giả lập trước khi xem đáp án.",
+                                "observedLevel": self.job.slots[i].level,
+                                "supported": True,
+                                "topicMatches": True,
+                                "uncertain": False,
+                                "duplicateWith": [],
+                                "duplicateUncertain": False,
+                                "reason": "Fixture.",
+                                "optionVerdicts": (
+                                    ["incorrect", "incorrect", "correct", "incorrect"]
+                                    if i == 0
+                                    else (
+                                        ["incorrect"] * 4
+                                        if self.fail_verdict
+                                        else ["correct", "incorrect", "correct", "incorrect"]
+                                    )
+                                    if i == 1
+                                    else []
+                                ),
+                            }
+                            for i, q in enumerate(self.arguments["questions"])
+                        ]
+                    }
+                )
+            }
+        assert purpose == "explanation_check"
+        assert data["questions"][3]["rubric"][0]["pointsQ4"] == 10
+        assert data["questions"][3]["blindSolution"].startswith("Tự giải")
+        return {
+            "content": json.dumps(
+                {
+                    "reviews": [
+                        {
+                            "ordinal": i,
+                            "consistent": not (self.fail_essay and i == 3),
+                            "reason": "Fixture.",
+                        }
+                        for i in range(4)
+                    ]
+                }
+            )
+        }
+
+
+def test_mixed_agent_repairs_then_finishes_with_typed_answers_and_real_rubric(mixed):
+    job, arguments = mixed
+    model, events = MixedModel(job, arguments), []
+    result = asyncio.run(
+        run_matrix_agent(job, model, lambda name, **data: events.append((name, data)))
+    )
+    assert result["status"] == "ready_for_teacher_review" and not result["saved"]
+    assert model.attempts == 2 and len(model.calls) == 7
+    questions = result["proposal"]["questions"]
+    assert [q["type"] for q in questions] == ["mcq", "truefalse", "short", "essay"]
+    assert [q["answer"] for q in questions] == [2, [True, False, True, False], "Mai", None]
+    assert sum(q["pointsQ4"] for q in questions) == 40
+    assert questions[3]["rubric"] == arguments["questions"][3]["rubric"]
+    reports = [data for name, data in events if name == "candidate_check"]
+    assert not reports[0]["ok"] and reports[-1]["ok"]
+    schema = model.calls[0][1]["tools"][0]["function"]["parameters"]
+    assert "RubricStep" in schema["$defs"]
+
+
+@pytest.mark.parametrize(
+    "bad_verdict,bad_essay,code",
+    [(True, False, "answer_verdict_disagreement"), (False, True, "explanation_disagreement")],
+)
+def test_mixed_rejects_wrong_truth_table_or_essay_solution(mixed, bad_verdict, bad_essay, code):
+    job, arguments = mixed
+    model = MixedModel(job, arguments, fail_verdict=bad_verdict, fail_essay=bad_essay)
+    _, report = asyncio.run(inspect_candidate(job, arguments, model, lambda *_args, **_kw: None))
+    assert not report["ok"] and code in {e["code"] for e in report["errors"]}
+
+
+def test_mixed_rubric_cannot_borrow_points_from_another_question(mixed):
+    job, arguments = mixed
+    arguments["questions"][3]["rubric"][0]["pointsQ4"] = 9
+    with pytest.raises(AIError, match="barem"):
+        candidate_proposal(job, arguments)
+
+
+@pytest.mark.parametrize(
+    "kind,value",
+    [
+        ("mcq", "A"),
+        ("truefalse", "101"),
+        ("truefalse", "abcd"),
+        ("short", ""),
+        ("essay", "Một đáp án"),
+    ],
+)
+def test_mixed_rejects_bad_answer_transport(kind, value):
+    with pytest.raises(AIError):
+        decode_answer(kind, value)
+
+
+def test_local_adapter_preserves_mixed_wire_instead_of_coercing_it_to_abcd(mixed):
+    job, args = mixed
+    model = MixedModel(job, args)
+    result = asyncio.run(
+        run_matrix_agent(
+            job,
+            lambda purpose, body: local_model_call(model, purpose, body),
+            lambda *_a, **_kw: None,
+        )
+    )
+    assert result["status"] == "ready_for_teacher_review"
+    assert (
+        model.calls[0][1]["tools"][0]["function"]["parameters"]["properties"]["questions"]["items"][
+            "properties"
+        ]["answer"]["type"]
+        == "string"
+    )

@@ -1,4 +1,10 @@
-# PoC — sửa đúng vùng và giữ phần còn lại
+# PoC — sinh bộ câu theo ma trận và kiểm kết quả
+
+**Cập nhật 13/11/2026:** bản thử đã có vòng model gọi công cụ, nhận lỗi và nộp kiểm lại bằng Python, chạy qua CLI và bàn soạn local. Hai lượt đối chiếu Qwen2.5 3B/1.5B cùng đầu vào đều chưa đạt; chưa kết luận sinh đề thành công. Xem [nội dung, data model và cách chạy hiện tại](../testing/POC_AGENT_CMD.md). Test giả lập kiểm cơ chế khác với phép đo model thật. Các phần thử sửa vùng bên dưới là hồ sơ cũ, không thay phần sinh bộ câu theo ma trận.
+
+**Cập nhật 12/11/2026 theo hai ảnh góp ý của giảng viên do Thuận cung cấp:** trọng tâm hiện tại là sinh cả bộ câu theo ma trận, có hậu xử lý và gọi lại khi lỗi, kiểm mức nhận thức thực tế. Phép sửa vùng bên dưới giữ làm thí nghiệm trước đây, không còn được dùng một mình để chứng minh phần rủi ro nhất. Bằng chứng và trạng thái lát tích hợp app thật ở [PoC ma trận](../testing/POC_MA_TRAN_APP_THAT.md). Chưa có kết luận thành công cho tới khi kiểm được model thật qua bàn soạn, xem trước/rà/xác nhận và các ca lỗi; fixture chỉ kiểm code.
+
+## Thí nghiệm sửa vùng đã lập trước phản hồi mới
 
 Trạng thái: **kế hoạch, chưa có kết quả thí nghiệm này**. Nguồn: Topic 4 trang 31, 36–40; Topic 6 trang 7–8, 14, 17. BE-1 điều phối, UI-3 và BE-5 hỗ trợ; mọi thao tác GreenNode do Thuận thực hiện sau khi có server.
 
