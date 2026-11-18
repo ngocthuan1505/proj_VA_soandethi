@@ -2,21 +2,18 @@
 
 Python là ngôn ngữ chính theo quy định môn học. Backend đích: **FastAPI**, validation Pydantic và core nghiệp vụ Python; database/AI/job/tài liệu cũng do Python thực thi. JavaScript chỉ dùng frontend/editor, build và test UI. Không tạo Python facade gọi sang Node để thực hiện toàn bộ nghiệp vụ.
 
-## Chạy nền khởi tạo
+## Chạy bản tích hợp Python
 
-Cài Python 3.12+ và [uv chính thức](https://docs.astral.sh/uv/getting-started/installation/), rồi từ thư mục repo:
+Dùng [hướng dẫn bản 13](../HUONG_DAN_TEST_NHOM.md) trên Windows hoặc chạy FastAPI trực tiếp từ thư mục `backend/` trên máy có Python 3.12 và uv:
 
 ```sh
-cd backend
 uv sync --frozen
-uv run uvicorn mach_backend.main:app --app-dir src --host 127.0.0.1 --port 8000 --reload
+MACH_DATA_DIR=../outputs/test-python/data uv run --frozen uvicorn mach_backend.local_workspace:app --app-dir src --host 127.0.0.1 --port 4188
 ```
 
-Mở `http://127.0.0.1:8000/docs` hoặc `/api/health`. **Hiện chỉ có liveness và readiness trả 503**, chưa có auth/đề/DB/AI/import/export Python hoàn chỉnh. Không đưa scaffold này lên Internet hoặc gọi nó là app đã migrate xong. Frontend hiện vẫn dùng hợp đồng Node cũ cho đến khi các task Python tương ứng hoàn tất; UI có thể phát triển bằng fixture.
+Mở `http://127.0.0.1:4188/`. Lệnh trên dùng cú pháp shell Linux/macOS. Trên Windows dùng các file CMD trong hướng dẫn để tự chọn kho thử và cổng. Chế độ tài khoản của bản 13 khởi chạy bằng `CHAY_NHOM_CO_TAI_KHOAN.cmd`. Bàn soạn, lưu đề, sinh/kiểm, nhập và xuất của bản 13 đi qua API Python. Xem [bằng chứng kiểm bản 13](../docs/testing/NGHIEM_THU_BAN_13.md).
 
-## Nếu cổng 8000 bị lỗi
-
-Không có ràng buộc phải dùng 8000. Có thể đổi thành `--port 8080` trong lệnh trên và mở `http://127.0.0.1:8080/docs`; nếu 8080 cũng bận thì chọn cổng trống khác. Đổi cổng không triển khai thêm nghiệp vụ và UI demo 4173 chưa tự nối nền Python. [Phân biệt lỗi bind/import/readiness và cách kiểm tra](../docs/team/LOI_CONG_API.md).
+`mach_backend.main:app` là scaffold lịch sử, chỉ có health/readiness. Cổng 8000 trong tài liệu cũ là cổng ví dụ của scaffold. [Chẩn đoán lỗi cổng](../docs/team/LOI_CONG_API.md).
 
 ## Kiểm tra
 
