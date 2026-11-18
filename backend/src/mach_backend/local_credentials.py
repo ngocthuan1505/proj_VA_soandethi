@@ -52,7 +52,7 @@ def restrict_to_current_user(path):
     identity = subprocess.run(
         ["whoami", "/user", "/fo", "csv", "/nh"],
         capture_output=True,
-        creationflags=subprocess.CREATE_NO_WINDOW,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         timeout=5,
     )
     try:
@@ -64,7 +64,7 @@ def restrict_to_current_user(path):
     result = subprocess.run(
         ["icacls", str(path), "/inheritance:r", "/grant:r", f"*{sid}:(F)"],
         capture_output=True,
-        creationflags=subprocess.CREATE_NO_WINDOW,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         timeout=5,
     )
     if result.returncode:
