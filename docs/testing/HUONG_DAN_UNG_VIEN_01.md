@@ -19,6 +19,8 @@ Chế độ tài khoản mở trang tạo quản trị viên lần đầu. Sau k
 3. Nếu chạy AI thật, mở **Kết nối**, chọn kết nối đã được cấp phép và dùng ngữ liệu tự viết. Xác nhận cho phép gửi yêu cầu rồi bấm **Bắt đầu soạn**. Xem bộ câu trong đề và bấm **Chấp nhận** để lưu hoặc **Bỏ đề xuất** để giữ bản đang soạn.
 4. Mở **Xuất đề** và chọn bản học sinh hoặc giáo viên. Mở tệp vừa xuất để đối chiếu công thức và đáp án. Bản học sinh không có lời giải.
 
+Để đối chiếu khi demo Toán 5, gói có [đề mẫu đã hiệu chỉnh](docs/testing/DE_DEMO_TOAN_5.md) và [đáp án, hướng dẫn chấm](docs/testing/DAP_AN_DEMO_TOAN_5.md). Hai tệp dựa trên lượt Gemini của bản 13 và có phần rà của Codex. Lượt AI trong demo sẽ sinh bộ câu mới.
+
 ## Xem log và chuyển kho
 
 - Mỗi lần mở CMD demo, màn hình chờ một lượt sinh phát sinh sau dòng **Sẵn sàng**. Khi thấy `DA_LUU_JSON`, mở thư mục `JSON-demo` cạnh tệp CMD và chọn thư mục có thời điểm cùng `jobId` hiện trên màn hình. `trace.json` ghi các bước, `report.json` ghi kết quả kiểm và `result.json` ghi trạng thái. App còn mở để xem, chấp nhận hoặc xuất đề. Chỉ nhấn Enter trong CMD khi muốn đóng app demo.

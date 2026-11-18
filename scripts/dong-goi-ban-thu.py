@@ -25,6 +25,8 @@ def build(name=NAME, out=OUT, guide="HUONG_DAN_BAN_THU_18_11.md"):
         "scripts/chay-nhom-tai-khoan.py",
         "scripts/theo-doi-poc.py",
         "docs/testing/Ma-tran-demo-8-cau.csv",
+        "docs/testing/DE_DEMO_TOAN_5.md",
+        "docs/testing/DAP_AN_DEMO_TOAN_5.md",
         "assets/demo-ai-exam.json",
         "assets/reference-exam.json",
         "assets/editor-engine.js.LEGAL.txt",
