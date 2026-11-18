@@ -29,6 +29,7 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run ty check src
       - name: Kiểm đường chạy Docker bằng FastAPI
+        working-directory: .
         shell: bash
         run: |
           docker build --tag soande-python:ci .
