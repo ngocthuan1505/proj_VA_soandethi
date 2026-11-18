@@ -1,6 +1,6 @@
 # Đề demo Toán 5 đã hiệu chỉnh
 
-Toán lớp 5 theo cấu hình thử. Tám câu, bốn dạng, tổng 10 điểm. Dữ liệu được tạo để nghiệm thu. Dựa trên lượt Gemini thật của bản 13. Ý 8b đã được Codex hiệu chỉnh sau khi rà. Bản đề đang chờ rà chuyên môn độc lập.
+Toán lớp 5 theo cấu hình thử. Tám câu, bốn dạng, tổng 10 điểm. Dữ liệu dựa trên lượt Gemini thật của bản 13. Codex đã rà và hiệu chỉnh ký hiệu ở câu 5–6 và câu hỏi ở ý 8b. Bản đề đang chờ rà chuyên môn độc lập.
 
 ## Câu 1 · Trắc nghiệm · Nhận biết · 0.5 điểm
 
@@ -40,12 +40,12 @@ Xét tính đúng/sai của các phát biểu sau:
 
 ## Câu 5 · Trả lời ngắn · Vận dụng · 1.5 điểm
 
-Cho hai biểu thức A = 1,2 x x + 3,4 và B = 5,6 x x - 9,8. Biết rằng khi x nhận một giá trị xác định thì giá trị của biểu thức A bằng 10. Tính giá trị của biểu thức B tại giá trị x đó. (Chỉ điền số)
+Cho hai biểu thức A = 1,2 × x + 3,4 và B = 5,6 × x − 9,8. Biết A = 10. Tính giá trị của B tại cùng giá trị x. Chỉ điền số.
 
 
 ## Câu 6 · Trả lời ngắn · Vận dụng · 1.5 điểm
 
-Một thùng hàng có tổng khối lượng K (tính bằng kg) được cho bởi biểu thức K = 4,5 x a + 2,5 x b, trong đó a là số hộp hàng lớn và b là số hộp hàng nhỏ. Biết rằng thùng hàng chứa tất cả 100 hộp hàng (gồm cả hai loại) và có 40 hộp hàng lớn. Tính tổng khối lượng K của thùng hàng đó theo kg. (Chỉ điền số)
+Một thùng hàng có tổng khối lượng K (tính bằng kg) được cho bởi biểu thức K = 4,5 × a + 2,5 × b, trong đó a là số hộp hàng lớn và b là số hộp hàng nhỏ. Thùng chứa 100 hộp, trong đó có 40 hộp lớn. Tính K theo kg. Chỉ điền số.
 
 
 ## Câu 7 · Tự luận · Vận dụng cao · 2 điểm

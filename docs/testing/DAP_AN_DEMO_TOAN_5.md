@@ -1,6 +1,6 @@
 # Đáp án và hướng dẫn chấm đề demo Toán 5
 
-Dùng để đối chiếu với đề demo đã hiệu chỉnh. Lời giải và cách chấm ý 8b đã được Codex sửa để khớp câu hỏi.
+Dùng để đối chiếu với đề demo đã hiệu chỉnh. Codex đã sửa cách chấm câu 5–6 và lời giải, hướng dẫn chấm ý 8b để khớp yêu cầu trong đề.
 
 ## Câu 1
 
@@ -54,15 +54,10 @@ d) Sai: 30% của 150 kg là 150 x 30% = 45 kg (không phải 50 kg).
 
 21
 
-Từ biểu thức A: 1,2 x x + 3,4 = 10
-=> 1,2 x x = 10 - 3,4 = 6,6
-=> x = 6,6 : 1,2 = 5,5.
+Vì 1,2 × x + 3,4 = 10 nên x = (10 − 3,4) : 1,2 = 5,5.
+Thay x = 5,5 thì B = 5,6 × 5,5 − 9,8 = 30,8 − 9,8 = 21.
 
-Thay x = 5,5 vào biểu thức B:
-B = 5,6 x 5,5 - 9,8 = 30,8 - 9,8 = 21.
-
-- Lập luận tìm ra x = 5,5 từ giá trị của biểu thức A. · 0.75 điểm
-- Thay x = 5,5 vào biểu thức B để tính ra kết quả B = 21. · 0.75 điểm
+- Điền đúng giá trị 21 thì được 1,5 điểm. Sai hoặc bỏ trống thì được 0 điểm.
 
 ## Câu 6
 
@@ -70,10 +65,9 @@ B = 5,6 x 5,5 - 9,8 = 30,8 - 9,8 = 21.
 
 Số hộp hàng nhỏ là: 100 - 40 = 60 (hộp).
 Thay a = 40 và b = 60 vào biểu thức K:
-K = 4,5 x 40 + 2,5 x 60 = 180 + 150 = 330 (kg).
+K = 4,5 × 40 + 2,5 × 60 = 180 + 150 = 330 (kg).
 
-- Xác định số hộp hàng nhỏ b = 100 - 40 = 60. · 0.5 điểm
-- Thay các giá trị vào biểu thức K và tính ra kết quả 330. · 1 điểm
+- Điền đúng giá trị 330 thì được 1,5 điểm. Sai hoặc bỏ trống thì được 0 điểm.
 
 ## Câu 7
 

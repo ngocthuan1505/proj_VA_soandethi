@@ -17,4 +17,5 @@ Nhận issue trước khi sửa, tạo nhánh từ phiên bản chứa lỗi, th
 
 - Backend nằm trong `backend/`. Từ thư mục đó chạy `uv sync --frozen`, `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .` và `uv run ty check src`.
 - Giao diện và kiểm hồi quy Node dùng `npm ci`, `npm test` và `npm run check:team` ở thư mục gốc. Backend Node cũ dùng để đối chiếu.
+- Xem số đo GitHub Languages của `main`, kích thước mã của nhánh tích hợp và bằng chứng chạy API Python. [Đối chiếu Python](docs/testing/DOI_CHIEU_PYTHON.md)
 - [Yêu cầu môn học](docs/course/README.md) và [kế hoạch tích hợp](docs/testing/KIEM_THU_TICH_HOP.md) lưu các tiêu chí nghiệm thu. Chỉ Thuận vận hành GreenNode.
