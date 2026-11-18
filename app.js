@@ -116,7 +116,10 @@ function chooseFile(accept,callback){const input=document.createElement('input')
 async function importFile(file){if(file.size>15*1024*1024)throw Error('Tệp lớn hơn 15 MB. Chọn tệp nhỏ hơn.');const ext=file.name.split('.').pop().toLowerCase();if(!['txt','md','pdf','pptx','png','jpg','jpeg','webp'].includes(ext))throw Error('Định dạng chưa hỗ trợ.');const id=uid();let d={id,name:file.name,sample:false};if(['txt','md'].includes(ext)){d.kind='text';d.text=await file.text();}else{d.kind=ext==='pdf'?'pdf':ext==='pptx'?'slides':'image';d.fileId=uid();const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(Error('Không đọc được tệp'));r.readAsDataURL(file);});await db.put('file:'+d.fileId,data);}change('Thêm tài liệu '+d.name,e=>e.docs.push(d));tab='docs';render();await showSource(d.id);toast(d.kind==='text'?'Đã đọc nội dung văn bản tại máy':'Đã lưu tệp gốc · chưa rút trích nội dung');}
 // Only declarative data is restored from backups. No HTML or code is executed.
 
-async function handleAction(a,n){if(await handleStudioAction(a,n))return;if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
+const commitBeforeAction=new Set(['undo','redo','view-student','view-teacher','export','export-html','print','save-local','backup','backup-local']);
+async function handleAction(a,n){
+ if(commitBeforeAction.has(a)&&!flushEditor()){toast('Gõ xong chữ đang nhập rồi thử lại.');return;}
+ if(await handleStudioAction(a,n))return;if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
  case 'close':dialog.close();break;
  case 'new':showNew();break;
  case 'create-sample':createExam(n.dataset.subject,true);break;
@@ -171,8 +174,8 @@ async function handleAction(a,n){if(await handleStudioAction(a,n))return;if(awai
  case 'repair-preview':showRepair(n.dataset.id);break;
  case 'apply-repair':{const p=pending,q=qget(p?.id);if(p?.type!=='repair'||!q||q.v!==p.version)return toast('Đề xuất đã cũ. Kiểm tra lại bản hiện tại.');change('Sửa đáp án & kiểm tra lại câu '+(e.questions.indexOf(q)+1),()=>{q.answer=p.answer;q.answerKnown=true;q.options=p.options;q.explanation=p.explanation;touch(q);check(e,q);});pending=null;showReview(q.id);break;}
  case 'approve-question':{const q=qget(n.dataset.id);if(!q||n.dataset.version&&q.v!==Number(n.dataset.version))throw Error('Câu đã đổi phiên bản; mở lại để duyệt.');change('Giáo viên duyệt câu '+(e.questions.indexOf(q)+1),()=>{approveQuestion(q);});dialog.close();break;}
- case 'undo':if(undo(e)){selection=null;persist();render();toast('Đã hoàn tác cả phần liên quan');}break;
- case 'redo':if(redo(e)){selection=null;persist();render();toast('Đã làm lại thay đổi');}break;
+ case 'undo':if(undo(e)){selection=null;persist().catch(()=>{});render();toast('Đã hoàn tác cả phần liên quan');}break;
+ case 'redo':if(redo(e)){selection=null;persist().catch(()=>{});render();toast('Đã làm lại thay đổi');}break;
  case 'source':await showSource(n.dataset.doc,n.dataset.id);break;
  case 'import-doc':showImport();break;
  case 'download-original':{const d=e.docs.find(d=>d.id===n.dataset.doc),url=await db.get('file:'+d.fileId);const link=document.createElement('a');link.href=url;link.download=d.name;link.click();break;}
@@ -229,6 +232,6 @@ document.addEventListener('submit',async event=>{event.preventDefault();const f=
  if(f.id==='scan-form'){const text=new FormData(f).get('text'),doc=e.docs.find(d=>d.id===f.dataset.doc);if(!doc)throw Error('Thêm bản gốc trước khi lưu bản đối chiếu.');change('Lưu văn bản nhập tay từ bản gốc',e=>{doc.manualText=text;const existing=e.docs.find(d=>d.originalId===doc.id);if(existing)existing.text=text;else e.docs.push({id:uid(),name:'Bản nhập tay — '+doc.name,kind:'text',text,originalId:doc.id,sample:false});});toast('Đã lưu bản nhập tay · chưa có nhận dạng tự động');await showExtract(doc.id);}
  }catch(err){console.error(err);toast(err.message);if(dialog.open&&dialog.querySelector('.busy'))modal('Chưa thực hiện được',`<div class="alert">${esc(friendlyClientMessage(err))}</div><p class="hint">Chưa áp dụng thay đổi. Kiểm tra kết nối hoặc dữ liệu đầu vào.</p>`);}});
 dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}});
-window.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='s'){event.preventDefault();document.activeElement?.blur();persist().then(()=>toast('Đã lưu đề trên máy'));}});
+window.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='s'&&!event.isComposing){event.preventDefault();if(!flushEditor())return;document.activeElement?.blur();persist().then(()=>toast('Đã lưu đề trên máy')).catch(err=>toast(friendlyClientMessage(err)));}});
 async function init(){try{await bootstrapWorkbench();state=await db.get('state');showSaveWarning(db.hasPendingWrites());if(!state){const e=sample();e.questions.forEach(q=>check(e,q));state={version:1,current:e.id,exams:[e],prefs:[]};await persist();}if(new URLSearchParams(location.search).get('demo')==='toan'){let target=state.exams.find(e=>e.subject==='Toán'&&e.sample);if(!target){target=sample('Toán',state.prefs);target.questions.forEach(q=>check(target,q));state.exams.push(target);}state.current=target.id;await persist();history.replaceState({},'',location.pathname);}render();await initMVP(mvpContext);await initWorkbench(mvpContext);}catch(err){app.innerHTML=`<div style="padding:40px"><h1>Chưa mở được dữ liệu tại máy</h1><p>${esc(friendlyClientMessage(err))}</p><p>Mở app trong cửa sổ trình duyệt thông thường có hỗ trợ IndexedDB.</p></div>`;}}
 init();

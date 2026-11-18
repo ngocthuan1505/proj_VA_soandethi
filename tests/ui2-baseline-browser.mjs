@@ -388,6 +388,55 @@ try {
     pass('FastAPI: xung đột hai tab giữ bản trên máy chủ và cho tải bản nháp');
   }
 
+  let editorTiming;
+  if (python) {
+    await putState(initialState);
+    const editPage = await browser.newPage();
+    editPage.on('pageerror', error => errors.push(error.message));
+    await editPage.goto(base);
+    const stem = editPage.locator('.stem-editor .tiptap').first();
+    const undoButton = editPage.locator('[data-action="undo"]').first();
+    const teacherButton = editPage.locator('[data-action="view-teacher"]').first();
+    await stem.waitFor();
+    const initial = multiSubjectExam.questions[0].stem;
+    async function serverStem() {
+      const state = await getState();
+      return state.exams.find(exam => exam.id === multiSubjectExam.id).questions[0].stem;
+    }
+    function savedStem(matches) {
+      return editPage.waitForResponse(response => {
+        if (response.url() !== base + '/api/kv' || response.request().method() !== 'PUT'
+          || !response.ok()) return false;
+        const body = response.request().postDataJSON();
+        const exam = body.value?.exams?.find(exam => exam.id === multiSubjectExam.id);
+        return Boolean(exam && matches(exam.questions[0].stem));
+      });
+    }
+
+    await stem.press('Home');
+    await editPage.keyboard.insertText('Sửa nhanh. ');
+    assert(await undoButton.isEnabled(), 'Toolbar undo must accept unflushed typing');
+    await Promise.all([savedStem(text => text === initial),undoButton.evaluate(button => button.click())]);
+    assert.equal(await serverStem(), initial);
+
+    await stem.press('Home');
+    await editPage.keyboard.insertText('Bản xem. ');
+    await Promise.all([savedStem(text => text.includes('Bản xem. ')),teacherButton.evaluate(button => button.click())]);
+    assert((await serverStem()).includes('Bản xem. '), 'Switching views must commit pending typing');
+
+    await stem.press('Home');
+    const cdp = await editPage.context().newCDPSession(editPage);
+    await cdp.send('Input.imeSetComposition', { text: 'tiếng', selectionStart: 5, selectionEnd: 5 });
+    await editPage.locator('[data-action="view-student"]').first().evaluate(button => button.click());
+    assert((await stem.textContent()).includes('tiếng'), 'View action must keep active composition');
+    assert(!(await serverStem()).includes('tiếng'), 'Composition should stay local until commit');
+    await Promise.all([savedStem(text => text.includes('tiếng ')),cdp.send('Input.insertText', { text: 'tiếng ' })]);
+    assert((await serverStem()).includes('tiếng '), 'Committed Vietnamese text should persist');
+    await editPage.close();
+    editorTiming = { undoBeforeDebounce: true, viewKeepsDraft: true, chromiumCompositionPersists: true };
+    pass('FastAPI: undo và chuyển bản xem giữ chữ gõ nhanh, ghép dấu Chromium lưu đúng lúc');
+  }
+
   let bugBaselineEvidence;
   if (!python) {
     // --- Step 5: Bug Baseline Evidence Collection ---
@@ -483,23 +532,8 @@ try {
     await page.setViewportSize({ width: 1740, height: 1100 });
     pass('Ghi nhận hiện trạng Bug C: Đo kích thước composer ở viewport 1366x768 và chụp UI2_Baseline_Composer_1366.png');
 
-    // Bug D: Rapid toolbar actions right after typing vs > 600ms debounce
-    const bugD_rapidToolbarActionDebounce = await page.evaluate(async () => {
-      return {
-        debounceMs: 550,
-        observation:
-          "TipTap onUpdate sets timers.set(key, setTimeout(() => flush(editor), 550)). If user clicks toolbar [data-action='undo'] or [data-action='view-teacher'] before 550ms, flushEditor() is not called first, so action operates on stale exam data. In contrast, keyboard shortcuts (Ctrl+Z) explicitly call flushEditor(). Waiting > 600ms allows the debounce to fire and commit the typing before toolbar interactions.",
-        mechanism: {
-          keyboardShortcutCallsFlush: true,
-          toolbarUndoCallsFlush: false,
-          toolbarViewTeacherCallsFlush: false,
-          debounceInterval: 550,
-        },
-      };
-    });
-    pass('Ghi nhận hiện trạng Bug D: Thao tác toolbar tức thời trước debounce 550ms thiếu flushEditor()');
     bugBaselineEvidence = {
-      bugB_swallowedConflict409, bugC_composerLayout1366, bugD_rapidToolbarActionDebounce,
+      bugB_swallowedConflict409, bugC_composerLayout1366,
     };
   }
 
@@ -531,6 +565,7 @@ try {
         selectedSecondOccurrence: t03ScopeResult.scope.start === expectedLastIndex,
       },
     },
+    ...(editorTiming ? { editorTiming } : {}),
     ...(saveConflict ? { saveConflict } : {}),
     ...(firstPointerCaret ? { firstPointerCaret } : {}),
     ...(bugBaselineEvidence ? { bugBaselineEvidence } : {}),

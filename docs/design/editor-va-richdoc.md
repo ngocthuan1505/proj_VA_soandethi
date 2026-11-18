@@ -163,3 +163,5 @@ node tests/ui2-baseline-browser.mjs
 Tiếp tục kiểm Bug A bằng thao tác chuột thật trên phương án chưa được khởi tạo. Tọa độ lần bấm đầu được ánh xạ vào editor, và vị trí chữ được đối chiếu sau khi lưu qua FastAPI.
 
 Kiểm lại Bug B bằng hai tab dùng chung hồ sơ Chrome. FastAPI trả mã xung đột cho tab có phiên bản cũ. App hiển thị Xung đột lưu, giữ nháp qua tải lại và cho tải bản nháp JSON. Bản đã lưu trên máy chủ giữ nguyên.
+
+Kiểm Bug D trên Chrome và FastAPI bằng thao tác ngay khi nội dung còn chờ tự lưu. Hoàn tác lưu lại chữ ban đầu, chuyển bản xem giữ nội dung vừa nhập. Sự kiện ghép dấu Chromium tạm giữ chữ chưa hoàn tất ở editor, rồi lưu sau khi kết thúc. Kiểm này dùng Chromium CDP; kiểm UniKey trên máy thành viên còn chờ.
