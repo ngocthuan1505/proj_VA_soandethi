@@ -1,0 +1,3212 @@
+{
+  "multiSubjectExam": {
+    "id": "cc62f9d2-918f-4ef7-a5e7-437ed5e603f6",
+    "title": "Khảo sát năng lực tích hợp Toán — Hóa học — Ngữ văn",
+    "subject": "Tổng hợp",
+    "grade": "9",
+    "minutes": 60,
+    "school": "TRƯỜNG THCS BẮC HẢI",
+    "instructions": "Thí sinh làm bài trực tiếp vào đề thi. Đề gồm 3 phần tương ứng 3 môn học.",
+    "sample": true,
+    "fullExam": false,
+    "questions": [
+      {
+        "id": "d74903bf-7c45-4f04-8205-8ac237a478de",
+        "v": 1,
+        "type": "essay",
+        "points": 4,
+        "stem": "Giải hệ phương trình $\\begin{cases}x+y=9\\\\xy=20\\end{cases}$ và tính giá trị biểu thức phân thức $\\frac{x+3}{2}$.\nBảng tra cứu số liệu đối chiếu nghiệm:\nx | 4 | 5\ny | 5 | 4\nx+y | 9 | 9\nQuan sát hình vẽ tam giác ABC với đường cao AD để hoàn thành bài toán hình học liên quan.",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải hệ phương trình "
+                },
+                {
+                  "type": "mathInline",
+                  "attrs": {
+                    "latex": "\\begin{cases}x+y=9\\\\xy=20\\end{cases}",
+                    "display": false
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " và tính giá trị biểu thức phân thức "
+                },
+                {
+                  "type": "mathInline",
+                  "attrs": {
+                    "latex": "\\frac{x+3}{2}",
+                    "display": false
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Bảng tra cứu số liệu đối chiếu nghiệm:"
+                }
+              ]
+            },
+            {
+              "type": "table",
+              "content": [
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "x"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "4"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "5"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "y"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "5"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "4"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "x+y"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "9"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "9"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Quan sát hình vẽ tam giác ABC với đường cao AD để hoàn thành bài toán hình học liên quan."
+                }
+              ]
+            }
+          ]
+        },
+        "options": [],
+        "optionDocs": [],
+        "answer": 0,
+        "answerText": "(4; 5) hoặc (5; 4)",
+        "truthValues": [
+          true,
+          true,
+          false,
+          false
+        ],
+        "figure": {
+          "points": {
+            "A": "free",
+            "B": "free",
+            "C": "free"
+          },
+          "constraints": [
+            "D=foot(A,B,C)",
+            "O=circumcenter(A,B,C)",
+            "H=orthocenter(A,B,C)"
+          ],
+          "objects": [
+            "segment(A,B)",
+            "segment(A,C)",
+            "segment(B,C)",
+            {
+              "type": "segment",
+              "points": [
+                "A",
+                "D"
+              ],
+              "dashed": true
+            },
+            "circle(O,A)",
+            "rightAngle(A,D,B)"
+          ],
+          "conditions": [
+            "AB<AC",
+            "acute(A,B,C)"
+          ],
+          "labels": {
+            "A": "above",
+            "B": "left",
+            "C": "right",
+            "D": "below",
+            "O": "right",
+            "H": "left"
+          },
+          "caption": "Tam giác ABC và đường cao AD",
+          "width": 480,
+          "align": "center"
+        },
+        "explanation": "Hướng dẫn giải chi tiết cho câu hỏi Toán: Từ phương trình x+y=9 suy ra y=9-x, thay vào xy=20 được phương trình bậc hai có hai nghiệm x=4 hoặc x=5; với x=4 thì phân thức có giá trị 3,5 và với x=5 thì phân thức có giá trị 4.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Hướng dẫn giải chi tiết cho câu hỏi Toán: Từ phương trình x+y=9 suy ra y=9-x, thay vào xy=20 được phương trình bậc hai có hai nghiệm x=4 hoặc x=5; với x=4 thì phân thức có giá trị 3,5 và với x=5 thì phân thức có giá trị 4."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [
+          {
+            "text": "Biến đổi và tìm được hai cặp nghiệm (4; 5) và (5; 4) của hệ phương trình.",
+            "points": 2,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Biến đổi và tìm được hai cặp nghiệm (4; 5) và (5; 4) của hệ phương trình."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "text": "Thay các nghiệm vào phân thức và tính đúng hai giá trị tương ứng.",
+            "points": 2,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Thay các nghiệm vào phân thức và tính đúng hai giá trị tương ứng."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "topic": "Đại số & Hình học",
+        "level": 1,
+        "source": {
+          "docId": "doc-math",
+          "location": "Mục 1"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "a667752a-f5b2-4b3f-96fa-9a4b859785a1",
+          "explanation": "74f8eada-515b-4939-a43a-c1f68daf9088",
+          "rubric": "81552676-f917-435f-b1d2-99ead143d7bb",
+          "figure": "19b241a7-4a89-40f8-a581-e566e322420e",
+          "options": "55b7679c-c6e6-4b42-bbb8-b75d200c426f",
+          "answer": "c8242585-81bc-4a5c-adf3-a143a30b3763",
+          "answerText": "9ff69893-a521-4a16-a465-81fa0437f385",
+          "truthValues": "51967c7f-7a73-4900-be57-40b11eda5daa"
+        }
+      },
+      {
+        "id": "73ab288e-285a-46b9-8223-693e355b6868",
+        "v": 1,
+        "type": "mcq",
+        "points": 3,
+        "stem": "Phương trình hóa học nào sau đây biểu diễn đúng phản ứng đốt cháy khí hiđro trong không khí có điều kiện nhiệt độ: $\\ce{2H2 + O2 ->[nhiệt] 2H2O}$?",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Phương trình hóa học nào sau đây biểu diễn đúng phản ứng đốt cháy khí hiđro trong không khí có điều kiện nhiệt độ: "
+                },
+                {
+                  "type": "mathInline",
+                  "attrs": {
+                    "latex": "\\ce{2H2 + O2 ->[nhiệt] 2H2O}",
+                    "display": false
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "?"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "$\\ce{2H2 + O2 ->[nhiệt] 2H2O}$",
+          "$\\ce{H2 + O2 -> H2O2}$",
+          "$\\ce{2H2 + O2 -> 2H2O}$ (không điều kiện nhiệt)",
+          "$\\ce{H2 + 2O2 -> 2H2O}$"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "mathInline",
+                    "attrs": {
+                      "latex": "\\ce{2H2 + O2 ->[nhiệt] 2H2O}",
+                      "display": false
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "mathInline",
+                    "attrs": {
+                      "latex": "\\ce{H2 + O2 -> H2O2}",
+                      "display": false
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "mathInline",
+                    "attrs": {
+                      "latex": "\\ce{2H2 + O2 -> 2H2O}",
+                      "display": false
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": " (không điều kiện nhiệt)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "mathInline",
+                    "attrs": {
+                      "latex": "\\ce{H2 + 2O2 -> 2H2O}",
+                      "display": false
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Khí hiđro cháy mạnh trong oxi khi có mồi lửa hoặc đun nóng, tỏa nhiều nhiệt và sinh ra hơi nước.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Khí hiđro cháy mạnh trong oxi khi có mồi lửa hoặc đun nóng, tỏa nhiều nhiệt và sinh ra hơi nước."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Phản ứng hóa học",
+        "level": 0,
+        "source": {
+          "docId": "doc-chem",
+          "location": "Đoạn 1"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "86b7700f-5b77-4341-aefc-242645914426",
+          "explanation": "8f9325a8-3d76-4180-931b-182044c7ea9b",
+          "rubric": "8aa271ce-abf7-463e-8732-73933e647a13",
+          "figure": "5b47cf91-1202-494e-9123-07fc25348c19",
+          "options": "a09342d8-813f-4a2d-ac9b-564f5f1a2272",
+          "answer": "95b46b62-34e2-425e-b9c5-765a00708163",
+          "answerText": "2cd62900-c939-4b2c-b0a8-8830ab623bc5",
+          "truthValues": "6c97cb1d-bd59-46fa-8764-2297821aa06e"
+        }
+      },
+      {
+        "id": "377daef0-96f0-4006-bce7-005d09a5a10d",
+        "v": 1,
+        "type": "essay",
+        "points": 3,
+        "stem": "Đọc đoạn văn sau và thực hiện yêu cầu bên dưới:\nBuổi sáng, nắng khẽ chạm vào ô cửa sổ thư viện. Gió mùa thu lướt qua tán bàng xanh mướt trước sân trường.\nEm hãy viết đoạn văn ngắn từ 3 đến 5 câu nêu cảm nhận về bức tranh thiên nhiên mùa thu được miêu tả trong đoạn trích trên.",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Đọc đoạn văn sau và thực hiện yêu cầu bên dưới:"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Buổi sáng, nắng khẽ chạm vào ô cửa sổ thư viện. Gió mùa thu lướt qua tán bàng xanh mướt trước sân trường."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Em hãy viết đoạn văn ngắn từ 3 đến 5 câu nêu cảm nhận về bức tranh thiên nhiên mùa thu được miêu tả trong đoạn trích trên."
+                }
+              ]
+            }
+          ]
+        },
+        "options": [],
+        "optionDocs": [],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Gợi ý chấm điểm: Học sinh nêu bật được vẻ đẹp trong trẻo, êm dịu của buổi sáng mùa thu qua ánh nắng và làn gió nhẹ; diễn đạt mạch lạc, đúng dung lượng quy định.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Gợi ý chấm điểm: Học sinh nêu bật được vẻ đẹp trong trẻo, êm dịu của buổi sáng mùa thu qua ánh nắng và làn gió nhẹ; diễn đạt mạch lạc, đúng dung lượng quy định."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [
+          {
+            "text": "Nêu được cảm nhận về ánh nắng và làn gió mùa thu trong trẻo, nhẹ nhàng.",
+            "points": 1.5,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Nêu được cảm nhận về ánh nắng và làn gió mùa thu trong trẻo, nhẹ nhàng."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "text": "Đoạn văn đúng hình thức 3 đến 5 câu, không mắc lỗi chính tả và ngữ pháp.",
+            "points": 1.5,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Đoạn văn đúng hình thức 3 đến 5 câu, không mắc lỗi chính tả và ngữ pháp."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "topic": "Đọc hiểu văn bản",
+        "level": 2,
+        "source": {
+          "docId": "doc-lit",
+          "location": "Đoạn 1"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "e4ab8ec9-5687-4bc9-9a61-7556f8637d07",
+          "explanation": "ace087a5-660e-4eb8-8f7e-d9362a42f41f",
+          "rubric": "08bdc5ef-3c58-4971-b140-0991e824b60d",
+          "figure": "c3ccb77c-aa23-4420-9483-9c023fede6a7",
+          "options": "24d228ba-055a-4e72-a5c0-3d1e1525b3ec",
+          "answer": "7c4165a0-8771-4c00-aa38-dc5f340a16f9",
+          "answerText": "2042f0c5-acc5-4c70-99be-4ee643f3cb90",
+          "truthValues": "982ee063-1ce0-4ee4-a0a9-c5a096d74700"
+        }
+      }
+    ],
+    "docs": [
+      {
+        "id": "doc-math",
+        "name": "Tư liệu Toán học minh họa",
+        "kind": "text",
+        "sample": true,
+        "text": "TƯ LIỆU TOÁN HỌC MINH HỌA\nNghiệm hệ phương trình và các giá trị hàm số."
+      },
+      {
+        "id": "doc-chem",
+        "name": "Tư liệu Hóa học minh họa",
+        "kind": "text",
+        "sample": true,
+        "text": "TƯ LIỆU HÓA HỌC MINH HỌA\nPhản ứng cháy của hiđro trong không khí sinh ra nước."
+      },
+      {
+        "id": "doc-lit",
+        "name": "Tư liệu Ngữ văn minh họa",
+        "kind": "text",
+        "sample": true,
+        "text": "TƯ LIỆU NGỮ VĂN MINH HỌA\nBuổi sáng, nắng khẽ chạm vào ô cửa sổ thư viện. Gió mùa thu lướt qua tán bàng xanh mướt trước sân trường."
+      }
+    ],
+    "data": [],
+    "matrix": [
+      {
+        "topic": "Đại số & Hình học",
+        "targets": [
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "topic": "Phản ứng hóa học",
+        "targets": [
+          0,
+          1,
+          0
+        ]
+      },
+      {
+        "topic": "Đọc hiểu văn bản",
+        "targets": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "matrixConfirmed": false,
+    "quote": {
+      "text": "Buổi sáng, nắng khẽ chạm vào ô cửa sổ thư viện. Gió mùa thu lướt qua tán bàng xanh mướt trước sân trường.",
+      "chosen": "quote-ver-01",
+      "versions": [
+        {
+          "id": "quote-ver-01",
+          "label": "Bản A • Ngữ liệu minh họa tự soạn",
+          "text": "Buổi sáng, nắng khẽ chạm vào ô cửa sổ thư viện. Gió mùa thu lướt qua tán bàng xanh mướt trước sân trường.",
+          "docId": "doc-lit",
+          "location": "Đoạn 1"
+        }
+      ]
+    },
+    "appliedPrefs": [],
+    "chat": [],
+    "history": [],
+    "undo": [],
+    "redo": [],
+    "revision": 1,
+    "updated": 1794839161888,
+    "blockIds": {
+      "general": "f3533049-256b-432f-a1fb-22c7d3370d27",
+      "heading": "656fc797-1732-415a-95c3-dea1d85e6499",
+      "marking": "4cf0560a-79c5-43ea-8a10-97807ce25e29"
+    }
+  },
+  "longPaginatedExam": {
+    "id": "46473f2e-a903-49fc-a996-6d2cf9896ce7",
+    "title": "Đề thi khảo sát chất lượng học kỳ II — Phiên bản đề dài phân trang",
+    "subject": "Toán & Thống kê ứng dụng",
+    "grade": "9",
+    "minutes": 90,
+    "school": "TRƯỜNG THCS BẮC HẢI",
+    "instructions": "Thí sinh làm bài đầy đủ các câu hỏi trắc nghiệm và bài tự luận vào tờ giấy thi.",
+    "sample": true,
+    "fullExam": false,
+    "questions": [
+      {
+        "id": "52b68ea4-3d87-403b-a9c4-c9c335548c18",
+        "v": 1,
+        "type": "mcq",
+        "points": 0.75,
+        "stem": "Câu hỏi trắc nghiệm 1: Cho hàm số và dữ kiện toán học thuộc chủ đề “Căn bậc hai và biểu thức chứa căn”. Hãy xác định phương án đúng nhất trong các phương án sau:",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Câu hỏi trắc nghiệm 1: Cho hàm số và dữ kiện toán học thuộc chủ đề “Căn bậc hai và biểu thức chứa căn”. Hãy xác định phương án đúng nhất trong các phương án sau:"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "Phương án A cho câu hỏi 1 với kết quả chính xác",
+          "Phương án B cho câu hỏi 1 (phương án nhiễu 1)",
+          "Phương án C cho câu hỏi 1 (phương án nhiễu 2)",
+          "Phương án D cho câu hỏi 1 (phương án nhiễu 3)"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án A cho câu hỏi 1 với kết quả chính xác"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án B cho câu hỏi 1 (phương án nhiễu 1)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án C cho câu hỏi 1 (phương án nhiễu 2)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án D cho câu hỏi 1 (phương án nhiễu 3)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Giải thích chi tiết cho câu hỏi 1: Áp dụng đúng công thức và định lý cơ bản của chủ đề Căn bậc hai và biểu thức chứa căn để chọn phương án A.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải thích chi tiết cho câu hỏi 1: Áp dụng đúng công thức và định lý cơ bản của chủ đề Căn bậc hai và biểu thức chứa căn để chọn phương án A."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Căn bậc hai và biểu thức chứa căn",
+        "level": 0,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 1"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "aec8aa1e-5565-4b76-8de0-9738f42c2090",
+          "explanation": "9a68702d-508e-49bb-ba01-a56a0d91d15a",
+          "rubric": "086f414b-d46e-48fc-8d73-83de1c3054b4",
+          "figure": "389c9669-d4a3-4ba3-bfb1-6231b105b5c2",
+          "options": "325bec97-3ee9-44a1-a434-ce7f0685d7b4",
+          "answer": "8c1b6038-b5a2-431d-a5c1-87543c980f82",
+          "answerText": "c13baca2-3c78-4498-abc4-e33927fce24c",
+          "truthValues": "3bd0d778-a7b8-46fa-a6f2-4fe70b3cbde9"
+        }
+      },
+      {
+        "id": "c6758114-9c0b-4034-9c7a-a282d430819f",
+        "v": 1,
+        "type": "mcq",
+        "points": 0.75,
+        "stem": "Câu hỏi trắc nghiệm 2: Cho hàm số và dữ kiện toán học thuộc chủ đề “Hàm số bậc nhất và đồ thị”. Hãy xác định phương án đúng nhất trong các phương án sau:",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Câu hỏi trắc nghiệm 2: Cho hàm số và dữ kiện toán học thuộc chủ đề “Hàm số bậc nhất và đồ thị”. Hãy xác định phương án đúng nhất trong các phương án sau:"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "Phương án A cho câu hỏi 2 với kết quả chính xác",
+          "Phương án B cho câu hỏi 2 (phương án nhiễu 1)",
+          "Phương án C cho câu hỏi 2 (phương án nhiễu 2)",
+          "Phương án D cho câu hỏi 2 (phương án nhiễu 3)"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án A cho câu hỏi 2 với kết quả chính xác"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án B cho câu hỏi 2 (phương án nhiễu 1)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án C cho câu hỏi 2 (phương án nhiễu 2)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án D cho câu hỏi 2 (phương án nhiễu 3)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Giải thích chi tiết cho câu hỏi 2: Áp dụng đúng công thức và định lý cơ bản của chủ đề Hàm số bậc nhất và đồ thị để chọn phương án A.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải thích chi tiết cho câu hỏi 2: Áp dụng đúng công thức và định lý cơ bản của chủ đề Hàm số bậc nhất và đồ thị để chọn phương án A."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Hàm số bậc nhất và đồ thị",
+        "level": 1,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 2"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "f85f0d80-ed53-4607-a3a4-baa7374d5d86",
+          "explanation": "f71ad4a0-e3c6-4cc6-a395-8890d8bc83fb",
+          "rubric": "af01924b-ed93-46c8-a7f7-80df22792d04",
+          "figure": "a35ea3a8-728a-4648-a06b-56c51fc22582",
+          "options": "7e6cfba8-d9fb-4c88-ad06-292c9ba2e362",
+          "answer": "871a9230-9361-4522-a61f-005f32befcfb",
+          "answerText": "f08cd88f-e7dd-41b5-92b2-ea54f78d33a6",
+          "truthValues": "fc9293c2-04bc-4b9f-9098-c7492398ad95"
+        }
+      },
+      {
+        "id": "445d8e16-1ebf-4ac9-8e1f-134e24c70bfe",
+        "v": 1,
+        "type": "mcq",
+        "points": 0.75,
+        "stem": "Câu hỏi trắc nghiệm 3: Cho hàm số và dữ kiện toán học thuộc chủ đề “Hệ hai phương trình bậc nhất hai ẩn”. Hãy xác định phương án đúng nhất trong các phương án sau:",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Câu hỏi trắc nghiệm 3: Cho hàm số và dữ kiện toán học thuộc chủ đề “Hệ hai phương trình bậc nhất hai ẩn”. Hãy xác định phương án đúng nhất trong các phương án sau:"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "Phương án A cho câu hỏi 3 với kết quả chính xác",
+          "Phương án B cho câu hỏi 3 (phương án nhiễu 1)",
+          "Phương án C cho câu hỏi 3 (phương án nhiễu 2)",
+          "Phương án D cho câu hỏi 3 (phương án nhiễu 3)"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án A cho câu hỏi 3 với kết quả chính xác"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án B cho câu hỏi 3 (phương án nhiễu 1)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án C cho câu hỏi 3 (phương án nhiễu 2)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án D cho câu hỏi 3 (phương án nhiễu 3)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Giải thích chi tiết cho câu hỏi 3: Áp dụng đúng công thức và định lý cơ bản của chủ đề Hệ hai phương trình bậc nhất hai ẩn để chọn phương án A.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải thích chi tiết cho câu hỏi 3: Áp dụng đúng công thức và định lý cơ bản của chủ đề Hệ hai phương trình bậc nhất hai ẩn để chọn phương án A."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Hệ hai phương trình bậc nhất hai ẩn",
+        "level": 2,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 3"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "1db565ed-d786-46de-af5e-e0f5015c8fe0",
+          "explanation": "6ea22dfd-9327-459f-8491-7a4f801454d9",
+          "rubric": "5361910e-9683-4755-82ee-3fc92137e391",
+          "figure": "56641278-c6e7-44cb-99f1-993425637a49",
+          "options": "aa4a45e5-b1ac-4675-9475-c4ce5beaea4f",
+          "answer": "f5c1ddc8-3628-44ad-95e1-d92980feec29",
+          "answerText": "eed3cbc6-ec0a-48f8-bd58-406628f6ce80",
+          "truthValues": "fc2a2b2f-757e-4910-9d28-a5b0f3b7bae4"
+        }
+      },
+      {
+        "id": "440d965c-c41b-4e66-a018-a49a0c37cdec",
+        "v": 1,
+        "type": "mcq",
+        "points": 0.75,
+        "stem": "Câu hỏi trắc nghiệm 4: Cho hàm số và dữ kiện toán học thuộc chủ đề “Phương trình bậc hai một ẩn”. Hãy xác định phương án đúng nhất trong các phương án sau:",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Câu hỏi trắc nghiệm 4: Cho hàm số và dữ kiện toán học thuộc chủ đề “Phương trình bậc hai một ẩn”. Hãy xác định phương án đúng nhất trong các phương án sau:"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "Phương án A cho câu hỏi 4 với kết quả chính xác",
+          "Phương án B cho câu hỏi 4 (phương án nhiễu 1)",
+          "Phương án C cho câu hỏi 4 (phương án nhiễu 2)",
+          "Phương án D cho câu hỏi 4 (phương án nhiễu 3)"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án A cho câu hỏi 4 với kết quả chính xác"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án B cho câu hỏi 4 (phương án nhiễu 1)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án C cho câu hỏi 4 (phương án nhiễu 2)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án D cho câu hỏi 4 (phương án nhiễu 3)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Giải thích chi tiết cho câu hỏi 4: Áp dụng đúng công thức và định lý cơ bản của chủ đề Phương trình bậc hai một ẩn để chọn phương án A.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải thích chi tiết cho câu hỏi 4: Áp dụng đúng công thức và định lý cơ bản của chủ đề Phương trình bậc hai một ẩn để chọn phương án A."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Phương trình bậc hai một ẩn",
+        "level": 0,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 4"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "8d5802a9-d068-4af4-8d6e-c60469f86854",
+          "explanation": "de1bae34-3b80-462a-8143-b6e592a8f0d1",
+          "rubric": "fa5e3239-c05f-4ae6-bdaa-3fed08128d7e",
+          "figure": "28bfa421-384d-4e74-b8ea-4b943135aaf8",
+          "options": "4bd2d7bc-c296-496d-b523-bdcc7282a37a",
+          "answer": "36967e66-f5de-4eee-b5c4-cf6efdb459d9",
+          "answerText": "0ed66bbc-2e66-4c3f-a2e3-165c852807d1",
+          "truthValues": "1f2d2965-b8c6-4acc-9620-676c2a4fbe19"
+        }
+      },
+      {
+        "id": "a9118ab7-8a0a-4421-96ca-eb88d309dfc7",
+        "v": 1,
+        "type": "mcq",
+        "points": 0.75,
+        "stem": "Câu hỏi trắc nghiệm 5: Cho hàm số và dữ kiện toán học thuộc chủ đề “Hệ thức lượng trong tam giác vuông”. Hãy xác định phương án đúng nhất trong các phương án sau:",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Câu hỏi trắc nghiệm 5: Cho hàm số và dữ kiện toán học thuộc chủ đề “Hệ thức lượng trong tam giác vuông”. Hãy xác định phương án đúng nhất trong các phương án sau:"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "Phương án A cho câu hỏi 5 với kết quả chính xác",
+          "Phương án B cho câu hỏi 5 (phương án nhiễu 1)",
+          "Phương án C cho câu hỏi 5 (phương án nhiễu 2)",
+          "Phương án D cho câu hỏi 5 (phương án nhiễu 3)"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án A cho câu hỏi 5 với kết quả chính xác"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án B cho câu hỏi 5 (phương án nhiễu 1)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án C cho câu hỏi 5 (phương án nhiễu 2)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án D cho câu hỏi 5 (phương án nhiễu 3)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Giải thích chi tiết cho câu hỏi 5: Áp dụng đúng công thức và định lý cơ bản của chủ đề Hệ thức lượng trong tam giác vuông để chọn phương án A.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải thích chi tiết cho câu hỏi 5: Áp dụng đúng công thức và định lý cơ bản của chủ đề Hệ thức lượng trong tam giác vuông để chọn phương án A."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Hệ thức lượng trong tam giác vuông",
+        "level": 1,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 5"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "7533c1d6-849c-4571-b2b9-eca6e4f4d357",
+          "explanation": "ea9eeef0-4cef-495f-bbef-f6a7a211d67d",
+          "rubric": "3e398358-27b9-48a0-a391-c77bef0b1415",
+          "figure": "4ed8292a-6673-4b7f-aaf9-2aa5b8251f5f",
+          "options": "c58d767a-ed11-48c2-a58f-c4729844330d",
+          "answer": "07902b16-26de-4e83-9540-f03ecc0b7e41",
+          "answerText": "6689ddaa-4f90-4eed-a377-5a9fd98546d4",
+          "truthValues": "55b8ff67-7abe-4cc9-a548-930d88bafb21"
+        }
+      },
+      {
+        "id": "fe1d45f5-0b45-48b6-8abf-1eca7cd5e453",
+        "v": 1,
+        "type": "mcq",
+        "points": 0.75,
+        "stem": "Câu hỏi trắc nghiệm 6: Cho hàm số và dữ kiện toán học thuộc chủ đề “Đường tròn và góc với đường tròn”. Hãy xác định phương án đúng nhất trong các phương án sau:",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Câu hỏi trắc nghiệm 6: Cho hàm số và dữ kiện toán học thuộc chủ đề “Đường tròn và góc với đường tròn”. Hãy xác định phương án đúng nhất trong các phương án sau:"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "Phương án A cho câu hỏi 6 với kết quả chính xác",
+          "Phương án B cho câu hỏi 6 (phương án nhiễu 1)",
+          "Phương án C cho câu hỏi 6 (phương án nhiễu 2)",
+          "Phương án D cho câu hỏi 6 (phương án nhiễu 3)"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án A cho câu hỏi 6 với kết quả chính xác"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án B cho câu hỏi 6 (phương án nhiễu 1)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án C cho câu hỏi 6 (phương án nhiễu 2)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án D cho câu hỏi 6 (phương án nhiễu 3)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Giải thích chi tiết cho câu hỏi 6: Áp dụng đúng công thức và định lý cơ bản của chủ đề Đường tròn và góc với đường tròn để chọn phương án A.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải thích chi tiết cho câu hỏi 6: Áp dụng đúng công thức và định lý cơ bản của chủ đề Đường tròn và góc với đường tròn để chọn phương án A."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Đường tròn và góc với đường tròn",
+        "level": 2,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 6"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "426a19eb-f5b8-475b-91d9-f284124a5c4d",
+          "explanation": "15606f38-8e9e-4205-98ca-88f54488ab45",
+          "rubric": "d62f9b89-3b2f-403a-b68d-f5532ccfe961",
+          "figure": "3d228bee-58c0-4178-bf0b-68f8bbb19439",
+          "options": "10bf7777-e176-4b7f-a32b-af8c23cfcec2",
+          "answer": "4ac77455-2084-4d36-8e61-0438a11b2c4a",
+          "answerText": "095dff54-ebe1-4270-a885-97e8b1c12bbf",
+          "truthValues": "6b04dd8c-1b29-47d1-b2ba-8f9c993f39c9"
+        }
+      },
+      {
+        "id": "1391ac36-305e-4552-a7df-09067188d509",
+        "v": 1,
+        "type": "mcq",
+        "points": 0.75,
+        "stem": "Câu hỏi trắc nghiệm 7: Cho hàm số và dữ kiện toán học thuộc chủ đề “Hình trụ và diện tích xung quanh”. Hãy xác định phương án đúng nhất trong các phương án sau:",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Câu hỏi trắc nghiệm 7: Cho hàm số và dữ kiện toán học thuộc chủ đề “Hình trụ và diện tích xung quanh”. Hãy xác định phương án đúng nhất trong các phương án sau:"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "Phương án A cho câu hỏi 7 với kết quả chính xác",
+          "Phương án B cho câu hỏi 7 (phương án nhiễu 1)",
+          "Phương án C cho câu hỏi 7 (phương án nhiễu 2)",
+          "Phương án D cho câu hỏi 7 (phương án nhiễu 3)"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án A cho câu hỏi 7 với kết quả chính xác"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án B cho câu hỏi 7 (phương án nhiễu 1)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án C cho câu hỏi 7 (phương án nhiễu 2)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án D cho câu hỏi 7 (phương án nhiễu 3)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Giải thích chi tiết cho câu hỏi 7: Áp dụng đúng công thức và định lý cơ bản của chủ đề Hình trụ và diện tích xung quanh để chọn phương án A.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải thích chi tiết cho câu hỏi 7: Áp dụng đúng công thức và định lý cơ bản của chủ đề Hình trụ và diện tích xung quanh để chọn phương án A."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Hình trụ và diện tích xung quanh",
+        "level": 0,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 7"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "77c65a7b-8355-4243-a1f3-a031c4b292a8",
+          "explanation": "46597d2d-1380-4f68-b7ee-8c2dbca143f1",
+          "rubric": "58ab699f-e703-4025-9e50-734fbea8fef1",
+          "figure": "06c3f0d7-30b8-4378-96dc-62e75c3420f1",
+          "options": "c4f18612-d666-42e0-9099-bd539b7fa856",
+          "answer": "23f16a3f-0cb8-42b0-9ab1-0c5c5b616e4f",
+          "answerText": "70d7bb05-3f26-4daf-b9c1-87c8a7716c25",
+          "truthValues": "a605bcb6-21ea-4d76-a590-eeb5e891500f"
+        }
+      },
+      {
+        "id": "33b105a5-52cf-4471-8b11-f88017e70883",
+        "v": 1,
+        "type": "mcq",
+        "points": 0.75,
+        "stem": "Câu hỏi trắc nghiệm 8: Cho hàm số và dữ kiện toán học thuộc chủ đề “Xác suất thực nghiệm và biến cố”. Hãy xác định phương án đúng nhất trong các phương án sau:",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Câu hỏi trắc nghiệm 8: Cho hàm số và dữ kiện toán học thuộc chủ đề “Xác suất thực nghiệm và biến cố”. Hãy xác định phương án đúng nhất trong các phương án sau:"
+                }
+              ]
+            }
+          ]
+        },
+        "options": [
+          "Phương án A cho câu hỏi 8 với kết quả chính xác",
+          "Phương án B cho câu hỏi 8 (phương án nhiễu 1)",
+          "Phương án C cho câu hỏi 8 (phương án nhiễu 2)",
+          "Phương án D cho câu hỏi 8 (phương án nhiễu 3)"
+        ],
+        "optionDocs": [
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án A cho câu hỏi 8 với kết quả chính xác"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án B cho câu hỏi 8 (phương án nhiễu 1)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án C cho câu hỏi 8 (phương án nhiễu 2)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "doc",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Phương án D cho câu hỏi 8 (phương án nhiễu 3)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Giải thích chi tiết cho câu hỏi 8: Áp dụng đúng công thức và định lý cơ bản của chủ đề Xác suất thực nghiệm và biến cố để chọn phương án A.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Giải thích chi tiết cho câu hỏi 8: Áp dụng đúng công thức và định lý cơ bản của chủ đề Xác suất thực nghiệm và biến cố để chọn phương án A."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [],
+        "topic": "Xác suất thực nghiệm và biến cố",
+        "level": 1,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 8"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "50a3b218-bcd3-4a7d-bd4e-5eb018a9ab90",
+          "explanation": "98eaac8a-3177-4dd4-9c9b-0c9acdbdfa10",
+          "rubric": "a137ea54-7160-4439-84c2-07fb1aa2cc7f",
+          "figure": "2320f1aa-b2da-4f26-93cf-82ee8f1092c8",
+          "options": "d5eb881e-5c59-49d0-bd23-9da38c896938",
+          "answer": "5f23f01b-4408-414b-bd18-6ba5c3ed6972",
+          "answerText": "f9614db9-276c-45b0-8cd5-9f642ee2ac87",
+          "truthValues": "67409349-7517-4047-89a4-c01011273e12"
+        }
+      },
+      {
+        "id": "7a602be8-2472-46db-917c-28bc946da38a",
+        "v": 1,
+        "type": "essay",
+        "points": 1,
+        "stem": "Bài 9 (1,0 điểm). Cho phương trình bậc hai $x^2 - 4x + 3 = 0$.\na) Giải phương trình đã cho.\nb) Tính tổng và tích hai nghiệm theo định lý Vi-ét.",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Bài 9 (1,0 điểm). Cho phương trình bậc hai "
+                },
+                {
+                  "type": "mathInline",
+                  "attrs": {
+                    "latex": "x^2 - 4x + 3 = 0",
+                    "display": false
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "a) Giải phương trình đã cho."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "b) Tính tổng và tích hai nghiệm theo định lý Vi-ét."
+                }
+              ]
+            }
+          ]
+        },
+        "options": [],
+        "optionDocs": [],
+        "answer": 0,
+        "answerText": "x1=1, x2=3",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Lời giải bài 9:\na) Phương trình có các hệ số a=1, b=-4, c=3; do a+b+c=0 nên có hai nghiệm phân biệt x1=1, x2=3.\nb) Tổng hai nghiệm S=4, tích hai nghiệm P=3.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Lời giải bài 9:"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "a) Phương trình có các hệ số a=1, b=-4, c=3; do a+b+c=0 nên có hai nghiệm phân biệt x1=1, x2=3."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "b) Tổng hai nghiệm S=4, tích hai nghiệm P=3."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [
+          {
+            "text": "Giải đúng hai nghiệm x1 = 1 và x2 = 3.",
+            "points": 0.5,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Giải đúng hai nghiệm x1 = 1 và x2 = 3."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "text": "Áp dụng định lý Vi-ét tính đúng tổng và tích hai nghiệm.",
+            "points": 0.5,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Áp dụng định lý Vi-ét tính đúng tổng và tích hai nghiệm."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "topic": "Phương trình bậc hai",
+        "level": 1,
+        "source": {
+          "docId": "doc-long",
+          "location": "Mục 9"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "897d5ef7-7912-49a8-b544-a59d312dcc41",
+          "explanation": "e8643481-500b-456f-8c9f-14278ec9e562",
+          "rubric": "0d067ce8-64c6-4fd2-90cc-765d748c6463",
+          "figure": "7bb4aa36-b38b-475f-b442-820ab7e2a3d2",
+          "options": "42fa371d-14b3-4a4f-b4b4-ba2e0997e44a",
+          "answer": "3fd46b32-1e08-4004-a8b8-b40cb6aa1e5e",
+          "answerText": "b75607ab-0df0-4ece-8443-a9916aab53f1",
+          "truthValues": "b2174d51-c4fe-429b-8422-3b65db99b464"
+        }
+      },
+      {
+        "id": "d7045fbf-e371-4ae0-a35e-9d9859afab13",
+        "v": 1,
+        "type": "essay",
+        "points": 3,
+        "stem": "Bài 10 (3,0 điểm). Dưới đây là bảng số liệu khí hậu tổng hợp gồm 18 dòng thông tin đo đạc tại trạm khí tượng thủy văn trong năm khảo sát. Thí sinh đọc kỹ bảng số liệu và giải quyết toàn bộ các yêu cầu bên dưới:\nBảng số liệu 10. Diễn biến lượng mưa và nhiệt độ các tháng trong năm (18 dòng dữ liệu thống kê):\nTháng theo dõi | Lượng mưa bình quân (mm) | Nhiệt độ không khí (°C)\nTháng 1 | 18 | 16.5\nTháng 2 | 22 | 17.8\nTháng 3 | 45 | 20.4\nTháng 4 | 90 | 24.2\nTháng 5 | 220 | 27.5\nTháng 6 | 310 | 29.1\nTháng 7 | 290 | 28.9\nTháng 8 | 340 | 28.4\nTháng 9 | 260 | 27.2\nTháng 10 | 160 | 24.8\nTháng 11 | 65 | 21.3\nTháng 12 | 25 | 18\nTổng lượng mưa cả năm | 1845 | 23.7\nLượng mưa các tháng mùa mưa (T5 - T10) | 1680 | 28.2\nLượng mưa các tháng mùa khô (T11 - T4) | 165 | 19.2\nNhiệt độ tháng cao nhất (Tháng 6) | 310 | 29.1\nBiên độ nhiệt năm (Tmax - Tmin) | — | 12.6\nLưu ý phương pháp tính toán: Thí sinh cần lập luận chặt chẽ, trích dẫn đầy đủ số liệu từ các dòng tương ứng của bảng thống kê để chứng minh cho từng nhận định của mình. Mọi kết luận không có số liệu minh chứng cụ thể từ bảng 18 dòng sẽ không được tính điểm tối đa.\nYêu cầu 1: Nhận xét sự phân hóa lượng mưa giữa mùa mưa và mùa khô của trạm quan trắc trên.\nYêu cầu 2: Phân tích mối liên hệ giữa nhiệt độ cao nhất trong năm và lượng mưa cực đại theo số liệu bảng.\nYêu cầu 3: Đề xuất hai biện pháp thủy lợi thích hợp nhằm chủ động đối phó với tình trạng hạn hán mùa khô.\nYêu cầu 4: Đánh giá tác động tiêu cực của tình trạng biến đổi khí hậu toàn cầu đến chế độ mưa và nhiệt độ quan trắc được tại khu vực này trong vòng 10 năm trở lại đây.",
+        "richDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Bài 10 (3,0 điểm). Dưới đây là bảng số liệu khí hậu tổng hợp gồm 18 dòng thông tin đo đạc tại trạm khí tượng thủy văn trong năm khảo sát. Thí sinh đọc kỹ bảng số liệu và giải quyết toàn bộ các yêu cầu bên dưới:"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Bảng số liệu 10. Diễn biến lượng mưa và nhiệt độ các tháng trong năm (18 dòng dữ liệu thống kê):"
+                }
+              ]
+            },
+            {
+              "type": "table",
+              "content": [
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng theo dõi"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Lượng mưa bình quân (mm)"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Nhiệt độ không khí (°C)"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 1"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "18"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "16.5"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 2"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "22"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "17.8"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 3"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "45"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "20.4"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 4"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "90"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "24.2"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 5"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "220"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "27.5"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 6"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "310"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "29.1"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 7"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "290"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "28.9"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 8"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "340"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "28.4"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 9"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "260"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "27.2"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 10"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "160"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "24.8"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 11"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "65"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "21.3"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tháng 12"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "25"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "18"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Tổng lượng mưa cả năm"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "1845"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "23.7"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Lượng mưa các tháng mùa mưa (T5 - T10)"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "1680"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "28.2"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Lượng mưa các tháng mùa khô (T11 - T4)"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "165"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "19.2"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Nhiệt độ tháng cao nhất (Tháng 6)"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "310"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "29.1"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tableRow",
+                  "content": [
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Biên độ nhiệt năm (Tmax - Tmin)"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "—"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tableCell",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "12.6"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Lưu ý phương pháp tính toán: Thí sinh cần lập luận chặt chẽ, trích dẫn đầy đủ số liệu từ các dòng tương ứng của bảng thống kê để chứng minh cho từng nhận định của mình. Mọi kết luận không có số liệu minh chứng cụ thể từ bảng 18 dòng sẽ không được tính điểm tối đa."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Yêu cầu 1: Nhận xét sự phân hóa lượng mưa giữa mùa mưa và mùa khô của trạm quan trắc trên."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Yêu cầu 2: Phân tích mối liên hệ giữa nhiệt độ cao nhất trong năm và lượng mưa cực đại theo số liệu bảng."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Yêu cầu 3: Đề xuất hai biện pháp thủy lợi thích hợp nhằm chủ động đối phó với tình trạng hạn hán mùa khô."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Yêu cầu 4: Đánh giá tác động tiêu cực của tình trạng biến đổi khí hậu toàn cầu đến chế độ mưa và nhiệt độ quan trắc được tại khu vực này trong vòng 10 năm trở lại đây."
+                }
+              ]
+            }
+          ]
+        },
+        "options": [],
+        "optionDocs": [],
+        "answer": 0,
+        "answerText": "",
+        "truthValues": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "figure": null,
+        "explanation": "Hướng dẫn giải chi tiết bài 10:\n1. Phân hóa mưa: Mùa mưa kéo dài từ tháng 5 đến tháng 10 chiếm trên 85% tổng lượng mưa cả năm; mùa khô kéo dài từ tháng 11 đến tháng 4 năm sau.\n2. Mối liên hệ: Nhiệt độ cao vào các tháng mùa hạ thúc đẩy bốc hơi mạnh, trùng với thời kỳ có lượng mưa lớn nhất (tháng 6 đến tháng 8).\n3. Biện pháp: Xây dựng hồ chứa nước, nạo vét kênh mương dẫn nước và áp dụng công nghệ tưới tiết kiệm.",
+        "explanationDoc": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Hướng dẫn giải chi tiết bài 10:"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "1. Phân hóa mưa: Mùa mưa kéo dài từ tháng 5 đến tháng 10 chiếm trên 85% tổng lượng mưa cả năm; mùa khô kéo dài từ tháng 11 đến tháng 4 năm sau."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "2. Mối liên hệ: Nhiệt độ cao vào các tháng mùa hạ thúc đẩy bốc hơi mạnh, trùng với thời kỳ có lượng mưa lớn nhất (tháng 6 đến tháng 8)."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "3. Biện pháp: Xây dựng hồ chứa nước, nạo vét kênh mương dẫn nước và áp dụng công nghệ tưới tiết kiệm."
+                }
+              ]
+            }
+          ]
+        },
+        "rubric": [
+          {
+            "text": "Nhận xét đúng đặc điểm phân hóa mùa mưa và mùa khô theo số liệu.",
+            "points": 1,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Nhận xét đúng đặc điểm phân hóa mùa mưa và mùa khô theo số liệu."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "text": "Phân tích chính xác mối tương quan giữa nền nhiệt độ và lượng mưa.",
+            "points": 1,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Phân tích chính xác mối tương quan giữa nền nhiệt độ và lượng mưa."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "text": "Đề xuất hai giải pháp thủy lợi và sử dụng nguồn nước hợp lý.",
+            "points": 1,
+            "richDoc": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Đề xuất hai giải pháp thủy lợi và sử dụng nguồn nước hợp lý."
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "topic": "Địa lý tự nhiên & Thống kê số liệu",
+        "level": 2,
+        "source": {
+          "docId": "doc-long",
+          "location": "Bảng thống kê 18 dòng"
+        },
+        "check": null,
+        "blockIds": {
+          "stem": "5a9caeae-e1e5-4879-86d9-9e4ec84e75fd",
+          "explanation": "241bdfd7-2599-426e-8b9c-cfd0bf03329b",
+          "rubric": "1c3d9865-c98e-4d6f-8336-05bd4bfa9ace",
+          "figure": "1d7357c5-d81f-4cc4-a5c3-ed3342620c0d",
+          "options": "a574d167-398f-4b8a-b607-7daa25d5939b",
+          "answer": "3a5bbf58-2c27-410d-afd3-05884bd536ee",
+          "answerText": "9b1afca3-e04a-45e3-8f53-f2dd82e82f82",
+          "truthValues": "a86f8ab8-ee7f-408b-ba20-636532e13634"
+        }
+      }
+    ],
+    "docs": [
+      {
+        "id": "doc-long",
+        "name": "Tài liệu nguồn khảo sát chất lượng",
+        "kind": "text",
+        "sample": true,
+        "text": "TÀI LIỆU NGUỒN KHẢO SÁT CHẤT LƯỢNG HỌC KỲ II\nGồm 10 câu hỏi bao quát chương trình và bảng thống kê khí tượng 18 dòng."
+      }
+    ],
+    "data": [],
+    "matrix": [
+      {
+        "topic": "Đại số & Số học",
+        "targets": [
+          4,
+          2,
+          1
+        ]
+      },
+      {
+        "topic": "Hình học & Thống kê",
+        "targets": [
+          2,
+          1,
+          0
+        ]
+      }
+    ],
+    "matrixConfirmed": false,
+    "quote": {
+      "text": "",
+      "chosen": null,
+      "versions": []
+    },
+    "appliedPrefs": [],
+    "chat": [],
+    "history": [],
+    "undo": [],
+    "redo": [],
+    "revision": 1,
+    "updated": 1794839161888,
+    "blockIds": {
+      "general": "3fab9b54-0cff-4a90-991f-9e4fa64d61e2",
+      "heading": "ded81323-6e19-4bb2-84fa-733d25ad3019",
+      "marking": "cafb987e-6f05-49a4-9a84-626129787fbd"
+    }
+  },
+  "edgeCases": {
+    "duplicateFormulaDoc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Khảo sát biểu thức chứa ẩn ở mẫu số và căn thức: biểu thức thứ nhất là "
+            },
+            {
+              "type": "mathInline",
+              "attrs": {
+                "latex": "x+1",
+                "display": false
+              }
+            },
+            {
+              "type": "text",
+              "text": ", tiếp tục đối chiếu với biểu thức thứ hai cũng là "
+            },
+            {
+              "type": "mathInline",
+              "attrs": {
+                "latex": "x+1",
+                "display": false
+              }
+            },
+            {
+              "type": "text",
+              "text": " để kiểm tra nghiệm nguyên."
+            }
+          ]
+        }
+      ]
+    },
+    "crossTableTextEdit": {
+      "doc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Giải hệ phương trình "
+              },
+              {
+                "type": "mathInline",
+                "attrs": {
+                  "latex": "\\begin{cases}x+y=9\\\\xy=20\\end{cases}",
+                  "display": false
+                }
+              },
+              {
+                "type": "text",
+                "text": " và tính giá trị biểu thức phân thức "
+              },
+              {
+                "type": "mathInline",
+                "attrs": {
+                  "latex": "\\frac{x+3}{2}",
+                  "display": false
+                }
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Bảng tra cứu số liệu đối chiếu nghiệm:"
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "content": [
+              {
+                "type": "tableRow",
+                "content": [
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "x"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "4"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "5"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "tableRow",
+                "content": [
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "y"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "5"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "4"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "tableRow",
+                "content": [
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "x+y"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "9"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "tableCell",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "9"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Quan sát hình vẽ tam giác ABC với đường cao AD để hoàn thành bài toán hình học liên quan."
+              }
+            ]
+          }
+        ]
+      },
+      "before": "Giải hệ phương trình $\\begin{cases}x+y=9\\\\xy=20\\end{cases}$ và tính giá trị biểu thức phân thức $\\frac{x+3}{2}$.\nBảng tra cứu số liệu đối chiếu nghiệm:\nx | 4 | 5\ny | 5 | 4\nx+y | 9 | 9\nQuan sát hình vẽ tam giác ABC với đường cao AD để hoàn thành bài toán hình học liên quan.",
+      "after": "Giải hệ phương trình $\\begin{cases}x+y=9\\\\xy=20\\end{cases}$ và tính giá trị biểu thức phân thức $\\frac{x+3}{2}$.\nBảng tra cứu số liệu đối chiếu nghiệm:\nx 4 | 5\ny | 5 | 4\nx+y | 9 | 9\nQuan sát hình vẽ tam giác ABC với đường cao AD để hoàn thành bài toán hình học liên quan."
+    }
+  }
+}
