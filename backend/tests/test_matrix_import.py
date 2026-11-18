@@ -10,6 +10,7 @@ from xml.sax.saxutils import escape
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from mach_backend.ai_contract import AIError
 from mach_backend.gemini_model import GeminiModel
@@ -106,18 +107,18 @@ def test_status_matches_maximum_matrix_accepted_without_ai(tmp_path):
         assert client.get("/api/kv?key=state").json()["value"] is None
 
 
-@pytest.mark.parametrize(
-    "ext,data", [(".pdf", b"%PDF-1.7\nfixture"), (".png", b"\x89PNG\r\n\x1a\nfixture")]
-)
-def test_pdf_image_require_consent_then_pass_real_mime_to_model(ext, data):
+@pytest.mark.parametrize("ext", [".pdf", ".png"])
+def test_pdf_image_require_consent_then_pass_real_mime_to_model(ext):
+    output = io.BytesIO()
     if ext == ".pdf":
         from pypdf import PdfWriter
 
-        output = io.BytesIO()
         writer = PdfWriter()
         writer.add_blank_page(width=600, height=800)
         writer.write(output)
-        data = output.getvalue()
+    else:
+        Image.new("RGB", (8, 8), "white").save(output, "PNG")
+    data = output.getvalue()
     calls = []
 
     async def model(purpose, body):

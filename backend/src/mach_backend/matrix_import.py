@@ -1,5 +1,6 @@
 """Đọc ma trận từ tệp; chỉ trả bản xem trước, không tự đổi đề hoặc gọi AI ngầm."""
 
+import asyncio
 import base64
 import binascii
 import csv
@@ -12,6 +13,7 @@ from pathlib import Path
 from typing import Annotated
 from xml.etree import ElementTree as ET
 
+from PIL import Image
 from pydantic import Field, ValidationError
 
 from mach_backend.ai_contract import AIError, ContractModel
@@ -230,6 +232,19 @@ def parse_table(rows):
     return None
 
 
+def validate_raster(data: bytes, extension: str):
+    expected = {".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG", ".webp": "WEBP"}[extension]
+    try:
+        with Image.open(io.BytesIO(data), formats=(expected,)) as image:
+            if image.width * image.height > 20_000_000:
+                raise ValueError
+            image.load()
+    except (OSError, ValueError, SyntaxError, Image.DecompressionBombError):
+        raise AIError(
+            "invalid_document", "Ảnh bị hỏng, sai định dạng hoặc vượt 20 triệu pixel."
+        ) from None
+
+
 def decode_file(name, data_url):
     if (
         not isinstance(name, str)
@@ -250,15 +265,11 @@ def decode_file(name, data_url):
         ) from None
     ext = Path(name).suffix.lower()
     if ext in MIME:
-        signatures = {
-            ".pdf": (b"%PDF",),
-            ".png": (b"\x89PNG\r\n\x1a\n",),
-            ".jpg": (b"\xff\xd8",),
-            ".jpeg": (b"\xff\xd8",),
-            ".webp": (b"RIFF",),
-        }
-        if not data.startswith(signatures[ext]):
-            raise AIError("invalid_document", "Nội dung tệp không khớp định dạng đã chọn.")
+        if ext == ".pdf":
+            if not data.startswith(b"%PDF-"):
+                raise AIError("invalid_document", "Nội dung tệp không phải PDF.")
+        else:
+            validate_raster(data, ext)
         return None, "", {"mimeType": MIME[ext], "data": base64.b64encode(data).decode()}
     rows = []
     try:
@@ -358,7 +369,9 @@ def decode_file(name, data_url):
 async def read_matrix(request, call):
     document = None
     if "data" in request:
-        rows, text, document = decode_file(request.get("name"), request["data"])
+        rows, text, document = await asyncio.to_thread(
+            decode_file, request.get("name"), request["data"]
+        )
         result = parse_table(rows) if rows else None
         if document and document["mimeType"] == "application/pdf":
             from mach_backend.pdf_matrix import read_pdf_matrix

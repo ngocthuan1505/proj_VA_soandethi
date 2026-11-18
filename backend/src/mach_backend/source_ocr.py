@@ -1,5 +1,6 @@
 """Nhận dạng PDF/ảnh sau đồng ý rõ ràng; giữ trang/ghi chú để đối chiếu."""
 
+import asyncio
 import base64
 import io
 import json
@@ -25,7 +26,7 @@ class SourceReading(ContractModel):
 
 
 async def read_source(request, data, call):
-    _, _, document = decode_file(request.get("name"), data)
+    _, _, document = await asyncio.to_thread(decode_file, request.get("name"), data)
     if document is None:
         raise AIError("unsupported_document", "Nhận dạng bằng AI dành cho PDF hoặc ảnh.")
     if request.get("consent") is not True:

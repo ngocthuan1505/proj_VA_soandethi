@@ -21,6 +21,7 @@ from pypdf.errors import PyPdfError
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import saved_answer_label
 from mach_backend.export_assets import render_assets
+from mach_backend.matrix_import import validate_raster
 from mach_backend.word_export import (
     export_docx,
     export_inputs,
@@ -108,6 +109,7 @@ def extract_text(name, data_url):
                     "tới Gemini để đọc; chưa gửi tệp.",
                 )
         elif ext in {".png", ".jpg", ".jpeg", ".webp"}:
+            validate_raster(data, ext)
             raise AIError(
                 "document_ai_consent",
                 "Ảnh cần được nhận dạng. Cần cho phép gửi tới Gemini để đọc; chưa gửi tệp.",

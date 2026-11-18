@@ -7,6 +7,7 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject, NumberObject
 
@@ -133,10 +134,14 @@ def test_bad_encrypted_oversized_scan_pdf_never_silently_succeeds(binary, code):
     assert e.value.code == code
 
 
-@pytest.mark.parametrize(
-    "name,content", [("scan.pdf", pdf("")), ("scan.png", b"\x89PNG\r\n\x1a\nfixture")]
-)
-def test_ocr_consent_preview_and_original_page_are_preserved(tmp_path, name, content):
+@pytest.mark.parametrize("name", ["scan.pdf", "scan.png"])
+def test_ocr_consent_preview_and_original_page_are_preserved(tmp_path, name):
+    if name.endswith(".pdf"):
+        content = pdf("")
+    else:
+        output = io.BytesIO()
+        Image.new("RGB", (8, 8), "white").save(output, "PNG")
+        content = output.getvalue()
     calls = []
 
     async def model(purpose, body):
@@ -181,6 +186,51 @@ def test_ocr_consent_preview_and_original_page_are_preserved(tmp_path, name, con
                 original.content == content
                 and original.headers["content-type"] == "application/pdf"
             )
+
+
+@pytest.mark.parametrize("route", ["/api/extract", "/api/ai/matrix"])
+def test_invalid_or_disguised_image_is_rejected_before_ocr_and_never_stored(tmp_path, route):
+    async def unexpected_call(*_):
+        pytest.fail("Không được gọi AI khi tệp không hợp lệ.")
+
+    jpeg = io.BytesIO()
+    Image.new("RGB", (8, 8), "white").save(jpeg, "JPEG")
+    with TestClient(
+        create_app(tmp_path, agent_call=unexpected_call), headers={"Origin": "http://testserver"}
+    ) as client:
+        before = client.get("/api/kv?key=state").json()
+        for name, raw in (
+            ("scan.png", b"\x89PNG\r\n\x1a\nfixture"),
+            ("scan.png", jpeg.getvalue()),
+            ("scan.jpg", jpeg.getvalue()[:-12]),
+        ):
+            mime = "image/jpeg" if name.endswith(".jpg") else "image/png"
+            for consent in (False, True):
+                response = client.post(
+                    route,
+                    json={
+                        "name": name,
+                        "data": data_url(raw, mime),
+                        "consent": consent,
+                    },
+                )
+                assert response.status_code == 409
+                assert response.json()["code"] == "invalid_document"
+        assert client.get("/api/kv?key=state").json() == before
+        with client.app.state.store.connect() as db:
+            assert db.execute("SELECT COUNT(*) FROM kv").fetchone() == (0,)
+
+
+def test_extract_rejects_file_over_15_mib_without_adding_source(tmp_path):
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        oversized = data_url(b"A" * (15 * 1024 * 1024 + 1), "text/plain")
+        response = client.post(
+            "/api/extract",
+            json={"name": "nguon.txt", "data": oversized},
+        )
+        assert response.status_code == 409 and response.json()["code"] == "invalid_document"
+        with client.app.state.store.connect() as db:
+            assert db.execute("SELECT COUNT(*) FROM kv").fetchone() == (0,)
 
 
 @pytest.mark.parametrize("numbers", [[1, 1], [2], [1, 3]])

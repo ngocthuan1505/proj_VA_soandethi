@@ -109,7 +109,7 @@ def test_docx_is_real_zip_and_source_roundtrips(exam, tmp_path):
     assert "Đáp án B" in extracted["pages"][0]["text"]
 
 
-def test_pptx_preserves_slide_numbers_and_natural_order():
+def test_pptx_preserves_slide_numbers_and_natural_order(tmp_path):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
         for number in (10, 2, 1):
@@ -119,7 +119,15 @@ def test_pptx_preserves_slide_numbers_and_natural_order():
                 f"<r><t>Nội dung trang {number}</t></r></p>",
             )
     encoded = base64.b64encode(buffer.getvalue()).decode()
-    pages = extract_text("source.pptx", "data:application/octet-stream;base64," + encoded)["pages"]
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        response = client.post(
+            "/api/extract",
+            json={"name": "source.pptx", "data": "data:application/octet-stream;base64," + encoded},
+        )
+        response.raise_for_status()
+        assert response.json()["sentToAI"] is False
+        pages = response.json()["pages"]
+        assert client.get("/api/kv?key=state").json() == {"value": None, "revision": 0}
     assert [(p["number"], p["text"]) for p in pages] == [
         (1, "Nội dung trang 1"),
         (2, "Nội dung trang 2"),

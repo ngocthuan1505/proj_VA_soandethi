@@ -62,6 +62,12 @@ Ngày 19/11/2026, Chrome tạo, đổi tên, tìm và mở đề với tài kho�
 
 Giao diện gắn mã kho vào các yêu cầu API của bàn soạn. FastAPI kiểm mã kho trước khi chuyển tới route tài khoản, kho, AI, xuất đề hoặc chia sẻ. Pytest riêng kiểm thêm phiên hết hạn và quyền của từng tài khoản. Lượt Chrome dùng kho thử tại máy. [Script kiểm hai tab](../../scripts/kiem-ui-kho-nhom.mjs) · [Kiểm quyền và phiên](../../backend/tests/test_team_workspace.py)
 
+## Kiểm lại IT-02 khi nhập nguồn và ma trận
+
+FastAPI kiểm được định dạng và dữ liệu ảnh trước bước xin phép OCR. Ảnh hỏng, JPEG mang đuôi PNG và JPEG bị cắt đều dừng trước model, kể cả khi yêu cầu đã đánh dấu cho phép. Tệp vượt 15 MiB bị từ chối và kho giữ nguyên. Ca PPTX qua API giữ số slide và thứ tự 1, 2, 10. Quyền đọc nguồn theo tài khoản được kiểm riêng.
+
+Trong Chrome, PDF hai trang tự tạo đọc tại máy. Chọn trang 2 mở đúng văn bản, tài liệu có phiên bản 1 và tệp gốc khớp từng byte khi tải lại. PNG hỏng báo lỗi, giữ nguyên đề và không mở hộp xin phép OCR. Script dùng tệp `nguon-2-trang.pdf` trong thư mục đầu ra, tạo bằng hàm `pdf("Nguon trang mot", "Nguon trang hai")` trong bộ test. Chất lượng nhận dạng trên ảnh thật chưa được đánh giá trong lượt này. [Ca Chrome](../../scripts/kiem-ui-nhap-nguon.mjs) · [Ca API và ảnh mẫu](../../backend/tests/test_source_documents.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.
