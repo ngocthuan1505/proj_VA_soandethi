@@ -6,20 +6,50 @@ import {chromium} from 'playwright-core';
 import {blank,uid} from '../core.js';
 import {ensureBlocks} from '../blocks.js';
 
-const live=process.argv.includes('--live'),base=live?'http://127.0.0.1:4184':'http://127.0.0.1:4183',out=path.resolve(process.env.POC_OUTPUT||'outputs/local-demo/ui-model-audit-15-11/'+(live?'patch-live':'patch-fixture'));
+const live=process.argv.includes('--live'),base=live?'http://127.0.0.1:4184':(process.env.POC_BASE||'http://127.0.0.1:4183'),out=path.resolve(process.env.POC_OUTPUT||'outputs/local-demo/ui-model-audit-15-11/'+(live?'patch-live':'patch-fixture'));
 await fs.mkdir(out,{recursive:true});
 const api=async(url,body)=>{const r=await fetch(base+url,body?{method:'PUT',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify(body)}:{});assert(r.ok,await r.clone().text());return r.json();};
 assert.equal((await api('/api/status')).fixture,!live);
 const exam=blank('Toán',[]);Object.assign(exam,{title:'QA sửa câu · '+(live?'AI thật':'fixture'),grade:'1',chat:[],aiConsent:true,aiChatMode:'edit',autoUpdate:false,questions:[{id:uid(),v:1,type:'mcq',stem:'Một cộng một bằng mấy?',options:['1','2','3','4'],answer:1,explanation:'Một cộng một bằng hai.',topic:'Phép cộng',level:0,points:5,source:null,check:null},{id:uid(),v:1,type:'mcq',stem:'Hai cộng hai bằng mấy?',options:['1','2','3','4'],answer:3,explanation:'Hai cộng hai bằng bốn.',topic:'Phép cộng',level:0,points:5,source:null,check:null}]});ensureBlocks(exam);
-const prior=(await api('/api/kv?key=state')).value;prior.exams.push(exam);prior.current=exam.id;await api('/api/kv',{key:'state',value:prior});
+const prior=(await api('/api/kv?key=state')).value??{version:1,exams:[],prefs:[]};prior.exams.push(exam);prior.current=exam.id;await api('/api/kv',{key:'state',value:prior});
 const saved=async()=>(await api('/api/kv?key=state')).value.exams.find(e=>e.id===exam.id);
 const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
 try{
  const page=await browser.newPage({viewport:{width:1366,height:768}}),errors=[];page.setDefaultTimeout(live?310000:30000);page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);await page.waitForLoadState('networkidle');
- const send=async(text='Viết lại câu này rõ ràng hơn, giữ phép tính một cộng một và đáp án đúng.')=>{
-  if(!await page.locator('#chat-mode').isVisible())await page.locator('[data-ux-action=options]').click();await page.locator('#chat-mode').selectOption('edit');await page.keyboard.press('Escape');await page.locator('#chat-input').fill(text);await page.locator('#chat-form button[type=submit]').click();await page.locator('.proposal-card').waitFor();
+ const submit=async(text='Viết lại câu này rõ ràng hơn, giữ phép tính một cộng một và đáp án đúng.')=>{
+  if(!await page.locator('#chat-mode').isVisible())await page.locator('[data-ux-action=options]').click();await page.locator('#chat-mode').selectOption('edit');await page.keyboard.press('Escape');await page.locator('#chat-input').fill(text);await page.locator('#chat-form button[type=submit]').click();
  };
+ const send=async text=>{await submit(text);await page.locator('.proposal-card').waitFor();};
+ if(!live){
+  const stopText='Sửa câu này cho rõ hơn và giữ phép tính một cộng một.';
+  const pattern='**/api/assistant/patch';
+  let releaseResponse, capturedResponse;
+  const hold=new Promise(resolve=>{releaseResponse=resolve;});
+  const captured=new Promise(resolve=>{capturedResponse=resolve;});
+  await page.route(pattern,async route=>{
+   try{
+    const response=await route.fetch();
+    capturedResponse(response.ok());
+    await hold;
+    await route.fulfill({response});
+   }catch{capturedResponse(false);}
+  },{times:1});
+  try{
+   await page.locator('.outline-item').first().click();
+   await submit(stopText);
+   assert(await captured,'FastAPI chưa trả đề xuất fixture để kiểm phản hồi đến muộn');
+   await page.getByRole('button',{name:'Dừng chờ đề xuất',exact:true}).click();
+   await page.getByText('Đã dừng chờ đề xuất sửa. Bạn có thể gửi lại yêu cầu.',{exact:true}).waitFor();
+   assert.equal(await page.locator('#chat-input').inputValue(),stopText);
+   assert.deepEqual((await saved()).questions,exam.questions);
+  }finally{releaseResponse();await page.unroute(pattern);}
+  await page.locator('.outline-item').first().click();
+  assert.equal(await page.locator('.proposal-card').count(),0);
+  await send(stopText);
+  assert.deepEqual((await saved()).questions,exam.questions);
+  await page.locator('.proposal-card [data-action=discard-block-patch]').click();
+ }
  await page.locator('.outline-item').first().click();const started=performance.now();await send();
  assert.deepEqual((await saved()).questions,exam.questions);
  assert((await page.locator('.proposal-card').innerText()).includes('Giải độc lập'));
@@ -44,5 +74,5 @@ try{
   await page.locator('.outline-item').first().click();await send();await page.locator('.header-title').fill('Tên sửa tay sau đề xuất');await page.locator('.header-title').press('Tab');await page.locator('.proposal-card [data-action=apply-block-patch]').click();assert((await page.locator('#toast').innerText()).includes('Nội dung đã đổi'));assert.equal((await saved()).title,'Tên sửa tay sau đề xuất');
  }
  await page.screenshot({path:path.join(out,'02-sua-dung-cau.png')});assert.deepEqual(errors,[]);
- const result={mode:live?'real_ai':'fixture',examId:exam.id,previewBeforeAccept:true,otherQuestionUnchanged:true,idsPreserved:true,checksVisible:true,discardUndoPartialStaleTested:!live,proposalSeconds,pageErrors:errors};await fs.writeFile(path.join(out,'result.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
+ const result={mode:live?'real_ai':'fixture',examId:exam.id,previewBeforeAccept:true,stopWaitingVerified:!live,otherQuestionUnchanged:true,idsPreserved:true,checksVisible:true,discardUndoPartialStaleTested:!live,proposalSeconds,pageErrors:errors};await fs.writeFile(path.join(out,'result.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
 }finally{await browser.close();}

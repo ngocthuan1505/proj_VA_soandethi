@@ -255,3 +255,7 @@ Không đánh dấu các test T01–T06 là PASS khi chưa có fixture/log tươ
 - [ ] Tài liệu được đưa vào repository và liên kết trong issue UI-3-001.
 
 W01 không bao gồm viết lại `workbench.js`, thay đổi migration/database hoặc tuyên bố contract FastAPI đã được duyệt.
+
+## Đối chiếu bản tích hợp FastAPI
+
+Chrome kiểm luồng sửa vùng trên FastAPI với fixture. App hiển thị đề xuất trước xác nhận, giữ phần ngoài vùng, hỗ trợ bỏ và hoàn tác, từ chối bản đã cũ. Nút **Dừng chờ đề xuất** hủy yêu cầu ở trình duyệt, giữ lại câu đã nhập và bỏ phản hồi đến muộn. Route sửa vùng hiện trả một phản hồi HTTP; dừng chờ ở trình duyệt chưa xác nhận model đã dừng phía máy chủ. Luồng sinh theo ma trận có job, event và API hủy riêng; kiểm hồi quy nằm trong backend.

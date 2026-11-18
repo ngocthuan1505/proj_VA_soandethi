@@ -37,6 +37,12 @@ Cập nhật: 16/11/2026.
 - Các task CT-01/02/03 đang làm từng phần, chưa nghiệm thu cả task. Không dùng việc chuyển cột trên bảng thay số đo khảo sát/PoC/UX.
 - Chỉ Thuận vận hành GreenNode. Công việc chuẩn bị code, fixture, test và runbook không đòi server đang chạy; không tự triển khai hoặc gửi dữ liệu thật tới AI trả phí.
 
+## 11/11/2026 — dừng chờ đề xuất sửa ở demo
+
+- Hỗ trợ UI-3-001 (#3) và chuẩn bị ca cho UI-3-002 (#11). Khi đợi đề xuất sửa, giáo viên có thể bấm Dừng chờ đề xuất. Trình duyệt hủy fetch, giữ yêu cầu để gửi lại và bỏ phản hồi muộn. Giữ riêng nút dừng luồng soạn cả đề và sự kiện job đã có.
+- Ca trình duyệt dùng phản hồi có kiểm soát. Sau khi provider fixture nhận yêu cầu, bấm Dừng, thấy request bị hủy, kiểm tra nội dung đề giữ nguyên và ô nhập còn yêu cầu. Thả phản hồi cũ rồi gửi lại, xem được đề xuất mới trước khi xác nhận. Đạt 10 ca selection, 98 test Node và 14 test kế hoạch.
+- Bên lý thuyết có thêm bằng chứng kỹ thuật cho E07 ở demo Node. Provider phía server vẫn có thể chạy tới khi kết thúc. Cần ghép hủy job/provider trong Python và kiểm lại luồng AI thật trước nghiệm thu. Kết quả này độc lập với 48 lượt thí nghiệm.
+
 ## Làm tiếp
 
 Theo task đã nhận trong [backlog](../team/BACKLOG.md), chốt contracts/fixture rồi port theo từng lát chức năng sang Python. Khi hoàn tất mỗi lát, bổ sung commit, test, hành vi và giới hạn để bên nghiên cứu cập nhật đúng báo cáo. Ngôn ngữ/tỉ lệ GitHub không phải bằng chứng core đã chuyển.
