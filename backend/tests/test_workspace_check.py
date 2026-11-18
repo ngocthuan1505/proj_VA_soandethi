@@ -126,6 +126,36 @@ def test_unknown_source_and_spoofed_question_are_rejected(setup):
     assert client.post(path, json=body).status_code == 422 and not calls
 
 
+def test_check_keeps_source_id_and_exact_page_across_version_change(setup):
+    app, client, path, body, _, calls, _ = setup
+    snapshot = app.state.store.get("state")
+    state = snapshot["value"]
+    document = state["exams"][0]["docs"][0]
+    document["pages"].append({"number": 2, "text": "Nam xếp sách lên kệ."})
+    document["version"] = 4
+    app.state.store.put("state", state, snapshot["revision"])
+
+    submitted = deepcopy(body)
+    assert client.post(path, json=submitted).status_code == 409
+    selected = submitted["sources"][0]
+    selected["sourceVersion"] = 4
+    selected["locator"]["index"] = 3
+    assert client.post(path, json=submitted).status_code == 404
+    assert calls == []
+
+    selected["locator"]["index"] = 2
+    response = client.post(path, json=submitted)
+    response.raise_for_status()
+    evidence = response.json()["evidence"]
+    assert evidence == [
+        {
+            **selected,
+            "locator": {**selected["locator"], "regionId": None},
+            "quote": "Nam xếp sách lên kệ.",
+        }
+    ]
+
+
 def test_source_changed_without_revision_during_model_is_still_stale(setup):
     _, client, path, body, _, calls, mode = setup
     mode["tamper"] = True

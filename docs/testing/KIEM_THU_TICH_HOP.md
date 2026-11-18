@@ -42,6 +42,14 @@ Trong một ca riêng, pytest gây lỗi SQLite ngay sau câu lệnh cập nhậ
 
 Đây là kiểm trên fixture có kho riêng. Phép tính xem trước diễn ra trong trình duyệt, còn FastAPI lưu snapshot theo giao dịch và phiên bản. Chưa có người khác nghiệm thu bản cài. [Script kiểm Chrome](../../scripts/kiem-ui-du-kien.mjs) · [Kiểm rollback FastAPI](../../backend/tests/test_workspace_connection.py)
 
+## Kiểm lại IT-09 trên FastAPI
+
+Ngày 19/11/2026, Chrome so sánh hai bản ngữ liệu tự viết. Mở xem trước giữ kho cũ. Sau xác nhận bản B, nút mở nguồn dẫn đến trang 2 của cùng tài liệu. Câu liên quan giữ ID, đáp án và mất duyệt cũ. Câu ngoài phạm vi giữ nguyên. Sửa phần văn bản trích ở trang 2 làm tài liệu tăng phiên bản, trong khi phần ngữ liệu đã chọn và nội dung trang 1 vẫn giữ nguyên khi tải lại ở khung 390 × 844.
+
+Ca FastAPI kiểm ba yêu cầu với cùng ID nguồn. Phiên bản cũ trả 409. Trang không tồn tại trả 404. Cả hai lượt đều dừng trước model. Yêu cầu đúng phiên bản và trang 2 nhận trích dẫn từ trang 2 của fixture.
+
+Lượt kiểm dùng Chrome mô phỏng kích thước điện thoại và phản hồi model mẫu. [Script kiểm Chrome](../../scripts/kiem-ui-nguon-ab.mjs) · [Kiểm trang và phiên bản trên FastAPI](../../backend/tests/test_workspace_check.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.
