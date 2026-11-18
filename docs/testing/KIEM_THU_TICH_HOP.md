@@ -74,6 +74,12 @@ Chrome gửi yêu cầu Toán lớp 5 mà không điền số câu hoặc thời
 
 Pytest kiểm phần hướng dẫn lượt sinh giữ quy tắc có xác nhận, bỏ quy tắc còn nháp và phân đúng 10 điểm. Ca Chrome dùng phản hồi mẫu từ `scripts/chay-fixture-poc.py`. Chưa đánh giá mức phù hợp với bộ sách bằng model thật. [Ca Chrome](../../scripts/kiem-ui-co-cau.mjs) · [Ca FastAPI](../../backend/tests/test_exam_planning.py)
 
+## Kiểm lại IT-04 sinh đề và nối lại trạng thái
+
+Chrome kiểm chat → xác nhận ma trận → đồng ý gửi nguồn → sinh → xem đề xuất. Lượt thử làm mất một phản hồi trạng thái và một phản hồi audit. Nút tải lại tiếp tục theo cùng job, không yêu cầu sinh thêm. Đề xuất giữ được qua tải lại. Bỏ đề xuất giữ kho, còn bấm chấp nhận hai lần chỉ gửi một lần xác nhận.
+
+FastAPI chạy riêng ca **6 câu, 4 dạng, 10 điểm** từ ngữ liệu tự viết. Trace có một vòng không đạt rồi một vòng đạt. Sáu câu có căn cứ trỏ về đúng ID nguồn. Đề cũ giữ nguyên tới khi xác nhận; lần xác nhận tăng một revision. Bộ kiểm riêng còn qua xác nhận SSE phát lại, thiếu quyền, hạn mức, hủy và kết quả đến muộn. Dùng model mẫu và mô phỏng lỗi mạng trong Chrome. Chưa đối chiếu chất lượng model thật trên ứng viên này. [Ca Chrome](../../scripts/kiem-ui-matrix-chat.mjs) · [Ca sáu câu](../../backend/tests/test_exam_planning.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

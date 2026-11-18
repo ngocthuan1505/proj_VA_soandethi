@@ -96,14 +96,17 @@ class MixedModel:
                                 "duplicateUncertain": False,
                                 "reason": "Fixture.",
                                 "optionVerdicts": (
-                                    ["incorrect", "incorrect", "correct", "incorrect"]
-                                    if i == 0
+                                    [
+                                        "correct" if j == int(q["answer"]) else "incorrect"
+                                        for j in range(4)
+                                    ]
+                                    if self.job.slots[i].type == "mcq"
                                     else (
                                         ["incorrect"] * 4
                                         if self.fail_verdict
                                         else ["correct", "incorrect", "correct", "incorrect"]
                                     )
-                                    if i == 1
+                                    if self.job.slots[i].type == "truefalse"
                                     else []
                                 ),
                             }
@@ -113,7 +116,7 @@ class MixedModel:
                 )
             }
         assert purpose == "explanation_check"
-        assert data["questions"][3]["rubric"][0]["pointsQ4"] == 10
+        assert data["questions"][3]["rubric"][0]["pointsQ4"] == self.job.slots[3].pointsQ4
         assert data["questions"][3]["blindSolution"].startswith("Tự giải")
         return {
             "content": json.dumps(
@@ -124,7 +127,7 @@ class MixedModel:
                             "consistent": not (self.fail_essay and i == 3),
                             "reason": "Fixture.",
                         }
-                        for i in range(4)
+                        for i in range(len(self.job.slots))
                     ]
                 }
             )

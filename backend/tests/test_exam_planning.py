@@ -205,23 +205,37 @@ def test_general_knowledge_four_levels_runs_same_checks_without_fabricated_evide
 
 
 @pytest.mark.parametrize(
-    "instructions",
+    ("instructions", "with_source"),
     [
-        "Đọc kỹ và làm theo yêu cầu của từng câu.",
-        "Chọn một phương án đúng cho mỗi câu hỏi.",
-        "Thầy cô tự ghi: làm câu 1 trước.",
+        ("Đọc kỹ và làm theo yêu cầu của từng câu.", False),
+        ("Chọn một phương án đúng cho mỗi câu hỏi.", False),
+        ("Thầy cô tự ghi: làm câu 1 trước.", False),
+        ("Đọc kỹ và làm theo yêu cầu của từng câu.", True),
     ],
 )
-def test_general_generation_preview_confirm_preserves_custom_instructions(
-    workspace, mixed, tmp_path, instructions
+def test_generation_preview_confirm_preserves_custom_instructions(
+    workspace, mixed, tmp_path, instructions, with_source
 ):
     original, exam, _ = workspace
     job, arguments = mixed
     job = job.model_copy(
         update={"slots": (*job.slots[:3], job.slots[3].model_copy(update={"level": 3}))}
     )
-    for question in arguments["questions"]:
-        question["evidenceIds"] = []
+    if with_source:
+        slots = [slot.model_copy(update={"pointsQ4": 8}) for slot in job.slots]
+        slots.extend(
+            job.slots[i].model_copy(update={"topic": "Đọc chi tiết", "pointsQ4": 4}) for i in (0, 1)
+        )
+        for i in (0, 1):
+            extra = copy.deepcopy(arguments["questions"][i])
+            extra["stem"] = f"Câu đọc chi tiết {i + 5}?"
+            arguments["questions"].append(extra)
+        for slot, question in zip(slots, arguments["questions"], strict=True):
+            question["rubric"][0]["pointsQ4"] = slot.pointsQ4
+        job = job.model_copy(update={"slots": tuple(slots)})
+    else:
+        for question in arguments["questions"]:
+            question["evidenceIds"] = []
     state = copy.deepcopy(original.get("/api/kv?key=state").json()["value"])
     exam = state["exams"][0]
     exam["instructions"] = instructions
@@ -230,12 +244,13 @@ def test_general_generation_preview_confirm_preserves_custom_instructions(
             "topic": slot.topic,
             "type": slot.type,
             "targets": [int(level == slot.level) for level in range(4)],
-            "pointsQ4": 10,
+            "pointsQ4": slot.pointsQ4,
         }
         for slot in job.slots
     ]
+    model = MixedModel(job, arguments)
     with TestClient(
-        create_app(tmp_path / "general", agent_call=MixedModel(job, arguments)),
+        create_app(tmp_path / "general", agent_call=model),
         headers={"Origin": "http://testserver"},
     ) as client:
         client.put("/api/kv", json={"key": "state", "value": state}).raise_for_status()
@@ -244,13 +259,13 @@ def test_general_generation_preview_confirm_preserves_custom_instructions(
             prefix + "/matrix/approve",
             json={
                 "baseRevision": 1,
-                "sourceText": "",
-                "sourceName": "Kiến thức chung",
-                "sourceMode": "general",
+                "sourceText": job.sources[0].text if with_source else "",
+                "sourceName": "Ngữ liệu tự viết" if with_source else "Kiến thức chung",
+                "sourceMode": "provided" if with_source else "general",
             },
         )
         approval.raise_for_status()
-        assert approval.json()["sources"] == []
+        assert len(approval.json()["sources"]) == int(with_source)
         response = client.post(
             prefix + "/proposals/generate",
             headers={
@@ -263,7 +278,7 @@ def test_general_generation_preview_confirm_preserves_custom_instructions(
                 **approval.json(),
                 "requestId": str(uuid4()),
                 "consent": True,
-                "requireEvidence": False,
+                "requireEvidence": with_source,
             },
         )
         assert response.status_code == 202, response.text
@@ -274,6 +289,14 @@ def test_general_generation_preview_confirm_preserves_custom_instructions(
                 break
             time.sleep(0.02)
         assert result["status"] == "complete", result
+        assert model.attempts == 2
+        if with_source:
+            trace = client.get(base + "/trace").json()
+            rounds = [row["ok"] for row in trace if row["event"] == "generation_result"]
+            assert rounds == [False, True]
+            source_id = approval.json()["sources"][0]["sourceId"]
+            for question in result["proposal"]["questions"]:
+                assert question["evidence"][0]["sourceId"] == source_id
         assert client.get("/api/kv?key=state").json()["value"] == state
         client.post(
             base + "/confirm", json={"baseRevision": 1, "teacherConfirmation": True}
@@ -281,6 +304,8 @@ def test_general_generation_preview_confirm_preserves_custom_instructions(
         saved = client.get("/api/kv?key=state").json()["value"]["exams"][0]
         assert saved["id"] == exam["id"] and saved["revision"] == 2
         assert saved["questions"][3]["level"] == 3
+        assert len(saved["questions"]) == len(job.slots)
+        assert sum(question["points"] for question in saved["questions"]) == 10
         if instructions.startswith("Thầy"):
             assert saved["instructions"] == instructions
         else:
@@ -288,4 +313,4 @@ def test_general_generation_preview_confirm_preserves_custom_instructions(
                 label in saved["instructions"]
                 for label in ("nhiều lựa chọn", "đúng/sai", "trả lời ngắn", "tự luận")
             )
-        assert saved["docs"] == []
+        assert len(saved["docs"]) == int(with_source)
