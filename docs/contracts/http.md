@@ -62,10 +62,26 @@ Admin online do email cấu hình xác định. Session dùng cookie HttpOnly, S
 
 | Thao tác | Hợp đồng quan sát được |
 | --- | --- |
-| Mở kho và lưu | `GET /api/kv` trả `value` và `revision`. `PUT /api/kv` chấp nhận phiên bản dạng số qua `If-Match`. Nếu phiên bản đã cũ, API trả 409 với mã `stale_snapshot`. |
+| Mở kho và lưu | `GET /api/kv?key=state` trả `value` và `revision`. `PUT /api/kv` nhận JSON với `key` và `value`, trả `revision`. Bàn soạn gửi phiên bản kho qua `If-Match`. API trả 422 nếu thiếu trường hoặc sai dạng JSON, 400 nếu phiên bản hoặc nội dung kho không hợp lệ, 409 với mã `stale_snapshot` nếu phiên bản đã cũ. |
 | Đăng nhập và mở tài nguyên nhóm | `GET /api/account` trả thông tin của phiên hiện tại. Kho, tệp nguồn và bản xuất dùng phạm vi tài khoản. Khi UI gửi `X-Workspace-Context` của tab cũ sau khi đổi tài khoản, API trả 409 với mã `workspace_context_changed`. Logout thu hồi phiên. |
 | Đổi kết nối AI | `GET /api/config` trả thiết lập và trạng thái đã có khóa. Trong chế độ nhóm, `POST /api/config` chỉ dành cho quản trị viên. Thành viên dùng kết nối chung mà không nhận giá trị khóa. |
 | Chia sẻ | `POST /api/share` tạo bản chụp. Chủ bản chia sẻ xem danh sách qua `GET /api/share?examId=…` và thu hồi qua `POST /api/share/revoke`. Người có đường dẫn mở `GET /s/{token}`. `GET /api/share/read/{token}` chỉ kèm dữ liệu đề khi chủ bật cho sao chép. Liên kết đã thu hồi trả 404. |
 | Khôi phục | `POST /api/workspace/restore/preview` đọc và kiểm tra bản sao. `POST /api/workspace/restore` kiểm lại phiên bản hiện tại trước khi ghi. Chế độ nhóm khôi phục trong kho của phiên hiện tại. |
 
 [Kiểm thử quyền và phiên](../../backend/tests/test_team_workspace.py) · [Kiểm thử chia sẻ](../../backend/tests/test_workspace_shares.py) · [Kiểm thử kết nối](../../backend/tests/test_poc_connections.py) · [Kiểm thử khôi phục](../../backend/tests/test_workspace_backup.py)
+
+### Ví dụ lưu kho trống
+
+Ví dụ dùng kho thử mới có revision `0`. Khi lưu kho đang sử dụng, lấy revision từ lần đọc hiện tại và gửi đầy đủ trạng thái cần giữ.
+
+```http
+PUT /api/kv
+Content-Type: application/json
+If-Match: 0
+
+{"key":"state","value":{"exams":[],"prefs":[]}}
+```
+
+Phản hồi lần lưu đầu là `200 {"revision":1}`. Gửi lại cùng `If-Match: 0` nhận 409 và dữ liệu vẫn ở revision 1. Đọc lại kho qua `GET /api/kv?key=state`.
+
+Schema của bàn soạn tại máy có ở `/openapi.json`, gồm `WorkspaceWrite`, `WorkspaceRevision`, `WorkspaceSnapshot` và header `if-match`. Chế độ nhóm chuyển yêu cầu kho vào FastAPI của tài khoản qua mounted ASGI app, nên OpenAPI ở app nhóm chỉ liệt kê route trực tiếp của lớp nhóm. [Kiểm thử schema và revision](../../backend/tests/test_local_workspace.py)

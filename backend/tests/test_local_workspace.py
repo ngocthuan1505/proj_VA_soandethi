@@ -97,6 +97,49 @@ def workspace(tmp_path):
         yield client, exam, provider
 
 
+def test_workspace_write_openapi_and_invalid_input_keep_saved_revision(workspace):
+    client, _, _ = workspace
+    path = "/api/kv"
+    before = client.get(path, params={"key": "state"}).json()
+    schema = client.get("/openapi.json").json()
+    put = schema["paths"][path]["put"]
+    assert put["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
+        "/WorkspaceWrite"
+    )
+    assert schema["components"]["schemas"]["WorkspaceWrite"]["required"] == ["key", "value"]
+    assert any(
+        field["in"] == "header" and field["name"] == "if-match" for field in put["parameters"]
+    )
+    assert schema["paths"][path]["get"]["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ]["$ref"].endswith("/WorkspaceSnapshot")
+
+    for body in ("null", "[]", "{", '{"key":"file:test"}'):
+        assert (
+            client.put(path, content=body, headers={"Content-Type": "application/json"}).status_code
+            == 422
+        )
+    invalid_key = client.put(
+        path,
+        content='{"key":1e999,"value":{"private":"dữ liệu nháp"}}'.encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    assert invalid_key.status_code == 422
+    assert "dữ liệu nháp" not in invalid_key.text
+    for revision in (b"\xb2", b"9" * 5000):
+        res = client.put(
+            path, json={"key": "state", "value": before["value"]}, headers=[(b"If-Match", revision)]
+        )
+        assert res.status_code == 400
+    res = client.put(
+        path,
+        content='{"key":"state","value":{"exams":[],"prefs":[],"invalid":1e999}}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert res.status_code == 400
+    assert client.get(path, params={"key": "state"}).json() == before
+
+
 def generate(client, exam):
     prefix = "/api/exams/" + exam["id"]
     approval = client.post(

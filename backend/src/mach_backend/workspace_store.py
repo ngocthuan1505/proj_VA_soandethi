@@ -72,7 +72,12 @@ class WorkspaceStore:
         db.execute(
             "INSERT INTO kv VALUES(?,?,?,?) ON CONFLICT(key) DO UPDATE SET "
             "value=excluded.value,rev=excluded.rev,updated=excluded.updated",
-            (key, json.dumps(value, ensure_ascii=False), revision, int(time.time() * 1000)),
+            (
+                key,
+                json.dumps(value, ensure_ascii=False, allow_nan=False),
+                revision,
+                int(time.time() * 1000),
+            ),
         )
         return revision
 

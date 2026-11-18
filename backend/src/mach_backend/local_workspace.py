@@ -12,7 +12,9 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
@@ -89,6 +91,19 @@ def ui_entry(root=ROOT):
         '<script type="importmap">' + mapping + '</script><script type="module"',
         1,
     )
+
+
+class WorkspaceWrite(BaseModel):
+    key: str
+    value: JsonValue
+
+
+class WorkspaceRevision(BaseModel):
+    revision: int
+
+
+class WorkspaceSnapshot(WorkspaceRevision):
+    value: JsonValue
 
 
 class Approval(BaseModel):
@@ -341,6 +356,15 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             {"error": str(error), "code": error.code},
             404 if error.code == "exam_not_found" else 409,
         )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request, error):
+        if request.url.path == "/api/kv":
+            details = [
+                {field: item[field] for field in ("loc", "msg", "type")} for item in error.errors()
+            ]
+            return JSONResponse({"detail": details}, status_code=422)
+        return await request_validation_exception_handler(request, error)
 
     @app.get("/api/account")
     def account():
@@ -640,18 +664,17 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         return FileResponse(target, filename=name if target.suffix != ".html" else None)
 
     @app.get("/api/kv")
-    def get_value(key: str):
+    def get_value(key: str) -> WorkspaceSnapshot:
         if key != "state" and re.fullmatch(r"file:[\w-]+", key) is None:
             raise HTTPException(400, "Khóa không hợp lệ.")
-        return store.get(key)
+        return WorkspaceSnapshot(**store.get(key))
 
     @app.put("/api/kv")
-    async def put_value(request: Request):
-        data = await request.json()
-        key, value = data.get("key"), data.get("value")
-        if key != "state" and (
-            not isinstance(key, str) or re.fullmatch(r"file:[\w-]+", key) is None
-        ):
+    def put_value(
+        body: WorkspaceWrite, if_match: str | None = Header(default=None)
+    ) -> WorkspaceRevision:
+        key, value = body.key, body.value
+        if key != "state" and re.fullmatch(r"file:[\w-]+", key) is None:
             raise HTTPException(400, "Khóa không hợp lệ.")
         if key == "state" and (
             not isinstance(value, dict)
@@ -659,10 +682,15 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             or not isinstance(value.get("prefs"), list)
         ):
             raise HTTPException(400, "Workspace không hợp lệ.")
-        base = request.headers.get("if-match")
-        if base is not None and not base.isdigit():
+        if if_match is not None and not re.fullmatch(r"[0-9]{1,19}", if_match):
             raise HTTPException(400, "Phiên bản workspace không hợp lệ.")
-        return {"revision": store.put(key, value, int(base) if base is not None else None)}
+        try:
+            revision = store.put(key, value, int(if_match) if if_match is not None else None)
+        except AIError:
+            raise
+        except ValueError as exc:
+            raise HTTPException(400, "Dữ liệu workspace không phải JSON hợp lệ.") from exc
+        return WorkspaceRevision(revision=revision)
 
     @app.post("/api/exams/{exam_id}/matrix/approve")
     def approve(exam_id: UUID, request: Approval):
@@ -866,7 +894,9 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             lambda _request, exam_id: store.exam(exam_id),
         )
 
-    @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+    @app.api_route(
+        "/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False
+    )
     def unavailable(path: str):
         return JSONResponse(
             {
