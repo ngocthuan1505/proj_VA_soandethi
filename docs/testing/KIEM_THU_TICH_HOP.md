@@ -34,6 +34,14 @@
 4. Chạy source chứa lệnh giả, tài nguyên sai owner và download/export qua đường dẫn trực tiếp; server vẫn enforce quyền và không lộ secret. Test red-team bằng fixture, không tấn công server thật.
 5. Người khác chạy từ clone sạch bằng hướng dẫn; mở bản xuất thực và so artifact. Sai số/giới hạn Word/OCR phải ghi rõ.
 
+## Kiểm lại IT-08 trên FastAPI
+
+Ngày 19/11/2026, với mã bàn soạn tại `5a48a76`, Chrome desktop đã đổi dữ kiện khu vực B trong đề Địa lí mẫu từ 240 lên 300 người. Màn hình xem trước giữ kho cũ. Sau xác nhận, bảng, biểu đồ và bản HTML cùng hiện 300 người. Các câu liên quan giữ ID, tăng phiên bản và bỏ duyệt cũ. Câu ngoài phạm vi giữ nguyên. Sau tải lại, Hoàn tác khôi phục dữ kiện và câu. Một phiên khác ghi trước làm lượt xác nhận bị từ chối bằng HTTP 409 và dữ liệu mới hơn được giữ.
+
+Trong một ca riêng, pytest gây lỗi SQLite ngay sau câu lệnh cập nhật kho. FastAPI trả HTTP 500, rồi lần đọc tiếp theo xác nhận dữ kiện, câu và revision vẫn là bản cũ. Sau khi bỏ lỗi giả lập, gửi lại cùng revision lưu thành công một lần.
+
+Đây là kiểm trên fixture có kho riêng. Phép tính xem trước diễn ra trong trình duyệt, còn FastAPI lưu snapshot theo giao dịch và phiên bản. Chưa có người khác nghiệm thu bản cài. [Script kiểm Chrome](../../scripts/kiem-ui-du-kien.mjs) · [Kiểm rollback FastAPI](../../backend/tests/test_workspace_connection.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

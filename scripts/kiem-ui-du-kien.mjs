@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import {chromium} from 'playwright-core';
 import {sample,approveQuestion,check} from '../core.js';
 import {ensureBlocks} from '../blocks.js';
 
-const base='http://127.0.0.1:4183',out='outputs/mvp-18-11/linked-data';
+const base=process.env.POC_URL||'http://127.0.0.1:4183';
+const out=path.resolve(process.argv[2]||'outputs/mvp-18-11/linked-data');
+await fs.mkdir(out,{recursive:true});
 async function api(route,{body,method,revision}={}){
  const response=await fetch(base+route,{
   method:method||'GET',
@@ -72,6 +75,6 @@ try{
  assert.deepEqual(server.value,other.value);assert.equal(server.revision,other.revision+1);
  await dialog.getByText(/Chưa đồng bộ dữ kiện/).waitFor();
  assert.deepEqual(errors,[]);
- await fs.writeFile(out+'/result.json',JSON.stringify({noOp:true,reversedPremise:true,previewIsolated:true,tableAndChart:true,exportStudent:true,reload:true,undo:true,staleWriteRejected:true,fixture:true},null,2));
+ await fs.writeFile(out+'/result.json',JSON.stringify({scenario:'IT-08',endpoint:base,viewport:page.viewportSize(),noOp:true,reversedPremise:true,previewIsolated:true,tableAndChart:true,exportStudent:true,reload:true,undo:true,staleWriteRejected:true,fixture:true},null,2));
  console.log('Dữ kiện, bảng, biểu đồ, xuất, hoàn tác và xung đột đều đạt.');
 }finally{await browser.close();}
