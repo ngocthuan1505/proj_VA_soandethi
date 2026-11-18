@@ -618,6 +618,35 @@ def test_migration_rejects_duplicate_ids_across_workspaces(migrated_store, colli
     assert target.read_bytes() == before
 
 
+def test_migration_leaves_preexisting_temporary_names_alone(tmp_path):
+    target = tmp_path / "target.sqlite"
+    source = target.with_suffix(".tmp.sqlite")
+    create_legacy_kv_sqlite(source)
+    source_bytes = source.read_bytes()
+    old_directory = tmp_path / "blobs_tmp"
+    old_directory.mkdir()
+    marker = old_directory / "must-keep.txt"
+    marker.write_text("dữ liệu của lần khác", encoding="utf-8")
+
+    assert migrate_legacy_store(source, target, tmp_path / "blobs")["ok"]
+
+    assert source.read_bytes() == source_bytes
+    assert marker.read_text(encoding="utf-8") == "dữ liệu của lần khác"
+
+
+def test_migration_serializes_same_destination(migrated_store):
+    source, target, blobs = migrated_store
+    lock_path = target.with_name(target.name + ".migration-lock")
+    before = target.read_bytes()
+    with closing(sqlite3.connect(lock_path)) as lock:
+        lock.execute("BEGIN IMMEDIATE")
+        with pytest.raises(RuntimeError, match="đang có một lượt di trú"):
+            migrate_legacy_store(source, target, blobs)
+        assert target.read_bytes() == before
+
+    assert migrate_legacy_store(source, target, blobs)["ok"]
+
+
 @pytest.mark.parametrize("failure", ["blob", "database"])
 def test_failed_publication_preserves_existing_store(migrated_store, monkeypatch, failure):
     source, target, blobs = migrated_store
@@ -635,8 +664,8 @@ def test_failed_publication_preserves_existing_store(migrated_store, monkeypatch
 
     def failing_replace(path, destination):
         nonlocal reached_failure
-        is_database = path == target.with_suffix(".tmp.sqlite")
-        is_blob = path.suffix == ".bin" or path == blobs.with_name("blobs_tmp")
+        is_database = destination == target
+        is_blob = path.suffix == ".bin"
         if (failure == "database" and is_database) or (failure == "blob" and is_blob):
             reached_failure = True
             raise OSError("Lỗi công bố bản di trú giả lập.")

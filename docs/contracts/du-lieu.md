@@ -358,8 +358,8 @@ flowchart TD
     Phase2 --> Phase3[Pha 3: Đọc từng dòng file:* qua Cursor -> Giải mã Base64 -> Ghi blobs/sha256 -> Ghi SOURCE_DOCUMENTS]
     Phase3 --> Phase4[Pha 4: Bóc tách Exams, Questions, ExamVersions, QuestionVersions, AIJobs, Shares, Exports]
     Phase4 --> Phase5{Pha 5: PRAGMA foreign_key_check, integrity_check & Round-Trip SHA-256}
-    Phase5 -->|Lỗi hệ thống hoặc sai lệch| Rollback[Xóa file .tmp.sqlite & blobs_tmp - Giữ nguyên workspace.sqlite cũ 100%]
-    Phase5 -->|Khớp 100%| AtomicSwap[Đổi tên nguyên tử .tmp.sqlite thành DB đích & xuất biên bản]
+    Phase5 -->|Lỗi hệ thống hoặc sai lệch| Rollback[Dọn thư mục tạm của lượt chạy và giữ kho cũ]
+    Phase5 -->|Khớp 100%| AtomicSwap[Đổi tên nguyên tử file DB tạm thành DB đích]
 ```
 
 ### 4.2. Quy trình Backup & Restore Nhất quán trên Bản sao
@@ -369,7 +369,7 @@ flowchart TD
   3. Sao chép thư mục `.data/blobs/` và kiểm tra mã băm của từng tệp `.bin` khớp với cột `sha256_hash` trong bảng `source_documents` của bản sao.
   4. Chạy `PRAGMA integrity_check` và `PRAGMA foreign_key_check` trên `bck_conn` $\rightarrow$ phải trả về `'ok'` và `[]`.
 * **Restore & Rollback khi có sự cố:**
-  * Di trú và khôi phục luôn ghi vào tệp tạm (`.tmp.sqlite` và `blobs_tmp/`). Chỉ khi toàn bộ kiểm tra ở Pha 5 đạt 100% mới thực hiện hoán đổi đường dẫn (atomic replace). Nếu có bất kỳ lỗi nào giữa chừng, tệp tạm bị xóa sạch và tệp gốc không bị suy suyển dù chỉ 1 byte.
+  * Di trú và khôi phục luôn ghi vào tệp tạm (thư mục riêng cho mỗi lượt chạy). Chỉ khi toàn bộ kiểm tra ở Pha 5 đạt 100% mới thực hiện hoán đổi đường dẫn (atomic replace). Nếu có bất kỳ lỗi nào giữa chừng, tệp tạm bị xóa sạch và tệp gốc không bị suy suyển dù chỉ 1 byte.
 
 ---
 
@@ -452,7 +452,7 @@ Input (field/type/unit/required/limits):
 Output thành công:
   - MigrationReportDTO {ok: True, table_counts: dict[str, int], physical_blob_count: int, quarantined_items: list[dict]}
 Lỗi có thể trả + status/code:
-  - 500 MIGRATION_INTEGRITY_ERROR: Lỗi PRAGMA foreign_key_check, PRAGMA integrity_check hoặc lỗi I/O hệ thống -> tự động xóa tệp đích tạm (.tmp.sqlite).
+  - 500 MIGRATION_INTEGRITY_ERROR: Lỗi PRAGMA foreign_key_check, PRAGMA integrity_check hoặc lỗi I/O hệ thống -> tự động xóa tệp đích tạm của lượt chạy.
 Quy tắc quyền/revision/idempotency:
   - Tuyệt đối Read-Only trên src_sqlite (SHA-256 của src_sqlite trước và sau khi chạy phải giống hệt nhau).
   - Idempotent: Chạy lại N lần trên cùng nguồn không tạo bản sao và không tăng sai lệch revision.

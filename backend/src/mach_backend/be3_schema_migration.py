@@ -1,13 +1,16 @@
 """Đặc tả thực thi DDL 15 bảng, migration 5 pha và hợp đồng giao dịch BE-3."""
 
+import argparse
 import base64
 import hashlib
 import json
 import re
 import shutil
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 SCHEMA_DDL = """
@@ -512,29 +515,53 @@ def migrate_legacy_store(
     simulate_mid_failure: bool = False,
 ) -> dict[str, Any]:
     """Thực thi di trú 5 pha từ SQLite KV sang 15 bảng chuẩn hóa trên bản sao."""
-    if src_sqlite.resolve() == dst_sqlite.resolve():
+    src_sqlite = src_sqlite.resolve()
+    dst_sqlite = dst_sqlite.resolve()
+    blobs_dir = blobs_dir.resolve()
+    if src_sqlite == dst_sqlite:
         raise ValueError("Chọn kho đích khác với kho nguồn.")
 
-    tmp_sqlite = dst_sqlite.with_suffix(".tmp.sqlite")
-    tmp_blobs = blobs_dir.with_name(blobs_dir.name + "_tmp")
-    if tmp_sqlite.exists():
-        tmp_sqlite.unlink()
-    if tmp_blobs.exists():
-        shutil.rmtree(tmp_blobs)
+    dst_sqlite.parent.mkdir(parents=True, exist_ok=True)
+    blobs_dir.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = dst_sqlite.with_name(dst_sqlite.name + ".migration-lock")
+    with closing(sqlite3.connect(lock_path, timeout=0)) as lock:
+        try:
+            lock.execute("BEGIN IMMEDIATE")
+        except sqlite3.OperationalError as exc:
+            if exc.sqlite_errorcode != sqlite3.SQLITE_BUSY:
+                raise
+            raise RuntimeError("Kho đích đang có một lượt di trú.") from exc
+        with (
+            TemporaryDirectory(prefix=".migration-db-", dir=dst_sqlite.parent) as db_temp,
+            TemporaryDirectory(prefix=".migration-blobs-", dir=blobs_dir.parent) as blob_temp,
+        ):
+            return _migrate_snapshot(
+                src_sqlite,
+                dst_sqlite,
+                blobs_dir,
+                Path(db_temp) / dst_sqlite.name,
+                Path(blob_temp),
+                simulate_mid_failure,
+            )
 
+
+def _migrate_snapshot(
+    src_sqlite: Path,
+    dst_sqlite: Path,
+    blobs_dir: Path,
+    tmp_sqlite: Path,
+    tmp_blobs: Path,
+    simulate_mid_failure: bool,
+) -> dict[str, Any]:
     if dst_sqlite.exists():
         shutil.copy2(dst_sqlite, tmp_sqlite)
-    if blobs_dir.exists():
-        shutil.copytree(blobs_dir, tmp_blobs)
-    else:
-        tmp_blobs.mkdir(parents=True, exist_ok=True)
 
-    src_conn = sqlite3.connect(f"{src_sqlite.resolve().as_uri()}?mode=ro", uri=True)
-    src_conn.row_factory = sqlite3.Row
-    dst_conn = sqlite3.connect(tmp_sqlite.as_posix())
-    dst_conn.row_factory = sqlite3.Row
-
-    try:
+    with (
+        closing(sqlite3.connect(f"{src_sqlite.as_uri()}?mode=ro", uri=True)) as src_conn,
+        closing(sqlite3.connect(tmp_sqlite)) as dst_conn,
+    ):
+        src_conn.row_factory = dst_conn.row_factory = sqlite3.Row
+        src_conn.execute("BEGIN")
         dst_conn.executescript(SCHEMA_DDL)
         with dst_conn:
             for sys_id, sys_name in [("local", "Tài khoản cục bộ"), ("guest", "Khách")]:
@@ -1139,34 +1166,14 @@ def migrate_legacy_store(
             if integrity != "ok":
                 raise RuntimeError(f"Integrity check failed: {integrity}")
 
-        dst_conn.close()
-        src_conn.close()
-
-        # Blob theo hash được thêm trước; DB cũ vẫn dùng nguyên các blob đã có nếu công bố lỗi.
-        for blob in tmp_blobs.rglob("*"):
-            if blob.is_file():
-                destination = blobs_dir / blob.relative_to(tmp_blobs)
-                if not destination.exists():
-                    destination.parent.mkdir(parents=True, exist_ok=True)
-                    blob.replace(destination)
-        tmp_sqlite.replace(dst_sqlite)
-        shutil.rmtree(tmp_blobs, ignore_errors=True)
-        return {"ok": True}
-
-    except Exception:
-        dst_conn.close()
-        src_conn.close()
-        if tmp_sqlite.exists():
-            tmp_sqlite.unlink()
-        for sidecar in [
-            Path(str(tmp_sqlite) + "-wal"),
-            Path(str(tmp_sqlite) + "-shm"),
-        ]:
-            if sidecar.exists():
-                sidecar.unlink()
-        if tmp_blobs.exists():
-            shutil.rmtree(tmp_blobs)
-        raise
+    # Thêm blob theo hash trước khi thay DB để DB cũ luôn đọc được dữ liệu đã có.
+    for blob in tmp_blobs.rglob("*.bin"):
+        destination = blobs_dir / blob.relative_to(tmp_blobs)
+        if not destination.exists():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            blob.replace(destination)
+    tmp_sqlite.replace(dst_sqlite)
+    return {"ok": True}
 
 
 def reconstruct_workspace_state(conn: sqlite3.Connection, owner_id: str) -> dict[str, Any]:
@@ -1639,3 +1646,19 @@ def table_counts(conn: sqlite3.Connection) -> dict[str, int]:
         "quarantine_legacy_items",
     ]
     return {t: int(conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]) for t in tables}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Di trú bản sao SQLite KV sang kho BE-3.")
+    parser.add_argument("--source", required=True, type=Path, help="Đường dẫn DB nguồn chỉ đọc.")
+    parser.add_argument("--target", required=True, type=Path, help="Đường dẫn DB đích đã dừng.")
+    args = parser.parse_args()
+    try:
+        result = migrate_legacy_store(args.source, args.target, args.target.parent / "blobs")
+    except (OSError, RuntimeError, ValueError, sqlite3.Error) as exc:
+        parser.exit(1, f"Di trú dừng: {exc}\n")
+    print(canonical_json(result))
+
+
+if __name__ == "__main__":
+    main()

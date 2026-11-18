@@ -6,6 +6,17 @@
 
 **Kiểm chuyển dữ liệu mẫu:** state tái tạo đã được ghi và đọc lại qua API FastAPI trong kho thử riêng. Migration giữ yêu cầu sinh đề và chỉ dẫn AI. Nếu trùng ID đề giữa các kho hoặc ID câu giữa các đề, migration từ chối và giữ kho đích cũ. Cần xử lý nguồn xung đột trước khi chạy lại.
 
+**Chạy migration trên bản sao đã dừng:** đóng app đang dùng kho đích trước khi chuyển. Mỗi lượt dùng thư mục tạm riêng, giữ một snapshot đọc của nguồn và khóa theo đường dẫn DB đích. SQLite nhả khóa khi tiến trình kết thúc. Tệp khóa có thể nằm lại để các lần chạy tiếp dùng chung.
+
+Từ thư mục repo, chạy trên bản sao:
+
+```sh
+cd backend
+uv run --frozen python -m mach_backend.be3_schema_migration --source ../outputs/kho-mau/nguon.sqlite --target ../outputs/kho-da-chuyen/workspace.sqlite
+```
+
+Lệnh tạo DB đích và thư mục `blobs/` bên cạnh. Giữ DB nguồn để có thể quay lại. Nếu gặp lỗi, giữ nguyên kho đang dùng và đọc thông báo trước khi thử lại. DB đích dùng để đối chiếu schema BE-3 và hiện chưa phải định dạng mở trực tiếp của app.
+
 ## Entity mục tiêu (15 bảng chuẩn hóa)
 
 ```mermaid
@@ -43,4 +54,4 @@ Mỗi tài nguyên có `owner_id`/server-side scope; `revision` thuộc đề (`
    - `T05`: Phân biệt gửi lặp hợp lệ và tái sử dụng `requestId` khác nội dung hoặc khác thao tác (`patch <-> generate` $\rightarrow$ `409 job_conflict`) bền vững sau khi đóng/mở lại SQLite repository nhờ lưu `(job_kind, request_digest)` trong `ai_jobs`.
    - **4 ca hồi quy bổ sung (PR #42):** Ghi đè đồng thời (`Barrier` + `UPDATE ... RETURNING` báo đúng `409`), bảo toàn `draftStatus`/`verificationStatus`/`approvalStatus`/`evidence` qua `reconstruct_workspace_state`, và bảo toàn kho DB/blob cũ khi công bố migration gặp lỗi ở bước blob hoặc DB (`test_failed_publication_preserves_existing_store`). Tổng `backend/tests/` đạt **11/11 pytest** (`9` ca BE-3 + `2` ca foundation).
 
-Mặc định giữ SQLite local cho nhóm chạy editor. Việc viết code thực thi repository (`BE-3-002`) và CLI migration/locking (`BE-3-003`) sẽ thực hiện ở các PR riêng ở M2/M3; người vận hành dữ liệu thật trên GreenNode vẫn là Thuận.
+Mặc định giữ SQLite local cho nhóm chạy editor. CLI thử nghiệm và khóa theo DB đích có trên nhánh tích hợp. Repository runtime (`BE-3-002`) và diễn tập với bản ứng viên phát hành (`BE-3-003`) vẫn cần hoàn thiện; người vận hành dữ liệu thật trên GreenNode vẫn là Thuận.
