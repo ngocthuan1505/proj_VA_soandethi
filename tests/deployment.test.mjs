@@ -32,7 +32,7 @@ test('Online HTTP contracts: authentication, CSRF, admin config, private exports
  const probe=http.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));
  const dir=await mkdtemp(path.join(os.tmpdir(),'mach-online-')),root=fileURLToPath(new URL('../',import.meta.url)),publicOrigin='https://mach.example.test',base='http://127.0.0.1:'+port;
  const env={...process.env,PORT:String(port),HOST:'127.0.0.1',APP_PUBLIC_URL:publicOrigin,APP_ADMIN_EMAIL:adminEmail,APP_SIGNUP_CODE:invite,APP_DATA_DIR:dir,APP_AI_CONFIG:JSON.stringify({gemini:{model:'fixture-model',key:'server-only-fixture-secret'}})};let child,logs='';
- const request=(route,{method='GET',data,cookie,origin=publicOrigin,host='mach.example.test'}={})=>new Promise((resolve,reject)=>{const req=http.request(base+route,{method,headers:{Host:host,...(!['GET','HEAD'].includes(method)?{Origin:origin,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})}},res=>{const chunks=[];res.on('data',c=>chunks.push(c));res.on('end',()=>resolve(new Response(Buffer.concat(chunks),{status:res.statusCode,headers:res.headers})));});req.on('error',reject);req.end(data?JSON.stringify(data):undefined);});
+ const request=(route,{method='GET',data,cookie,revision,origin=publicOrigin,host='mach.example.test'}={})=>new Promise((resolve,reject)=>{const req=http.request(base+route,{method,headers:{Host:host,...(!['GET','HEAD'].includes(method)?{Origin:origin,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...(revision===undefined?{}:{'If-Match':String(revision)})}},res=>{const chunks=[];res.on('data',c=>chunks.push(c));res.on('end',()=>resolve(new Response(Buffer.concat(chunks),{status:res.statusCode,headers:res.headers})));});req.on('error',reject);req.end(data?JSON.stringify(data):undefined);});
  const start=async()=>{child=spawn(process.execPath,[path.join(root,'server.mjs')],{env,stdio:['ignore','pipe','pipe'],windowsHide:true});child.stdout.on('data',s=>logs+=s);child.stderr.on('data',s=>logs+=s);for(let i=0;i<100;i++){if(child.exitCode!==null)throw Error(logs);try{if((await request('/api/health')).ok)return;}catch{}await new Promise(r=>setTimeout(r,100));}throw Error('Server timeout: '+logs);};
  const stop=async()=>{if(child&&child.exitCode===null){const done=once(child,'exit');child.kill('SIGTERM');await done;}};
  try{await start();assert.equal((await request('/')).status,302);assert.equal((await request('/login')).status,200);assert.match(await(await request('/login')).text(),/registration-fields/);
@@ -49,6 +49,22 @@ test('Online HTTP contracts: authentication, CSRF, admin config, private exports
  const e=blank('Toán');e.questions=[{id:uid(),v:1,type:'essay',stem:'Giải phương trình $x+1=2$.',points:1,options:[],answer:0,explanation:'PRIVATE_TEACHER_SOLUTION',rubric:[{text:'Kết luận $x=1$.',points:1}]}];
  assert.equal((await request('/api/kv',{method:'PUT',cookie:member,data:{key:'state',value:{version:1,current:e.id,exams:[e],prefs:[]}}})).status,200);
  assert.equal((await(await request('/api/kv?key=state',{cookie:admin})).json()).value,null);
+ const savedState=await(await request('/api/kv?key=state',{cookie:member})).json();
+ const staleState={...savedState.value,exams:[{...e,title:'Bản sửa đã cũ'}]};
+ const staleSave=await request('/api/kv',{
+  method:'PUT',cookie:member,revision:savedState.revision-1,data:{key:'state',value:staleState}
+ });
+ assert.equal(staleSave.status,409);
+ assert.deepEqual(await(await request('/api/kv?key=state',{cookie:member})).json(),savedState);
+
+ const fileKey='file:'+uid();
+ const fileValue='data:text/plain;base64,'+Buffer.from('Tệp riêng dùng kiểm thử').toString('base64');
+ const savedFile=await request('/api/kv',{method:'PUT',cookie:member,data:{key:fileKey,value:fileValue}});
+ assert.equal(savedFile.status,200);
+ const fileRoute='/api/kv?key='+encodeURIComponent(fileKey);
+ assert.equal((await(await request(fileRoute,{cookie:member})).json()).value,fileValue);
+ assert.deepEqual(await(await request(fileRoute,{cookie:admin})).json(),{value:null,revision:0});
+
  const exported=await(await request('/api/save-export',{method:'POST',cookie:member,data:{type:'backup',backup:{format:'tro-ly-soan-de',content:'MEMBER_PRIVATE_EXPORT'}}})).json();assert.ok(exported.url);assert.equal((await request(exported.url,{cookie:admin})).status,403);assert.equal((await request(exported.url)).status,401);assert.match(await(await request(exported.url,{cookie:member})).text(),/MEMBER_PRIVATE_EXPORT/);assert.ok((await readFile(path.join(dir,'exports',exported.filename),'utf8')).includes('MEMBER_PRIVATE_EXPORT'));
  await mkdir(path.join(dir,'exports'),{recursive:true});await writeFile(path.join(dir,'exports','orphan.txt'),'ORPHAN_PRIVATE');assert.equal((await request('/exports/orphan.txt',{cookie:member})).status,403);
  const share=await(await request('/api/share',{method:'POST',cookie:member,data:{examId:e.id,answers:false,allowCopy:true}})).json();assert.ok(share.url.startsWith(publicOrigin+'/s/'));assert.equal(share.localOnly,false);const shared=await request(new URL(share.url).pathname);assert.equal(shared.status,200);assert.ok(!(await shared.text()).includes('PRIVATE_TEACHER_SOLUTION'));
