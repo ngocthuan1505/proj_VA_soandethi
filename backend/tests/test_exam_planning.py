@@ -185,7 +185,12 @@ def test_general_knowledge_four_levels_runs_same_checks_without_fabricated_evide
 
 
 @pytest.mark.parametrize(
-    "instructions", ["Chọn một phương án đúng cho mỗi câu hỏi.", "Thầy cô tự ghi: làm câu 1 trước."]
+    "instructions",
+    [
+        "Đọc kỹ và làm theo yêu cầu của từng câu.",
+        "Chọn một phương án đúng cho mỗi câu hỏi.",
+        "Thầy cô tự ghi: làm câu 1 trước.",
+    ],
 )
 def test_general_generation_preview_confirm_preserves_custom_instructions(
     workspace, mixed, tmp_path, instructions
@@ -256,9 +261,11 @@ def test_general_generation_preview_confirm_preserves_custom_instructions(
         saved = client.get("/api/kv?key=state").json()["value"]["exams"][0]
         assert saved["id"] == exam["id"] and saved["revision"] == 2
         assert saved["questions"][3]["level"] == 3
-        assert (
-            saved["instructions"] == instructions
-            if instructions.startswith("Thầy")
-            else "tự luận" in saved["instructions"]
-        )
+        if instructions.startswith("Thầy"):
+            assert saved["instructions"] == instructions
+        else:
+            assert all(
+                label in saved["instructions"]
+                for label in ("nhiều lựa chọn", "đúng/sai", "trả lời ngắn", "tự luận")
+            )
         assert saved["docs"] == []

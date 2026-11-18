@@ -297,10 +297,9 @@ class WorkspaceTransaction:
         exam["redo"] = []
         exam["updated"] = int(time.time() * 1000)
         # Yêu cầu sinh của PoC chứa tiêu chí cho AI, không phải lời dặn thí sinh.
-        exam["instructions"] = before.get(
-            "instructions", "Thí sinh chọn một phương án đúng cho mỗi câu hỏi."
-        )
-        defaults = {
+        neutral = "Đọc kỹ và làm theo yêu cầu của từng câu."
+        exam["instructions"] = before.get("instructions", neutral)
+        legacy_defaults = {
             "Thí sinh chọn một phương án đúng cho mỗi câu hỏi.",
             "Chọn một phương án đúng cho mỗi câu hỏi.",
             (
@@ -309,7 +308,9 @@ class WorkspaceTransaction:
             ),
         }
         kinds = {q["type"] for q in exam["questions"]}
-        if kinds != {"mcq"} and exam["instructions"] in defaults:
+        if exam["instructions"] == neutral or (
+            kinds != {"mcq"} and exam["instructions"] in legacy_defaults
+        ):
             guidance = {
                 "mcq": "Chọn một phương án đúng ở mỗi câu nhiều lựa chọn.",
                 "truefalse": "Đánh giá đúng/sai từng nhận định.",

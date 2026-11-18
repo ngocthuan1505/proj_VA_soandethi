@@ -89,7 +89,18 @@ export function deriveMath(q){
  const matches=q.options.map((o,i)=>mathKey(o)===mathKey(result)?i:-1).filter(i=>i>=0);
  return {answer:matches.length===1?matches[0]:null,result,replacement:result,explanation,error:matches.length===1?null:'Phương án chưa chứa duy nhất một kết quả đúng.'};
 }
-export function blank(subject,prefs=[]){let e=sample(subject,prefs);e.title='Đề thi mới';e.sample=false;e.questions=[];e.docs=[];e.matrix=[{topic:'Chủ đề mới',targets:[2,1,1]}];e.quote={text:'',chosen:null,versions:[]};e.chat=[{role:'assistant',text:'Đề mới đã áp dụng các yêu cầu thầy cô xác nhận. Thầy cô có thể thêm câu thủ công, nhập tư liệu hoặc mở bộ ví dụ. Sinh câu từ tài liệu cần kết nối AI.'}];return e;}
+export function blank(subject,prefs=[]){
+ const e=sample(subject,prefs);
+ e.title='Đề thi mới';
+ e.instructions='Đọc kỹ và làm theo yêu cầu của từng câu.';
+ e.sample=false;
+ e.questions=[];
+ e.docs=[];
+ e.matrix=[{topic:'Chủ đề mới',targets:[2,1,1]}];
+ e.quote={text:'',chosen:null,versions:[]};
+ e.chat=[{role:'assistant',text:'Đề mới đã áp dụng các yêu cầu thầy cô xác nhận. Thầy cô có thể thêm câu thủ công, nhập tư liệu hoặc mở bộ ví dụ. Sinh câu từ tài liệu cần kết nối AI.'}];
+ return e;
+}
 export function snapshot(e){const {history,undo,redo,...content}=e;return clone(content);}
 export function commit(e,label,fn){const before=snapshot(e);const revision=Math.max(e.revision,...e.history.map(x=>x.revision))+1;fn(e);e.undo.push({label,state:before});if(e.undo.length>60)e.undo.shift();e.redo=[];e.revision=revision;e.updated=Date.now();e.history.push({id:uid(),label,at:e.updated,revision:e.revision,state:snapshot(e)});if(e.history.length>100)e.history.shift();return e;}
 export function undo(e){if(!e.undo.length)return false;const previous=e.undo.pop();e.redo.push({label:previous.label,state:snapshot(e)});const {history,undo,redo}=e;Object.assign(e,clone(previous.state),{history,undo,redo});e.revision=Math.max(...history.map(x=>x.revision),e.revision)+1;e.history.push({id:uid(),label:'Hoàn tác: '+previous.label,at:Date.now(),revision:e.revision,state:snapshot(e)});return true;}

@@ -3,6 +3,12 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {questionAnswer,dataChartSVG,duplicateExam,recordCheck,approveQuestion,isApproved,sample,blank,clone,commit,undo,redo,touch,check,derive,updateData,matrix,exportHTML,snapshot} from '../core.js';
 
+test('Đề trống dùng lời dặn chung, đề minh họa giữ lời dặn riêng',()=>{
+ const exam=blank('Toán');
+ assert.equal(exam.instructions,'Đọc kỹ và làm theo yêu cầu của từng câu.');
+ assert.match(sample('Toán').instructions,/Chọn một phương án đúng/u);
+});
+
 test('Giá trị dữ kiện giữ nguyên không làm mất duyệt hoặc tăng phiên bản câu',()=>{
  const e=sample();approveQuestion(e.questions[0]);const before=clone(e);
  updateData(e,1,e.data[1].value);
