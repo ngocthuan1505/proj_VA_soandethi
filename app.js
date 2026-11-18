@@ -234,7 +234,21 @@ async function handleAction(a,n){
    modal('Khôi phục bản sao dữ liệu',`<p>Đã kiểm bản sao: ${preview.exams} đề, ${preview.files} tệp và ${preview.prefs} yêu cầu đã xác nhận.</p><div class="alert">Thay kho của tài khoản hiện tại bằng bản sao này, gồm lịch sử và hoàn tác. Hãy tải bản sao hiện tại nếu cần giữ lại. Khóa AI, tài khoản, liên kết chia sẻ và tác vụ AI cũ không được khôi phục từ JSON.</div>${foot(button('backup','Tải bản sao hiện tại')+button('confirm-backup','Khôi phục kho này','primary'))}`);
   });
   break;
- case 'confirm-backup':{if(pending?.type!=='backup'||n.disabled)return;n.disabled=true;try{await saveChain;const result=await db.restoreBackup(pending.data,pending.revision);pending=null;dialog.close();if(result.cacheWarning)toast(result.cacheWarning);location.reload();}finally{if(n.isConnected)n.disabled=false;}break;}
+ case 'confirm-backup':{
+  const backup=pending;
+  if(backup?.type!=='backup'||n.disabled)return;
+  n.disabled=true;
+  try{
+   await saveChain;
+   if(pending!==backup||!n.isConnected||!dialog.open)return;
+   const result=await db.restoreBackup(backup.data,backup.revision);
+   pending=null;
+   dialog.close();
+   if(result.cacheWarning)toast(result.cacheWarning);
+   location.reload();
+  }finally{if(n.isConnected)n.disabled=false;}
+  break;
+ }
  case 'connections':showConnections();break;
  case 'extract':await showExtract();break;
  default:break;

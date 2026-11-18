@@ -50,6 +50,12 @@ Ca FastAPI kiểm ba yêu cầu với cùng ID nguồn. Phiên bản cũ trả 4
 
 Lượt kiểm dùng Chrome mô phỏng kích thước điện thoại và phản hồi model mẫu. [Script kiểm Chrome](../../scripts/kiem-ui-nguon-ab.mjs) · [Kiểm trang và phiên bản trên FastAPI](../../backend/tests/test_workspace_check.py)
 
+## Kiểm lại phần khôi phục của IT-11
+
+Ngày 19/11/2026, Chrome và FastAPI chạy ở chế độ tài khoản với kho thử riêng. Tải bản sao bằng giao diện, tạo thêm đề rồi khôi phục. Lần tải lại giữ đúng ID, lịch sử và nội dung tệp nguồn theo từng byte. Xem trước hoặc đóng hộp xác nhận trước lúc gửi yêu cầu đều giữ nguyên kho. Một cửa sổ khác ghi sau bước xem trước làm FastAPI từ chối khôi phục với 409. Bản sao thiếu tệp tham chiếu dừng ngay khi kiểm bản sao. JSON hỏng được báo lỗi trước khi gửi.
+
+Ở viewport 390 × 844, nút xác nhận lấy được focus bằng bàn phím và nằm trong khung. Escape đóng bản xem trước và giữ kho. Kiểm hồi quy Python riêng bao gồm rollback lỗi ghi, chủ sở hữu, đề xuất cũ sau khôi phục, hủy khi trình duyệt ngắt và phát lại xác nhận sinh. Ca này dùng model mẫu và chưa kiểm toàn bộ IT-11 trên một gói cài. [Script kiểm Chrome](../../scripts/kiem-ui-khoi-phuc.mjs) · [Kiểm rollback khôi phục](../../backend/tests/test_workspace_backup.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.
