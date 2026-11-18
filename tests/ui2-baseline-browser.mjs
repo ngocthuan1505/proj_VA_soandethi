@@ -437,6 +437,46 @@ try {
     pass('FastAPI: undo và chuyển bản xem giữ chữ gõ nhanh, ghép dấu Chromium lưu đúng lúc');
   }
 
+  let formulaLibrary;
+  if (python) {
+    formulaLibrary = [];
+    for (const [width,height] of [[1366,768],[390,844]]) {
+      const libraryPage = await browser.newPage({ viewport: { width,height } });
+      libraryPage.on('pageerror', error => errors.push(error.message));
+      await libraryPage.goto(base);
+      const subjectAction = libraryPage.locator('[data-action="subject-library"]:visible').first();
+      if (width === 390 && !(await subjectAction.isVisible())) {
+        await libraryPage.getByRole('button',{name:'Mở mục lục',exact:true}).click();
+      }
+      await subjectAction.click();
+      const subject = libraryPage.getByRole('combobox',{name:'Chọn môn trong thư viện'});
+      await subject.waitFor();
+      const geometry = await libraryPage.locator('.composer-shell').evaluate(shell => {
+        const size = selector => Math.round(shell.querySelector(selector)?.getBoundingClientRect().height || 0);
+        return { available: size('.composer-columns'), shell: Math.round(shell.getBoundingClientRect().height),
+          duplicateSubjectRow: size('.composer-subjects') };
+      });
+      console.log('Thư viện', width, geometry);
+      assert.equal(await subject.locator('option').count(), 19);
+      assert.equal(geometry.duplicateSubjectRow, 0);
+      assert(geometry.available > geometry.shell / 2, JSON.stringify(geometry));
+      await libraryPage.screenshot({path:path.join(output,`Thu-vien-${width}.png`)});
+      await subject.selectOption('chemistry');
+      await libraryPage.locator('#catalog-grade').selectOption('12');
+      await libraryPage.locator('#catalog-search').fill('ester no');
+      await libraryPage.locator('[data-template="f-c-ester"]').click();
+      await libraryPage.locator('.composer-work').waitFor();
+      if(width === 390) {
+        await libraryPage.getByRole('button',{name:'Chọn mẫu',exact:true}).click();
+        assert.equal(await subject.inputValue(),'chemistry');
+        assert.equal(await libraryPage.locator('#catalog-grade').inputValue(),'12');
+      }
+      formulaLibrary.push({width,height,...geometry,templateSelected:true});
+      await libraryPage.close();
+    }
+    pass('FastAPI: một bộ chọn 19 môn và chọn mẫu Hóa lớp 12 trên laptop và điện thoại');
+  }
+
   let bugBaselineEvidence;
   if (!python) {
     // --- Step 5: Bug Baseline Evidence Collection ---
@@ -565,6 +605,7 @@ try {
         selectedSecondOccurrence: t03ScopeResult.scope.start === expectedLastIndex,
       },
     },
+    ...(formulaLibrary ? { formulaLibrary } : {}),
     ...(editorTiming ? { editorTiming } : {}),
     ...(saveConflict ? { saveConflict } : {}),
     ...(firstPointerCaret ? { firstPointerCaret } : {}),
