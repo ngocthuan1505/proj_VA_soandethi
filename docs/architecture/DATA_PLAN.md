@@ -4,6 +4,8 @@
 
 **Đối chiếu trên nhánh tích hợp:** đã chạy bộ pytest migration, backup và giao dịch bằng kho thử. Endpoint FastAPI hiện dùng WorkspaceStore với SQLite KV. Các ca migration 15 bảng kiểm schema đích và dữ liệu mẫu. Lát BE-3-002 và BE-3-003 vẫn cần nối runtime/repository và diễn tập quy trình chuyển đổi.
 
+**Kiểm chuyển dữ liệu mẫu:** state tái tạo đã được ghi và đọc lại qua API FastAPI trong kho thử riêng. Migration giữ yêu cầu sinh đề và chỉ dẫn AI. Nếu trùng ID đề giữa các kho hoặc ID câu giữa các đề, migration từ chối và giữ kho đích cũ. Cần xử lý nguồn xung đột trước khi chạy lại.
+
 ## Entity mục tiêu (15 bảng chuẩn hóa)
 
 ```mermaid

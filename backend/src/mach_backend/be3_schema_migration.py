@@ -384,7 +384,7 @@ def _upsert_question_and_version(
     ver_data.update(
         {key: q[key] for key in ("verificationStatus", "approvalStatus", "evidence") if key in q}
     )
-    conn.execute(
+    result = conn.execute(
         """
         INSERT INTO questions(
             id, exam_id, order_index, is_active, archived_at_revision, version,
@@ -401,7 +401,6 @@ def _upsert_question_and_version(
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
         ON CONFLICT(id) DO UPDATE SET
-            exam_id = excluded.exam_id,
             order_index = excluded.order_index,
             is_active = 1,
             archived_at_revision = NULL,
@@ -434,6 +433,7 @@ def _upsert_question_and_version(
             check_state = excluded.check_state,
             verification_data = excluded.verification_data,
             updated_at = excluded.updated_at
+        WHERE questions.exam_id = excluded.exam_id
         """,
         (
             q_id,
@@ -470,6 +470,9 @@ def _upsert_question_and_version(
             updated_at,
         ),
     )
+
+    if result.rowcount != 1:
+        raise sqlite3.IntegrityError("Trùng mã câu hỏi giữa hai đề.")
 
     qv_id = f"{q_id}:v{v_num}"
     evidence = q.get("evidence") or ([q["source"]] if q.get("source") else [])
@@ -509,6 +512,9 @@ def migrate_legacy_store(
     simulate_mid_failure: bool = False,
 ) -> dict[str, Any]:
     """Thực thi di trú 5 pha từ SQLite KV sang 15 bảng chuẩn hóa trên bản sao."""
+    if src_sqlite.resolve() == dst_sqlite.resolve():
+        raise ValueError("Chọn kho đích khác với kho nguồn.")
+
     tmp_sqlite = dst_sqlite.with_suffix(".tmp.sqlite")
     tmp_blobs = blobs_dir.with_name(blobs_dir.name + "_tmp")
     if tmp_sqlite.exists():
@@ -523,7 +529,7 @@ def migrate_legacy_store(
     else:
         tmp_blobs.mkdir(parents=True, exist_ok=True)
 
-    src_conn = sqlite3.connect(f"file:{src_sqlite.as_posix()}?mode=ro", uri=True)
+    src_conn = sqlite3.connect(f"{src_sqlite.resolve().as_uri()}?mode=ro", uri=True)
     src_conn.row_factory = sqlite3.Row
     dst_conn = sqlite3.connect(tmp_sqlite.as_posix())
     dst_conn.row_factory = sqlite3.Row
@@ -862,6 +868,8 @@ def migrate_legacy_store(
 
                 for e_idx, ex in enumerate(state_obj.get("exams") or []):
                     ex_id = str(ex["id"])
+                    if ex_id in known_exam_ids:
+                        raise sqlite3.IntegrityError("Trùng mã đề trong kho nguồn.")
                     known_exam_ids.add(ex_id)
                     ai_state: dict[str, Any] = {
                         "aiPlan": ex.get("aiPlan"),
@@ -872,8 +880,9 @@ def migrate_legacy_store(
                         "aiChatMode": ex.get("aiChatMode", "auto"),
                         "autoUpdate": ex.get("autoUpdate", False),
                     }
-                    if "approvedGenerationPlan" in ex:
-                        ai_state["approvedGenerationPlan"] = ex["approvedGenerationPlan"]
+                    for key in ("approvedGenerationPlan", "aiInstructions", "generationRequest"):
+                        if key in ex:
+                            ai_state[key] = ex[key]
                     if "draftStatus" in ex:
                         ai_state["draftStatus"] = ex["draftStatus"]
                     undo_redo = {
@@ -881,7 +890,7 @@ def migrate_legacy_store(
                         "redo": (ex.get("redo") or [])[-60:],
                     }
                     draft_status = str(ex.get("draftStatus") or "draft")
-                    dst_conn.execute(
+                    result = dst_conn.execute(
                         """
                         INSERT INTO exams(
                             id, owner_id, order_index, title, subject, grade, minutes,
@@ -896,7 +905,6 @@ def migrate_legacy_store(
                             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                         )
                         ON CONFLICT(id) DO UPDATE SET
-                            owner_id = excluded.owner_id,
                             order_index = excluded.order_index,
                             title = excluded.title,
                             subject = excluded.subject,
@@ -923,6 +931,7 @@ def migrate_legacy_store(
                             ai_state = excluded.ai_state,
                             undo_redo_stack = excluded.undo_redo_stack,
                             updated_at = excluded.updated_at
+                        WHERE exams.owner_id = excluded.owner_id
                         """,
                         (
                             ex_id,
@@ -955,6 +964,9 @@ def migrate_legacy_store(
                             int(ex.get("updated") or updated),
                         ),
                     )
+
+                    if result.rowcount != 1:
+                        raise sqlite3.IntegrityError("Trùng mã đề giữa hai kho.")
 
                     for h_idx, h_item in enumerate(ex.get("history") or []):
                         dst_conn.execute(
@@ -1300,8 +1312,9 @@ def reconstruct_workspace_state(conn: sqlite3.Connection, owner_id: str) -> dict
             "revision": ex_row["revision"],
             "updated": ex_row["updated_at"],
         }
-        if "approvedGenerationPlan" in ai_state:
-            exam_dict["approvedGenerationPlan"] = ai_state["approvedGenerationPlan"]
+        for key in ("approvedGenerationPlan", "aiInstructions", "generationRequest"):
+            if key in ai_state:
+                exam_dict[key] = ai_state[key]
         if "draftStatus" in ai_state or ex_row["draft_status"] != "draft":
             exam_dict["draftStatus"] = ex_row["draft_status"]
         exams.append(exam_dict)

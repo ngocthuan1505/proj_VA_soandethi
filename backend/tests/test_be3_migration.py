@@ -13,6 +13,7 @@ from threading import Barrier
 from typing import Any
 
 import pytest
+from fastapi.testclient import TestClient
 
 from mach_backend.be3_schema_migration import (
     JobConflictError,
@@ -27,6 +28,7 @@ from mach_backend.be3_schema_migration import (
     table_counts,
     update_exam_with_occ,
 )
+from mach_backend.local_workspace import create_app
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_PATH = REPO_ROOT / "tests" / "fixtures" / "be3-legacy-kv.json"
@@ -548,13 +550,15 @@ def test_concurrent_revision_updates_report_one_conflict(migrated_store):
         ).fetchone() == (winner, 3)
 
 
-def test_locked_exam_and_question_statuses_survive_roundtrip(migrated_store):
+def test_locked_exam_and_question_statuses_survive_roundtrip(migrated_store, tmp_path):
     source, target, blobs = migrated_store
     with closing(sqlite3.connect(source)) as conn, conn:
         key = f"u:{USER_A_ID}:state"
         state = json.loads(conn.execute("SELECT value FROM kv WHERE key=?", (key,)).fetchone()[0])
         exam = state["exams"][0]
         exam["draftStatus"] = "finalized"
+        exam["aiInstructions"] = "Giữ đơn vị mét và giải thích từng bước."
+        exam["generationRequest"] = "Soạn đề gồm bốn dạng câu hỏi."
         question = exam["questions"][0]
         question.update(
             verificationStatus="review",
@@ -565,8 +569,53 @@ def test_locked_exam_and_question_statuses_survive_roundtrip(migrated_store):
     migrate_legacy_store(source, target, blobs)
     with closing(sqlite3.connect(target)) as conn:
         conn.row_factory = sqlite3.Row
-        rebuilt = reconstruct_workspace_state(conn, USER_A_ID)["exams"][0]
-    assert rebuilt == exam
+        rebuilt_state = reconstruct_workspace_state(conn, USER_A_ID)
+    assert rebuilt_state["exams"][0] == exam
+    with TestClient(
+        create_app(tmp_path / "fastapi"), headers={"Origin": "http://testserver"}
+    ) as client:
+        key = "/api/kv"
+        saved = client.put(
+            key, headers={"If-Match": "0"}, json={"key": "state", "value": rebuilt_state}
+        )
+        assert saved.json() == {"revision": 1}
+        assert client.get(key, params={"key": "state"}).json()["value"] == state
+
+
+def test_migration_opens_a_path_with_uri_characters_and_keeps_source(tmp_path):
+    source = tmp_path / "Kho #mẫu %.sqlite"
+    create_legacy_kv_sqlite(source)
+    before = source.read_bytes()
+    assert migrate_legacy_store(source, tmp_path / "target.sqlite", tmp_path / "blobs")["ok"]
+    with pytest.raises(ValueError, match="Chọn kho đích khác"):
+        migrate_legacy_store(source, source, tmp_path / "blobs")
+    assert source.read_bytes() == before
+
+
+@pytest.mark.parametrize("collision_kind", ["exam", "question"])
+def test_migration_rejects_duplicate_ids_across_workspaces(migrated_store, collision_kind):
+    source, target, blobs = migrated_store
+    before = target.read_bytes()
+    with closing(sqlite3.connect(source)) as conn, conn:
+        key_a = f"u:{USER_A_ID}:state"
+        key_b = f"u:{USER_B_ID}:state"
+        state_a = json.loads(
+            conn.execute("SELECT value FROM kv WHERE key=?", (key_a,)).fetchone()[0]
+        )
+        state_b = json.loads(
+            conn.execute("SELECT value FROM kv WHERE key=?", (key_b,)).fetchone()[0]
+        )
+        exam_a, exam_b = state_a["exams"][0], state_b["exams"][0]
+        if collision_kind == "exam":
+            exam_b["id"] = state_b["current"] = exam_a["id"]
+        else:
+            exam_b["questions"][0]["id"] = exam_a["questions"][0]["id"]
+        conn.execute("UPDATE kv SET value=? WHERE key=?", (json.dumps(state_b), key_b))
+
+    with pytest.raises(sqlite3.IntegrityError, match="Trùng mã"):
+        migrate_legacy_store(source, target, blobs)
+
+    assert target.read_bytes() == before
 
 
 @pytest.mark.parametrize("failure", ["blob", "database"])
