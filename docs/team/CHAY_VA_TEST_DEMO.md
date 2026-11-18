@@ -1,5 +1,7 @@
 # Thành viên tự mở và kiểm thử demo
 
+Bản Python đang thử chạy theo [hướng dẫn bản 13](../../HUONG_DAN_TEST_NHOM.md). Các lệnh bên dưới phục vụ baseline Node đối chiếu.
+
 Mục tiêu: xem **chức năng đã có** trước khi nhận task; mọi người dùng máy và dữ liệu riêng. Không cần Codex, tài khoản AI hoặc GreenNode để dùng editor/thư viện và chạy test fixture. Xem [bảng kế thừa](../product/DEMO_DA_CO.md), [kết quả test](../testing/BASELINE_2026_11_05.md).
 
 ## 1. Chuẩn bị lần đầu
@@ -12,7 +14,7 @@ Mục tiêu: xem **chức năng đã có** trước khi nhận task; mọi ngư�
 git clone https://github.com/ngocthuan1505/proj_VA_soandethi.git
 cd proj_VA_soandethi
 npm ci
-npm start
+npm run start:legacy
 ```
 
 Đăng nhập GitHub bằng luồng trình duyệt/credential manager nếu được hỏi; không nhập password/token vào issue. Repo không kèm `node_modules` nên `npm ci` là bắt buộc ở máy mới; có tải phụ thuộc, cần Internet. Asset editor/công thức/OCR đã có trong repo, không cần chạy setup model hay setup assets cho lần mở thông thường.
@@ -21,9 +23,9 @@ Mở **http://127.0.0.1:4173/**. Terminal phải báo app đang chạy và khôn
 
 ## 2. Những lần sau và cách dừng
 
-Trong thư mục repo: chạy `npm start`, mở URL trên; dùng **Ctrl+C tại Terminal chạy `npm start`** để dừng. Đóng tab trình duyệt chỉ đóng màn hình, không dừng server.
+Trong thư mục repo: chạy `npm run start:legacy`, mở URL trên; dùng **Ctrl+C tại Terminal chạy `npm run start:legacy`** để dừng. Đóng tab trình duyệt chỉ đóng màn hình, không dừng server.
 
-Sau `npm ci`, Windows cũng có `START-DEMO.cmd` để mở thuận tiện. Launcher dùng tiến trình nền; nếu cần biết chắc lúc nào app dừng, dùng cách Terminal `npm start` ở trên. Không cần shortcut riêng của máy Thuận. Đừng bật hai server cùng cổng.
+Sau `npm ci`, Windows cũng có `START-DEMO.cmd` để mở thuận tiện. Launcher dùng tiến trình nền; nếu cần biết chắc lúc nào app dừng, dùng cách Terminal `npm run start:legacy` ở trên. Không cần shortcut riêng của máy Thuận. Đừng bật hai server cùng cổng.
 
 Trước khi lấy source mới, chạy `git status`; nếu có thay đổi cá nhân thì commit theo task hoặc phối hợp review. Khi sạch mới `git pull --ff-only`, rồi `npm ci` nếu lockfile thay đổi. Không dùng reset/clean hoặc xóa `.data` để xử lý lỗi.
 
@@ -56,7 +58,7 @@ node tests/studio-browser.mjs
 node tests/workbench-browser.mjs
 ```
 
-`npm test` kiểm logic/backend Node, có xuất PDF/OCR và AI server fixture. Các script `*-browser` trên tự tạo DB tạm, bật app trên cổng test 4193–4198, dùng Chromium headless, rồi đóng tiến trình của chính chúng. Không cần `npm start` trước và không chạy đồng thời hai bản của cùng một script. Kết quả `PASS` chỉ áp dụng fixture/assertion trong script. Không nhập key vào app test.
+`npm test` kiểm logic/backend Node, có xuất PDF/OCR và AI server fixture. Các script `*-browser` trên tự tạo DB tạm, bật app trên cổng test 4193–4198, dùng Chromium headless, rồi đóng tiến trình của chính chúng. Không cần `npm run start:legacy` trước và không chạy đồng thời hai bản của cùng một script. Kết quả `PASS` chỉ áp dụng fixture/assertion trong script. Không nhập key vào app test.
 
 Chrome/Edge trên Windows được dò ở vị trí chuẩn. Nếu không tìm được, đặt `BROWSER_PATH` tới file trình duyệt thực thi; ví dụ PowerShell:
 
@@ -116,7 +118,7 @@ Editor/thư viện không cần AI. Muốn thử AI thật, mở **Kết nối A
 
 | Hiện tượng | Cách xử lý |
 |---|---|
-| `127.0.0.1 refused to connect` | Mở Terminal đúng repo, chạy `npm start`, đọc lỗi. Reload trình duyệt không thay việc bật server |
+| `127.0.0.1 refused to connect` | Mở Terminal đúng repo, chạy `npm run start:legacy`, đọc lỗi. Reload trình duyệt không thay việc bật server |
 | `npm`/`node` không nhận | Cài Node 24+ kèm npm; mở Terminal mới và kiểm version |
 | `ERR_MODULE_NOT_FOUND`, thiếu thư viện | Chạy `npm ci` ở thư mục có package.json; không chép node_modules từ máy khác |
 | `EADDRINUSE` | Kiểm tra Terminal/launcher đã mở; dừng đúng tiến trình của mình hoặc dùng cổng khác; không kill mọi Node trên máy |

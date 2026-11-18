@@ -21,7 +21,7 @@ Repo Private này là nguồn chung duy nhất. Tiếp tục từ MVP đang có;
 Mở [bảng tiến độ kéo thả](https://github.com/users/ngocthuan1505/projects/1/views/1) hoặc [bảng danh sách](https://github.com/users/ngocthuan1505/projects/1/views/2). Đọc [hướng dẫn nhận việc, cập nhật và thông báo](BOARD.md); mỗi thẻ dẫn tới issue có chi tiết nghiệm thu.
 
 1. Đọc [phạm vi sản phẩm](../product/MVP.md), [phân công 8 người](ROLES.md), [backlog](BACKLOG.md) và [đối chiếu slide môn](../course/README.md).
-2. Backend chính: Python 3.12+ và uv, vào backend chạy `uv sync --frozen` và pytest. Demo UI legacy: dùng Node.js 24, chạy `npm ci`, `npm test`, `npm start` và mở `http://127.0.0.1:4173`.
+2. Backend chính: Python 3.12+ và uv, vào backend chạy `uv sync --frozen` và pytest. Demo UI legacy: dùng Node.js 24, chạy `npm ci`, `npm test`, `npm run start:legacy` và mở `http://127.0.0.1:4173`.
 3. Xem [menu mảng việc](CHON_VIEC.md), chọn issue theo nhu cầu/nghiên cứu. Nhãn `role:UI-1`…`role:BE-5` là mã mảng; danh sách người UI/backend ở [ROLES](ROLES.md). Không tự suy username từ mã; chỉ Thuận vận hành GreenNode.
 4. Đăng ký cá nhân hoặc nhóm trong comment, chia Wxx/PR/test và gán người thực sự làm khi có quyền; tạo nhánh `feat/UI-1-001-ten-ngan` hoặc `fix/BE-2-001-ten-ngan`.
 5. PR nhỏ, liên kết `Closes #...`, nêu cách kiểm tra, ảnh UI nếu có, ảnh hưởng dữ liệu/API và cách quay lui. Đợi một người khác review trước khi merge.

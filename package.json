@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs",
+    "start": "uv run --project backend --frozen --no-dev --python 3.12 python -m uvicorn mach_backend.local_workspace:app --app-dir backend/src --host 127.0.0.1 --port 4182",
+    "start:legacy": "node server.mjs",
     "test": "node --test tests/core.test.mjs tests/mvp-backend.test.mjs tests/cloud-ai.test.mjs tests/greennode.test.mjs tests/reference.test.mjs tests/workbench.test.mjs tests/studio.test.mjs tests/authoring.test.mjs tests/curriculum.test.mjs tests/selection.test.mjs tests/storage.test.mjs tests/deployment.test.mjs tests/poc-connections.test.mjs",
     "build-editor": "esbuild editor-engine.js --bundle --format=esm --minify --outfile=assets/editor-engine.js",
     "setup-assets": "node setup-assets.mjs",

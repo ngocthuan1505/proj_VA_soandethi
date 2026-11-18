@@ -47,16 +47,18 @@ Cả ba bạn UI có thể cùng nghiên cứu/chọn/làm một mảng hoặc m
 
 ## 3. Cài và bật demo trên máy mình
 
+Chạy bản tích hợp Python theo [hướng dẫn bản 13](../../HUONG_DAN_TEST_NHOM.md). Các lệnh dưới đây phục vụ bản Node đối chiếu.
+
 Cài [Git](https://git-scm.com/downloads), [Node.js 24+ kèm npm](https://nodejs.org/en/download), Chrome hoặc Edge. Mở Terminal mới, kiểm tra `git --version`, `node --version`, `npm --version`. Trong thư mục muốn lưu đồ án:
 
 ```sh
 git clone https://github.com/ngocthuan1505/proj_VA_soandethi.git
 cd proj_VA_soandethi
 npm ci
-npm start
+npm run start:legacy
 ```
 
-Mở **http://127.0.0.1:4173/**. Giữ Terminal chạy; **Ctrl+C** tại Terminal đó để dừng. Đóng tab trình duyệt không dừng server. Lần sau vào repo và chạy `npm start`; Windows có `START-DEMO.cmd` sau khi cài phụ thuộc, nhưng cách Terminal dễ kiểm soát lúc dừng hơn.
+Mở **http://127.0.0.1:4173/**. Giữ Terminal chạy; **Ctrl+C** tại Terminal đó để dừng. Đóng tab trình duyệt không dừng server. Lần sau vào repo và chạy `npm run start:legacy`; Windows có `START-DEMO.cmd` sau khi cài phụ thuộc, nhưng cách Terminal dễ kiểm soát lúc dừng hơn.
 
 Mỗi máy có `.data` riêng. Clone không mang đề, tài khoản, khóa AI hoặc model của Thuận. Không cần GreenNode/API để dùng editor, thư viện mẫu hoặc test fixture. Chỉ mở link localhost không tự bật app và không chia sẻ app máy mình cho người khác.
 

@@ -15,6 +15,8 @@ Mở `http://127.0.0.1:4188/`. Lệnh trên dùng cú pháp shell Linux/macOS. T
 
 `mach_backend.main:app` là scaffold lịch sử, chỉ có health/readiness. Cổng 8000 trong tài liệu cũ là cổng ví dụ của scaffold. [Chẩn đoán lỗi cổng](../docs/team/LOI_CONG_API.md).
 
+Từ thư mục gốc, `npm start` cũng mở bàn soạn FastAPI ở cổng 4182. uv cài thư viện Python theo lockfile. Nếu cổng bận, dùng `npm start -- --port 4188`.
+
 ## Kiểm tra
 
 ```sh
@@ -34,4 +36,4 @@ Thêm phụ thuộc bằng `uv add`, thêm tool dev bằng `uv add --dev`, commi
 - BE-4: import/OCR/export bằng thư viện hoặc công cụ hỗ trợ do Python điều phối. PDF.js/KaTeX/TipTap trình duyệt chỉ hỗ trợ UI; không chuyển toàn bộ core sang Node service.
 - BE-5: job/cancel/SSE, tích hợp pytest, CI và kiểm nghiệm lỗi.
 
-Luồng cũ `npm start` và các file `*.mjs` backend tại gốc là **legacy reference** để đọc hành vi và giữ demo trong quá trình chuyển đổi. Các kiểm tra cũ vẫn cần chạy để lập golden test; không dùng số lượng dòng Python hoặc đổi đuôi file để chứng minh đã đáp ứng quy định.
+Luồng đối chiếu `npm run start:legacy` và các file `*.mjs` backend tại gốc là **legacy reference** để đọc hành vi và giữ demo trong quá trình chuyển đổi. Các kiểm tra cũ vẫn cần chạy để lập golden test; không dùng số lượng dòng Python hoặc đổi đuôi file để chứng minh đã đáp ứng quy định.
