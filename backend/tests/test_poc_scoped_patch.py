@@ -1,5 +1,6 @@
 """Fixture sửa câu PoC: không gọi AI thật và không tự lưu đề xuất."""
 
+import asyncio
 import json
 from copy import deepcopy
 from uuid import uuid4
@@ -79,6 +80,69 @@ def setup(tmp_path):
     with TestClient(app, headers={"Origin": "http://testserver"}) as client:
         client.headers["X-PoC-Config"] = client.get("/api/config").json()["fingerprint"]
         yield app, client, exam, question, request, edits, calls
+
+
+def test_disconnecting_patch_cancels_the_model_and_releases_workspace(setup, tmp_path):
+    _, _, exam, _, submission, _, _ = setup
+
+    async def run():
+        started = asyncio.Event()
+        disconnected = asyncio.Event()
+        cleaned_up = asyncio.Event()
+
+        async def model(_purpose, _body):
+            started.set()
+            try:
+                await asyncio.sleep(4)
+            finally:
+                cleaned_up.set()
+
+        app = create_app(tmp_path / "disconnect", agent_call=model)
+        app.state.store.put("state", {"exams": [exam], "current": exam["id"]})
+        body = json.dumps(submission).encode()
+        first = True
+
+        async def receive():
+            nonlocal first
+            if first:
+                first = False
+                return {"type": "http.request", "body": body, "more_body": False}
+            await disconnected.wait()
+            return {"type": "http.disconnect"}
+
+        async def send(_message):
+            pass
+
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0", "spec_version": "2.3"},
+            "http_version": "1.1",
+            "method": "POST",
+            "scheme": "http",
+            "path": "/api/assistant/patch",
+            "query_string": b"",
+            "headers": [
+                (b"host", b"testserver"),
+                (b"origin", b"http://testserver"),
+                (b"content-type", b"application/json"),
+                (b"x-poc-config", app.state.provider.connection_stamp.encode()),
+            ],
+        }
+        patch = asyncio.create_task(app(scope, receive, send))
+        try:
+            await asyncio.wait_for(started.wait(), timeout=2)
+            assert app.state.ai_busy()
+            disconnected.set()
+            await asyncio.wait_for(asyncio.shield(patch), timeout=2)
+            assert cleaned_up.is_set()
+            assert not app.state.ai_busy()
+            assert app.state.store.exam(exam["id"])[1] == exam
+        finally:
+            if not patch.done():
+                patch.cancel()
+                await asyncio.gather(patch, return_exceptions=True)
+
+    asyncio.run(run())
 
 
 def test_edit_is_preview_only_and_review_is_blind(setup):

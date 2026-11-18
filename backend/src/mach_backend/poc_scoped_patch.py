@@ -8,7 +8,8 @@ from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from mach_backend.ai_contract import (
@@ -338,13 +339,29 @@ def validate_draft(request, selected, draft):
     return candidates
 
 
+async def wait_for_disconnect(request: Request):
+    while (await request.receive())["type"] != "http.disconnect":
+        pass
+
+
 def install_scoped_patch(app: FastAPI, store, provider, fixture_call, directory: Path, lock):
     @app.post("/api/assistant/patch")
-    async def patch(request: Submission):
+    async def patch(submission: Submission, request: Request):
+        work = asyncio.create_task(run(submission))
+        disconnected = asyncio.create_task(wait_for_disconnect(request))
         try:
-            return await run(request)
+            done, _ = await asyncio.wait((work, disconnected), return_when=asyncio.FIRST_COMPLETED)
+            if disconnected in done:
+                disconnected.result()
+                return Response(status_code=499)
+            return work.result()
         except (TimeoutError, httpx.TimeoutException):
             raise AIError("provider_timeout", "AI quá thời gian chờ. Chưa sửa câu nào.") from None
+        finally:
+            for task in (work, disconnected):
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(work, disconnected, return_exceptions=True)
 
     async def run(request):
         if not request.consent:
