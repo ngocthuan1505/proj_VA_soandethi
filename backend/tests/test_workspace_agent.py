@@ -80,7 +80,7 @@ def test_local_reviewer_receives_one_question_without_saved_answers():
     assert len(calls) == 2 and body == before
 
 
-def test_local_mixed_schema_fixes_type_by_approved_slot():
+def mixed_tool_body():
     kinds = ["mcq", "mcq", "truefalse", "short", "essay"]
     schema = MixedDraftBatch.model_json_schema()
     schema["properties"]["questions"]["items"] = {
@@ -113,6 +113,11 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
         ],
         "tools": [{"function": {"name": "check_exam", "parameters": schema}}],
     }
+    return body
+
+
+def test_local_mixed_schema_fixes_type_by_approved_slot():
+    body = mixed_tool_body()
     before = copy.deepcopy(body)
 
     async def model(purpose, request):
@@ -149,6 +154,71 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
 
     asyncio.run(local_model_call(model, "agent", body))
     assert body == before
+
+
+@pytest.mark.parametrize("mode", ["scoped", "malformed", "unscoped"])
+def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode):
+    body = mixed_tool_body()
+    previous = [{"stem": f"Câu {i}?"} for i in range(5)]
+    previous[2].update(options=["a", "b", "c", "d"], answer="1011")
+    feedback = {"ok": False, "errors": [{"ordinal": 2, "code": "level_disagreement"}]}
+    if mode == "unscoped":
+        feedback["errors"].append({"code": "invalid_result"})
+    body["messages"] += [
+        {
+            "role": "assistant",
+            "tool_calls": [
+                {"function": {"name": "check_exam", "arguments": {"questions": previous}}}
+            ],
+        },
+        {"role": "tool", "tool_name": "check_exam", "content": json.dumps(feedback)},
+    ]
+    repaired = {
+        "stem": "Hãy xét lại từng mệnh đề.",
+        "statements": [
+            {"text": text, "isTrue": label}
+            for text, label in zip("abcd", [False, True, False, True], strict=True)
+        ],
+    }
+
+    async def model(purpose, request):
+        transport = structured_tool_request(request)
+        assignment = json.loads(transport["messages"][1]["content"])
+        questions = transport["format"]["oneOf"][0]["properties"]["arguments"]["properties"][
+            "questions"
+        ]
+        if mode == "unscoped":
+            assert "repairOrdinals" not in assignment
+            assert len(questions["items"]) == len(previous)
+            return {}
+        assert assignment["repairOrdinals"] == [2]
+        assert assignment["previousStems"] == [row["stem"] for row in previous]
+        assert len(transport["messages"]) == 3
+        assert json.loads(transport["messages"][-1]["content"])["result"] == feedback
+        assert questions["minItems"] == questions["maxItems"] == len(questions["items"]) == 1
+        assert "matrix.slots[2].topic" in questions["items"][0]["properties"]["stem"]["description"]
+        replacements = [copy.deepcopy(repaired)] if mode == "scoped" else [repaired, repaired]
+        return {
+            "tool_calls": [
+                {"function": {"name": "check_exam", "arguments": {"questions": replacements}}}
+            ]
+        }
+
+    before = copy.deepcopy(body)
+    response = asyncio.run(local_model_call(model, "agent", body))
+    assert body == before
+    if mode == "unscoped":
+        assert response == {}
+    else:
+        arguments = response["tool_calls"][0]["function"]["arguments"]
+        if mode == "malformed":
+            assert arguments == {}
+        else:
+            assert arguments["questions"] == [
+                *previous[:2],
+                {"stem": repaired["stem"], "options": list("abcd"), "answer": "0101"},
+                *previous[3:],
+            ]
 
 
 @pytest.mark.parametrize("answer", ["40", "3"])

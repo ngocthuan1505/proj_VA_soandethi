@@ -80,6 +80,47 @@ def convert_truefalse_statements(message, slots, *, to_ollama):
                 question.setdefault("statements", None)
 
 
+def scope_mixed_repair(body, assignment):
+    messages = body["messages"]
+    if len(messages) < 4 or messages[-1].get("tool_name") != "check_exam":
+        return None
+    report = json.loads(messages[-1]["content"])
+    errors = report.get("errors", [])
+    if (
+        report.get("ok")
+        or not errors
+        or any(type(error.get("ordinal")) is not int for error in errors)
+    ):
+        return None
+    calls = messages[-2].get("tool_calls", [])
+    if len(calls) != 1 or calls[0]["function"]["name"] != "check_exam":
+        return None
+    previous = calls[0]["function"]["arguments"].get("questions")
+    count = len(assignment["matrix"]["slots"])
+    ordinals = sorted({error["ordinal"] for error in errors})
+    if (
+        not isinstance(previous, list)
+        or len(previous) != count
+        or any(
+            not isinstance(row, dict) or not isinstance(row.get("stem"), str) for row in previous
+        )
+        or not (0 <= ordinals[0] <= ordinals[-1] < count)
+        or len(ordinals) == count
+    ):
+        return None
+    assignment["repairOrdinals"] = ordinals
+    assignment["previousStems"] = [row["stem"] for row in previous]
+    messages[1]["content"] = json.dumps(assignment, ensure_ascii=False)
+    body["messages"] = [*messages[:2], messages[-1]]
+    messages[0]["content"] += (
+        " Đây là lượt sửa. Hãy nộp chỉ các câu tương ứng repairOrdinals (đếm từ 0), "
+        "đúng thứ tự danh sách. Python giữ các câu còn lại và kiểm lại cả bộ. "
+        "Sửa nội dung theo lỗi, tránh chép previousStems. Mỗi câu trắc nghiệm hỏi "
+        "một giá trị hoặc kết luận cụ thể, với đúng một phương án trả lời câu hỏi."
+    )
+    return ordinals, previous
+
+
 async def local_model_call(model, purpose, body):
     """Chia lượt rà thành từng câu để model local không lẫn đáp án giữa các câu."""
     body = copy.deepcopy(body)
@@ -87,7 +128,10 @@ async def local_model_call(model, purpose, body):
         "MixedDraftQuestion" in tool.get("function", {}).get("parameters", {}).get("$defs", {})
         for tool in body.get("tools", [])
     ):
-        slots = json.loads(body["messages"][1]["content"])["matrix"]["slots"]
+        assignment = json.loads(body["messages"][1]["content"])
+        slots = assignment["matrix"]["slots"]
+        repair = scope_mixed_repair(body, assignment)
+        ordinals = repair[0] if repair else range(len(slots))
         for tool in body["tools"]:
             if tool["function"]["name"] != "check_exam":
                 continue
@@ -103,7 +147,8 @@ async def local_model_call(model, purpose, body):
                 "essay": {"const": ""},
             }
             questions["items"] = []
-            for ordinal, slot in enumerate(slots, 1):
+            for index in ordinals:
+                ordinal, slot = index + 1, slots[index]
                 kind = slot["type"]
                 points = slot["pointsQ4"]
                 rubric_name = f"RubricQ4_{points}"
@@ -174,6 +219,8 @@ async def local_model_call(model, purpose, body):
                 questions["items"].append(
                     {**common, "properties": properties, "required": required}
                 )
+            if repair:
+                questions.update(minItems=len(ordinals), maxItems=len(ordinals))
         system = body["messages"][0]
         system["content"] = (
             system["content"]
@@ -186,7 +233,27 @@ async def local_model_call(model, purpose, body):
         for message in body["messages"]:
             convert_truefalse_statements(message, slots, to_ollama=True)
         response = await model(purpose, body)
-        convert_truefalse_statements(response, slots, to_ollama=False)
+        convert_truefalse_statements(
+            response, [slots[index] for index in ordinals], to_ollama=False
+        )
+        if repair:
+            for tool in response.get("tool_calls", []):
+                function = tool["function"]
+                if function["name"] != "check_exam":
+                    continue
+                arguments = function["arguments"]
+                patch = arguments.get("questions")
+                if (
+                    set(arguments) != {"questions"}
+                    or not isinstance(patch, list)
+                    or (len(patch) != len(ordinals))
+                ):
+                    arguments.clear()
+                    continue
+                complete = repair[1].copy()
+                for index, question in zip(ordinals, patch, strict=True):
+                    complete[index] = question
+                arguments["questions"] = complete
         return response
     if "MixedContentReview" in body.get("format", {}).get("$defs", {}):
         questions = json.loads(body["messages"][1]["content"])["questions"]

@@ -120,6 +120,52 @@ class TestPoCTrace(unittest.TestCase):
                 self.assertEqual(report["evidenceIssues"], [])
                 self.assertEqual(report["recordedMode"], "fixture")
 
+    def test_scoped_repair_cannot_claim_change_by_only_shortening_submission(self):
+        self.write_run("structured")
+        unchanged = {"stem": "Giữ nguyên"}
+        original = {"stem": "Cần sửa"}
+        for number, rows in ((1, [unchanged, original]), (2, [original])):
+            file = self.directory / f"call-{number:02}-response.json"
+            message = {
+                "content": json.dumps({"action": "check_exam", "arguments": {"questions": rows}})
+            }
+            file.write_text(json.dumps({"message": message}), encoding="utf-8")
+        events_file = self.directory / "events.jsonl"
+        events = [json.loads(line) for line in events_file.read_text().splitlines()]
+        first_result = next(event for event in events if event["event"] == "generation_result")
+        first_result["errors"][0]["ordinal"] = 1
+        events_file.write_text("\n".join(map(json.dumps, events)), encoding="utf-8")
+        assignment = {"repairOrdinals": [1], "previousStems": [unchanged["stem"], original["stem"]]}
+        request_file = self.directory / "call-02-request.json"
+
+        def write_request():
+            messages = [
+                {"role": "system", "content": "sửa"},
+                {"role": "user", "content": json.dumps(assignment)},
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "toolResult": "check_exam",
+                            "result": {"ok": False, "errors": first_result["errors"]},
+                        }
+                    ),
+                },
+            ]
+            request_file.write_text(json.dumps({"messages": messages}), encoding="utf-8")
+
+        write_request()
+        report = MODULE.inspect_run(self.directory)
+        self.assertEqual(report["evidenceIssues"], [])
+        self.assertFalse(report["repairSteps"][0]["candidateChanged"])
+        self.assertFalse(report["successfulRepairObserved"])
+
+        assignment["repairOrdinals"] = [0]
+        write_request()
+        report = MODULE.inspect_run(self.directory)
+        self.assertFalse(report["traceVerified"])
+        self.assertTrue(report["evidenceIssues"])
+
     def test_changed_answer_without_feedback_does_not_prove_self_repair(self):
         self.write_run(feedback=False)
         report = MODULE.inspect_run(self.directory)

@@ -54,6 +54,46 @@ def feedback_matches(request, report, call_id=None):
     return False
 
 
+def repair_submission(request, arguments, previous):
+    messages = request.get("messages", [])
+    if len(messages) < 2 or messages[1].get("role") != "user":
+        return arguments
+    try:
+        assignment = json.loads(messages[1].get("content", ""))
+    except (ValueError, TypeError):
+        return arguments
+    if not isinstance(assignment, dict) or "repairOrdinals" not in assignment:
+        return arguments
+    if previous is None or previous["report"] is None:
+        raise ValueError("Thiếu lần kiểm gốc cho lượt sửa theo câu.")
+    baseline = (previous["arguments"] or {}).get("questions")
+    errors = previous["report"].get("errors", [])
+    indices = assignment["repairOrdinals"]
+    if (
+        not isinstance(baseline, list)
+        or any(not isinstance(row, dict) for row in baseline)
+        or not isinstance(indices, list)
+        or not indices
+        or any(type(i) is not int or not 0 <= i < len(baseline) for i in indices)
+        or any(type(e.get("ordinal")) is not int for e in errors)
+        or indices != sorted({e["ordinal"] for e in errors})
+        or assignment.get("previousStems") != [row.get("stem") for row in baseline]
+        or not feedback_matches(request, previous["report"], previous["callId"])
+    ):
+        raise ValueError("Phạm vi sửa không khớp bộ câu và lỗi trước đó.")
+    replacements = arguments.get("questions") if isinstance(arguments, dict) else None
+    if (
+        not isinstance(replacements, list)
+        or len(replacements) != len(indices)
+        or set(arguments) != {"questions"}
+    ):
+        return {}
+    combined = baseline.copy()
+    for index, question in zip(indices, replacements, strict=True):
+        combined[index] = question
+    return {"questions": combined}
+
+
 def inspect_run(directory):
     events = [
         json.loads(line)
@@ -85,12 +125,20 @@ def inspect_run(directory):
                 issues.append(f"Công cụ ở sự kiện {index + 1} không khớp phản hồi model đã lưu.")
             if event.get("tool") == "check_exam":
                 finish_verified = False
+                arguments = action.get("arguments")
+                if protocol == "structured" and calls:
+                    try:
+                        arguments = repair_submission(
+                            calls[-1]["request"], arguments, checks[-1] if checks else None
+                        )
+                    except ValueError as error:
+                        issues.append(str(error))
                 checks.append(
                     {
                         "index": index,
                         "modelCall": active_call,
                         "attempt": event.get("generationAttempt"),
-                        "arguments": action.get("arguments"),
+                        "arguments": arguments,
                         "callId": action.get("id"),
                         "report": None,
                     }
