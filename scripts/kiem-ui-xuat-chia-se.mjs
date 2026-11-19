@@ -46,6 +46,34 @@ try {
   await page.waitForLoadState('networkidle');
   const action = name => page.locator('[data-action="' + name + '"]:visible').first();
   const dialog = page.locator('#dialog');
+  await page.locator('.outline-item[data-id="' + exam.questions[0].id + '"]:visible').first().click();
+  await page.locator('[data-action="menu"][data-menu="insert"]:visible').first().click();
+  await action('studio-sketch').click();
+  const board = dialog.locator('#sketch-board'), canvas = board.locator('canvas');
+  const insertSketch = board.getByRole('button', {name: 'Chèn hình vào câu'});
+  assert(await insertSketch.isDisabled());
+  const box = await canvas.boundingBox();
+  assert(box);
+  await page.mouse.move(box.x + box.width * .25, box.y + box.height * .25);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * .66, box.y + box.height * .75, {steps: 8});
+  await page.mouse.up();
+  await board.getByRole('button', {name: 'Hoàn tác nét'}).click();
+  await page.waitForFunction(() => document.querySelector('#sketch-board [type=submit]').disabled);
+  await canvas.focus();
+  await canvas.press('Space');
+  for (const key of ['ArrowUp', 'ArrowUp', 'ArrowRight', 'ArrowRight']) await canvas.press(key);
+  await canvas.press('Space');
+  await board.getByLabel('Chú thích hình').fill('Sơ đồ phác QA 731');
+  await page.screenshot({path: path.join(out, 'bang-ve-phac.png')});
+  await insertSketch.click();
+  await page.locator('.question-assets img[alt="Sơ đồ phác QA 731"]').waitFor();
+  await page.waitForFunction(async ({url,id}) => {
+    const {value} = await (await fetch(url + '?key=state')).json();
+    return value.exams[0].questions.find(q => q.id === id).images?.[0].data.startsWith('data:image/png;');
+  }, {url: kv, id: exam.questions[0].id});
+  await page.reload();
+  await page.locator('.question-assets img[alt="Sơ đồ phác QA 731"]').waitFor();
   const exports = [];
   for (const teacher of [false, true]) {
     for (const format of ['docx', 'pdf', 'html']) {
@@ -60,6 +88,10 @@ try {
       const filename = (teacher ? 'giao-vien' : 'hoc-sinh') + '.' + format;
       await fs.writeFile(path.join(out, filename), data);
       exports.push({filename, teacher, format, bytes: data.length});
+      if (format === 'docx') {
+        const word = await JSZip.loadAsync(data);
+        assert(Object.keys(word.files).some(name => /word\/media\/.*\.png$/.test(name)));
+      }
       if (format === 'html') {
         const opened = await browser.newPage();
         const networkAttempts = [];
@@ -70,6 +102,7 @@ try {
         await opened.goto(pathToFileURL(path.join(out, filename)).href);
         await opened.getByText('Rút gọn phân số', {exact: false}).last().waitFor();
         assert.equal(await opened.locator('math mfrac').count(), 1);
+        assert.equal(await opened.locator('img[alt="Sơ đồ phác QA 731"]').count(), 1);
         assert.deepEqual(networkAttempts, []);
         assert.equal(await opened.getByText('LOI_GIAI_RIENG_731').count() > 0, teacher);
         assert.equal(await opened.getByText('CHAT_NOI_BO_731').count(), 0);
@@ -266,6 +299,7 @@ try {
   assert.deepEqual(errors, []);
   await fs.writeFile(path.join(out, 'browser-result.json'), JSON.stringify({
     scenario: 'IT-10', exports, closedShareFormCreatedNoLink: true,
+    sketchMouseUndoKeyboardReloadAndExport: true,
     lateAnswerToggleWasIgnored: true, recipientRead: true, revoked: true,
     lateExportPreservedDialog: true,
     variantExportPreservedOriginal: true,
