@@ -164,6 +164,25 @@ def test_mixed_rejects_wrong_truth_table_or_essay_solution(mixed, bad_verdict, b
     assert not report["ok"] and code in {e["code"] for e in report["errors"]}
 
 
+def test_mixed_duplicate_after_scoped_repair_identifies_later_question(mixed):
+    job, arguments = mixed
+    arguments["questions"][1]["stem"] = arguments["questions"][0]["stem"]
+
+    async def model(_purpose, _body):
+        pytest.fail("Phải phát hiện câu trùng trước khi gọi bộ giải.")
+
+    proposal, report = asyncio.run(
+        inspect_candidate(job, arguments, model, lambda *_a, **_kw: None)
+    )
+    assert proposal is None and not report["ok"]
+    assert report["errors"][0]["code"] == "duplicate_question"
+    assert report["errors"][0]["ordinal"] == 1
+    duplicates = next(
+        check for check in report["checks"] if check["toolName"] == "check_duplicates"
+    )
+    assert duplicates["status"] == "FAIL" and duplicates["findings"] == report["errors"]
+
+
 def test_mixed_rubric_cannot_borrow_points_from_another_question(mixed):
     job, arguments = mixed
     arguments["questions"][3]["rubric"][0]["pointsQ4"] = 9

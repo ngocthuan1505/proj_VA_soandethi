@@ -158,6 +158,12 @@ LEVEL_TASKS = (
 )
 
 
+class CandidateQuestionError(AIError):
+    def __init__(self, code: str, message: str, ordinal: int):
+        super().__init__(code, message)
+        self.ordinal = ordinal
+
+
 def candidate_proposal(job: GenerateJob, arguments: dict) -> GenerateProposal:
     mixed = any(slot.type != "mcq" for slot in job.slots)
     draft_type = MixedDraftBatch if mixed else DraftBatch
@@ -176,10 +182,11 @@ def candidate_proposal(job: GenerateJob, arguments: dict) -> GenerateProposal:
             for option in item.options
         ]
         if slot.type in {"mcq", "truefalse"} and len(set(normalized_options)) != 4:
-            raise AIError(
+            raise CandidateQuestionError(
                 "invalid_options",
                 f"Câu {ordinal + 1}: phương án trùng nội dung sau bỏ nhãn A/B/C/D. "
                 "Viết lại bốn phương án khác nhau, chỉ một phương án đúng.",
+                ordinal,
             )
         questions.append(
             {
@@ -206,10 +213,11 @@ def candidate_proposal(job: GenerateJob, arguments: dict) -> GenerateProposal:
     for index, stem in enumerate(normalized):
         if stem in normalized[:index]:
             prior = normalized.index(stem) + 1
-            raise AIError(
+            raise CandidateQuestionError(
                 "duplicate_question",
                 f"Câu {index + 1} trùng câu {prior}: {proposal.questions[index].stem} "
                 f"Phải viết câu {index + 1} mới, giữ chủ đề và mức của ô {index + 1}.",
+                index,
             )
     return proposal
 
@@ -247,7 +255,8 @@ async def inspect_candidate(job: GenerateJob, arguments: dict, call: ModelCall, 
             if code in {"invalid_plan", "invalid_rubric"}
             else "validate_schema"
         )
-        errors = [{"code": code, "details": details}]
+        target = {"ordinal": error.ordinal} if isinstance(error, CandidateQuestionError) else {}
+        errors = [{"code": code, "details": details, **target}]
         checks.record(stage, status="FAIL", findings=errors, started=at)
         report = {**checks.finish(errors), "expectedQuestionCount": len(job.slots)}
         emit("structure_check", seconds=time.perf_counter() - at, **report)
