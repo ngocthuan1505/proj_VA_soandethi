@@ -751,12 +751,13 @@ class AgentGeneration:
             async def current_call(purpose, body):
                 if not await self.store.is_current(job):
                     raise AIError("stale_snapshot", "Đề hoặc nguồn đã đổi; dừng vòng tự xử lý.")
-                selected = model if purpose == "agent" else reviewer
-                selected_provider = provider_name if purpose == "agent" else review_provider
+                generation = purpose in {"agent", "repair_stem"}
+                selected = model if generation else reviewer
+                selected_provider = provider_name if generation else review_provider
                 emit(
                     "model_call_start",
                     purpose=purpose,
-                    model=model_name if purpose == "agent" else review_model,
+                    model=model_name if generation else review_model,
                     provider=selected_provider,
                 )
                 if self.call:
@@ -823,7 +824,12 @@ class AgentGeneration:
                     environment["installedModel"] = installed
                 log.write("environment.json", environment)
                 result = await run_matrix_agent(
-                    job, current_call, emit, max_attempts=None, max_turns=policy.maxModelCalls + 2
+                    job,
+                    current_call,
+                    emit,
+                    max_attempts=None,
+                    max_turns=policy.maxModelCalls + 2,
+                    recheck_level_drift=review_provider == "ollama",
                 )
             except asyncio.CancelledError:
                 # HTTP transport có thể bỏ thông tin gắn với CancelledError.

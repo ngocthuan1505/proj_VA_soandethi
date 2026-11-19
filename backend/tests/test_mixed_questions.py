@@ -153,6 +153,51 @@ def test_mixed_agent_repairs_then_finishes_with_typed_answers_and_real_rubric(mi
     assert "RubricStep" in schema["$defs"]
 
 
+@pytest.mark.parametrize("isolated", ["Thông hiểu", "Nhận biết", None])
+def test_ollama_rechecks_conflicting_level_without_seeing_target(mixed, isolated):
+    job, arguments = mixed
+    model, events, rechecks = MixedModel(job, arguments), [], []
+
+    async def drifting_review(purpose, body):
+        if purpose == "level_recheck":
+            data = json.loads(body["messages"][1]["content"])
+            assert data["question"]["ordinal"] == 1
+            assert {key for key in data["question"] if key != "ordinal"} == {
+                "stem",
+                "options",
+                "topic",
+                "type",
+            }
+            assert len(data["sources"]) == 1
+            assert set(data) == {"sources", "question"}
+            rechecks.append(data)
+            return {"content": json.dumps({"observedLevel": isolated, "reason": "Rà riêng."})}
+        reply = await model(purpose, body)
+        if purpose == "blind_content_check" and model.attempts == 2:
+            payload = json.loads(reply["content"])
+            payload["reviews"][1]["observedLevel"] = 0
+            reply["content"] = json.dumps(payload)
+        return reply
+
+    result = asyncio.run(
+        run_matrix_agent(
+            job,
+            drifting_review,
+            lambda name, **data: events.append((name, data)),
+            recheck_level_drift=True,
+        )
+    )
+    assert len(rechecks) == 1
+    report = [data for name, data in events if name == "level_recheck"][0]
+    assert report["previousLevel"] == 1 and report["batchLevel"] == 0
+    if isolated == "Thông hiểu":
+        assert result["status"] == "ready_for_teacher_review" and not result["saved"]
+    else:
+        assert result["status"] == "attempt_limit"
+        assert result["report"]["errors"][0]["code"] == "level_disagreement"
+        assert result["report"]["errors"][0]["reason"] == "Rà riêng."
+
+
 @pytest.mark.parametrize(
     "bad_verdict,bad_essay,code",
     [(True, False, "answer_verdict_disagreement"), (False, True, "explanation_disagreement")],

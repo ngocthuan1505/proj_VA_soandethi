@@ -85,6 +85,7 @@ def trace_summary(row):
             "tool_call",
             "structure_check",
             "blind_content_check",
+            "level_recheck",
             "candidate_check",
             "generation_result",
             "check_report",
@@ -93,7 +94,13 @@ def trace_summary(row):
         "fromModel": {"gemini-3.6-flash", "gemini-3.8-flash", "gemini-4-hydrogen"},
         "toModel": {"gemini-3.6-flash", "gemini-3.8-flash", "gemini-4-hydrogen"},
         "tool": {"check_exam", "finish_exam"},
-        "purpose": {"agent", "blind_content_check", "explanation_check"},
+        "purpose": {
+            "agent",
+            "repair_stem",
+            "blind_content_check",
+            "level_recheck",
+            "explanation_check",
+        },
         "status": {
             "ready_for_teacher_review",
             "failed",
@@ -124,6 +131,10 @@ def trace_summary(row):
     for key in (
         "ok",
         "modelCall",
+        "ordinal",
+        "previousLevel",
+        "batchLevel",
+        "observedLevel",
         "keySlot",
         "fromKeySlot",
         "toKeySlot",
