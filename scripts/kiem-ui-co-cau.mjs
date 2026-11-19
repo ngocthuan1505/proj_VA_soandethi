@@ -20,6 +20,14 @@ try {
   return value.exams.find(e=>e.id===value.current);
  };
  const getContent=e=>({questions:e.questions,matrix:e.matrix,title:e.title});
+ // Đề mẫu thêm ID khối qua autosave khi bàn soạn tải lần đầu.
+ await page.waitForFunction(async()=>{
+  const response=await fetch('/api/kv?key=state');
+  if(!response.ok)return false;
+  const {value}=await response.json();
+  const current=value?.exams?.find(e=>e.id===value.current);
+  return current?.questions.every(q=>q.blockIds?.stem);
+ },undefined,{polling:150});
  const initial=getContent(await saved());
  const requests=[];
  page.on('request',r=>{if(r.url()===base+'/api/ai/exam-plan')requests.push(r.postDataJSON());});
