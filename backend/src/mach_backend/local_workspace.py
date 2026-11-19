@@ -772,7 +772,17 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                     "saved": row[1] is not None,
                 }
             if latest and latest["jobId"] == str(job_id):
-                return {**latest, "status": "failed", "proposal": None, "errorCode": "interrupted"}
+                summary = store.get("matrix-agent-result:" + str(job_id))["value"] or {}
+                status = summary.get("status")
+                return {
+                    **latest,
+                    "sequence": 2,
+                    "status": "cancelled" if status == "cancelled" else "failed",
+                    "proposal": None,
+                    "errorCode": (
+                        None if status == "cancelled" else summary.get("errorCode") or "interrupted"
+                    ),
+                }
             raise HTTPException(404, "Không tìm thấy tác vụ của đề này.") from None
 
     @app.get("/api/exams/{exam_id}/proposals/latest")

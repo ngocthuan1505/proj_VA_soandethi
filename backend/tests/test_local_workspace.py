@@ -644,6 +644,9 @@ def test_config_change_waits_for_active_task(workspace, tmp_path):
         )
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         assert summary["status"] == "cancelled" and "errorCode" not in summary
+    with TestClient(create_app(tmp_path / "active")) as reopened:
+        assert reopened.get(base + "/status").json()["status"] == "cancelled"
+        assert reopened.get(base + "/trace").json()[-1]["status"] == "cancelled"
 
 
 @pytest.mark.parametrize("runner_timeout", [False, True])
@@ -686,6 +689,11 @@ def test_timeout_keeps_partial_reports_unknown_and_draft_unchanged(
         summary_path = tmp_path / "timeout" / "agent-logs" / result["jobId"] / "result.json"
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         assert summary["status"] == "failed" and summary["errorCode"] == expected
+    with TestClient(create_app(tmp_path / "timeout")) as reopened:
+        recovered = reopened.get(base + "/status").json()
+        assert recovered["sequence"] == 2 and recovered["status"] == "failed"
+        assert recovered["errorCode"] == expected and recovered["proposal"] is None
+        assert reopened.get("/api/kv?key=state").json()["value"] == state
 
 
 @pytest.mark.parametrize(

@@ -79,8 +79,7 @@ def structured_tool_request(body):
         "Bạn chọn action và tự viết arguments. Python chỉ thực thi công cụ được phép "
         "rồi trả toolResult để bạn tự sửa. Khi result.ok=false, xử lý result.errors "
         "và làm theo result.repairInstruction nếu có trước khi nộp lại. "
-        "Trả đúng JSON theo schema: "
-        + json.dumps(schema, ensure_ascii=False)
+        "Trả đúng JSON theo schema: " + json.dumps(schema, ensure_ascii=False)
     )
     return {"messages": messages, "format": schema}
 
