@@ -197,9 +197,8 @@ def test_local_adapter_preserves_mixed_wire_instead_of_coercing_it_to_abcd(mixed
         )
     )
     assert result["status"] == "ready_for_teacher_review"
-    assert (
-        model.calls[0][1]["tools"][0]["function"]["parameters"]["properties"]["questions"]["items"][
-            "properties"
-        ]["answer"]["type"]
-        == "string"
-    )
+    items = model.calls[0][1]["tools"][0]["function"]["parameters"]["properties"]["questions"][
+        "items"
+    ]
+    assert len(items) == len(job.slots)
+    assert all(item["properties"]["answer"]["type"] == "string" for item in items)
