@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {chromium} from 'playwright-core';
 import {ensureBlocks} from '../blocks.js';
+import {documentPlain} from '../rich-document.js';
 import {sample, uid} from '../core.js';
 
 const base = process.env.POC_URL || 'http://127.0.0.1:4183';
@@ -35,7 +36,10 @@ question.rubric = [
   {text: 'Xác định biểu thức.', points: 0.25},
   {text: 'Tính đúng kết quả.', points: 0.25},
 ];
-question.stem = 'Chọn giá trị sau khi tính $x+1$. Hãy tính kết quả.\nTrình bày mỗi bước. Giữ phần cuối.\nĐoạn độc lập.';
+const paragraph = text => ({
+  type: 'paragraph', attrs: {id: uid()}, content: [{type: 'text', text}],
+});
+const cell = (...content) => ({type: 'tableCell', attrs: {id: uid()}, content});
 question.richDoc = {
   type: 'doc',
   content: [{type: 'paragraph', attrs: {id: uid()}, content: [
@@ -48,8 +52,14 @@ question.richDoc = {
     {type: 'text', text: ' Giữ phần cuối.', marks: [{type: 'italic'}]},
   ]}, {type: 'paragraph', attrs: {id: uid()}, content: [
     {type: 'text', text: 'Đoạn độc lập.'},
+  ]}, {type: 'table', attrs: {id: uid()}, content: [
+    {type: 'tableRow', attrs: {id: uid()}, content: [
+      cell(paragraph('Giữ đầu. Chép số.'), paragraph('So sánh đáp số. Giữ đuôi.')),
+      cell(paragraph('Ô bên cạnh.'), paragraph('Dòng bên cạnh.')),
+    ]},
   ]}],
 };
+question.stem = documentPlain(question.richDoc);
 ensureBlocks(exam);
 await save({version: 1, current: exam.id, exams: [exam], prefs: []}, 0);
 
@@ -153,21 +163,24 @@ try {
   await dialog.locator('[data-action="discard-block-patch"]').click();
   assert.deepEqual((await state()).questions, original);
 
-  await editor.scrollIntoViewIfNeeded();
-  await editor.locator('.tiptap').evaluate(element => {
-    element.focus();
-    const [first, second] = element.querySelectorAll('p');
-    const head = first.lastChild;
-    const tail = second.firstChild;
-    const range = document.createRange();
-    range.setStart(head, head.textContent.indexOf('Hãy'));
-    range.setEnd(tail, tail.textContent.indexOf('bước.') + 'bước.'.length);
-    const selection = getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    document.dispatchEvent(new Event('selectionchange'));
-  });
-  await page.locator('.selection-ask').click();
+  const selectAcross = async (selector, start, end) => {
+    await editor.scrollIntoViewIfNeeded();
+    await editor.locator('.tiptap').evaluate((element, args) => {
+      element.focus();
+      const [first, second] = element.querySelectorAll(args.selector);
+      const head = first.lastChild;
+      const tail = second.firstChild;
+      const range = document.createRange();
+      range.setStart(head, head.textContent.indexOf(args.start));
+      range.setEnd(tail, tail.textContent.indexOf(args.end) + args.end.length);
+      const selection = getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      document.dispatchEvent(new Event('selectionchange'));
+    }, {selector, start, end});
+    await page.locator('.selection-ask').click();
+  };
+  await selectAcross(':scope > p', 'Hãy', 'bước.');
   await send('Viết lại hai đoạn đang chọn');
   await proposal.waitFor();
   await action('show-block-diff').click();
@@ -182,13 +195,38 @@ try {
   ));
   const beforeBlocks = original[0].richDoc.content;
   const afterBlocks = rewritten.richDoc.content;
-  assert.equal(afterBlocks.length, 4);
+  assert.equal(afterBlocks.length, 5);
   assert.equal(afterBlocks[0].attrs.id, beforeBlocks[0].attrs.id);
   assert.equal(afterBlocks[2].attrs.id, beforeBlocks[1].attrs.id);
   assert.deepEqual(afterBlocks[0].content.slice(0, 3), beforeBlocks[0].content.slice(0, 3));
   assert.deepEqual(afterBlocks[2].content.at(-1), beforeBlocks[1].content.at(-1));
   assert.deepEqual(afterBlocks.at(-1), beforeBlocks.at(-1));
+  assert.deepEqual(afterBlocks.at(-2), beforeBlocks.at(-2));
   await undo({pause: true});
+  assert.deepEqual((await state()).questions, original);
+
+  await selectAcross('td:first-child p', 'Chép', 'đáp số.');
+  await send('Viết lại hai đoạn trong ô bảng đang chọn');
+  await proposal.waitFor();
+  await action('show-block-diff').click();
+  await dialog.locator('ins').getByText(/Kiểm tra lại/).waitFor();
+  const tableConfirmation = page.waitForResponse(response => isConfirm(response.url()) && response.ok());
+  await dialog.locator('[data-action="apply-block-patch"]').click();
+  await tableConfirmation;
+  await action('undo-ai').waitFor();
+  const afterTableEdit = (await state()).questions[0];
+  assert.equal(afterTableEdit.stem, original[0].stem.replace(
+    'Chép số.\nSo sánh đáp số.', 'Tính giá trị.\nNêu lý do.\nKiểm tra lại.',
+  ));
+  const originalTable = beforeBlocks.at(-1), table = afterTableEdit.richDoc.content.at(-1);
+  const [originalCell, adjacent] = originalTable.content[0].content;
+  const [editedCell, keptAdjacent] = table.content[0].content;
+  assert.deepEqual(keptAdjacent, adjacent);
+  assert.equal(table.attrs.id, originalTable.attrs.id);
+  assert.equal(editedCell.attrs.id, originalCell.attrs.id);
+  assert.equal(editedCell.content.length, 3);
+  assert.equal(editedCell.content.at(-1).attrs.id, originalCell.content.at(-1).attrs.id);
+  await undo();
   assert.deepEqual((await state()).questions, original);
 
   await askToEdit();
@@ -245,6 +283,7 @@ try {
     discardPreservedQuestions: true, repeatedConfirmAppliedOnce: true, richTextPreserved: true,
     undoRestoredQuestions: true, selectedRubricStepOnly: true, staleWriteRejected: true,
     conflictDisplayed: true, pythonConfirmations: confirmations, multilineConfirmedByPython: true,
+    nestedTableCellConfirmedByPython: true,
   }, null, 2));
   console.log('IT-06 đạt qua Chrome và FastAPI với phản hồi mẫu.');
 } finally {

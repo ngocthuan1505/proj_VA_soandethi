@@ -8,8 +8,10 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from mach_backend.ai_contract import AIError, BlockTarget
 from mach_backend.local_workspace import create_app
 from mach_backend.poc_scoped_patch import Draft, Submission, checked_snapshot, validate_draft
+from mach_backend.rich_patch import project, update_rich
 
 
 @pytest.fixture
@@ -225,6 +227,61 @@ def test_discarded_scoped_proposal_can_no_longer_be_confirmed(setup):
     assert client.post(endpoint + "/discard", json={}).json() == {"discarded": True}
     assert client.post(endpoint + "/confirm", json={}).json()["code"] == "proposal_not_found"
     assert app.state.store.get("state") == before
+
+
+@pytest.mark.parametrize(
+    "wrappers",
+    [("blockquote",), ("bulletList", "listItem"), ("table", "tableRow", "tableHeader")],
+)
+def test_editor_inserts_new_paragraphs_in_the_same_container(wrappers):
+    content = [{"type": "paragraph", "content": [{"type": "text", "text": "Giữ đầu. Sửa chữ."}]}]
+    for kind in reversed(wrappers):
+        content = [{"type": kind, "attrs": {"id": kind}, "content": content}]
+    doc = {"type": "doc", "content": content}
+    target = BlockTarget(
+        questionId=uuid4(),
+        questionVersion=1,
+        blockId=uuid4(),
+        field="explanation",
+        text="Giữ đầu. Sửa chữ.",
+    )
+    result = update_rich(doc, target, "Giữ đầu. Thay chữ.\nDòng mới.")
+    assert project(result, []) == "Giữ đầu. Thay chữ.\nDòng mới."
+    parent = result
+    for kind in wrappers:
+        parent = parent["content"][0]
+        assert parent["type"] == parent["attrs"]["id"] == kind
+    assert len(parent["content"]) == 2
+    assert project(doc, []) == target.text
+
+
+def test_editor_change_cannot_merge_distinct_table_cells():
+    cells = [
+        {
+            "type": "tableCell",
+            "content": [
+                {"type": "paragraph", "content": [{"type": "text", "text": text}]},
+            ],
+        }
+        for text in ("Ô một", "Ô hai")
+    ]
+    doc = {
+        "type": "doc",
+        "content": [
+            {"type": "table", "content": [{"type": "tableRow", "content": cells}]},
+        ],
+    }
+    target = BlockTarget(
+        questionId=uuid4(),
+        questionVersion=1,
+        blockId=uuid4(),
+        field="explanation",
+        text="Ô một | Ô hai",
+    )
+    original = deepcopy(doc)
+    with pytest.raises(AIError, match="giữ định dạng"):
+        update_rich(doc, target, "Gộp hai ô.")
+    assert doc == original
 
 
 def test_multiline_editor_change_is_committed_by_python(setup):

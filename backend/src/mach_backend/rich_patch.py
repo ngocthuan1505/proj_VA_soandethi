@@ -18,6 +18,7 @@ JOIN_LINES = {
     "tableCell",
     "tableHeader",
 }
+PARAGRAPH_PARENTS = {"doc", "blockquote", "listItem", "tableCell", "tableHeader"}
 
 
 @dataclass
@@ -33,6 +34,10 @@ def rich_error() -> AIError:
     return AIError("rich_document_conflict", "Hãy chọn một đoạn nhỏ để giữ định dạng và công thức.")
 
 
+def child_separator(kind: str) -> str:
+    return " | " if kind == "tableRow" else "\n" if kind in JOIN_LINES else ""
+
+
 def project(
     node: JsonValue,
     leaves: list[Leaf],
@@ -42,9 +47,11 @@ def project(
     index: int = 0,
     depth: int = 0,
 ) -> str:
-    if not isinstance(node, dict) or depth > 64 or not isinstance(node.get("type"), str):
+    if not isinstance(node, dict) or depth > 64:
         raise rich_error()
-    kind = node["type"]
+    kind = node.get("type")
+    if not isinstance(kind, str):
+        raise rich_error()
     if kind == "hardBreak":
         return "\n"
     if kind in ("text", "mathInline"):
@@ -68,7 +75,7 @@ def project(
     children = node.get("content", [])
     if not isinstance(children, list):
         raise rich_error()
-    separator = " | " if kind == "tableRow" else "\n" if kind in JOIN_LINES else ""
+    separator = child_separator(kind)
     parts: list[str] = []
     for child_index, child in enumerate(children):
         part = project(
@@ -103,14 +110,18 @@ def replace_paragraphs(doc, start, end, changed):
     blocks = doc.get("content", [])
     first = last = None
     offset = 0
+    separator_length = len(child_separator(doc["type"]))
     for i, block in enumerate(blocks):
         stop = offset + len(project(block, []))
+        if offset <= start <= end <= stop and block["type"] in JOIN_LINES | {"tableRow"}:
+            replace_paragraphs(block, start - offset, end - offset, changed)
+            return
         if offset <= start <= stop:
             first = (i, start - offset)
         if offset <= end <= stop:
             last = (i, end - offset, stop - offset)
-        offset = stop + 1
-    if first is None or last is None:
+        offset = stop + separator_length
+    if doc["type"] not in PARAGRAPH_PARENTS or first is None or last is None:
         raise rich_error()
     i, left = first
     j, right, length = last
