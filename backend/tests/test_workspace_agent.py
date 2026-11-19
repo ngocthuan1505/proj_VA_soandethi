@@ -5,7 +5,7 @@ import json
 import pytest
 
 from mach_backend.ai_contract import AIError
-from mach_backend.matrix_agent import ContentReviews
+from mach_backend.matrix_agent import ContentReviews, MixedContentReviews
 from mach_backend.mixed_questions import MixedDraftBatch, MixedDraftQuestion
 from mach_backend.poc_matrix import structured_tool_request
 from mach_backend.workspace_agent import local_model_call
@@ -127,6 +127,51 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
 
     asyncio.run(local_model_call(model, "agent", body))
     assert body == before
+
+
+@pytest.mark.parametrize("answer", ["40", "3"])
+def test_mixed_reviewer_maps_answer_content_and_keeps_verdicts(answer):
+    values = ["24", "16", "40", "30"]
+    verdicts = ["incorrect", "incorrect", "incorrect", "correct"]
+    body = {
+        "format": MixedContentReviews.model_json_schema(),
+        "messages": [
+            {"role": "system", "content": "mcq dùng '0'/'1'/'2'/'3'"},
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "questions": [
+                            {
+                                "type": "mcq",
+                                "ordinal": 0,
+                                "options": [{"index": i, "text": v} for i, v in enumerate(values)],
+                            }
+                        ]
+                    }
+                ),
+            },
+        ],
+    }
+
+    async def model(_purpose, request):
+        schema = request["format"]["properties"]["reviews"]["items"][0]
+        assert schema["properties"]["answer"]["enum"] == [*values, ""]
+        assert "'0'/'1'" not in request["messages"][0]["content"]
+        return {
+            "content": json.dumps(
+                {"reviews": [{"ordinal": 0, "answer": answer, "optionVerdicts": verdicts}]}
+            )
+        }
+
+    if answer == "3":
+        with pytest.raises(AIError, match="nguyên văn phương án"):
+            asyncio.run(local_model_call(model, "blind_content_check", body))
+    else:
+        response = asyncio.run(local_model_call(model, "blind_content_check", body))
+        assert json.loads(response["content"])["reviews"] == [
+            {"ordinal": 0, "answer": "2", "optionVerdicts": verdicts}
+        ]
 
 
 def test_split_reviewer_does_not_accept_wrong_ordinal():

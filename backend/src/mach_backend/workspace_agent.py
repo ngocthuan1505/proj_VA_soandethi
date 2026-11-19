@@ -94,6 +94,7 @@ async def local_model_call(model, purpose, body):
     if "MixedContentReview" in body.get("format", {}).get("$defs", {}):
         questions = json.loads(body["messages"][1]["content"])["questions"]
         common = body["format"]["$defs"]["MixedContentReview"]
+        mcq_options = {}
         items = []
         for question in questions:
             kind = question["type"]
@@ -113,13 +114,36 @@ async def local_model_call(model, purpose, body):
                     "maxItems": count,
                 },
             }
-            if kind in MIXED_ANSWERS:
+            if kind == "mcq":
+                options = [option["text"] for option in question["options"]]
+                mcq_options[ordinal] = options
+                properties["answer"] = {"enum": [*options, ""]}
+            elif kind in MIXED_ANSWERS:
                 properties["answer"] = {"enum": [*MIXED_ANSWERS[kind], ""]}
             elif kind == "essay":
                 properties["answer"] = {"const": ""}
             items.append({**common, "properties": properties})
         body["format"]["properties"]["reviews"]["items"] = items
-        return await model(purpose, body)
+        if not mcq_options:
+            return await model(purpose, body)
+        body["messages"][0]["content"] = body["messages"][0]["content"].replace(
+            "mcq dùng '0'/'1'/'2'/'3'", "mcq dùng nguyên văn phương án đúng"
+        ) + (
+            " Trong lượt kiểm này, answer của mcq là nguyên văn phương án đúng sau khi giải, "
+            "hoặc chuỗi rỗng nếu chưa chắc. Không ghi chỉ số hoặc chữ cái. "
+            "Vẫn đánh giá từng phương án theo đúng thứ tự trong optionVerdicts."
+        )
+        response = await model(purpose, body)
+        payload = json.loads(response["content"])
+        for review in payload["reviews"]:
+            options = mcq_options.get(review["ordinal"])
+            if options is not None and review["answer"] != "":
+                if review["answer"] not in options:
+                    raise AIError(
+                        "invalid_review", "Đáp án bộ giải phải khớp nguyên văn phương án."
+                    )
+                review["answer"] = str(options.index(review["answer"]))
+        return {**response, "content": json.dumps(payload, ensure_ascii=False)}
     if purpose == "explanation_check":
         questions = json.loads(body["messages"][1]["content"])["questions"]
         if any(q.get("type", "mcq") != "mcq" for q in questions):

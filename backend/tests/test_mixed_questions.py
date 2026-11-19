@@ -186,17 +186,28 @@ def test_mixed_rejects_bad_answer_transport(kind, value):
         decode_answer(kind, value)
 
 
-def test_local_adapter_preserves_mixed_wire_instead_of_coercing_it_to_abcd(mixed):
+def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed):
     job, args = mixed
     model = MixedModel(job, args)
+
+    async def local_response(purpose, body):
+        response = await model(purpose, body)
+        if purpose == "blind_content_check":
+            content = json.loads(response["content"])
+            review = content["reviews"][0]
+            review["answer"] = args["questions"][0]["options"][int(review["answer"])]
+            response["content"] = json.dumps(content)
+        return response
+
     result = asyncio.run(
         run_matrix_agent(
             job,
-            lambda purpose, body: local_model_call(model, purpose, body),
+            lambda purpose, body: local_model_call(local_response, purpose, body),
             lambda *_a, **_kw: None,
         )
     )
     assert result["status"] == "ready_for_teacher_review"
+    assert result["proposal"]["questions"][0]["answer"] == 2
     items = model.calls[0][1]["tools"][0]["function"]["parameters"]["properties"]["questions"][
         "items"
     ]
@@ -211,7 +222,8 @@ def test_local_adapter_preserves_mixed_wire_instead_of_coercing_it_to_abcd(mixed
         0,
         0,
     ]
-    assert review_items[0]["properties"]["answer"]["enum"] == ["0", "1", "2", "3", ""]
+    assert review_items[0]["properties"]["answer"]["enum"] == [*args["questions"][0]["options"], ""]
+    assert len(review_items[1]["properties"]["answer"]["enum"]) == 17
     assert review_items[3]["properties"]["answer"] == {"const": ""}
     assert review_items[0]["properties"]["duplicateWith"]["maxItems"] == 0
     assert review_items[2]["properties"]["duplicateWith"]["items"]["enum"] == [0, 1]
