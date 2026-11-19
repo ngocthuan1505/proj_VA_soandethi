@@ -22,6 +22,7 @@ from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import saved_answer, saved_answer_label
 from mach_backend.export_assets import render_assets
 from mach_backend.matrix_import import validate_raster
+from mach_backend.presentation import PRESENTATION_CONTROLS, PRESENTATION_CSS, PRESENTATION_SCRIPT
 from mach_backend.word_export import (
     export_docx,
     export_inputs,
@@ -283,13 +284,21 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         f" · {plain(exam.get('minutes'))} phút</p>"
     )
     body += f"<p>{inline_html(exam.get('instructions'))}</p>"
-    if exam.get("quote", {}).get("text"):
+    presenting = not teacher and rendered_math is not None and bool(exam["questions"])
+    has_table = any(uses_table(q) for q in exam["questions"])
+    has_passage = bool(exam.get("quote", {}).get("text"))
+    has_reference = has_passage or has_table
+    if presenting:
+        body = PRESENTATION_CONTROLS + "<header data-exam-intro>" + body + "</header>"
+        if has_reference:
+            body += '<div id="exam-reading" role="region" aria-label="Ngữ liệu và dữ kiện của đề">'
+    if has_passage:
         body += (
             '<div class="passage"><b>Đọc ngữ liệu sau</b><p>'
             + inline_html(exam["quote"]["text"])
             + "</p></div>"
         )
-    if any(uses_table(q) for q in exam["questions"]):
+    if has_table:
         if not figures:
             raise AIError("unsupported_export", "Thiếu bản dựng biểu đồ Bảng 1; không bỏ dữ kiện.")
         body += (
@@ -305,12 +314,15 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
             + figures.pop(0)["svg"]
             + "<figcaption>Biểu đồ dữ kiện Bảng 1</figcaption></figure></section>"
         )
+    if presenting and has_reference:
+        body += "</div>"
     for i, q in enumerate(exam["questions"]):
         if q.get("figure") and not figures:
             raise AIError("unsupported_export", "Chưa có bản dựng hình để xuất; không bỏ hình.")
         score = " (" + plain(points(q["points"])) + ")" if "points" in q else ""
         page_class = ' class="page-break"' if q.get("pageBreak") else ""
-        body += f"<section{page_class}><b>Câu {i + 1}{score}.</b> " + field(
+        slide_attr = " data-exam-question" if presenting else ""
+        body += f"<section{page_class}{slide_attr}><b>Câu {i + 1}{score}.</b> " + field(
             q.get("stem"), q.get("richDoc"), q.get("runs")
         )
         for formula in q.get("formulas", []):
@@ -448,6 +460,11 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         '<!doctype html><html lang="vi"><meta charset="utf-8"><title>'
         + plain(exam.get("title"))
         + "</title>"
+        + (
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            if presenting
+            else ""
+        )
         + math_css
         + "<style>"
         f'body{{font:{size}pt "{font}",serif;max-width:760px;margin:30px auto;color:#111}}'
@@ -460,7 +477,13 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         "blockquote,small{font-size:11pt;color:#444}@page{size:A4;margin:18mm}"
         ".page-break{break-before:page}"
         "@media print{body{margin:0}section,ol,ul{break-inside:avoid}"
-        ".rubric-title{break-after:avoid}}</style><body>" + body + math_script + "</body></html>"
+        ".rubric-title{break-after:avoid}}"
+        + (PRESENTATION_CSS if presenting else "")
+        + "</style><body>"
+        + body
+        + math_script
+        + (PRESENTATION_SCRIPT if presenting else "")
+        + "</body></html>"
     )
 
 

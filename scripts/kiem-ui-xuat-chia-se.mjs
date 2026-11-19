@@ -16,6 +16,7 @@ assert((await (await fetch(base + '/api/account')).json()).sharedSnapshots);
 assert.equal((await (await fetch(kv + '?key=state')).json()).revision, 0);
 const exam = blank('Toán');
 exam.title = 'Đề thử xuất và chia sẻ';
+exam.quote.text = 'Ngữ liệu chung QA 731 dùng cho hai câu hỏi.';
 exam.chat = [{role: 'user', text: 'CHAT_NOI_BO_731'}];
 exam.questions = [{
   id: uid(), type: 'essay', v: 1, points: 10, options: [],
@@ -133,6 +134,38 @@ try {
         assert.deepEqual(networkAttempts, []);
         assert.equal(await opened.getByText('LOI_GIAI_RIENG_731').count() > 0, teacher);
         assert.equal(await opened.getByText('CHAT_NOI_BO_731').count(), 0);
+        const present = opened.getByRole('button', {name: 'Trình chiếu', exact: true});
+        if (teacher) {
+          assert.equal(await present.count(), 0);
+        } else {
+          await present.click();
+          const firstSlide = opened.locator('[data-exam-question]').nth(0);
+          const secondSlide = opened.locator('[data-exam-question]').nth(1);
+          const reference = opened.getByRole('button', {name: 'Ngữ liệu', exact: true});
+          const reading = opened.getByText(exam.quote.text, {exact: true});
+          assert(await firstSlide.isVisible() && !(await secondSlide.isVisible()));
+          assert(await opened.getByRole('button', {name: 'Câu trước'}).isDisabled());
+          assert(!(await reading.isVisible()));
+          await reference.click();
+          assert(await reading.isVisible());
+          await opened.keyboard.press('ArrowRight');
+          assert(!(await firstSlide.isVisible()) && await secondSlide.isVisible());
+          assert(await opened.getByRole('button', {name: 'Câu sau'}).isDisabled());
+          assert(await reading.isVisible());
+          await opened.getByRole('button', {name: 'Câu trước'}).click();
+          assert(await firstSlide.isVisible());
+          await opened.setViewportSize({width: 390, height: 844});
+          assert(await opened.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+          await opened.screenshot({path: path.join(out, 'hoc-sinh-trinh-chieu.png')});
+          await opened.emulateMedia({media: 'print'});
+          assert(await firstSlide.isVisible() && await secondSlide.isVisible());
+          assert(!(await reference.isVisible()));
+          await opened.emulateMedia({media: 'screen'});
+          await opened.keyboard.press('Escape');
+          assert(await present.isVisible() && await secondSlide.isVisible());
+          assert.equal(await opened.getByText('BAREM_RIENG_731').count(), 0);
+          assert.deepEqual(networkAttempts, []);
+        }
         await opened.close();
       }
       await page.keyboard.press('Escape');
@@ -329,6 +362,7 @@ try {
     scenario: 'IT-10', exports, closedShareFormCreatedNoLink: true,
     sketchMouseUndoKeyboardReloadAndExport: true,
     sketchTouch: true,
+    studentOfflinePresentationAndPrint: true,
     lateAnswerToggleWasIgnored: true, recipientRead: true, revoked: true,
     lateExportPreservedDialog: true,
     variantExportPreservedOriginal: true,
