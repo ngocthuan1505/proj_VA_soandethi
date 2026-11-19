@@ -35,7 +35,7 @@ question.rubric = [
   {text: 'Xác định biểu thức.', points: 0.25},
   {text: 'Tính đúng kết quả.', points: 0.25},
 ];
-question.stem = 'Chọn giá trị sau khi tính $x+1$. Hãy tính kết quả.';
+question.stem = 'Chọn giá trị sau khi tính $x+1$. Hãy tính kết quả.\nTrình bày mỗi bước. Giữ phần cuối.\nĐoạn độc lập.';
 question.richDoc = {
   type: 'doc',
   content: [{type: 'paragraph', attrs: {id: uid()}, content: [
@@ -43,6 +43,11 @@ question.richDoc = {
     {type: 'text', text: 'sau khi tính '},
     {type: 'mathInline', attrs: {id: uid(), latex: 'x+1', display: false}},
     {type: 'text', text: '. Hãy tính kết quả.'},
+  ]}, {type: 'paragraph', attrs: {id: uid()}, content: [
+    {type: 'text', text: 'Trình bày mỗi bước.'},
+    {type: 'text', text: ' Giữ phần cuối.', marks: [{type: 'italic'}]},
+  ]}, {type: 'paragraph', attrs: {id: uid()}, content: [
+    {type: 'text', text: 'Đoạn độc lập.'},
   ]}],
 };
 ensureBlocks(exam);
@@ -121,7 +126,47 @@ try {
   await dialog.locator('[data-action="discard-block-patch"]').click();
   assert.deepEqual((await state()).questions, original);
 
+  await editor.scrollIntoViewIfNeeded();
+  await editor.locator('.tiptap').evaluate(element => {
+    element.focus();
+    const [first, second] = element.querySelectorAll('p');
+    const head = first.lastChild;
+    const tail = second.firstChild;
+    const range = document.createRange();
+    range.setStart(head, head.textContent.indexOf('Hãy'));
+    range.setEnd(tail, tail.textContent.indexOf('bước.') + 'bước.'.length);
+    const selection = getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.dispatchEvent(new Event('selectionchange'));
+  });
+  await page.locator('.selection-ask').click();
+  await send('Viết lại hai đoạn đang chọn');
+  await proposal.waitFor();
+  await action('show-block-diff').click();
+  await dialog.locator('ins').getByText(/Kiểm tra lại/).waitFor();
+  const confirmed = page.waitForResponse(response => isConfirm(response.url()) && response.ok());
+  await dialog.locator('[data-action="apply-block-patch"]').click();
+  await confirmed;
+  await action('undo-ai').waitFor();
+  const rewritten = (await state()).questions[0];
+  assert.equal(rewritten.stem, original[0].stem.replace(
+    'Hãy tính kết quả.\nTrình bày mỗi bước.', 'Tính giá trị.\nNêu lý do.\nKiểm tra lại.',
+  ));
+  const beforeBlocks = original[0].richDoc.content;
+  const afterBlocks = rewritten.richDoc.content;
+  assert.equal(afterBlocks.length, 4);
+  assert.equal(afterBlocks[0].attrs.id, beforeBlocks[0].attrs.id);
+  assert.equal(afterBlocks[2].attrs.id, beforeBlocks[1].attrs.id);
+  assert.deepEqual(afterBlocks[0].content.slice(0, 3), beforeBlocks[0].content.slice(0, 3));
+  assert.deepEqual(afterBlocks[2].content.at(-1), beforeBlocks[1].content.at(-1));
+  assert.deepEqual(afterBlocks.at(-1), beforeBlocks.at(-1));
+  await action('undo-ai').click();
+  await saved();
+  assert.deepEqual((await state()).questions, original);
+
   await askToEdit();
+  const confirmationsBeforeDoubleClick = confirmations;
   await dialog.locator('[data-action="apply-block-patch"]').evaluate(button => {
     button.click();
     button.click();
@@ -131,7 +176,7 @@ try {
   const updated = (await state()).questions;
   assert.equal(updated[0].stem, original[0].stem.replace('kết quả', 'kết quả (đã sửa)'));
   assert.equal(updated[0].v, original[0].v + 1);
-  assert.equal(confirmations, 1);
+  assert.equal(confirmations, confirmationsBeforeDoubleClick + 1);
   assert.deepEqual(updated[0].richDoc.content[0].content.slice(0, 3),
     original[0].richDoc.content[0].content.slice(0, 3));
   assert.deepEqual(updated.slice(1), original.slice(1));
@@ -175,7 +220,7 @@ try {
     scenario: 'IT-06', fixture: true, askPreservedQuestions: true, diffPreservedQuestions: true,
     discardPreservedQuestions: true, repeatedConfirmAppliedOnce: true, richTextPreserved: true,
     undoRestoredQuestions: true, selectedRubricStepOnly: true, staleWriteRejected: true,
-    conflictDisplayed: true, pythonConfirmations: confirmations,
+    conflictDisplayed: true, pythonConfirmations: confirmations, multilineConfirmedByPython: true,
   }, null, 2));
   console.log('IT-06 đạt qua Chrome và FastAPI với phản hồi mẫu.');
 } finally {

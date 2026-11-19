@@ -227,8 +227,8 @@ def test_discarded_scoped_proposal_can_no_longer_be_confirmed(setup):
     assert app.state.store.get("state") == before
 
 
-def test_multiline_editor_change_preserves_existing_browser_path(setup):
-    app, client, _, question, body, edits, _ = setup
+def test_multiline_editor_change_is_committed_by_python(setup):
+    app, client, exam, question, body, edits, _ = setup
     store = app.state.store
     state = store.get("state")["value"]
     state["exams"][0]["questions"][0]["richDoc"] = {
@@ -239,9 +239,17 @@ def test_multiline_editor_change_preserves_existing_browser_path(setup):
     edits[0]["content"] = "Một cộng một bằng mấy?\nGiải thích."
     preview = client.post("/api/assistant/patch", json=body)
     preview.raise_for_status()
-    assert preview.json()["confirmationId"] is None
+    proposal_id = preview.json()["confirmationId"]
+    assert proposal_id
     assert preview.json()["edits"][0]["content"] == edits[0]["content"]
     assert store.get("state")["value"] == state
+    client.post(f"/api/exams/{exam['id']}/edits/{proposal_id}/confirm", json={}).raise_for_status()
+    updated = store.get("state")["value"]["exams"][0]["questions"][0]
+    assert updated["stem"] == edits[0]["content"]
+    assert [node["content"][0]["text"] for node in updated["richDoc"]["content"]] == [
+        "Một cộng một bằng mấy?",
+        "Giải thích.",
+    ]
 
 
 @pytest.mark.parametrize("bad", ["consent", "revision", "version", "block", "config"])

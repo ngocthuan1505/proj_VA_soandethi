@@ -1,7 +1,8 @@
-"""Sửa một nút rich text theo vùng gốc và kiểm lại văn bản chiếu ra."""
+"""Sửa tài liệu định dạng theo vùng gốc và kiểm lại văn bản chiếu ra."""
 
 from copy import deepcopy
 from dataclasses import dataclass
+from uuid import uuid4
 
 from pydantic import JsonValue
 
@@ -78,8 +79,71 @@ def project(
     return separator.join(parts)
 
 
+def inline_slice(paragraph, start, end):
+    result = []
+    offset = 0
+    for node in paragraph.get("content", []):
+        text = project(node, [])
+        next_offset = offset + len(text)
+        left, right = max(start, offset), min(end, next_offset)
+        if left < right:
+            if left == offset and right == next_offset:
+                result.append(node)
+            elif node["type"] == "text":
+                result.append({**node, "text": text[left - offset : right - offset]})
+            else:
+                raise rich_error()
+        offset = next_offset
+    return result
+
+
+def replace_paragraphs(doc, start, end, changed):
+    if MATH_DELIMITERS.search(changed):
+        raise rich_error()
+    blocks = doc.get("content", [])
+    first = last = None
+    offset = 0
+    for i, block in enumerate(blocks):
+        stop = offset + len(project(block, []))
+        if offset <= start <= stop:
+            first = (i, start - offset)
+        if offset <= end <= stop:
+            last = (i, end - offset, stop - offset)
+        offset = stop + 1
+    if first is None or last is None:
+        raise rich_error()
+    i, left = first
+    j, right, length = last
+    span = blocks[i : j + 1]
+    if not all(block["type"] == "paragraph" for block in span):
+        raise rich_error()
+    head, tail = span[0], span[-1]
+    prefix, suffix = inline_slice(head, 0, left), inline_slice(tail, right, length)
+    marks = prefix[-1].get("marks") if prefix else None
+    result = []
+    lines = changed.split("\n")
+    for index, line in enumerate(lines):
+        content = list(prefix) if index == 0 else []
+        if line:
+            node = {"type": "text", "text": line}
+            if marks:
+                node["marks"] = marks
+            content.append(node)
+        if index == len(lines) - 1:
+            content.extend(suffix)
+        if index == 0:
+            block = {**head, "content": content}
+        elif index == len(lines) - 1 and i != j:
+            block = {**tail, "content": content}
+        else:
+            attrs = {**head.get("attrs", {}), "id": str(uuid4())}
+            block = {"type": "paragraph", "attrs": attrs, "content": content}
+        result.append(block)
+    blocks[i : j + 1] = result
+
+
 def update_rich(doc: JsonValue, target: BlockTarget, replacement: str) -> JsonValue:
-    """Sửa chữ trong một run hoặc LaTeX của một nút công thức đã có."""
+    """Sửa một nút hoặc các đoạn văn liền nhau."""
     if not isinstance(doc, dict) or doc.get("type") != "doc":
         raise rich_error()
     result = deepcopy(doc)
@@ -88,6 +152,12 @@ def update_rich(doc: JsonValue, target: BlockTarget, replacement: str) -> JsonVa
         raise rich_error()
 
     prefix, suffix = selection_parts(target)
+    if (
+        len(replacement) < len(prefix) + len(suffix)
+        or not replacement.startswith(prefix)
+        or not replacement.endswith(suffix)
+    ):
+        raise rich_error()
     start, end = len(prefix), len(target.text) - len(suffix)
     original = target.text[start:end]
     revised = replacement[start : len(replacement) - len(suffix)]
@@ -104,12 +174,15 @@ def update_rich(doc: JsonValue, target: BlockTarget, replacement: str) -> JsonVa
     end -= right
     changed = revised[left : len(revised) - right]
     candidates = [leaf for leaf in leaves if leaf.start <= start <= end <= leaf.end]
-    if len(candidates) != 1:
-        raise rich_error()
-    leaf = candidates[0]
-    value = target.text[leaf.start : start] + changed + target.text[end : leaf.end]
-
-    if leaf.node["type"] == "text":
+    if len(candidates) != 1 or "\n" in changed:
+        if any(
+            leaf.node["type"] == "mathInline" and leaf.start < end and start < leaf.end
+            for leaf in leaves
+        ):
+            raise rich_error()
+        replace_paragraphs(result, start, end, changed)
+    elif (leaf := candidates[0]).node["type"] == "text":
+        value = target.text[leaf.start : start] + changed + target.text[end : leaf.end]
         if MATH_DELIMITERS.search(changed):
             raise rich_error()
         if value:
@@ -117,6 +190,7 @@ def update_rich(doc: JsonValue, target: BlockTarget, replacement: str) -> JsonVa
         else:
             del leaf.siblings[leaf.index]
     else:
+        value = target.text[leaf.start : start] + changed + target.text[end : leaf.end]
         attrs = leaf.node["attrs"]
         if not isinstance(attrs, dict):
             raise rich_error()

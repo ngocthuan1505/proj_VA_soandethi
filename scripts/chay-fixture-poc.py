@@ -108,13 +108,13 @@ class FixtureCase:
                     field = scope["field"]
                     content = q[field]
                     if field in {"stem", "explanation"}:
-                        content = (
-                            content + " (đã sửa)"
-                            if scope["wholeField"]
-                            else content.replace(
-                                scope["text"], scope["text"] + " (đã sửa)", 1
-                            )
-                        )
+                        if scope["wholeField"]:
+                            content += " (đã sửa)"
+                        else:
+                            revised = scope["text"] + " (đã sửa)"
+                            if data["request"].startswith("Viết lại hai đoạn"):
+                                revised = "Tính giá trị.\nNêu lý do.\nKiểm tra lại."
+                            content = content.replace(scope["text"], revised, 1)
                     elif field == "rubric" and scope["index"] is not None:
                         content = [row.copy() for row in content]
                         row = content[scope["index"]]
@@ -164,8 +164,7 @@ class FixtureCase:
             else:
                 value = {
                     "reviews": [
-                        {"ordinal": i, "agrees": True}
-                        for i in range(len(data["questions"]))
+                        {"ordinal": i, "agrees": True} for i in range(len(data["questions"]))
                     ]
                 }
             return {
@@ -182,8 +181,7 @@ class FixtureCase:
             if "questions" in args:
                 template = args["questions"][0]
                 args["questions"] = [
-                    {**template, "stem": f"Câu giả lập {i}?"}
-                    for i in range(len(self.slots))
+                    {**template, "stem": f"Câu giả lập {i}?"} for i in range(len(self.slots))
                 ]
         else:
             value = json.loads(response["content"])
@@ -193,9 +191,7 @@ class FixtureCase:
                     **template,
                     "ordinal": i,
                     **(
-                        {"observedLevel": slot["level"]}
-                        if purpose == "blind_content_check"
-                        else {}
+                        {"observedLevel": slot["level"]} if purpose == "blind_content_check" else {}
                     ),
                 }
                 for i, slot in enumerate(self.slots)
