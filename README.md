@@ -1,15 +1,12 @@
 # Soạn đề thi
 
-Trợ lý soạn đề thi tiếng Việt. Bản 13 dùng FastAPI cho backend và JavaScript cho giao diện.
+Trợ lý soạn đề thi tiếng Việt. Bản thử hiện dùng FastAPI cho backend và JavaScript cho giao diện.
 
-## Tải và thử bản 13
+**Muốn thử app?** Mở [trang kiểm thử #47](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/47) để tải bản mới, chọn ca thử và báo lỗi. Bản ZIP có tệp `CHAY_THU_NHOM.cmd` và hướng dẫn cài uv. Dùng `CHAY_DEMO_VA_LOG.cmd` nếu cần demo và ghi log JSON.
 
-1. Mở [bản thử 13](https://github.com/ngocthuan1505/proj_VA_soandethi/releases/tag/ban-thu-13), tải **Goi-nghiem-thu-nhom-13.zip** và giải nén. Mở `BAT_DAU.md` trong gói.
-2. Cài [uv](https://docs.astral.sh/uv/getting-started/installation/) nếu máy chưa có. Giải nén ZIP app bên trong rồi mở `CHAY_THU_NHOM.cmd`. Mở `CHAY_DEMO_VA_LOG.cmd` nếu muốn demo quá trình AI và lưu log JSON.
-3. Soạn và lưu một đề, tải lại trang, rồi xuất và mở Word/PDF của học sinh và giáo viên. Thử AI bằng khóa riêng đã được phép và ngữ liệu mẫu đi kèm.
-4. Nếu gặp lỗi, [mở issue báo lỗi](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/new?template=bug.md). Ghi bản 13, hệ điều hành, bước tái hiện, kết quả mong đợi và kết quả thực tế. Dùng ảnh hoặc log đã bỏ khóa API và nội dung riêng.
+**Vừa sửa xong app?** Xem [cách phát hành bản thử](docs/team/KIEM_THU_NHOM.md#người-sửa-app). Từ một commit có CI xanh, người phụ trách có thể dùng [Actions → Phát hành bản thử](https://github.com/ngocthuan1505/proj_VA_soandethi/actions/workflows/phat-hanh-ban-thu.yml) để đóng ZIP và báo bản mới ở #47.
 
-[Xem hướng dẫn chạy, demo và log](HUONG_DAN_TEST_NHOM.md) · [Bảng kiểm thử và giới hạn bản 13](docs/testing/NGHIEM_THU_BAN_13.md) · [Bảng tiến độ nhóm](https://github.com/users/ngocthuan1505/projects/1/views/1)
+[Hướng dẫn chạy, demo và log](HUONG_DAN_TEST_NHOM.md) · [Bảng kiểm thử bản 13](docs/testing/NGHIEM_THU_BAN_13.md) · [Bảng tiến độ nhóm](https://github.com/users/ngocthuan1505/projects/1/views/1)
 
 ## Sửa app từ source
 
