@@ -32,6 +32,18 @@ function showSaveWarning(active){
  node.querySelector('[data-save-message]').textContent=saveWarningText();
  node.querySelector('button').hidden=!db.hasStateConflict();
 }
+function saveStatusLabel(){
+ if(persistRunning)return 'Đang lưu…';
+ if(db.hasStateConflict())return 'Xung đột lưu';
+ return db.hasPendingWrites()?'Đã lưu tạm · chờ đồng bộ':accountSaveLabel();
+}
+window.addEventListener('online',async()=>{
+ if(!db.hasPendingWrites())return;
+ await db.retryPendingWrites().catch(()=>{});
+ if(persistRunning)return;
+ document.querySelectorAll('[data-save-status]').forEach(node=>node.textContent=saveStatusLabel());
+ showSaveWarning(db.hasPendingWrites());
+});
 function persist(){saveRequested++;document.querySelectorAll('[data-save-status]').forEach(n=>n.textContent='Đang lưu…');if(persistRunning)return saveChain;persistRunning=true;saveChain=(async()=>{let failure=null;try{for(;;){const epoch=saveRequested;try{await db.put('state',clone(state));failure=null;}catch(err){failure=err;}if(epoch===saveRequested)break;}if(failure){document.querySelectorAll('[data-save-status]').forEach(n=>n.textContent=db.hasStateConflict()?'Xung đột lưu':'Đã lưu tạm · chờ đồng bộ');showSaveWarning(true);throw failure;}document.querySelectorAll('[data-save-status]').forEach(n=>n.textContent=accountSaveLabel());showSaveWarning(false);}finally{persistRunning=false;}})();return saveChain;}
 
 function change(label,fn,{renderPage=true,coalesceKey=null}={}){if(coalesceKey)commitTyping(exam(),label,fn,coalesceKey);else commit(exam(),label,fn);persist().catch(()=>{});if(renderPage)render();else mountMatrixChat(mvpContext);}
@@ -51,7 +63,7 @@ function render(){const e=ensureBlocks(exam());if(!e.questions.some(q=>q.id===se
  ${e.questions.map((q,i)=>questionHTML(q,i)).join('')}${!e.questions.length?empty('Bắt đầu soạn đề…'):''}${button('add-question',icon('plus')+'Thêm câu hỏi','add-question')}<div class="paper-footer">— Hết —<br><span style="font-size:9px">${e.sample?'Ngữ liệu và số liệu tự tạo để trải nghiệm; thầy cô duyệt trước khi sử dụng.':'Bản nháp do thầy cô biên soạn.'}</span></div></article></div><div class="main-footer"><span>${icon('file').replace('class="ico"','class="ico" style="width:11px;height:11px;vertical-align:middle"')} ${e.questions.length} câu · ${e.questions.filter(isApproved).length} câu đã duyệt · Bản đề ${e.revision}</span><span class="footer-hint">Chọn chữ hoặc bấm “Chọn câu” để sửa cùng trợ lý</span><span data-save-warning role="status" ${saveWarning?'':'hidden'}><span data-save-message>${saveWarningText()}</span> <button type="button" data-action="backup" ${db.hasStateConflict()?'':'hidden'}>Tải bản nháp</button></span></div></main>
  <aside class="assistant ${assistantOpen?'open':''}"><div class="assistant-head"><div class="assistant-title"><span class="ai-symbol">${icon('spark')}</span><div>Cùng thầy cô soạn đề<small>Giữ đúng phần đang chỉnh sửa</small></div></div><div class="row">${button('connections',icon('settings'),'icon ghost','aria-label="Xem kết nối"')}${button('toggle-chat',icon('close'),'icon ghost mobile-nav','aria-label="Đóng trợ lý"')}</div></div><div class="mode-notice">Chưa kết nối AI · Đang dùng công cụ tại máy<br>Gợi ý mẫu luôn được ghi rõ trước khi áp dụng.</div><div class="assistant-body" id="assistant-body">${rightHTML()}</div><form id="chat-form" class="chat-compose"><div class="compose-box"><textarea id="chat-input" aria-label="Nhắn với trợ lý" placeholder="Nhập yêu cầu, hoặc: Đổi thành: nội dung mới" rows="3"></textarea><div class="compose-bottom"><small>${selected?'Đang chọn câu '+(e.questions.findIndex(q=>q.id===selected)+1):'Chưa chọn câu'}</small><button class="primary" type="submit" aria-label="Gửi yêu cầu">${icon('send')}</button></div></div><div class="chat-foot">Thầy cô xem và xác nhận mọi đề xuất sửa.</div></form></aside></div>`;
  autosize();mountMVP(mvpContext);mountWorkbench(mvpContext);mountStudio(mvpContext);mountMatrixChat(mvpContext);
- const saveLabel=persistRunning?'Đang lưu…':db.hasStateConflict()?'Xung đột lưu':db.hasPendingWrites()?'Đã lưu tạm · chờ đồng bộ':accountSaveLabel();
+ const saveLabel=saveStatusLabel();
  document.querySelectorAll('[data-save-status]').forEach(n=>n.textContent=saveLabel);
 }
 function autosize(){document.querySelectorAll('textarea.stem,textarea.instructions').forEach(t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px';});}

@@ -75,7 +75,6 @@ export async function retryPendingWrites(){
   sameIdentity(ctx);if(ctx.pending.get(key)===record)await send(ctx,key,record);
  }
 }
-if(typeof window!=='undefined')window.addEventListener('online',()=>retryPendingWrites().catch(()=>{}));
 export async function get(key,{requireRemote=false}={}){
  const ctx=active;await ctx.remote;await ctx.disk;
  const queued=ctx.pending.get(key)||await localGet(ctx,'__pending:'+key);

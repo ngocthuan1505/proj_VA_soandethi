@@ -85,6 +85,51 @@ try{
  assert.deepEqual(await state(),beforeBroken);
  assert.equal(await page.locator('[data-action="confirm-backup"]:visible').count(),0);
  results.push({case:'Thiếu tệp tham chiếu: dừng ở bước kiểm bản sao, giữ nguyên kho',passed:true});
+ await page.keyboard.press('Escape');
+ await page.setViewportSize({width:1366,height:900});
+ await page.reload();await page.waitForLoadState('networkidle');
+ const rename=async text=>{
+  const input=page.locator('.header-title');
+  await input.fill(text);await input.press('Tab');
+ };
+ const waitPut=code=>page.waitForResponse(r=>r.url()===base+'/api/kv'&&r.request().method()==='PUT'&&r.status()===code);
+ const waitDraft=()=>page.waitForFunction(()=>Array.from(document.querySelectorAll('[data-save-status]')).some(node=>node.textContent.includes('chờ đồng bộ')));
+ const current=({value})=>value.exams.find(exam=>exam.id===value.current);
+ const onlineBefore=await state();
+ await context.setOffline(true);
+ await rename('Nháp tự đồng bộ khi có mạng');await waitDraft();
+ assert.deepEqual(await state(),onlineBefore);
+ const synced=waitPut(200);
+ await context.setOffline(false);await synced;
+ const stable=await state();
+ assert.equal(current(stable).title,'Nháp tự đồng bộ khi có mạng');
+ await page.locator('[data-save-warning]').waitFor({state:'hidden'});
+ assert(!((await page.locator('[data-save-status]').first().textContent()).includes('chờ đồng bộ')));
+ results.push({case:'Mất mạng: máy chủ giữ đề, kết nối lại lưu nháp và bỏ cảnh báo tự động',passed:true});
+
+ await context.setOffline(true);
+ await rename('Nháp cục bộ khi xung đột');await waitDraft();
+ const newer=await state();
+ current(newer).title='Bản mới trên máy chủ';
+ const savedElsewhere=await context.request.put(base+'/api/kv',{
+  headers:{Origin:base,'If-Match':String(newer.revision)},data:{key:'state',value:newer.value},
+ });
+ assert(savedElsewhere.ok(),await savedElsewhere.text());
+ const rejected=waitPut(409);
+ await context.setOffline(false);
+ assert.equal((await (await rejected).json()).code,'stale_snapshot');
+ const backupButton=page.getByRole('button',{name:'Tải bản nháp',exact:true});
+ await backupButton.waitFor();
+ assert.match(await page.locator('[data-save-message]').textContent(),/Xung đột lưu/);
+ assert.equal(current(await state()).title,'Bản mới trên máy chủ');
+ assert.equal(await page.locator('.header-title').inputValue(),'Nháp cục bộ khi xung đột');
+ const draftDownload=page.waitForEvent('download');await backupButton.click();
+ const draftFile=await draftDownload;
+ await draftFile.saveAs(path.join(out,'nhap-khi-xung-dot.json'));
+ const recoveredDraft=JSON.parse(await fs.readFile(path.join(out,'nhap-khi-xung-dot.json')));
+ assert.equal(current({value:recoveredDraft.state}).title,'Nháp cục bộ khi xung đột');
+ assert.equal(current(await state()).title,'Bản mới trên máy chủ');
+ results.push({case:'Mất mạng và xung đột: giữ bản máy chủ, nút tải xuất đúng nháp cục bộ',passed:true});
  assert.deepEqual(errors,[]);
  await fs.writeFile(path.join(out,'result.json'),JSON.stringify({results,pageErrors:errors,fixture:true,realAI:false},null,2));
  console.log(JSON.stringify({results,pageErrors:errors}));

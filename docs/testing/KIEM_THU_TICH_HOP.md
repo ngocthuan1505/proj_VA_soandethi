@@ -56,6 +56,10 @@ Ngày 19/11/2026, Chrome và FastAPI chạy ở chế độ tài khoản với k
 
 Ở viewport 390 × 844, nút xác nhận lấy được focus bằng bàn phím và nằm trong khung. Escape đóng bản xem trước và giữ kho. Kiểm hồi quy Python riêng bao gồm rollback lỗi ghi, chủ sở hữu, đề xuất cũ sau khôi phục, hủy khi trình duyệt ngắt và phát lại xác nhận sinh. Ca này dùng model mẫu và chưa kiểm toàn bộ IT-11 trên một gói cài. [Script kiểm Chrome](../../scripts/kiem-ui-khoi-phuc.mjs) · [Kiểm rollback khôi phục](../../backend/tests/test_workspace_backup.py)
 
+### Nháp khi mất mạng và khi có xung đột
+
+Chrome ngắt mạng trong lúc đổi tên đề. FastAPI giữ bản đang lưu, trình duyệt giữ nháp. Khi kết nối lại, lần gửi thành công tự bỏ cảnh báo chờ đồng bộ. Nếu kho trên máy chủ đã đổi, FastAPI trả 409. Giao diện hiện cảnh báo xung đột và nút **Tải bản nháp** ngay trên trang. Kiểm tra nội dung JSON đã tải xác nhận tệp chứa đúng nháp của trình duyệt và dữ liệu mới hơn trên máy chủ vẫn được giữ. Ca kiểm dùng Chrome với kho thử có tài khoản. [Script kiểm IT-11](../../scripts/kiem-ui-khoi-phuc.mjs)
+
 ## Kiểm lại IT-01 với hai tab và hai tài khoản
 
 Ngày 19/11/2026, Chrome tạo, đổi tên, tìm và mở đề với tài khoản A. Tab khác trong cùng hồ sơ trình duyệt đăng nhập B và không tìm thấy đề của A. Lệnh đăng xuất hoặc lưu nháp từ tab A cũ nhận 409. Kho và phiên B còn nguyên sau tải lại. Khách bị từ chối mở kho.
