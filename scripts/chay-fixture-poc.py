@@ -34,6 +34,13 @@ class FixtureCase:
         self.slots = []
 
     async def __call__(self, purpose, body):
+        if purpose == "chat":
+            return {
+                "content": json.dumps(
+                    {"message": "Giải thích mẫu để kiểm tra chế độ Chỉ hỏi."},
+                    ensure_ascii=False,
+                )
+            }
         if purpose == "exam_planning":
             return {
                 "content": json.dumps(
@@ -108,8 +115,16 @@ class FixtureCase:
                                 scope["text"], scope["text"] + " (đã sửa)", 1
                             )
                         )
+                    elif field == "rubric" and scope["index"] is not None:
+                        content = [row.copy() for row in content]
+                        row = content[scope["index"]]
+                        row["text"] = row["text"].replace(
+                            scope["text"], scope["text"] + " (đã sửa)", 1
+                        )
                     for f in (
-                        ("stem", "options", "answer", "explanation")
+                        ("stem", "explanation", "rubric")
+                        if field == "stem" and q["type"] == "essay"
+                        else ("stem", "options", "answer", "explanation")
                         if field == "stem"
                         else (field,)
                     ):
@@ -129,14 +144,21 @@ class FixtureCase:
                     "reviews": [
                         {
                             "ordinal": i,
-                            "answer": answer,
                             "uncertain": False,
-                            "optionVerdicts": [
-                                "correct" if j == answer else "incorrect"
-                                for j in range(4)
-                            ],
+                            **(
+                                {"solution": "Lời giải tự luận mẫu."}
+                                if question["type"] == "essay"
+                                else {
+                                    "answer": answer,
+                                    "optionVerdicts": [
+                                        "correct" if j == answer else "incorrect" for j in range(4)
+                                    ],
+                                }
+                            ),
                         }
-                        for i, answer in enumerate(self.patch_answers)
+                        for i, (question, answer) in enumerate(
+                            zip(data["questions"], self.patch_answers, strict=True)
+                        )
                     ]
                 }
             else:

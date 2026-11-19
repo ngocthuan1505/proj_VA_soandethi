@@ -86,6 +86,12 @@ Chrome và FastAPI giữ đúng ID khối, bảng và ảnh khi sửa nội dung
 
 Cũng đã kiểm hai tab lưu cạnh tranh, sửa rồi chuyển chế độ xem, hoàn tác ngay sau gõ và ghép dấu bằng Chrome DevTools Protocol. Ngữ liệu tự tạo và màn hình mobile mô phỏng. Chưa chạy bằng bộ gõ tiếng Việt của người dùng hoặc điện thoại thật. [Ca Chrome](../../tests/ui2-baseline-browser.mjs)
 
+## Kiểm lại IT-06 khi xác nhận sửa qua trợ lý
+
+Chrome dùng chế độ Chỉ hỏi, rồi bôi đen chữ trong câu tự luận có công thức. Xem khác biệt và bỏ đề xuất giữ nguyên câu. Bấm xác nhận hai lần chỉ tăng một phiên bản câu, không đổi công thức, định dạng hoặc các câu khác. Chọn một cụm từ trong bước chấm thứ hai chỉ đổi chữ của bước đó, giữ điểm và bước còn lại. Hoàn tác khôi phục các câu sau cả hai thao tác.
+
+Khi một phiên khác ghi sau bước xem khác biệt, FastAPI trả 409 và giữ nguyên dữ liệu của phiên đã lưu. Giao diện báo chưa đồng bộ và giữ bản nháp cục bộ. Lời nhắn xác nhận và nút hoàn tác riêng chỉ xuất hiện sau khi máy chủ nhận lưu. Bàn soạn chờ kết thúc thao tác nhập dở trước khi gửi, xem hoặc xác nhận đề xuất. Pytest riêng kiểm scope/version sai, hủy kết nối và kiểm đáp án độc lập với phản hồi mẫu. Lượt này chưa thử qua model thật hoặc thiết bị di động thật. [Ca Chrome](../../scripts/kiem-ui-de-xuat-sua.mjs) · [Ca FastAPI](../../backend/tests/test_poc_scoped_patch.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

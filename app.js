@@ -116,7 +116,7 @@ function chooseFile(accept,callback){const input=document.createElement('input')
 async function importFile(file){if(file.size>15*1024*1024)throw Error('Tệp lớn hơn 15 MB. Chọn tệp nhỏ hơn.');const ext=file.name.split('.').pop().toLowerCase();if(!['txt','md','pdf','pptx','png','jpg','jpeg','webp'].includes(ext))throw Error('Định dạng chưa hỗ trợ.');const id=uid();let d={id,name:file.name,sample:false};if(['txt','md'].includes(ext)){d.kind='text';d.text=await file.text();}else{d.kind=ext==='pdf'?'pdf':ext==='pptx'?'slides':'image';d.fileId=uid();const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(Error('Không đọc được tệp'));r.readAsDataURL(file);});await db.put('file:'+d.fileId,data);}change('Thêm tài liệu '+d.name,e=>e.docs.push(d));tab='docs';render();await showSource(d.id);toast(d.kind==='text'?'Đã đọc nội dung văn bản tại máy':'Đã lưu tệp gốc · chưa rút trích nội dung');}
 // Only declarative data is restored from backups. No HTML or code is executed.
 
-const commitBeforeAction=new Set(['undo','redo','view-student','view-teacher','export','export-html','print','save-local','backup','backup-local']);
+const commitBeforeAction=new Set(['apply-block-patch','show-block-diff','undo','redo','view-student','view-teacher','export','export-html','print','save-local','backup','backup-local']);
 async function handleAction(a,n){
  if(commitBeforeAction.has(a)&&!flushEditor()){toast('Gõ xong chữ đang nhập rồi thử lại.');return;}
  if(await handleStudioAction(a,n))return;if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
