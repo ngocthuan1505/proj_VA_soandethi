@@ -17,10 +17,11 @@ class CallBudget:
     def __init__(self, max_calls=24, seconds=900):
         if type(max_calls) is not int or not 1 <= max_calls <= 64 or not 0 < seconds <= 900:
             raise ValueError("Ngân sách gọi AI hoặc thời gian không hợp lệ.")
-        self.max_calls, self.deadline, self.calls = max_calls, time.monotonic() + seconds, 0
+        self.max_calls, self.seconds, self.calls = max_calls, seconds, 0
+        self.started = time.monotonic()
 
     def remaining(self):
-        seconds = self.deadline - time.monotonic()
+        seconds = self.seconds - (time.monotonic() - self.started)
         if seconds <= 0:
             raise AIError("timeout", "Đã hết thời gian tự xử lý; bản đề giữ nguyên.")
         return seconds

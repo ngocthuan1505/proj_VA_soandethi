@@ -30,6 +30,11 @@ def test_budget_is_shared_and_does_not_reset_between_roles(monkeypatch):
         budget.remaining()
 
 
+def test_initial_timeout_cannot_round_above_configured_limit(monkeypatch):
+    monkeypatch.setattr("mach_backend.poc_policy.time.monotonic", lambda: 1616 / 13)
+    assert CallBudget(seconds=900).remaining() == 900
+
+
 @pytest.mark.parametrize(
     "body",
     [{"maxModelCalls": 0}, {"maxModelCalls": True}, {"maxModelCalls": 65}, {"timeoutSeconds": 901}],
