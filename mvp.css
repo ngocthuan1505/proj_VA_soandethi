@@ -7,3 +7,10 @@
 .provider-card{display:flex;flex-direction:column;gap:10px;min-width:0}.provider-card h3{margin:0 0 8px}.provider-card label{display:flex;flex-direction:column;gap:5px}.provider-card label.consent{flex-direction:row;align-items:center;font-size:12px}.provider-card a{font-size:12px}.provider-card input{min-width:0;width:100%}.provider-card .consent input{width:auto}.provider-card [role=status]{overflow-wrap:anywhere;min-height:2em}.local-connection-settings{margin:22px 0}.local-connection-settings summary{font-weight:600;cursor:pointer;margin-bottom:14px}.cloud-provider-grid{align-items:stretch;grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:960px){.cloud-provider-grid{grid-template-columns:1fr}}
 
 .provider-card[data-provider-card="greennode"]{grid-column:1/-1}.provider-card[data-provider-card="greennode"] input{max-width:100%}
+
+#export-variants fieldset { border: 1px solid var(--line); border-radius: 10px; padding: .65rem .9rem; }
+#export-variants [data-variant-pack] { margin-block: .8rem; }
+#export-variants [data-variant-pack] p { margin-bottom: .45rem; }
+#export-variants .variant-preview { margin-top: .8rem; }
+#export-variants .variant-preview > ol { max-height: min(40dvh, 16rem); overflow: auto; padding-inline-start: 1.4rem; }
+#export-variants .variant-preview li { margin-bottom: .35rem; color: inherit; font-size: .95rem; overflow-wrap: anywhere; }

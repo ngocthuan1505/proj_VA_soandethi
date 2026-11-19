@@ -110,12 +110,11 @@ function showExport(){const e=current();c.modal('Xuất đề',`${note('Xuất W
  guide.textContent='Chọn ít nhất hai câu cùng phần, cùng dạng và cùng ngữ liệu bảng.';
  variants.insertAdjacentHTML('beforeend',`<label class="consent"><input type="checkbox" id="export-shuffle-options"> Trộn phương án trắc nghiệm phù hợp và đổi đáp án theo</label>
  <p class="hint">Phương án phụ thuộc vị trí, ví dụ “Cả hai phương án trên”, được giữ theo thứ tự gốc.</p>
- <button type="button" data-action="preview-variant">Xem trước mã đã chọn</button>
- <div data-variant-preview aria-live="polite"></div>`);
+ <button type="button" data-action="preview-variant">Xem trước mã đã chọn</button>`);
  variants.insertAdjacentHTML('beforeend',`<div data-variant-pack hidden>
   <p>Mỗi mã có một bản học sinh. Bảng đối chiếu đáp án nằm trong thư mục giáo viên.</p>
   <div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-pack','Bộ '+({docx:'Word',pdf:'PDF',html:'HTML'}[format]),'',`data-format="${format}"`)).join('')}</div>
- </div>`);
+ </div><div data-variant-preview aria-live="polite"></div>`);
  const code=$('#export-variant-code'), previous=exportVariantSelection?.examId===e.id?exportVariantSelection:null;
  const shuffle=$('#export-shuffle-options');
  for(const input of variants.querySelectorAll('input[data-kind]'))input.checked=previous?.questionIds.includes(input.value)===true;
@@ -156,7 +155,8 @@ async function previewVariant(node){
  try{
   const result=await api('/api/preview-variant',{exam,variant:{...exportVariantSettings(),offset:Number(code)}});
   if(!pending.isConnected||!$('#dialog').open||current().id!==exam.id||current().revision!==exam.revision)return;
-  view.innerHTML=`<section class="small-card"><h3>${esc(result.title)}</h3><p>Đối chiếu đề gốc theo số ghi cạnh mỗi câu.</p><ol>${result.questions.map(q=>`<li><p>${katexFragment(String(q.stem||''))} <small>· Câu gốc ${q.originalNumber}</small></p>${Array.isArray(q.options)&&q.options.length?`<ol type="A">${q.options.map(o=>`<li>${katexFragment(String(o))}</li>`).join('')}</ol>`:''}</li>`).join('')}</ol></section>`;
+  view.innerHTML=`<section class="small-card variant-preview"><h3>${esc(result.title)}</h3><p>Đối chiếu đề gốc theo số ghi cạnh mỗi câu.</p><ol tabindex="0" aria-label="Thứ tự câu hỏi và phương án">${result.questions.map(q=>`<li><p>${katexFragment(String(q.stem||''))} <small>· Câu gốc ${q.originalNumber}</small></p>${Array.isArray(q.options)&&q.options.length?`<ol type="A">${q.options.map(o=>`<li>${katexFragment(String(o))}</li>`).join('')}</ol>`:''}</li>`).join('')}</ol></section>`;
+  view.scrollIntoView({block:'nearest'});
  }catch(error){
   if(pending.isConnected)pending.textContent=error.message;
  }
