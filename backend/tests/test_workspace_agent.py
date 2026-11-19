@@ -256,15 +256,20 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
             ]
 
 
-@pytest.mark.parametrize("mode", ["valid", "old_stem", "malformed", "ignored"])
+@pytest.mark.parametrize("mode", ["valid", "old_stem", "malformed", "ignored", "copies_source"])
 def test_repeated_level_error_plans_one_stem_before_scoped_generation(mode):
     body = mixed_tool_body()
     assignment = json.loads(body["messages"][1]["content"])
     assignment["matrix"].update(subject="Toán", grade="5", instructions="")
-    assignment["source"] = [{"id": 0, "text": "Kệ có 24 và 16 cuốn sách."}]
+    assignment["source"] = [
+        {"id": 0, "text": "Kệ có 24 và 16 cuốn sách."},
+        {"id": 1, "text": "Buổi sáng mở cửa lúc 8 giờ."},
+        {"id": 2, "text": "Ngày đọc sách là thứ sáu."},
+    ]
     body["messages"][1]["content"] = json.dumps(assignment)
     chosen = "Hai nhóm sách cộng lại có bao nhiêu cuốn?"
     previous = [{"stem": f"Câu {i}?"} for i in range(5)]
+    previous[1]["evidenceIds"] = [0]
     feedback = {"ok": False, "errors": [{"ordinal": 1, "code": "level_disagreement"}]}
     submission = {
         "role": "assistant",
@@ -278,11 +283,17 @@ def test_repeated_level_error_plans_one_stem_before_scoped_generation(mode):
         seen.append(purpose)
         data = json.loads(request["messages"][1]["content"])
         if purpose == "repair_stem":
-            assert data["source"] == assignment["source"]
+            assert data["source"] == assignment["source"][:1]
             assert data["target"]["topic"] == assignment["matrix"]["slots"][1]["topic"]
             assert "matrix" not in data and "options" not in data and "answer" not in data
             assert data["avoid"] == [row["stem"] for row in previous]
-            content = json.dumps({"stem": " CÂU 1? " if mode == "old_stem" else chosen})
+            stem = {
+                "old_stem": " CÂU 1? ",
+                "copies_source": " ".join(row["text"] for row in assignment["source"])
+                + " "
+                + chosen,
+            }.get(mode, chosen)
+            content = json.dumps({"stem": stem})
             return {"content": "{" if mode == "malformed" else content}
         assert data["repairOrdinals"] == [1]
         stem_schema = request["tools"][0]["function"]["parameters"]["properties"]["questions"][
