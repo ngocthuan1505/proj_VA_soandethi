@@ -685,7 +685,12 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         if if_match is not None and not re.fullmatch(r"[0-9]{1,19}", if_match):
             raise HTTPException(400, "Phiên bản workspace không hợp lệ.")
         try:
-            revision = store.put(key, value, int(if_match) if if_match is not None else None)
+            revision = store.put(
+                key,
+                value,
+                int(if_match) if if_match is not None else None,
+                skip_unchanged=key == "state",
+            )
         except AIError:
             raise
         except ValueError as exc:

@@ -17,6 +17,10 @@ Bảng dưới đếm kích thước blob Git bằng `git ls-tree -rl <commit>`.
 
 Các lượt đo dùng số byte gốc trong Git. Bảng là phép đối chiếu mã theo vai trò, còn GitHub Languages lấy số từ Linguist trên nhánh mặc định. `.gitattributes` của ứng viên chỉ khai báo thư viện bên thứ ba và bundle editor sinh từ build.
 
+Lượt đo lại trên PR #46 ở commit `715dc50` đếm **526.980 byte Python trong `backend/src/`**, so với 887 byte trên `main`. JavaScript ngoài thư viện và bundle vẫn có 566.641 byte trong nhóm giao diện và các tệp JS hỗ trợ, 112.949 byte ở nhóm `.mjs` gốc và 426.393 byte kiểm thử/công cụ dưới `tests/` và `scripts/`. Python kiểm thử và script được tính riêng khi đánh giá runtime. Dữ liệu GitHub Languages vừa kiểm lại vẫn thuộc `main` ở `cecfd3d`.
+
+Ở luồng sửa qua chat, FastAPI kiểm snapshot, scope và đáp án trước khi trả đề xuất. Bàn soạn còn ghép đề xuất vào tài liệu định dạng khi người dùng xác nhận và gửi snapshot qua API ghi có điều kiện. Phần quyết định áp bản sửa và bất biến dữ liệu vẫn cần kiểm riêng khi đánh giá chuyển nghiệp vụ Python.
+
 ## Lệnh chạy chính
 
 `CHAY_THU_NHOM.cmd` và `npm start` đều khởi chạy Uvicorn với `mach_backend.local_workspace:app`. Chế độ có tài khoản dùng `mach_backend.team_workspace:app`. FastAPI thực thi phiên và phân quyền, kho SQLite, phiên bản và áp đề xuất, điều phối AI, nhập tệp và xuất đề. JavaScript vẫn chạy trong bàn soạn và trong Chrome khi dựng công thức, hình hoặc PDF. [Hướng dẫn chạy](../../HUONG_DAN_TEST_NHOM.md) · [Kiểm thử tích hợp](KIEM_THU_TICH_HOP.md)

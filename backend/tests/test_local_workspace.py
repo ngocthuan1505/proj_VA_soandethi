@@ -140,6 +140,17 @@ def test_workspace_write_openapi_and_invalid_input_keep_saved_revision(workspace
     assert client.get(path, params={"key": "state"}).json() == before
 
 
+def test_repeated_save_keeps_workspace_revision_but_stale_write_still_conflicts(workspace):
+    client, _, _ = workspace
+    before = client.get("/api/kv?key=state").json()
+    payload = {"key": "state", "value": before["value"]}
+    same = client.put("/api/kv", json=payload, headers={"If-Match": str(before["revision"])})
+    assert same.status_code == 200 and same.json()["revision"] == before["revision"]
+    stale = client.put("/api/kv", json=payload, headers={"If-Match": str(before["revision"] - 1)})
+    assert stale.status_code == 409
+    assert client.get("/api/kv?key=state").json() == before
+
+
 def generate(client, exam):
     prefix = "/api/exams/" + exam["id"]
     approval = client.post(

@@ -60,21 +60,27 @@ class WorkspaceStore:
             else {"value": None, "revision": 0}
         )
 
-    def put(self, key: str, value: Any, base: int | None = None, db=None) -> int:
+    def put(
+        self, key: str, value: Any, base: int | None = None, db=None, *, skip_unchanged=False
+    ) -> int:
         if db is None:
             with self.connect() as connection:
                 connection.execute("BEGIN IMMEDIATE")
-                return self.put(key, value, base, connection)
-        current = self.get(key, db)
-        if base is not None and current["revision"] != base:
+                return self.put(key, value, base, connection, skip_unchanged=skip_unchanged)
+        current = db.execute("SELECT value,rev FROM kv WHERE key=?", (key,)).fetchone()
+        revision = current[1] if current else 0
+        if base is not None and revision != base:
             raise changed_snapshot()
-        revision = current["revision"] + 1
+        encoded = json.dumps(value, ensure_ascii=False, allow_nan=False)
+        if skip_unchanged and current and current[0] == encoded:
+            return revision
+        revision += 1
         db.execute(
             "INSERT INTO kv VALUES(?,?,?,?) ON CONFLICT(key) DO UPDATE SET "
             "value=excluded.value,rev=excluded.rev,updated=excluded.updated",
             (
                 key,
-                json.dumps(value, ensure_ascii=False, allow_nan=False),
+                encoded,
                 revision,
                 int(time.time() * 1000),
             ),

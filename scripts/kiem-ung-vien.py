@@ -15,7 +15,7 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 CASES = (
     ("01", "scripts/kiem-ui-kho-nhom.mjs", "team"),
-    ("02", "scripts/kiem-ui-nhap-nguon.mjs", "repair"),
+    ("02", "scripts/kiem-ui-nhap-nguon.mjs", "source"),
     ("03", "scripts/kiem-ui-co-cau.mjs", "repair"),
     ("04", "scripts/kiem-ui-matrix-chat.mjs", "repair"),
     ("05", "tests/ui2-baseline-browser.mjs", None),
@@ -54,12 +54,31 @@ def serve(mode, output):
         )
         if mode == "restore":
             backup = backup_fixture()
-            exam = backup["state"]["exams"][0]
-            exam["questions"][0].pop("richDoc")
+            exam = json.loads(
+                subprocess.check_output(
+                    [
+                        "node",
+                        "--input-type=module",
+                        "-e",
+                        "import {sample} from './core.js'; console.log(JSON.stringify(sample()));",
+                    ],
+                    cwd=ROOT,
+                    encoding="utf-8",
+                )
+            )
+            file_id = next(iter(backup["files"]))
+            exam["docs"].append(
+                {"id": file_id, "fileId": file_id, "kind": "image", "name": "anh-mau.png"}
+            )
             store = WorkspaceStore(directory / "users" / owner["id"], owner=owner["id"])
-            store.put("state", backup["state"])
+            store.put("state", {"version": 1, "current": exam["id"], "exams": [exam], "prefs": []})
             for file_id, value in backup["files"].items():
                 store.put("file:" + file_id, value)
+    elif mode == "source":
+        from test_source_documents import pdf
+
+        (output / "nguon-2-trang.pdf").write_bytes(pdf("Nguon trang mot", "Nguon trang hai"))
+        app = create_app(directory, agent_call=fixture("repair"))
     else:
         app = create_app(directory, agent_call=fixture(mode))
     with socket.socket() as listener:
@@ -130,7 +149,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--case", action="append", choices=[number for number, _, _ in CASES])
-    parser.add_argument("--serve", choices=("team", "restore", "repair", "unsupported"))
+    parser.add_argument("--serve", choices=("team", "restore", "source", "repair", "unsupported"))
     args = parser.parse_args()
     output = args.output.resolve()
     if args.serve:
