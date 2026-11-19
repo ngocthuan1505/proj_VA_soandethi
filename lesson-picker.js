@@ -19,7 +19,7 @@ export async function openLessonPicker(context) {
  const select=(label,name,values,selected)=>`<label>${label}<select name="${name}"><option value="">Tất cả</option>${values.map(value=>`<option ${value===selected?'selected':''}>${esc(value)}</option>`).join('')}</select></label>`;
  const grades=[...new Set(collections.map(c=>c.grade))].sort((a,b)=>Number(a)-Number(b));
  const subjects=[...new Set(collections.map(c=>c.subject))];
- context.modal('Học liệu theo bài',`<form id="lesson-picker"><p class="hint">Ghi chú và mục tiêu do dự án biên soạn. Số bài dùng để đối chiếu trong kho.</p><div class="grid2">${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,exam.subject)}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div class="modal-foot"><button type="button" data-action="assistant-sources">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`);
+ context.modal('Học liệu theo bài',`<form id="lesson-picker"><p class="hint">Ghi chú và mục tiêu do dự án biên soạn. Số bài dùng để đối chiếu trong kho.</p><div class="grid2">${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,exam.subject)}${select('Bộ học liệu','book',[])}${select('Tập','volume',[])}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div class="modal-foot"><button type="button" data-action="assistant-sources">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`);
  const form=dialog.querySelector('#lesson-picker'),list=form.querySelector('[data-lesson-list]');
  const normalize=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/đ/g,'d');
  function updateCheckboxes(){
@@ -34,9 +34,18 @@ export async function openLessonPicker(context) {
   form.querySelector('[type=submit]').disabled=!changed.size;
  }
  function render(){
-  const {grade,subject,query}=form.elements;
+  const {grade,subject,book,volume,query}=form.elements;
+  const eligible=collections.filter(c=>(!grade.value||grade.value===c.grade)&&(!subject.value||subject.value===c.subject));
+  const fillOptions=(control,values)=>{
+   const selected=control.value;
+   control.replaceChildren(new Option('Tất cả',''),...[...new Set(values)].map(value=>new Option(value)));
+   control.value=values.includes(selected)?selected:'';
+  };
+  fillOptions(book,eligible.map(c=>c.book));
+  const books=eligible.filter(c=>!book.value||book.value===c.book);
+  fillOptions(volume,books.map(c=>c.volume));
   const search=normalize(query.value.trim());
-  list.innerHTML=collections.filter(c=>(!grade.value||grade.value===c.grade)&&(!subject.value||subject.value===c.subject)).map(c=>{
+  list.innerHTML=books.filter(c=>!volume.value||volume.value===c.volume).map(c=>{
    const lessons=c.lessons.filter(l=>normalize([l.title,l.chapter,l.outcome,c.book,c.volume].join(' ')).includes(search));
    if(!lessons.length)return '';
    const chapters=Map.groupBy(lessons,l=>l.chapter);
