@@ -1,0 +1,148 @@
+name: Phát hành bản thử
+
+on:
+  workflow_dispatch:
+    inputs:
+      so_ban:
+        description: Số bản thử mới, ví dụ 48
+        required: true
+        type: string
+      commit:
+        description: SHA đầy đủ của commit có CI xanh
+        required: true
+        type: string
+      ghi_chu:
+        description: Nội dung sửa và ca hoặc issue cần thử lại
+        required: true
+        type: string
+      phat_hanh:
+        description: Xuất bản cho nhóm và báo ở issue #47 (bỏ chọn để chạy thử)
+        type: boolean
+        default: false
+
+permissions: {}
+concurrency:
+  group: phat-hanh-ban-thu
+  cancel-in-progress: false
+
+jobs:
+  dong-goi:
+    name: Kiểm commit và đóng ZIP
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event.repository.private
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      so_ban: ${{ steps.kiem.outputs.so_ban }}
+    steps:
+      - name: Kiểm tham số và CI của đúng commit
+        id: kiem
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SO_BAN: ${{ inputs.so_ban }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          if [[ ! "$SO_BAN" =~ ^[1-9][0-9]{0,5}$ || ! "$COMMIT" =~ ^[a-f0-9]{40}$ ]]; then
+            echo "::error::Nhập số bản dương và SHA gồm 40 ký tự."
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$COMMIT&per_page=100" |
+            jq -e --arg sha "$COMMIT" '.workflow_runs | map(select(.head_sha == $sha)) | max_by(.run_number) | .conclusion == "success"' >/dev/null || {
+              echo "::error::Lượt CI mới nhất của commit này chưa thành công."
+              exit 1
+            }
+          printf 'so_ban=%02d\n' "$SO_BAN" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.commit }}
+          persist-credentials: false
+      - name: Đóng ZIP và kiểm SHA-256
+        env:
+          SO_BAN: ${{ steps.kiem.outputs.so_ban }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$COMMIT"
+          test -z "$(git status --porcelain)"
+          if [[ ! -f scripts/dong-goi-ban-thu.py ]]; then
+            echo "::error::Commit này chưa có bộ đóng gói bản thử Python."
+            exit 1
+          fi
+          python3 scripts/dong-goi-ban-thu.py --ung-vien "$SO_BAN"
+          cd "outputs/ung-vien-$SO_BAN"
+          sha256sum --strict --check "SoanDeThi-UngVien-$SO_BAN.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ban-thu-${{ steps.kiem.outputs.so_ban }}
+          path: |
+            outputs/ung-vien-${{ steps.kiem.outputs.so_ban }}/SoanDeThi-UngVien-${{ steps.kiem.outputs.so_ban }}.zip
+            outputs/ung-vien-${{ steps.kiem.outputs.so_ban }}/SoanDeThi-UngVien-${{ steps.kiem.outputs.so_ban }}.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  phat-hanh:
+    name: Tạo pre-release
+    if: inputs.phat_hanh
+    needs: dong-goi
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      url: ${{ steps.release.outputs.url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ban-thu-${{ needs.dong-goi.outputs.so_ban }}
+      - name: Đính kèm ZIP và SHA-256 vào Releases
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SO_BAN: ${{ needs.dong-goi.outputs.so_ban }}
+          COMMIT: ${{ inputs.commit }}
+          GHI_CHU: ${{ inputs.ghi_chu }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY" --jq .private | grep -qx true
+          tag="ban-thu-$SO_BAN"
+          base="SoanDeThi-UngVien-$SO_BAN"
+          refs=$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag")
+          if jq -e --arg ref "refs/tags/$tag" 'any(.ref == $ref)' <<< "$refs" >/dev/null; then
+            echo "::error::Số bản đã có tag. Kiểm tra Releases và chọn số mới."
+            exit 1
+          fi
+          sha256sum --strict --check "$base.sha256"
+          printf '%s\n\nCommit: `%s`\n\nTải ZIP trong Assets. Xem hướng dẫn và mã ca ở [trang kiểm thử #47](%s/%s/issues/47).\n' \
+            "$GHI_CHU" "$COMMIT" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" > release-notes.md
+          url=$(gh release create "$tag" "$base.zip" "$base.sha256" --repo "$GITHUB_REPOSITORY" \
+            --target "$COMMIT" --title "Bản thử $SO_BAN" --prerelease --latest=false --notes-file release-notes.md)
+          printf 'url=%s\n' "$url" >> "$GITHUB_OUTPUT"
+          printf '[Tải bản thử %s](%s)\n' "$SO_BAN" "$url" >> "$GITHUB_STEP_SUMMARY"
+
+  bao-tester:
+    name: Báo bản mới ở trang kiểm thử
+    needs: [dong-goi, phat-hanh]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Bình luận bản mới ở issue ghim #47
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SO_BAN: ${{ needs.dong-goi.outputs.so_ban }}
+          RELEASE_URL: ${{ needs.phat-hanh.outputs.url }}
+          PHAT_HANH: ${{ inputs.phat_hanh }}
+        run: |
+          test "$PHAT_HANH" = true
+          gh api "repos/$GITHUB_REPOSITORY" --jq .private | grep -qx true
+          marker="<!-- ban-thu-$SO_BAN -->"
+          comments=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/47/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]") | .body')
+          if grep -qxF -- "$marker" <<< "$comments"; then
+            exit 0
+          fi
+          printf '%s\n**Bản thử %s đã có.** [Tải ZIP và xem ca cần thử lại](%s).\n\nBáo kết quả ở issue lỗi gốc hoặc tại đây theo mẫu: bản · mã ca · Windows/trình duyệt · Đạt/Lỗi.\n' \
+            "$marker" "$SO_BAN" "$RELEASE_URL" |
+            gh issue comment 47 --repo "$GITHUB_REPOSITORY" --body-file -
