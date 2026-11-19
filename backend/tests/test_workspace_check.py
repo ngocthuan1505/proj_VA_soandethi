@@ -298,6 +298,15 @@ def test_bundled_lesson_is_resolved_by_id_version_and_selected_page(setup):
     assert stale.json()["detail"]["code"] == "stale_snapshot"
     assert not calls
 
+    document["catalog"] = True
+    document["pages"][0]["method"] = "manual"
+    app.state.store.put("state", state)
+    edited = client.post(path, json=body)
+    assert edited.status_code == 200, edited.text
+    _, request = calls.pop()
+    [source] = json.loads(request["messages"][1]["content"])["sources"]
+    assert source["text"] == "Bản sao đã bị thay thế."
+
 
 def test_overlong_source_and_empty_page_have_actionable_errors(setup):
     app, client, path, body, _, calls, _ = setup

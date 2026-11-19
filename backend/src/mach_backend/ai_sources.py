@@ -89,10 +89,18 @@ def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...]):
                 http_status=403,
             )
         collection = catalog.get(doc_id)
-        if collection is None:
-            if doc.get("catalog") is True:
+        saved_pages = doc.get("pages") or []
+        doc_version = doc.get("version", 1)
+        edited_copy = (
+            doc.get("catalog") is True
+            and type(doc_version) is int
+            and doc_version > 1
+            and any(page.get("method") == "manual" for page in saved_pages)
+        )
+        if edited_copy or collection is None:
+            if not edited_copy and doc.get("catalog") is True:
                 raise AIError("source_not_found", "Học liệu đã chọn không còn trong thư viện.")
-            pages = doc.get("pages") or [{"number": 1, "text": doc.get("text", "")}]
+            pages = saved_pages or [{"number": 1, "text": doc.get("text", "")}]
             version = doc.get("version", 1)
         else:
             if doc.get("version", 1) != collection["version"]:

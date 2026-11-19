@@ -11,11 +11,13 @@ export async function openLessonPicker(context) {
  const {collections}=await response.json();
  if(context.exam().id!==examId||!origin?.isConnected||!dialog.open)return;
  const exam=context.exam(), choices=new Map(), changed=new Set();
+ const editedCopy=doc=>doc?.catalog===true&&doc.version>1&&doc.pages?.some(page=>page.method==='manual');
+ const editedDocs=new Map(exam.docs.filter(editedCopy).map(doc=>[doc.id,doc]));
  for(const collection of collections){
   const saved=exam.docs.find(doc=>doc.id===collection.id);
   choices.set(collection.id,new Set(saved&&exam.assistantSources?.includes(saved.id)
    ?selectedDocumentPages(exam,saved).map(page=>page.number):[]));
-  if(saved&&exam.assistantSources?.includes(saved.id)&&saved.version!==collection.version){
+  if(saved&&!editedDocs.has(saved.id)&&exam.assistantSources?.includes(saved.id)&&saved.version!==collection.version){
    const available=new Set(collection.lessons.map(lesson=>lesson.number));
    choices.set(collection.id,new Set([...choices.get(collection.id)].filter(number=>available.has(number))));
    changed.add(collection.id);
@@ -60,7 +62,8 @@ export async function openLessonPicker(context) {
    const lessons=c.lessons.filter(l=>normalize([l.title,l.chapter,l.outcome,c.book,c.volume].join(' ')).includes(search));
    if(!lessons.length)return '';
    const chapters=Map.groupBy(lessons,l=>l.chapter);
-   return `<section class="small-card" data-lesson-collection="${esc(c.id)}"><h3>${esc(c.name)}</h3><label class="consent"><input type="checkbox" name="collection"> Chọn cả tập (${c.lessons.length} bài)</label>${[...chapters].map(([chapter,rows])=>`<fieldset data-lesson-chapter><legend>${esc(chapter)}</legend><label class="consent"><input type="checkbox" name="chapter"> ${search?'Chọn tất cả kết quả trong chương':'Chọn cả chương'}</label>${rows.map(l=>`<div class="source-choice"><label><input type="checkbox" name="lesson" value="${l.number}" ${choices.get(c.id).has(l.number)?'checked':''}> ${esc(l.title)}</label><details><summary>Xem học liệu</summary><p><b>Mục tiêu</b> · ${esc(l.outcome)}</p><p>${esc(l.text)}</p></details></div>`).join('')}</fieldset>`).join('')}</section>`;
+   const edited=editedDocs.get(c.id);
+   return `<section class="small-card" data-lesson-collection="${esc(c.id)}"><h3>${esc(c.name)}</h3>${edited?'<p class="hint">Đang dùng bản đã đối chiếu trong đề.</p>':''}<label class="consent"><input type="checkbox" name="collection"> Chọn cả tập (${c.lessons.length} bài)</label>${[...chapters].map(([chapter,rows])=>`<fieldset data-lesson-chapter><legend>${esc(chapter)}</legend><label class="consent"><input type="checkbox" name="chapter"> ${search?'Chọn tất cả kết quả trong chương':'Chọn cả chương'}</label>${rows.map(l=>`<div class="source-choice"><label><input type="checkbox" name="lesson" value="${l.number}" ${choices.get(c.id).has(l.number)?'checked':''}> ${esc(l.title)}</label><details><summary>Xem học liệu</summary><p><b>Mục tiêu</b> · ${esc(l.outcome)}</p><p>${esc(edited?.pages.find(page=>page.number===l.number)?.text??l.text)}</p></details></div>`).join('')}</fieldset>`).join('')}</section>`;
   }).join('')||'<p>Chưa có bài phù hợp với bộ lọc.</p>';
   updateCheckboxes();
  }
@@ -102,7 +105,7 @@ export async function openLessonPicker(context) {
      continue;
     }
     const saved=current.docs.find(d=>d.id===collection.id);
-    if(!saved||saved.version!==collection.version){
+    if(!saved||(!editedCopy(saved)&&saved.version!==collection.version)){
      const pages=collection.lessons.map(lesson=>({
       ...lesson,text:`Bài ${lesson.number}. ${lesson.title}\n${lesson.text}\nMục tiêu: ${lesson.outcome}`,
      }));
