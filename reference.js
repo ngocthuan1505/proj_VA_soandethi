@@ -1,5 +1,6 @@
 import {separateMarking} from './core.js';
-import {documentPages,selectedDocumentPages} from './assistant-sources.js';
+import {documentPages,selectedDocumentPages,sourcePageLabel} from './assistant-sources.js';
+import {openLessonPicker} from './lesson-picker.js';
 import {documentPlain} from './rich-document.js';
 import {composerHTML,mountComposer,cleanupComposer,handleComposerAction,submitComposerText,refreshComposerPreview} from './composer.js';
 import {esc,uid,touch,check,mathSample} from './core.js';
@@ -52,14 +53,15 @@ export async function handleReferenceAction(action,node){if(handleComposerAction
  case 'reset-chat':c.modal('Xóa lịch sử trò chuyện?',`<p>Đề thi và các tài liệu vẫn được lưu. Có thể hoàn tác từ menu Chỉnh sửa.</p><div class="modal-foot">${b('close','Hủy')}${b('confirm-reset-chat','Xóa hội thoại','class="danger"')}</div>`);return true;
  case 'confirm-reset-chat':c.change('Xóa lịch sử trợ lý',e=>e.chat=[]);$('#dialog').close();return true;
  case 'effort-menu':showDropdown(node,`<div class="effort-heading">Mức trình bày <b id="effort-current">${effortNames[c.exam().aiEffort??1]}</b></div><p>Điều chỉnh độ chi tiết của hướng dẫn gửi cho AI.</p><input id="effort-range" type="range" min="0" max="2" step="1" value="${c.exam().aiEffort??1}" aria-label="Mức trình bày của AI"><div class="effort-labels"><span>Ngắn gọn</span><span>Kỹ hơn</span></div>`,'effort-panel');return true;
+ case 'lesson-sources':await openLessonPicker(c);return true;
  case 'assistant-sources':{
   const e=c.exam();
   const groups=e.docs.map(d=>{
    const pages=documentPages(d).filter(p=>p.text?.trim());
    const selected=new Set(selectedDocumentPages(e,d).map(p=>p.number));
-   return `<div class="small-card" data-source-group="${esc(d.id)}"><label><input type="checkbox" name="source" value="${esc(d.id)}" ${e.assistantSources?.includes(d.id)?'checked':''} ${pages.length?'':'disabled'}> ${esc(d.name)} · ${pages.length} trang có văn bản</label><details><summary>Xem và chọn từng trang</summary>${pages.map(p=>`<label class="source-choice"><input type="checkbox" name="page" value="${esc(p.number)}" ${selected.has(p.number)?'checked':''}><span><b>Trang ${p.number}</b><small>${esc(p.text.trim().slice(0,150))}</small></span></label>`).join('')||'<p>Đọc hoặc đối chiếu tài liệu trước khi chọn trang.</p>'}</details></div>`;
+   return `<div class="small-card" data-source-group="${esc(d.id)}"><label><input type="checkbox" name="source" value="${esc(d.id)}" ${e.assistantSources?.includes(d.id)?'checked':''} ${pages.length?'':'disabled'}> ${esc(d.name)} · ${pages.length} ${d.catalog?'bài':'trang có văn bản'}</label><details><summary>Xem và chọn từng trang</summary>${pages.map(p=>`<label class="source-choice"><input type="checkbox" name="page" value="${esc(p.number)}" ${selected.has(p.number)?'checked':''}><span><b>${sourcePageLabel(d,p.number)}${p.title?' · '+esc(p.title):''}</b><small>${esc(p.text.trim().slice(0,150))}</small></span></label>`).join('')||'<p>Đọc hoặc đối chiếu tài liệu trước khi chọn trang.</p>'}</details></div>`;
   });
-  c.modal('Nguồn cho trợ lý',`<form id="assistant-source-form"><p>Chọn tài liệu. Mở từng tài liệu để xem trước và chọn đúng trang dùng cho lượt soạn.</p>${groups.join('')||'<p>Chưa có tài liệu trong đề này.</p>'}<div class="modal-foot">${b('import-doc','Thêm tài liệu')}<button class="primary" type="submit">Dùng các nguồn đã chọn</button></div></form>`);
+  c.modal('Nguồn cho trợ lý',`<form id="assistant-source-form"><p>Chọn tài liệu. Mở từng tài liệu để xem trước và chọn đúng trang dùng cho lượt soạn.</p>${b('lesson-sources','Học liệu theo bài')}${groups.join('')||'<p>Chưa có tài liệu trong đề này.</p>'}<div class="modal-foot">${b('import-doc','Thêm tài liệu')}<button class="primary" type="submit">Dùng các nguồn đã chọn</button></div></form>`);
   $('#assistant-source-form').addEventListener('change',event=>{
    if(event.target.name==='page'&&event.target.checked)event.target.closest('[data-source-group]').querySelector('[name=source]').checked=true;
   });

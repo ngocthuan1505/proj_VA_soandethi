@@ -1,7 +1,7 @@
 import {richTextHTML,diffContentHTML} from './math-content.js';
 import {esc, LEVELS, QUESTION_TYPES} from './core.js';
 import * as db from './storage.js';
-import {selectedDocumentPages} from './assistant-sources.js';
+import {selectedDocumentPages,sourcePageLabel} from './assistant-sources.js';
 
 async function api(url, body, headers={}){
  const response=await fetch(url,{
@@ -36,7 +36,7 @@ export async function openMatrixSynthesis(c, options={}){
  const sourceRefs=attachedPages.map(({doc,page})=>({
   sourceId:doc.id,sourceVersion:doc.version||1,locator:{kind:'page',index:page.number},
  }));
- const attachedPreview=attachedPages.map(({doc,page})=>doc.name+' · Trang '+page.number+'\n'+page.text).join('\n\n');
+ const attachedPreview=attachedPages.map(({doc,page})=>doc.name+' · '+sourcePageLabel(doc,page.number)+'\n'+page.text).join('\n\n');
  let source=attachedPreview;
  let job=null,lastCandidate=null,approval=null,closed=false,reviews={},polling=false,deciding=false;
  const errorNames={incomplete_response:'AI bị ngắt trước khi trả đủ bộ câu; bản đề giữ nguyên. Có thể giảm số câu hoặc thử lại; tải log để xem chi tiết',duplicate_question:'Câu hỏi bị trùng',invalid_options:'Phương án chưa hợp lệ',answer_disagreement:'Đáp án chưa khớp lượt giải lại',level_disagreement:'Mức thực tế chưa khớp ma trận',explanation_disagreement:'Lời giải chưa khớp',uncertain_answer:'Lượt giải chưa đủ chắc chắn',unsupported_answer:'Chưa đủ căn cứ',topic_disagreement:'Chưa đúng chủ đề',invalid_review:'Lượt rà trả dữ liệu chưa hợp lệ',attempt_limit:'Đã hết giới hạn của lượt thử cũ',call_budget:'Đã hết ngân sách gọi AI',timeout:'Đã hết thời gian tự xử lý',provider_http_error:'Dịch vụ AI đang trả lỗi',provider_quota:'Đã hết hạn mức dịch vụ AI',provider_auth:'Khóa Gemini chưa hợp lệ; mở Kết nối để thay khóa',provider_timeout:'Dịch vụ AI quá thời gian chờ; bản đề giữ nguyên',check_not_completed:'Một số phép kiểm chưa hoàn tất',option_verdicts_failed:'Có nhiều đáp án đúng hoặc phương án chưa rõ',semantic_duplicate:'Câu hỏi trùng ý',uncertain_duplicate:'Chưa kết luận được trùng ý',interrupted:'App đã khởi động lại khi tác vụ chưa hoàn tất',stale_snapshot:'Đề hoặc nguồn đã thay đổi',provider_unavailable:'Chưa kết nối được AI đã chọn'};

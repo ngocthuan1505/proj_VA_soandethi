@@ -6,3 +6,7 @@ export function selectedDocumentPages(exam, doc) {
  const selected=exam.assistantSourcePages?.[doc.id];
  return documentPages(doc).filter(page=>!Array.isArray(selected)||selected.includes(page.number));
 }
+
+export function sourcePageLabel(doc, pageNumber) {
+ return doc.catalog ? 'Bài ' + pageNumber : 'Trang ' + pageNumber;
+}

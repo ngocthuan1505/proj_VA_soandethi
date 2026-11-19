@@ -38,6 +38,7 @@ from mach_backend.ai_sources import (
 from mach_backend.exam_planning import PlanRequest, propose_structure
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
 from mach_backend.generation_submission import GenerationInputs
+from mach_backend.lesson_catalog import lesson_catalog
 from mach_backend.local_documents import chrome_path, export_file, extract_text
 from mach_backend.matrix_import import matrix_slots, read_matrix
 from mach_backend.patch_confirmation import PendingGeneration, confirm_patch
@@ -394,6 +395,10 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             "online": False,
             "admin": True,
         }
+
+    @app.get("/api/lesson-catalog")
+    def list_lessons():
+        return {"collections": lesson_catalog()}
 
     @app.get("/api/poc/sample")
     def poc_sample(dataset: str = "bio-tham-thau"):
