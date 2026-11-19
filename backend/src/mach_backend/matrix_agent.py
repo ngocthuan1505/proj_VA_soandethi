@@ -642,6 +642,7 @@ async def run_matrix_agent(
         "minItems"
     ] = 1 if job.requireEvidence else 0
     attempts, tool_calls, last, report = 0, 0, None, {"ok": False, "errors": []}
+    rejected = {}
     for _turn in range(turns):
         response = await call(
             "agent", {"messages": messages, "tools": tools if report["ok"] else tools[:1]}
@@ -704,7 +705,17 @@ async def run_matrix_agent(
                     checks = CandidateChecks(candidate_hash(job, arguments), emit)
                     checks.record("validate_schema", status="FAIL", findings=report["errors"])
                     report = checks.finish(report["errors"])
-                if isinstance(arguments, dict):
+                elif (digest := candidate_hash(job, arguments)) in rejected:
+                    checked_attempt, checked_report = rejected[digest]
+                    report = {
+                        **checked_report,
+                        "reusedFromAttempt": checked_attempt,
+                        "repairInstruction": (
+                            "Bản nộp trùng với bản đã bị từ chối. Viết lại các câu có lỗi "
+                            "theo errors và gửi bộ câu đã sửa qua check_exam."
+                        ),
+                    }
+                else:
                     try:
                         last, report = await inspect_candidate(job, arguments, call, emit)
                     except (AIError, ValidationError, KeyError, TypeError, ValueError) as error:
@@ -726,8 +737,11 @@ async def run_matrix_agent(
                             if isinstance(error, ValidationError)
                             else [{"message": str(error)[:600]}]
                         )
-                        checks = CandidateChecks(candidate_hash(job, arguments), emit)
+                        checks = CandidateChecks(digest, emit)
                         report = checks.finish([{"code": code, "details": details}])
+                    else:
+                        if any(row["status"] == "FAIL" for row in report["checks"]):
+                            rejected[digest] = attempts, report
                 # Báo cáo đầy đủ ở log; tránh lặp toàn bộ nhận xét trong ngữ cảnh model.
                 result = {
                     k: v

@@ -194,7 +194,8 @@ def test_two_attempt_limit_cannot_be_bypassed_by_parallel_tool_calls(job):
     result = asyncio.run(run_matrix_agent(job, model, emit, max_attempts=2))
     assert result["status"] == "attempt_limit"
     assert result["generationAttempts"] == 2
-    assert len([c for c in model.calls if c[0] == "blind_content_check"]) == 2
+    assert len([c for c in model.calls if c[0] == "blind_content_check"]) == 1
+    assert result["report"]["reusedFromAttempt"] == 1
     assert "proposal" not in result
 
 
@@ -209,6 +210,11 @@ def test_budget_mode_can_repair_more_than_two_submissions(job):
     assert result["generationAttempts"] == 4
     reports = [r for r in log if r["event"] == "generation_result"]
     assert [r["ok"] for r in reports] == [False, False, False, True]
+    assert [r.get("reusedFromAttempt") for r in reports] == [None, 1, 1, None]
+    assert reports[1]["errors"] == reports[0]["errors"]
+    assert len([c for c in model.calls if c[0] == "blind_content_check"]) == 2
+    next_request = [r for purpose, r in model.calls if purpose == "agent"][2]
+    assert "Viết lại" in json.loads(next_request["messages"][-1]["content"])["repairInstruction"]
     final = result["report"]
     assert all(
         r["status"] == "PASS" and r["candidateHash"] == final["candidateHash"]

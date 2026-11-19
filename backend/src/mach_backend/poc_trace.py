@@ -99,6 +99,7 @@ def inspect_run(directory):
                     and checks
                     and checks[-1]["report"]
                     and checks[-1]["report"].get("ok") is True
+                    and checks[-1]["report"].get("reusedFromAttempt") is None
                 )
         elif event.get("event") == "generation_result" and checks:
             if event.get("generationAttempt") != checks[-1]["attempt"]:
@@ -109,6 +110,21 @@ def inspect_run(directory):
                 if k not in {"event", "utc", "elapsedSeconds", "generationAttempt"}
             }
             report = checks[-1]["report"]
+            reused_from = report.get("reusedFromAttempt")
+            if reused_from is not None and (
+                report.get("ok") is not False
+                or not isinstance(report.get("candidateHash"), str)
+                or not any(
+                    earlier["attempt"] == reused_from
+                    and earlier["arguments"] == checks[-1]["arguments"]
+                    and earlier["report"]
+                    and earlier["report"].get("ok") is False
+                    and earlier["report"].get("reusedFromAttempt") is None
+                    and earlier["report"].get("candidateHash") == report["candidateHash"]
+                    for earlier in checks[:-1]
+                )
+            ):
+                issues.append(f"Báo cáo tái dùng ở sự kiện {index + 1} thiếu lần kiểm gốc phù hợp.")
             rows = report.get("checks")
             if (
                 report.get("ok") is True
@@ -149,8 +165,15 @@ def inspect_run(directory):
                     and current["arguments"] is not None
                     and previous["arguments"] != current["arguments"]
                 ),
-                "recheckCompleted": current["report"] is not None,
-                "recheckPassed": bool(current["report"] and current["report"].get("ok") is True),
+                "recheckCompleted": (
+                    current["report"] is not None
+                    and current["report"].get("reusedFromAttempt") is None
+                ),
+                "recheckPassed": bool(
+                    current["report"]
+                    and current["report"].get("reusedFromAttempt") is None
+                    and current["report"].get("ok") is True
+                ),
             }
         )
     if result.get("status") == "ready_for_teacher_review" and not finish_verified:

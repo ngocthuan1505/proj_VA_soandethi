@@ -18,7 +18,9 @@ class TestPoCTrace(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.directory = Path(self.temporary.name)
 
-    def write_run(self, protocol="native", *, feedback=True, changed=True, finished=True):
+    def write_run(
+        self, protocol="native", *, feedback=True, changed=True, finished=True, reused=None
+    ):
         events = [
             {
                 "event": "run_start",
@@ -28,6 +30,9 @@ class TestPoCTrace(unittest.TestCase):
             }
         ]
         bad, good = {"ok": False, "errors": [{"code": "answer_disagreement"}]}, {"ok": True}
+        if reused is not None:
+            bad["candidateHash"] = "a" * 64
+            good = {**bad, "reusedFromAttempt": reused}
         first, second = {"answer": 0}, {"answer": 1 if changed else 0}
         for number, (name, arguments, report) in enumerate(
             [("check_exam", first, bad), ("check_exam", second, good), ("finish_exam", {}, None)], 1
@@ -122,6 +127,16 @@ class TestPoCTrace(unittest.TestCase):
     def test_rechecking_identical_content_does_not_prove_repair(self):
         self.write_run(changed=False)
         self.assertFalse(MODULE.inspect_run(self.directory)["successfulRepairObserved"])
+
+    def test_reused_rejection_is_not_a_new_check(self):
+        self.write_run(changed=False, finished=False, reused=1)
+        report = MODULE.inspect_run(self.directory)
+        self.assertEqual(report["evidenceIssues"], [])
+        self.assertFalse(report["repairSteps"][0]["recheckCompleted"])
+        self.assertFalse(report["repairSteps"][0]["recheckPassed"])
+        self.assertFalse(report["successfulRepairObserved"])
+        self.write_run(changed=False, finished=False, reused=2)
+        self.assertTrue(MODULE.inspect_run(self.directory)["evidenceIssues"])
 
     def test_claimed_finish_needs_matching_response(self):
         self.write_run()

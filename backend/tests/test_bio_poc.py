@@ -80,6 +80,7 @@ def test_bio_four_questions_repair_and_recheck_without_touching_exam(bio, code):
     trace = client.get(base + "/trace").json()
     reports = [row for row in trace if row["event"] == "generation_result"]
     assert not reports[0]["ok"] and reports[-1]["ok"]
+    assert reports[0]["candidateHash"] != reports[-1]["candidateHash"]
     assert code in [error["code"] for error in reports[0]["errors"]]
     questions = result["proposal"]["questions"]
     assert len(questions) == 4

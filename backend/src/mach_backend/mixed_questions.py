@@ -15,6 +15,8 @@ ANSWER_GUIDE = (
     "ở ô trả lời thì chỉ ghi số, giữ đơn vị và phép tính trong lời giải; nếu đề yêu cầu "
     "đơn vị trong đáp án thì ghi đủ đơn vị. Không tự bỏ đơn vị khi đề chưa xác định. "
     "mcq và truefalse có bốn options khác nhau; short/essay có options=[]. "
+    "Với truefalse, stem yêu cầu xét đúng/sai; mỗi option là một mệnh đề đầy đủ "
+    "có thể đánh giá độc lập, không viết bốn phương án để chọn một. "
     "Mỗi câu có rubric gồm text và pointsQ4 (đơn vị 0,25 điểm), tổng bằng pointsQ4 của slot. "
     "Tự luận có lời giải hoàn chỉnh và barem từng bước; không thay bằng 'chọn đúng'."
 )

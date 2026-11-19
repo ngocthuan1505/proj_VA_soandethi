@@ -130,6 +130,7 @@ def trace_summary(row):
         "httpStatus",
         "saved",
         "generationAttempt",
+        "reusedFromAttempt",
         "toolCallNumber",
         "seconds",
         "maxModelCalls",

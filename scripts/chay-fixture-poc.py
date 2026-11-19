@@ -178,6 +178,7 @@ class FixtureCase:
         if purpose == "agent":
             self.slots = json.loads(body["messages"][1]["content"])["matrix"]["slots"]
         response = await self.model(purpose, body)
+        first = self.model.attempts == 1
         if purpose == "agent":
             args = response["tool_calls"][0]["function"]["arguments"]
             if "questions" in args:
@@ -185,6 +186,15 @@ class FixtureCase:
                 args["questions"] = [
                     {**template, "stem": f"Câu giả lập {i}?"} for i in range(len(self.slots))
                 ]
+                if not first and self.case in {
+                    "multiple_correct",
+                    "unsupported",
+                    "unknown",
+                    "wrong_level",
+                    "duplicate",
+                }:
+                    target = 1 if self.case == "duplicate" else 0
+                    args["questions"][target]["stem"] = f"Câu giả lập {target} đã viết lại?"
         else:
             value = json.loads(response["content"])
             template = value["reviews"][0]
@@ -199,7 +209,6 @@ class FixtureCase:
                 for i, slot in enumerate(self.slots)
             ]
             response["content"] = json.dumps(value)
-        first = self.model.attempts == 1
         if purpose == "agent" and first:
             args = response["tool_calls"][0]["function"]["arguments"]
             if self.case == "missing_question":
