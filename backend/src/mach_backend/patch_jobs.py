@@ -18,6 +18,7 @@ from mach_backend.patch_confirmation import (
 )
 
 type TerminalStatus = Literal["complete", "cancelled", "failed"]
+JOB_DEADLINE = object()
 logger = logging.getLogger(__name__)
 
 
@@ -142,7 +143,7 @@ class PatchJobRunner:
         if run.state.status == "running":
             self._finish(run, "failed", error_code="timeout")
             if run.task is not None:
-                run.task.cancel()
+                run.task.cancel(JOB_DEADLINE)
 
     @staticmethod
     def _finish(

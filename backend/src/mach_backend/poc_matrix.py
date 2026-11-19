@@ -53,7 +53,10 @@ def structured_tool_request(body):
                 {
                     "role": "user",
                     "content": json.dumps(
-                        {"toolResult": message["tool_name"], "result": message["content"]},
+                        {
+                            "toolResult": message["tool_name"],
+                            "result": json.loads(message["content"]),
+                        },
                         ensure_ascii=False,
                     ),
                 }
@@ -74,7 +77,9 @@ def structured_tool_request(body):
     messages[0]["content"] += (
         " Giao thức lượt này là JSON action, không phải native tool calling. "
         "Bạn chọn action và tự viết arguments. Python chỉ thực thi công cụ được phép "
-        "rồi trả toolResult để bạn tự sửa. Trả đúng JSON theo schema: "
+        "rồi trả toolResult để bạn tự sửa. Khi result.ok=false, xử lý result.errors "
+        "và làm theo result.repairInstruction nếu có trước khi nộp lại. "
+        "Trả đúng JSON theo schema: "
         + json.dumps(schema, ensure_ascii=False)
     )
     return {"messages": messages, "format": schema}

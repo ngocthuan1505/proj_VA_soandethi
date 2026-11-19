@@ -26,7 +26,7 @@ class TestPoCTrace(unittest.TestCase):
                 "event": "run_start",
                 "trialId": "fixture",
                 "mode": "fixture",
-                "toolProtocol": protocol,
+                "toolProtocol": "native" if protocol == "native" else "structured",
             }
         ]
         bad, good = {"ok": False, "errors": [{"code": "answer_disagreement"}]}, {"ok": True}
@@ -55,7 +55,9 @@ class TestPoCTrace(unittest.TestCase):
                             "content": json.dumps(
                                 {
                                     "toolResult": "check_exam",
-                                    "result": json.dumps(previous),
+                                    "result": json.dumps(previous)
+                                    if protocol == "structured"
+                                    else previous,
                                 }
                             ),
                         }
@@ -64,7 +66,7 @@ class TestPoCTrace(unittest.TestCase):
                 "role": "assistant",
                 "tool_calls": [{"function": {"name": name, "arguments": arguments}}],
             }
-            if protocol == "structured":
+            if protocol != "native":
                 message = {
                     "role": "assistant",
                     "content": json.dumps(
@@ -109,7 +111,7 @@ class TestPoCTrace(unittest.TestCase):
             )
 
     def test_native_and_structured_feedback_are_both_recognized(self):
-        for protocol in ("native", "structured"):
+        for protocol in ("native", "structured", "structured_object"):
             with self.subTest(protocol=protocol):
                 self.write_run(protocol)
                 report = MODULE.inspect_run(self.directory)

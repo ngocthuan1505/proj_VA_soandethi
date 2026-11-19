@@ -597,8 +597,12 @@ def test_changed_connection_cannot_send_source_with_old_consent(tmp_path):
 
 def test_config_change_waits_for_active_task(workspace, tmp_path):
     import asyncio
+    from threading import Event
+
+    started = Event()
 
     async def slow(_purpose, _body):
+        started.set()
         await asyncio.sleep(10)
         return {}
 
@@ -624,16 +628,38 @@ def test_config_change_waits_for_active_task(workspace, tmp_path):
         rejected = client.post("/api/config", json={"runBudget": {"maxModelCalls": 4}})
         assert rejected.status_code == 409 and rejected.json()["code"] == "job_limit"
         assert client.get("/api/config").json() == config
-        client.post(prefix + submitted.json()["jobId"] + "/cancel", json={}).raise_for_status()
+        assert started.wait(1)
+        base = prefix + submitted.json()["jobId"]
+        cancelled = client.post(base + "/cancel", json={}).raise_for_status().json()
+        assert cancelled["status"] == "cancelled" and cancelled["errorCode"] is None
+        for _ in range(50):
+            trace = client.get(base + "/trace").json()
+            if trace[-1]["event"] == "run_end":
+                break
+            time.sleep(0.02)
+        assert trace[-1]["event"] == "run_end"
+        assert trace[-1]["status"] == "cancelled" and "errorCode" not in trace[-1]
+        summary_path = (
+            tmp_path / "active" / "agent-logs" / submitted.json()["jobId"] / "result.json"
+        )
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        assert summary["status"] == "cancelled" and "errorCode" not in summary
 
 
-def test_provider_timeout_keeps_partial_reports_unknown_and_draft_unchanged(workspace, tmp_path):
+@pytest.mark.parametrize("runner_timeout", [False, True])
+def test_timeout_keeps_partial_reports_unknown_and_draft_unchanged(
+    workspace, tmp_path, runner_timeout
+):
+    import asyncio
+
     import httpx
 
     model = AgentModelFixture()
 
     async def call(purpose, body):
         if purpose == "explanation_check":
+            if runner_timeout:
+                await asyncio.sleep(10)
             raise httpx.ReadTimeout("Fixture dịch vụ quá thời gian.")
         return await model(purpose, body)
 
@@ -642,15 +668,24 @@ def test_provider_timeout_keeps_partial_reports_unknown_and_draft_unchanged(work
     with TestClient(
         create_app(tmp_path / "timeout", agent_call=call), headers={"Origin": "http://testserver"}
     ) as client:
+        if runner_timeout:
+            client.app.state.runner._timeout_seconds = 0.5
         client.put("/api/kv", json={"key": "state", "value": state}).raise_for_status()
         base, result = generate(client, exam)
-        assert result["status"] == "failed" and result["errorCode"] == "provider_timeout"
+        expected = "timeout" if runner_timeout else "provider_timeout"
+        assert result["status"] == "failed" and result["errorCode"] == expected
         report = client.get(base + "/report").json()
         assert len(report["checks"]) == 10 and report["candidateHash"]
         checks = {r["toolName"]: r["status"] for r in report["checks"]}
         assert checks["validate_schema"] == "PASS"
         assert checks["check_explanation"] == checks["aggregate_checks"] == "UNKNOWN"
         assert client.get("/api/kv?key=state").json()["value"] == state
+        trace = client.get(base + "/trace").json()
+        assert trace[-1]["event"] == "run_end"
+        assert trace[-1]["status"] == "failed" and trace[-1]["errorCode"] == expected
+        summary_path = tmp_path / "timeout" / "agent-logs" / result["jobId"] / "result.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        assert summary["status"] == "failed" and summary["errorCode"] == expected
 
 
 @pytest.mark.parametrize(

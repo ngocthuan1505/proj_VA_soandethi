@@ -44,7 +44,10 @@ def feedback_matches(request, report, call_id=None):
                 if identity_matches and content in (report, compact):
                     return True
             if isinstance(content, dict) and content.get("toolResult") == "check_exam":
-                if json.loads(content["result"]) in (report, compact):
+                result = content["result"]
+                if isinstance(result, str):
+                    result = json.loads(result)
+                if result in (report, compact):
                     return True
         except (ValueError, TypeError, KeyError):
             continue

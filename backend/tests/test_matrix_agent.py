@@ -495,7 +495,7 @@ def test_structured_protocol_preserves_real_tool_feedback(job):
     }
     request = structured_tool_request(original)
     assert "format" in request and "tools" not in request
-    assert json.loads(request["messages"][-1]["content"])["result"] == '{"ok":false}'
+    assert json.loads(request["messages"][-1]["content"])["result"] == {"ok": False}
     assert json.loads(request["messages"][1]["content"])["arguments"] == draft(3)
     assert original["messages"][0]["content"] == "Soạn đề."
     response = structured_tool_response(
