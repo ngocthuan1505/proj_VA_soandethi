@@ -61,7 +61,7 @@ def test_crud_and_persistence_across_reload(tmp_path):
     with TestClient(app) as client:
         headers = {"X-Owner": "user_a"}
         created_resp = client.post(
-            "/api/curriculum/sources", headers=headers, json=_sample_payload()
+            "/api/lesson-catalog/sources", headers=headers, json=_sample_payload()
         )
         assert created_resp.status_code == 201, created_resp.text
         created = created_resp.json()
@@ -100,12 +100,12 @@ def test_crud_and_persistence_across_reload(tmp_path):
             "updated_at",
         ]
 
-        detail_resp = client.get(f"/api/curriculum/sources/{created['id']}", headers=headers)
+        detail_resp = client.get(f"/api/lesson-catalog/sources/{created['id']}", headers=headers)
         assert detail_resp.status_code == 200
         assert detail_resp.json() == created
 
         patched_resp = client.patch(
-            f"/api/curriculum/sources/{created['id']}",
+            f"/api/lesson-catalog/sources/{created['id']}",
             headers=headers,
             json={
                 "chapter": "Chương 2: Bất phương trình bậc nhất hai ẩn",
@@ -129,19 +129,21 @@ def test_crud_and_persistence_across_reload(tmp_path):
     reloaded_app = _build_app(str(db_file))
     with TestClient(reloaded_app) as reloaded:
         headers = {"X-Owner": "user_a"}
-        fetched = reloaded.get(f"/api/curriculum/sources/{created['id']}", headers=headers)
+        fetched = reloaded.get(f"/api/lesson-catalog/sources/{created['id']}", headers=headers)
         assert fetched.status_code == 200
         assert fetched.json() == patched
 
-        deleted = reloaded.delete(f"/api/curriculum/sources/{created['id']}", headers=headers)
+        deleted = reloaded.delete(f"/api/lesson-catalog/sources/{created['id']}", headers=headers)
         assert deleted.status_code == 200
         assert deleted.json() == {"ok": True, "id": created["id"]}
 
         assert (
-            reloaded.get(f"/api/curriculum/sources/{created['id']}", headers=headers).status_code
+            reloaded.get(
+                f"/api/lesson-catalog/sources/{created['id']}", headers=headers
+            ).status_code
             == 404
         )
-        listing = reloaded.get("/api/curriculum/sources", headers=headers).json()
+        listing = reloaded.get("/api/lesson-catalog/sources", headers=headers).json()
         assert listing == {"sources": [], "total": 0}
 
 
@@ -151,11 +153,11 @@ def test_default_owner_resolver_and_connector_variants(tmp_path):
     install_curriculum_sources(app_mem, ":memory:")
     with TestClient(app_mem) as client:
         res = client.post(
-            "/api/curriculum/sources", json=_sample_payload(grade=8, subject="Vật lí")
+            "/api/lesson-catalog/sources", json=_sample_payload(grade=8, subject="Vật lí")
         )
         assert res.status_code == 201
         assert res.json()["owner_id"] == "local"
-        listed = client.get("/api/curriculum/sources").json()
+        listed = client.get("/api/lesson-catalog/sources").json()
         assert listed["total"] == 1
 
     # Callable trả context manager sqlite3.Connection (cả row_factory=None và sqlite3.Row)
@@ -175,9 +177,11 @@ def test_default_owner_resolver_and_connector_variants(tmp_path):
 
         app_ctx = _build_app(connect_ctx, owner_resolver=None)
         with TestClient(app_ctx) as client:
-            created = client.post("/api/curriculum/sources", json=_sample_payload(grade=6)).json()
+            created = client.post(
+                "/api/lesson-catalog/sources", json=_sample_payload(grade=6)
+            ).json()
             assert created["owner_id"] == "local"
-            got = client.get(f"/api/curriculum/sources/{created['id']}").json()
+            got = client.get(f"/api/lesson-catalog/sources/{created['id']}").json()
             assert got["id"] == created["id"]
 
 
@@ -246,13 +250,13 @@ def test_hierarchical_filters_and_vietnamese_search(tmp_path):
     with TestClient(app) as client:
         for item in fixtures:
             assert (
-                client.post("/api/curriculum/sources", headers=headers, json=item).status_code
+                client.post("/api/lesson-catalog/sources", headers=headers, json=item).status_code
                 == 201
             )
 
         # Lọc theo từng lớp/môn/bộ sách/tập/chương/bài không bị nhầm tiền tố Chương 1 vs Chương 10
         by_chapter_1 = client.get(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             params={
                 "grade": 10,
@@ -266,7 +270,7 @@ def test_hierarchical_filters_and_vietnamese_search(tmp_path):
         assert by_chapter_1["sources"][0]["title"] == "Mệnh đề đảo"
 
         by_lesson_1 = client.get(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             params={"lesson": "Bài 1"},
         ).json()
@@ -274,7 +278,7 @@ def test_hierarchical_filters_and_vietnamese_search(tmp_path):
         assert by_lesson_1["sources"][0]["lesson"] == "Bài 1"
 
         by_status = client.get(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             params={"license_status": "teacher_owned"},
         ).json()
@@ -283,27 +287,27 @@ def test_hierarchical_filters_and_vietnamese_search(tmp_path):
         # Tìm q không phân biệt hoa thường tiếng Việt (kể cả ký tự Đ/đ và NFC/NFD)
         # trên 4 trường title/chapter/lesson/content_excerpt
         q_title = client.get(
-            "/api/curriculum/sources", headers=headers, params={"q": "ĐƯỜNG TRÒN"}
+            "/api/lesson-catalog/sources", headers=headers, params={"q": "ĐƯỜNG TRÒN"}
         ).json()
         assert [s["title"] for s in q_title["sources"]] == ["Phương trình đường tròn"]
 
         q_excerpt = client.get(
-            "/api/curriculum/sources", headers=headers, params={"q": "độ sâu"}
+            "/api/lesson-catalog/sources", headers=headers, params={"q": "độ sâu"}
         ).json()
         assert [s["title"] for s in q_excerpt["sources"]] == ["Áp suất chất lỏng"]
 
         q_lesson = client.get(
-            "/api/curriculum/sources", headers=headers, params={"q": "bài 7"}
+            "/api/lesson-catalog/sources", headers=headers, params={"q": "bài 7"}
         ).json()
         assert [s["title"] for s in q_lesson["sources"]] == ["Nghị luận xã hội"]
 
         q_chapter = client.get(
-            "/api/curriculum/sources", headers=headers, params={"q": "CHƯƠNG 10"}
+            "/api/lesson-catalog/sources", headers=headers, params={"q": "CHƯƠNG 10"}
         ).json()
         assert [s["title"] for s in q_chapter["sources"]] == ["Xác suất cổ điển"]
 
         q_nfd = client.get(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             params={"q": unicodedata.normalize("NFD", "Mệnh đề đảo")},
         ).json()
@@ -317,32 +321,34 @@ def test_owner_isolation_blocks_cross_owner_access(tmp_path):
 
     with TestClient(app) as client:
         # Không có header owner -> 401
-        assert client.get("/api/curriculum/sources").status_code == 401
+        assert client.get("/api/lesson-catalog/sources").status_code == 401
 
         source_a = client.post(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers_a,
             json=_sample_payload(title="Nguồn mật của A", license_status="allowed"),
         ).json()
         source_b = client.post(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers_b,
             json=_sample_payload(title="Nguồn riêng của B", license_status="allowed"),
         ).json()
 
-        list_a = client.get("/api/curriculum/sources", headers=headers_a).json()
-        list_b = client.get("/api/curriculum/sources", headers=headers_b).json()
+        list_a = client.get("/api/lesson-catalog/sources", headers=headers_a).json()
+        list_b = client.get("/api/lesson-catalog/sources", headers=headers_b).json()
         assert [s["id"] for s in list_a["sources"]] == [source_a["id"]]
         assert [s["id"] for s in list_b["sources"]] == [source_b["id"]]
 
         # user_b không thể xem, sửa, xóa hoặc lấy citation nguồn của user_a (trả 404)
         assert (
-            client.get(f"/api/curriculum/sources/{source_a['id']}", headers=headers_b).status_code
+            client.get(
+                f"/api/lesson-catalog/sources/{source_a['id']}", headers=headers_b
+            ).status_code
             == 404
         )
         assert (
             client.patch(
-                f"/api/curriculum/sources/{source_a['id']}",
+                f"/api/lesson-catalog/sources/{source_a['id']}",
                 headers=headers_b,
                 json={"title": "B cố sửa của A"},
             ).status_code
@@ -350,19 +356,21 @@ def test_owner_isolation_blocks_cross_owner_access(tmp_path):
         )
         assert (
             client.delete(
-                f"/api/curriculum/sources/{source_a['id']}", headers=headers_b
+                f"/api/lesson-catalog/sources/{source_a['id']}", headers=headers_b
             ).status_code
             == 404
         )
         assert (
             client.get(
-                f"/api/curriculum/sources/{source_a['id']}/citation", headers=headers_b
+                f"/api/lesson-catalog/sources/{source_a['id']}/citation", headers=headers_b
             ).status_code
             == 404
         )
 
         # Nguồn của user_a vẫn nguyên vẹn
-        still_a = client.get(f"/api/curriculum/sources/{source_a['id']}", headers=headers_a).json()
+        still_a = client.get(
+            f"/api/lesson-catalog/sources/{source_a['id']}", headers=headers_a
+        ).json()
         assert still_a == source_a
 
 
@@ -372,28 +380,28 @@ def test_citation_enforces_license_and_returns_provenance(tmp_path):
 
     with TestClient(app) as client:
         allowed = client.post(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             json=_sample_payload(license_status="allowed", title="Nguồn cho phép"),
         ).json()
         teacher_owned = client.post(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             json=_sample_payload(license_status="teacher_owned", title="Nguồn GV tự soạn"),
         ).json()
         pending = client.post(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             json=_sample_payload(license_status="pending_review", title="Nguồn chờ duyệt"),
         ).json()
         restricted = client.post(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             json=_sample_payload(license_status="restricted", title="Nguồn hạn chế"),
         ).json()
 
         for rec in (allowed, teacher_owned):
-            res = client.get(f"/api/curriculum/sources/{rec['id']}/citation", headers=headers)
+            res = client.get(f"/api/lesson-catalog/sources/{rec['id']}/citation", headers=headers)
             assert res.status_code == 200, res.text
             assert res.json() == {
                 "sourceId": rec["id"],
@@ -413,13 +421,13 @@ def test_citation_enforces_license_and_returns_provenance(tmp_path):
 
         # pending_review mặc định chặt -> 403 source_license_restricted
         pending_default = client.get(
-            f"/api/curriculum/sources/{pending['id']}/citation", headers=headers
+            f"/api/lesson-catalog/sources/{pending['id']}/citation", headers=headers
         )
         assert pending_default.status_code == 403
         assert pending_default.json()["code"] == "source_license_restricted"
 
         pending_false = client.get(
-            f"/api/curriculum/sources/{pending['id']}/citation",
+            f"/api/lesson-catalog/sources/{pending['id']}/citation",
             headers=headers,
             params={"allow_unverified": "false"},
         )
@@ -428,7 +436,7 @@ def test_citation_enforces_license_and_returns_provenance(tmp_path):
 
         # Cho phép xem trước pending_review khi bật allow_unverified=true
         pending_override = client.get(
-            f"/api/curriculum/sources/{pending['id']}/citation",
+            f"/api/lesson-catalog/sources/{pending['id']}/citation",
             headers=headers,
             params={"allow_unverified": "true"},
         )
@@ -438,7 +446,7 @@ def test_citation_enforces_license_and_returns_provenance(tmp_path):
         # restricted luôn bị chặn ngay cả khi allow_unverified=true
         for query in ({}, {"allow_unverified": "false"}, {"allow_unverified": "true"}):
             restricted_res = client.get(
-                f"/api/curriculum/sources/{restricted['id']}/citation",
+                f"/api/lesson-catalog/sources/{restricted['id']}/citation",
                 headers=headers,
                 params=query,
             )
@@ -447,12 +455,12 @@ def test_citation_enforces_license_and_returns_provenance(tmp_path):
 
         # Khi giáo viên cập nhật pending_review -> allowed thì citation mặc định hoạt động
         updated = client.patch(
-            f"/api/curriculum/sources/{pending['id']}",
+            f"/api/lesson-catalog/sources/{pending['id']}",
             headers=headers,
             json={"license_status": "allowed"},
         ).json()
         approved_citation = client.get(
-            f"/api/curriculum/sources/{pending['id']}/citation",
+            f"/api/lesson-catalog/sources/{pending['id']}/citation",
             headers=headers,
         )
         assert approved_citation.status_code == 200
@@ -473,17 +481,17 @@ def test_curriculum_error_preserves_403_and_404_when_ai_error_handler_exists(tmp
     with TestClient(app) as client:
         headers = {"X-Owner": "user_a"}
         restricted = client.post(
-            "/api/curriculum/sources",
+            "/api/lesson-catalog/sources",
             headers=headers,
             json=_sample_payload(license_status="restricted"),
         ).json()
         blocked = client.get(
-            f"/api/curriculum/sources/{restricted['id']}/citation", headers=headers
+            f"/api/lesson-catalog/sources/{restricted['id']}/citation", headers=headers
         )
         assert blocked.status_code == 403
         assert blocked.json()["code"] == "source_license_restricted"
 
-        missing = client.get("/api/curriculum/sources/khong-ton-tai", headers=headers)
+        missing = client.get("/api/lesson-catalog/sources/khong-ton-tai", headers=headers)
         assert missing.status_code == 404
         assert missing.json()["code"] == "source_not_found"
 
@@ -495,10 +503,10 @@ def test_sha256_stability_and_update_sensitivity(tmp_path):
     with TestClient(app) as client:
         payload = _sample_payload()
         first = client.post(
-            "/api/curriculum/sources", headers={"X-Owner": "user_a"}, json=payload
+            "/api/lesson-catalog/sources", headers={"X-Owner": "user_a"}, json=payload
         ).json()
         second = client.post(
-            "/api/curriculum/sources", headers={"X-Owner": "user_b"}, json=payload
+            "/api/lesson-catalog/sources", headers={"X-Owner": "user_b"}, json=payload
         ).json()
 
         assert first["id"] != second["id"]
@@ -507,7 +515,7 @@ def test_sha256_stability_and_update_sensitivity(tmp_path):
 
         # PATCH không đổi giá trị -> sha256 vẫn ổn định
         noop = client.patch(
-            f"/api/curriculum/sources/{first['id']}",
+            f"/api/lesson-catalog/sources/{first['id']}",
             headers={"X-Owner": "user_a"},
             json={"title": payload["title"]},
         ).json()
@@ -516,7 +524,7 @@ def test_sha256_stability_and_update_sensitivity(tmp_path):
 
         # Thay đổi một dấu/nội dung trích -> sha256 đổi
         changed = client.patch(
-            f"/api/curriculum/sources/{first['id']}",
+            f"/api/lesson-catalog/sources/{first['id']}",
             headers={"X-Owner": "user_a"},
             json={"content_excerpt": "Một mệnh đề toán học là khẳng định đúng hoặc sai."},
         ).json()
@@ -537,7 +545,7 @@ def test_validation_and_extra_forbid(tmp_path):
             {"sha256": "0" * 64},
         ):
             res = client.post(
-                "/api/curriculum/sources",
+                "/api/lesson-catalog/sources",
                 headers=headers,
                 json=_sample_payload(**bad_extra),
             )
@@ -546,7 +554,7 @@ def test_validation_and_extra_forbid(tmp_path):
         # grade ngoài 1..12 hoặc sai kiểu (bool, float, str)
         for bad_grade in (0, -1, 13, True, False, 10.5, "10"):
             res = client.post(
-                "/api/curriculum/sources",
+                "/api/lesson-catalog/sources",
                 headers=headers,
                 json=_sample_payload(grade=bad_grade),
             )
@@ -555,7 +563,7 @@ def test_validation_and_extra_forbid(tmp_path):
         # subject/title rỗng hoặc license_status sai
         assert (
             client.post(
-                "/api/curriculum/sources",
+                "/api/lesson-catalog/sources",
                 headers=headers,
                 json=_sample_payload(subject="   "),
             ).status_code
@@ -563,7 +571,7 @@ def test_validation_and_extra_forbid(tmp_path):
         )
         assert (
             client.post(
-                "/api/curriculum/sources",
+                "/api/lesson-catalog/sources",
                 headers=headers,
                 json=_sample_payload(title="   "),
             ).status_code
@@ -571,7 +579,7 @@ def test_validation_and_extra_forbid(tmp_path):
         )
         assert (
             client.post(
-                "/api/curriculum/sources",
+                "/api/lesson-catalog/sources",
                 headers=headers,
                 json=_sample_payload(license_status="public_domain"),
             ).status_code
@@ -580,12 +588,14 @@ def test_validation_and_extra_forbid(tmp_path):
 
         # GET query validation
         assert (
-            client.get("/api/curriculum/sources", headers=headers, params={"grade": 13}).status_code
+            client.get(
+                "/api/lesson-catalog/sources", headers=headers, params={"grade": 13}
+            ).status_code
             == 422
         )
         assert (
             client.get(
-                "/api/curriculum/sources",
+                "/api/lesson-catalog/sources",
                 headers=headers,
                 params={"license_status": "invalid"},
             ).status_code
@@ -594,11 +604,11 @@ def test_validation_and_extra_forbid(tmp_path):
 
         # Tạo bản ghi hợp lệ để kiểm extra="forbid" và null rejection trên PATCH
         valid = client.post(
-            "/api/curriculum/sources", headers=headers, json=_sample_payload()
+            "/api/lesson-catalog/sources", headers=headers, json=_sample_payload()
         ).json()
         assert (
             client.patch(
-                f"/api/curriculum/sources/{valid['id']}",
+                f"/api/lesson-catalog/sources/{valid['id']}",
                 headers=headers,
                 json={"extra_field": 1},
             ).status_code
@@ -606,7 +616,7 @@ def test_validation_and_extra_forbid(tmp_path):
         )
         assert (
             client.patch(
-                f"/api/curriculum/sources/{valid['id']}",
+                f"/api/lesson-catalog/sources/{valid['id']}",
                 headers=headers,
                 json={"grade": 0},
             ).status_code
@@ -614,7 +624,7 @@ def test_validation_and_extra_forbid(tmp_path):
         )
         assert (
             client.patch(
-                f"/api/curriculum/sources/{valid['id']}",
+                f"/api/lesson-catalog/sources/{valid['id']}",
                 headers=headers,
                 json={"grade": None},
             ).status_code
@@ -622,7 +632,7 @@ def test_validation_and_extra_forbid(tmp_path):
         )
         assert (
             client.patch(
-                f"/api/curriculum/sources/{valid['id']}",
+                f"/api/lesson-catalog/sources/{valid['id']}",
                 headers=headers,
                 json={"title": "  "},
             ).status_code

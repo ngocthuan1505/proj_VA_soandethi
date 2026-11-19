@@ -9,7 +9,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from mach_backend.community_library import install_community_library
 from mach_backend.local_credentials import LocalConnectionStore
 from mach_backend.local_workspace import ROOT, create_app
 from mach_backend.poc_connections import apply_config
@@ -202,13 +201,6 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
         return workspace(current).state.store.exam(exam_id)
 
     install_shares(app, accounts.connect, share_owner, share_exam, clock=accounts.clock)
-    install_community_library(
-        app,
-        accounts.connect,
-        owner_resolver=share_owner,
-        clock=accounts.clock,
-        require_auth_for_read=True,
-    )
 
     class Dispatch:
         async def __call__(self, scope, receive, send):

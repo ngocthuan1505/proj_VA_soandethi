@@ -81,10 +81,41 @@ try {
  await page.locator('.paper .quote-box').filter({hasText:variant.text.slice(0,35)}).waitFor();
  assert.deepEqual(errors,[]);
  await page.screenshot({path:path.join(out,'mobile.png')});
+ await page.setViewportSize({width:1366,height:830});
+ if(!await page.locator('[data-ux-action="attach"]').isVisible())await page.locator('[data-action="toggle-ai"]').first().click();
+ await page.locator('[data-ux-action="attach"]').click();
+ await page.locator('.ux-attach-menu [data-action="assistant-sources"]').click();
+ await dialog.getByRole('button',{name:'Học liệu theo bài',exact:true}).click();
+ const picker=dialog.locator('#lesson-picker');
+ await picker.locator('[name=subject]').selectOption('Toán');
+ await picker.locator('[name=grade]').selectOption('9');
+ await picker.locator('[name=book]').selectOption('Đại số THCS');
+ await picker.locator('[name=volume]').selectOption('Tập 1');
+ assert.equal(await picker.locator('[data-lesson-collection]').count(),1);
+ const chapter=picker.locator('fieldset').filter({has:page.getByText('Phương trình và hệ phương trình',{exact:true})});
+ await chapter.getByRole('checkbox',{name:'Chọn cả chương',exact:true}).check();
+ await picker.locator('[name=query]').fill('giai he bang phep the');
+ await picker.getByText('Giải hệ bằng phép thế',{exact:true}).waitFor();
+ assert.equal(await picker.locator('[name=lesson]:checked').count(),1);
+ await picker.getByText('Xem học liệu',{exact:true}).click();
+ assert.match(await picker.locator('details[open]').innerText(),/Mục tiêu/);
+ await picker.locator('[name=grade]').selectOption('5');
+ await picker.locator('[name=query]').fill('');
+ await picker.getByRole('checkbox',{name:'So sánh số thập phân'}).check();
+ await Promise.all([write(),picker.getByRole('button',{name:'Dùng bài đã chọn'}).click()]);
+ const library=(await saved()).value.exams[0];
+ const algebra=library.docs.find(d=>d.catalog&&d.name.includes('Toán 9'));
+ const arithmetic=library.docs.find(d=>d.catalog&&d.name.includes('Toán 5'));
+ assert.deepEqual(library.assistantSourcePages[algebra.id],[1,2,3]);
+ assert.deepEqual(library.assistantSourcePages[arithmetic.id],[1]);
+ assert.deepEqual(library.docs.find(d=>d.id===doc.id),updated.docs[0]);
+ await page.reload();await page.waitForLoadState('networkidle');
+ assert.deepEqual((await saved()).value.exams[0].assistantSourcePages,library.assistantSourcePages);
  await fs.writeFile(path.join(out,'result.json'),JSON.stringify({
   scenario:'IT-09',previewReadOnly:true,sourceIdPreserved:true,linkedPageOpened:true,
   chosenQuotePreserved:true,answerPreserved:true,relatedApprovalInvalidated:true,
   unrelatedQuestionUnchanged:true,sourcePageEdited:2,sourceVersion:2,mobileReload:true,fixture:true,
+  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true},
  },null,2));
 } finally {
  await browser.close();

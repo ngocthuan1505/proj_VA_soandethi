@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {chromium} from 'playwright-core';
+import JSZip from 'jszip';
 import {blank, uid} from '../core.js';
 import {ensureBlocks} from '../blocks.js';
 
@@ -21,6 +23,10 @@ exam.questions = [{
   explanation: 'LOI_GIAI_RIENG_731',
   rubric: [{text: 'BAREM_RIENG_731', points: 10}],
 }];
+exam.questions.push({
+  id: uid(), type: 'essay', v: 1, points: 1, options: [],
+  stem: 'Tính diện tích hình vuông cạnh 3 cm.', explanation: 'Diện tích là 9 cm vuông.',
+});
 ensureBlocks(exam);
 const saved = await fetch(kv, {
   method: 'PUT',
@@ -56,8 +62,15 @@ try {
       exports.push({filename, teacher, format, bytes: data.length});
       if (format === 'html') {
         const opened = await browser.newPage();
-        await opened.goto(url);
+        const networkAttempts = [];
+        await opened.route(/^https?:/, route => {
+          networkAttempts.push(route.request().url());
+          return route.abort();
+        });
+        await opened.goto(pathToFileURL(path.join(out, filename)).href);
         await opened.getByText('Rút gọn phân số', {exact: false}).last().waitFor();
+        assert.equal(await opened.locator('math mfrac').count(), 1);
+        assert.deepEqual(networkAttempts, []);
         assert.equal(await opened.getByText('LOI_GIAI_RIENG_731').count() > 0, teacher);
         assert.equal(await opened.getByText('CHAT_NOI_BO_731').count(), 0);
         await opened.close();
@@ -141,11 +154,90 @@ try {
   assert.equal((await recipient.reload()).status(), 404);
   await isolated.close();
   assert.deepEqual(await list(), []);
+  await page.keyboard.press('Escape');
+  await action('export').click();
+  const variants = dialog.locator('#export-variants');
+  await variants.locator('summary').click();
+  for (const checkbox of await variants.getByRole('checkbox').all()) await checkbox.check();
+  await variants.locator('select').selectOption('1');
+  await dialog.locator('[data-action="export-file"][data-teacher="false"][data-format="html"]').click();
+  await dialog.locator('.saved-export-link').waitFor();
+  const variantURL = new URL(await dialog.locator('.saved-export-link').getAttribute('href'), base);
+  const variantHtml = await (await page.request.get(variantURL.href)).text();
+  assert.match(variantHtml, /Mã đề 102/);
+  assert(variantHtml.indexOf('Tính diện tích') < variantHtml.indexOf('Rút gọn phân số'));
+  assert.doesNotMatch(variantHtml, /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/);
+  await page.keyboard.press('Escape');
+  await action('export').click();
+  await variants.getByRole('button', {name: 'Bộ PDF'}).click();
+  const packLink = dialog.getByRole('link', {name: 'Tải bộ mã đề (.zip)'});
+  await packLink.waitFor({timeout: 90000});
+  const packResponse = await page.request.get(new URL(await packLink.getAttribute('href'), base).href);
+  assert(packResponse.ok());
+  const pack = await packResponse.body();
+  await fs.writeFile(path.join(out, 'bo-ma-de.pdf.zip'), pack);
+  const archive = await JSZip.loadAsync(pack);
+  for (const code of [101, 102]) {
+    const pdf = await archive.file('HOC_SINH/Ma_' + code + '.pdf').async('nodebuffer');
+    assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
+  }
+  const key = await archive.file('GIAO_VIEN/Doi_chieu_dap_an.html').async('string');
+  assert.match(key, /Mã 101.*Mã 102/);
+  assert.match(key, /Xem hướng dẫn chấm <small>\(gốc: 2\)<\/small>/);
+  const persisted = await (await page.request.get(kv + '?key=state')).json();
+  assert.deepEqual(persisted.value.exams[0].questions.map(q => q.id), exam.questions.map(q => q.id));
+
+  await page.keyboard.press('Escape');
+  form = await openForm();
+  await form.locator('[name=answers]').check();
+  await form.locator('[name=allowCopy]').check();
+  await form.locator('[name=community]').check();
+  assert(await form.locator('[name=answers]').isDisabled());
+  assert.equal(await form.locator('[name=answers]').isChecked(), false);
+  await form.getByRole('button', {name: 'Công bố bản học sinh'}).click();
+  await urlField.waitFor();
+  const publicationUrl = new URL(await urlField.inputValue(), base);
+  await dialog.locator('[data-action=share]').click();
+  await dialog.getByRole('button', {name: 'Mở kho đề cộng đồng'}).click();
+  const filter = dialog.locator('#community-filter');
+  await filter.getByLabel('Tìm tên đề').fill('de thu xuat');
+  await filter.getByLabel('Môn').fill('toan');
+  const searched = page.waitForResponse(r => r.url().includes('/api/community-exams?') &&
+    new URL(r.url()).searchParams.get('q') === 'de thu xuat');
+  await filter.getByRole('button', {name: 'Tìm đề'}).click();
+  assert((await searched).ok());
+  const listing = filter.getByRole('article').filter({hasText: exam.title});
+  await listing.waitFor();
+  assert.equal(await listing.getByRole('link', {name: 'Xem đề'}).getAttribute('href'), publicationUrl.pathname);
+  const copyUrl = new URL(await listing.getByRole('link', {name: 'Sao về kho của tôi'}).getAttribute('href'), base);
+  await listing.getByRole('button', {name: 'Dùng làm nguồn'}).click();
+  await filter.waitFor({state: 'hidden'});
+  await page.waitForFunction(async url => {
+    const {value} = await (await fetch(url + '?key=state')).json();
+    return value.exams[0].docs.some(doc => value.exams[0].assistantSources?.includes(doc.id) &&
+      doc.text.includes('Rút gọn phân số') && !/LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/.test(doc.text));
+  }, kv);
+  await page.goto(copyUrl.href);
+  await page.waitForFunction(async ({url, originalId}) => {
+    const {value} = await (await fetch(url + '?key=state')).json();
+    return value.exams.some(exam => exam.id === originalId) &&
+      value.exams.some(exam => exam.id === value.current && exam.id !== originalId && exam.questions.length === 2);
+  }, {url: kv, originalId: exam.id});
+  const [publication] = await list();
+  assert(publication.community && !publication.answers);
+  assert((await page.request.post(base + '/api/share/revoke', {
+    headers: {Origin: base}, data: {token: publication.token},
+  })).ok());
+  assert.equal((await page.request.get(publicationUrl.href)).status(), 404);
+  assert.deepEqual((await (await page.request.get(base + '/api/community-exams')).json()).exams, []);
   assert.deepEqual(errors, []);
   await fs.writeFile(path.join(out, 'browser-result.json'), JSON.stringify({
     scenario: 'IT-10', exports, closedShareFormCreatedNoLink: true,
     lateAnswerToggleWasIgnored: true, recipientRead: true, revoked: true,
     lateExportPreservedDialog: true,
+    variantExportPreservedOriginal: true,
+    variantPackPdfWithTeacherKey: true,
+    communityPublishedCopiedAttachedAndRevoked: true,
   }, null, 2));
   console.log('IT-10: sáu bản xuất và luồng chia sẻ Chrome/FastAPI đạt.');
 } finally {

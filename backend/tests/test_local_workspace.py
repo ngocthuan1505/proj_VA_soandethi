@@ -220,6 +220,61 @@ def test_matrix_plan_uses_only_confirmed_exam_preferences(workspace):
     assert len(plan["instructions"]) == 4000 and "Không bịa trích dẫn" in plan["instructions"]
 
 
+def test_matrix_uses_exact_stored_page_and_preserves_provenance(workspace):
+    client, exam, provider = workspace
+    doc_id = str(uuid4())
+    snapshot = client.get("/api/kv?key=state").json()
+    snapshot["value"]["exams"][0]["docs"] = [
+        {
+            "id": doc_id,
+            "version": 3,
+            "name": "Sổ đọc minh họa",
+            "text": "Không được sử dụng bản gộp này.",
+            "pages": [
+                {"number": 1, "text": "Căn cứ của trang không được chọn."},
+                {"number": 2, "text": "Mai mở cửa thư viện. Nam đến đọc sách buổi sáng."},
+            ],
+        }
+    ]
+    client.put(
+        "/api/kv",
+        json={"key": "state", "value": snapshot["value"]},
+        headers={"If-Match": str(snapshot["revision"])},
+    ).raise_for_status()
+    prefix = "/api/exams/" + exam["id"]
+    source = {"sourceId": doc_id, "sourceVersion": 3, "locator": {"kind": "page", "index": 2}}
+    data = {"baseRevision": 1, "sourceName": "Sổ đọc minh họa", "sourceText": ""}
+    for invalid in ({**source, "sourceVersion": 2}, {**source, "sourceId": str(uuid4())}):
+        assert client.post(prefix + "/matrix/approve", json={**data, "sources": [invalid]}).is_error
+    assert provider.calls == 0
+    approval = client.post(prefix + "/matrix/approve", json={**data, "sources": [source]})
+    approval.raise_for_status()
+    assert approval.json()["sources"] == [
+        {**source, "locator": {**source["locator"], "regionId": None}}
+    ]
+    request = client.post(
+        prefix + "/proposals/generate",
+        json={
+            **approval.json(),
+            "requestId": str(uuid4()),
+            "consent": True,
+            "requireEvidence": True,
+        },
+    )
+    assert request.status_code == 202, request.text
+    for _ in range(50):
+        result = client.get(prefix + "/proposals/" + request.json()["jobId"] + "/status").json()
+        if result["status"] != "running":
+            break
+        time.sleep(0.02)
+    assert result["status"] == "complete", result
+    for question in result["proposal"]["questions"]:
+        evidence = question["evidence"][0]
+        assert evidence["sourceId"] == doc_id and evidence["sourceVersion"] == 3
+        assert evidence["locator"]["kind"] == "page" and evidence["locator"]["index"] == 2
+    assert client.get("/api/kv?key=state").json()["value"] == snapshot["value"]
+
+
 def test_workspace_generation_retry_review_confirm_reload(workspace):
     client, exam, provider = workspace
     base, result = generate(client, exam)

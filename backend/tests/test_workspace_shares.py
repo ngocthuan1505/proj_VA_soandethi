@@ -240,6 +240,27 @@ def test_team_owner_guest_and_other_owner_permissions(tmp_path, exam):
         assert create(second, exam).status_code == 404
         assert second.post("/api/share/revoke", json={"token": token}).status_code == 404
         assert second.get("/api/share", params={"examId": exam["id"]}).json()["shares"] == []
+        assert second.get("/api/community-exams").json()["exams"] == []
+        assert guest.get("/api/community-exams").status_code == 401
+        assert create(first, exam, community=True, answers=True).status_code == 409
+        listed = create(first, exam, community=True, allowCopy=True).raise_for_status().json()
+        assert listed["community"]
+        public_token = listed["token"]
+        query = {"q": "de chia se", "subject": "vat li", "grade": "8"}
+        results = second.get("/api/community-exams", params=query).raise_for_status().json()
+        assert [item["token"] for item in results["exams"]] == [public_token]
+        assert not results["hasMore"]
+        assert (
+            second.get("/api/community-exams", params={**query, "grade": "9"}).json()["exams"] == []
+        )
+        assert second.get("/api/community-exams", params={**query, "page": 2}).json()["exams"] == []
+        public = second.get("/api/share/read/" + public_token).json()
+        assert public["allowCopy"] and "_KÍN" not in json.dumps(public, ensure_ascii=False)
+        assert public["exam"]["questions"][0]["answer"] is None
+        assert second.post("/api/share/revoke", json={"token": public_token}).status_code == 404
+        first.post("/api/share/revoke", json={"token": public_token}).raise_for_status()
+        assert second.get("/api/community-exams", params=query).json()["exams"] == []
+        assert second.get("/s/" + public_token).status_code == 404
         target = guest.get("/?copy=" + token, follow_redirects=False).headers["location"]
         assert target == "/login?copy=" + token
         first.post("/api/share/revoke", json={"token": token}).raise_for_status()
@@ -295,3 +316,106 @@ def test_teacher_snapshot_keeps_split_answers_but_student_cannot_read_them(
     student = snapshot(exam, False)["questions"][0]
     assert "answerText" not in student and "truthValues" not in student
     assert student["answer"] is None and not student["answerKnown"]
+
+
+def test_community_consent_filters_clone_and_revoke_audit(tmp_path, exam):
+    exam["series"] = "Kết nối tri thức"
+    exam["chapter"] = "Động học cơ bản"
+    formula_id = str(uuid4())
+    exam["questions"][0]["formulas"] = [{"id": formula_id, "latex": "v = s / t", "display": False}]
+
+    app = create_team_app(tmp_path)
+    accounts = app.state.accounts
+    author = accounts.create(
+        "author@example.test", PASSWORD, "Tác giả", accounts.invite(bootstrap=True)
+    )
+    cloner = accounts.create("cloner@example.test", PASSWORD, "Người sao", accounts.invite())
+
+    with (
+        TestClient(app, headers=ORIGIN) as author_client,
+        TestClient(app, headers=ORIGIN) as cloner_client,
+        TestClient(app, headers=ORIGIN) as guest,
+    ):
+        for client, acc in ((author_client, author), (cloner_client, cloner)):
+            client.post(
+                "/api/account/login", json={"email": acc["email"], "password": PASSWORD}
+            ).raise_for_status()
+        seed(author_client, exam)
+
+        # Từ chối nếu consentPublic=False khi công bố cộng đồng
+        denied = create(
+            author_client,
+            exam,
+            community=True,
+            allowCopy=True,
+            consentPublic=False,
+        )
+        assert denied.status_code == 400
+        assert denied.json()["code"] == "consent_required"
+
+        # Công bố cộng đồng kèm series/chapter
+        pub = create(
+            author_client,
+            exam,
+            community=True,
+            allowCopy=True,
+            consentPublic=True,
+            series="Kết nối tri thức",
+            chapter="Động học cơ bản",
+        )
+        pub.raise_for_status()
+        token = pub.json()["token"]
+
+        # Công bố không allowCopy -> clone bị chặn 403 copy_forbidden
+        no_copy = create(author_client, exam, community=True, allowCopy=False).raise_for_status()
+        assert (
+            cloner_client.post(f"/api/community-exams/{no_copy.json()['token']}/clone").status_code
+            == 403
+        )
+
+        # Lọc theo series và chapter trên GET /api/community-exams
+        found = cloner_client.get(
+            "/api/community-exams",
+            params={"series": "ket noi tri thuc", "chapter": "dong hoc"},
+        )
+        assert found.status_code == 200
+        items = found.json()["exams"]
+        assert len(items) == 1
+        assert items[0]["token"] == token
+        assert items[0]["series"] == "Kết nối tri thức"
+        assert items[0]["chapter"] == "Động học cơ bản"
+
+        # Guest chưa đăng nhập bị chặn 401
+        assert guest.post(f"/api/community-exams/{token}/clone").status_code == 401
+        assert guest.get("/api/community-exams/clones").status_code == 401
+
+        # Clone cấp mới toàn bộ UUID & giữ clonedFrom, không rò bí mật
+        cloned_res = cloner_client.post(f"/api/community-exams/{token}/clone")
+        assert cloned_res.status_code == 201, cloned_res.text
+        cloned_payload = cloned_res.json()
+        cloned_exam = cloned_payload["clonedExam"]
+        clone_id = cloned_payload["cloneRecord"]["clone_id"]
+        assert cloned_exam["id"] != exam["id"]
+        assert cloned_exam["revision"] == 1
+        assert cloned_exam["clonedFrom"] == {
+            "token": token,
+            "authorId": author["id"],
+            "sourceExamId": exam["id"],
+            "revision": exam["revision"],
+        }
+        assert cloned_exam["questions"][0]["id"] != exam["questions"][0]["id"]
+        assert cloned_exam["questions"][0]["formulas"][0]["id"] != formula_id
+        assert "_KÍN" not in json.dumps(cloned_exam, ensure_ascii=False)
+
+        # Chỉ tác giả được revoke (cloner nhận 404); sau revoke không clone mới được (410)
+        assert cloner_client.post("/api/share/revoke", json={"token": token}).status_code == 404
+        author_client.post("/api/share/revoke", json={"token": token}).raise_for_status()
+        revoked_clone = cloner_client.post(f"/api/community-exams/{token}/clone")
+        assert revoked_clone.status_code == 410
+        assert revoked_clone.json()["code"] == "item_revoked"
+
+        # Bản đã clone trước đó trong community_clone_audit vẫn nguyên vẹn
+        kept = cloner_client.get(f"/api/community-exams/clones/{clone_id}")
+        assert kept.status_code == 200
+        assert kept.json()["clonedExam"]["id"] == cloned_exam["id"]
+        assert len(cloner_client.get("/api/community-exams/clones").json()["clones"]) == 1

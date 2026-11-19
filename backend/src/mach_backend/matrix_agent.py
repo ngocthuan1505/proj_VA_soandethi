@@ -375,11 +375,9 @@ async def inspect_candidate(
         )
         for i in range(len(proposal.questions))
     ]
-    norm_topics = [slot.topic.casefold().strip() for slot in job.slots]
-    prior_same_topic_keys = [
-        tuple(question_keys[j] for j in range(i) if norm_topics[j] == norm_topics[i])
-        for i in range(len(proposal.questions))
-    ]
+    # Việc rà trùng dùng mọi câu đứng trước, kể cả ở chủ đề khác.
+    blind_keys = [sha256_json(question) for question in blind]
+    prior_blind_keys = [tuple(blind_keys[:i]) for i in range(len(blind_keys))]
     cached_results = {}
     if passed_blind_cache is not None:
         for i in range(len(proposal.questions)):
@@ -387,7 +385,7 @@ async def inspect_candidate(
             if (
                 entry is not None
                 and entry[0] == question_keys[i]
-                and entry[1] == prior_same_topic_keys[i]
+                and entry[1] == prior_blind_keys[i]
             ):
                 cached_results[i] = (entry[2], entry[3])
     uncached_indices = [i for i in range(len(proposal.questions)) if i not in cached_results]
@@ -562,7 +560,7 @@ async def inspect_candidate(
             if ordinal not in failed_ordinals:
                 passed_blind_cache[ordinal] = (
                     question_keys[ordinal],
-                    prior_same_topic_keys[ordinal],
+                    prior_blind_keys[ordinal],
                     review_map[ordinal],
                     level_models[ordinal],
                 )

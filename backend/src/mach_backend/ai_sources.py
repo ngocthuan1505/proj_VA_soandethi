@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 from mach_backend.ai_contract import (
     AIError,
@@ -63,3 +63,48 @@ def read_selected_sources(
             raise AIError("stale_snapshot", "Nguồn đã đổi. Hãy tải lại.")
         selected.append(matches[0])
     return tuple(selected)
+
+
+def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...]):
+    """Resolve selected pages from the current exam snapshot."""
+    chosen = {
+        (str(source_id), locator.index) for source_id, locator in keys if locator.kind == "page"
+    }
+    sources = []
+    for doc in exam.get("docs", []):
+        doc_id = doc.get("id")
+        if not any(source_id == doc_id for source_id, _ in chosen):
+            continue
+        license_status = str(
+            doc.get("licenseStatus") or doc.get("license_status") or "allowed"
+        ).strip()
+        if license_status in {"restricted", "pending_review"}:
+            raise AIError(
+                "source_license_restricted",
+                "Nguồn chưa có quyền dùng cho AI hoặc đang bị hạn chế.",
+                http_status=403,
+            )
+        pages = doc.get("pages") or [{"number": 1, "text": doc.get("text", "")}]
+        for page in pages:
+            if (doc_id, page.get("number")) not in chosen:
+                continue
+            text = page.get("text")
+            if not isinstance(text, str) or not text.strip():
+                raise AIError("invalid_source", "Trang nguồn không có văn bản hợp lệ.")
+            if len(text) > 12000:
+                raise AIError("source_limit", "Trang nguồn vượt 12.000 ký tự.")
+            try:
+                sources.append(
+                    SourceFragment(
+                        ownerId=owner_id,
+                        sourceId=UUID(doc_id),
+                        sourceVersion=doc.get("version", 1),
+                        locator=Locator(kind="page", index=page["number"]),
+                        text=text,
+                    )
+                )
+            except (ValidationError, ValueError):
+                raise AIError("invalid_source", "Trang nguồn đang lưu không hợp lệ.") from None
+    if sum(len(source.text) for source in sources) > 12000:
+        raise AIError("source_limit", "Chọn các trang có tổng cộng tối đa 12.000 ký tự.")
+    return tuple(sources)

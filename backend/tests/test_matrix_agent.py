@@ -600,7 +600,8 @@ def test_multi_call_workflow_timeout_is_bounded(job):
         asyncio.run(propose_exam(job, provider, current, timeout_seconds=901))
 
 
-def test_reuse_passed_reviews_and_skip_explanation_on_blind_fail(job):
+@pytest.mark.parametrize("changed_prior_stem", [False, True])
+def test_reuse_passed_reviews_and_skip_explanation_on_blind_fail(job, changed_prior_stem):
     multi_job = job.model_copy(
         update={
             "slots": (
@@ -622,6 +623,8 @@ def test_reuse_passed_reviews_and_skip_explanation_on_blind_fail(job):
 
     first_draft = {"questions": [make_q(0, 3), make_q(1, 2), make_q(2, 2)]}
     second_draft = {"questions": [make_q(0, 2), make_q(1, 2), make_q(2, 2)]}
+    if changed_prior_stem:
+        second_draft["questions"][0]["stem"] = "Câu 0 hỏi lại ý của câu 1 theo cách khác?"
     blind_ordinals = []
     prior_ordinals = []
     purposes = []
@@ -658,7 +661,11 @@ def test_reuse_passed_reviews_and_skip_explanation_on_blind_fail(job):
                                     "correct",
                                     "incorrect",
                                 ],
-                                "duplicateWith": [],
+                                "duplicateWith": (
+                                    [0]
+                                    if changed_prior_stem and len(blind_ordinals) == 2 and o == 1
+                                    else []
+                                ),
                                 "duplicateUncertain": False,
                                 "reason": "Khớp nguồn.",
                             }
@@ -687,11 +694,19 @@ def test_reuse_passed_reviews_and_skip_explanation_on_blind_fail(job):
             emit,
             reuse_passed_reviews=True,
             skip_explanation_on_blind_fail=True,
+            max_attempts=2,
         )
     )
+    if changed_prior_stem:
+        assert result["status"] == "attempt_limit"
+        assert [(e["ordinal"], e["code"]) for e in result["report"]["errors"]] == [
+            (1, "semantic_duplicate")
+        ]
+        assert blind_ordinals == [[0, 1, 2], [0, 1, 2]]
+        return
     assert result["status"] == "ready_for_teacher_review"
-    assert blind_ordinals == [[0, 1, 2], [0, 2]]
-    assert prior_ordinals == [[], [1]]
+    assert blind_ordinals == [[0, 1, 2], [0]]
+    assert prior_ordinals == [[], []]
     assert purposes == [
         "agent",
         "blind_content_check",

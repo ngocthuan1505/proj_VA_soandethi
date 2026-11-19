@@ -33,7 +33,13 @@ try{
  assert(fileId,'Fixture cần một tệp được tham chiếu trong bản sao.');
  await page.keyboard.press('Escape');
  await page.getByRole('button',{name:'Tạo đề mới',exact:true}).click();
- await page.locator('[data-action="create-blank"]:visible').click();await page.waitForLoadState('networkidle');
+ const created=page.waitForResponse(response=>{
+  const request=response.request();
+  return response.url()===base+'/api/kv'&&request.method()==='PUT'&&response.ok()
+   &&request.postDataJSON()?.value?.exams?.length>backup.state.exams.length;
+ });
+ await page.locator('[data-action="create-blank"]:visible').click();
+ await created;
  const changed=await state();assert(changed.value.exams.length>backup.state.exams.length);
  await fileMenu();await choose(bytes);await page.locator('[data-action="confirm-backup"]').waitFor();
  assert.deepEqual((await state()).value,changed.value,'Xem trước không được thay kho');

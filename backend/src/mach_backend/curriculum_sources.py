@@ -17,6 +17,7 @@ from uuid import uuid4
 from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import (
+    AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
@@ -155,20 +156,39 @@ def compute_source_sha256(payload: Mapping[str, Any]) -> str:
 class CurriculumSourceCreate(BaseModel):
     """Payload tạo mới nguồn học liệu theo lớp/môn/bộ sách/tập/chương/bài."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     grade: Annotated[int, Field(ge=1, le=12)]
     subject: Annotated[str, Field(min_length=1, max_length=200)]
-    series: Annotated[str, Field(max_length=200)] = ""
+    series: str = Field(
+        default="",
+        max_length=200,
+        validation_alias=AliasChoices("series", "book"),
+    )
     volume: Annotated[str, Field(max_length=100)] = ""
     chapter: Annotated[str, Field(max_length=300)] = ""
     lesson: Annotated[str, Field(max_length=300)] = ""
     title: Annotated[str, Field(min_length=1, max_length=400)]
-    license_status: LicenseStatus = "pending_review"
-    license_note: Annotated[str, Field(max_length=1000)] = ""
-    source_origin: Annotated[str, Field(max_length=500)] = ""
+    license_status: LicenseStatus = Field(
+        default="pending_review",
+        validation_alias=AliasChoices("license_status", "licenseStatus"),
+    )
+    license_note: str = Field(
+        default="",
+        max_length=1000,
+        validation_alias=AliasChoices("license_note", "licenseNote"),
+    )
+    source_origin: str = Field(
+        default="",
+        max_length=500,
+        validation_alias=AliasChoices("source_origin", "sourceOrigin"),
+    )
     locator: Annotated[str, Field(max_length=300)] = ""
-    content_excerpt: Annotated[str, Field(max_length=MAX_EXCERPT_LENGTH)] = ""
+    content_excerpt: str = Field(
+        default="",
+        max_length=MAX_EXCERPT_LENGTH,
+        validation_alias=AliasChoices("content_excerpt", "contentExcerpt"),
+    )
 
     @field_validator("grade", mode="before")
     @classmethod
@@ -195,20 +215,39 @@ class CurriculumSourceCreate(BaseModel):
 class CurriculumSourceUpdate(BaseModel):
     """Payload cập nhật metadata, vị trí chương/bài hoặc trạng thái quyền dùng."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     grade: Annotated[int, Field(ge=1, le=12)] | None = None
     subject: Annotated[str, Field(min_length=1, max_length=200)] | None = None
-    series: Annotated[str, Field(max_length=200)] | None = None
+    series: str | None = Field(
+        default=None,
+        max_length=200,
+        validation_alias=AliasChoices("series", "book"),
+    )
     volume: Annotated[str, Field(max_length=100)] | None = None
     chapter: Annotated[str, Field(max_length=300)] | None = None
     lesson: Annotated[str, Field(max_length=300)] | None = None
     title: Annotated[str, Field(min_length=1, max_length=400)] | None = None
-    license_status: LicenseStatus | None = None
-    license_note: Annotated[str, Field(max_length=1000)] | None = None
-    source_origin: Annotated[str, Field(max_length=500)] | None = None
+    license_status: LicenseStatus | None = Field(
+        default=None,
+        validation_alias=AliasChoices("license_status", "licenseStatus"),
+    )
+    license_note: str | None = Field(
+        default=None,
+        max_length=1000,
+        validation_alias=AliasChoices("license_note", "licenseNote"),
+    )
+    source_origin: str | None = Field(
+        default=None,
+        max_length=500,
+        validation_alias=AliasChoices("source_origin", "sourceOrigin"),
+    )
     locator: Annotated[str, Field(max_length=300)] | None = None
-    content_excerpt: Annotated[str, Field(max_length=MAX_EXCERPT_LENGTH)] | None = None
+    content_excerpt: str | None = Field(
+        default=None,
+        max_length=MAX_EXCERPT_LENGTH,
+        validation_alias=AliasChoices("content_excerpt", "contentExcerpt"),
+    )
 
     @field_validator("grade", mode="before")
     @classmethod
@@ -416,7 +455,7 @@ def install_curriculum_sources(
             raise _source_not_found()
         return row
 
-    router = APIRouter(prefix="/api/curriculum/sources", tags=["curriculum-sources"])
+    router = APIRouter(prefix="/api/lesson-catalog/sources", tags=["lesson-catalog"])
 
     @router.post("", status_code=201, response_model=CurriculumSourceRecord)
     def create_source(body: CurriculumSourceCreate, request: Request) -> CurriculumSourceRecord:
@@ -461,6 +500,7 @@ def install_curriculum_sources(
         grade: Annotated[int | None, Query(ge=1, le=12)] = None,
         subject: str | None = None,
         series: str | None = None,
+        book: str | None = None,
         volume: str | None = None,
         chapter: str | None = None,
         lesson: str | None = None,
@@ -490,7 +530,7 @@ def install_curriculum_sources(
         records = [_row_to_record(row) for row in rows]
         exact_filters = (
             ("subject", subject),
-            ("series", series),
+            ("series", series if series is not None else book),
             ("volume", volume),
             ("chapter", chapter),
             ("lesson", lesson),

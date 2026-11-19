@@ -269,9 +269,13 @@ def field(text, document=None, runs=None):
     return rich(field_document(text, document, runs))
 
 
-def exam_html(exam, teacher, origin, figures=None):
+def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
     figures = list(figures or [])
-    if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
+    if (
+        not isinstance(exam, dict)
+        or not isinstance(exam.get("questions"), list)
+        or any(not isinstance(question, dict) for question in exam["questions"])
+    ):
         raise AIError("invalid_exam", "Đề xuất chưa hợp lệ.")
     body = (
         f"<h1>{inline_html(exam.get('title'))}</h1><p>{inline_html(exam.get('school'))}</p>"
@@ -406,6 +410,33 @@ def exam_html(exam, teacher, origin, figures=None):
             )
         body += "</section>"
     origin = html.escape(origin.rstrip("/"), quote=True)
+    math_css, math_script = "", ""
+    if rendered_math is None:
+        math_css = f'<link rel="stylesheet" href="{origin}/assets/katex/katex.min.css">'
+        math_script = (
+            f'<script type="module">import katex from "{origin}/assets/katex/katex.mjs";'
+            f'import "{origin}/assets/katex/contrib/mhchem.mjs";'
+            'for(const n of document.querySelectorAll(".math")){'
+            "katex.render(n.textContent,n,{throwOnError:false,trust:false,"
+            'displayMode:n.dataset.display==="true"});}</script>'
+        )
+    else:
+
+        def embed_math(match):
+            latex = html.unescape(match["text"].replace("<br>", "\n"))
+            mathml = rendered_math.get(latex)
+            if mathml is None:
+                raise AIError("export_render_failed", "Thiếu công thức đã dựng; chưa xuất tệp.")
+            if match["display"] == "true":
+                mathml = mathml.replace("<math ", '<math display="block" ', 1)
+            return mathml
+
+        body = re.sub(
+            r'<(?P<tag>span|div) class="math"(?: data-display="(?P<display>true|false)")?>'
+            r"(?P<text>.*?)</(?P=tag)>",
+            embed_math,
+            body,
+        )
     layout = exam.get("layout") or {}
     font = (
         layout.get("font")
@@ -416,9 +447,9 @@ def exam_html(exam, teacher, origin, figures=None):
     return (
         '<!doctype html><html lang="vi"><meta charset="utf-8"><title>'
         + plain(exam.get("title"))
-        + '</title><link rel="stylesheet" href="'
-        + origin
-        + '/assets/katex/katex.min.css"><style>'
+        + "</title>"
+        + math_css
+        + "<style>"
         f'body{{font:{size}pt "{font}",serif;max-width:760px;margin:30px auto;color:#111}}'
         "h1{font-size:18pt;text-align:center}section{margin:20px 0}"
         "section>b{display:block;break-after:avoid}"
@@ -429,15 +460,7 @@ def exam_html(exam, teacher, origin, figures=None):
         "blockquote,small{font-size:11pt;color:#444}@page{size:A4;margin:18mm}"
         ".page-break{break-before:page}"
         "@media print{body{margin:0}section,ol,ul{break-inside:avoid}"
-        ".rubric-title{break-after:avoid}}</style><body>"
-        + body
-        + '<script type="module">import katex from "'
-        + origin
-        + '/assets/katex/katex.mjs";import "'
-        + origin
-        + '/assets/katex/contrib/mhchem.mjs";for(const n of document.querySelectorAll(".math")){'
-        "katex.render(n.textContent,n,{throwOnError:false,trust:false,"
-        'displayMode:n.dataset.display==="true"});}</script></body></html>'
+        ".rubric-title{break-after:avoid}}</style><body>" + body + math_script + "</body></html>"
     )
 
 
@@ -454,25 +477,121 @@ def chrome_path():
     return next((p for p in candidates if p and Path(p).is_file()), None)
 
 
+def exam_variant(exam, variant):
+    questions = exam["questions"]
+    ids = variant.get("questionIds") if isinstance(variant, dict) else None
+    offset = variant.get("offset") if isinstance(variant, dict) else None
+    if (
+        not isinstance(ids, list)
+        or not 2 <= len(ids) <= 300
+        or any(not isinstance(value, str) or not value for value in ids)
+        or len(set(ids)) != len(ids)
+        or type(offset) is not int
+        or not 0 <= offset < min(6, len(ids))
+    ):
+        raise AIError("invalid_variant", "Chọn ít nhất hai câu và một mã đề hợp lệ.")
+    selected = set(ids)
+    positions = [i for i, q in enumerate(questions) if q.get("id") in selected]
+    if len(positions) != len(ids) or {questions[i]["id"] for i in positions} != selected:
+        raise AIError("invalid_variant", "Danh sách câu đã thay đổi. Chọn lại câu cần trộn.")
+    group = [questions[i] for i in positions]
+    if len({q.get("type", "mcq") for q in group}) != 1:
+        raise AIError("invalid_variant", "Chỉ chọn các câu cùng dạng để giữ cấu trúc đề.")
+    reordered = questions.copy()
+    for index, question in zip(positions, group[offset:] + group[:offset], strict=True):
+        reordered[index] = {**question, "pageBreak": questions[index].get("pageBreak", False)}
+    code = str(101 + offset)
+    return {
+        **exam,
+        "title": f"{exam.get('title') or 'Đề thi'} · Mã đề {code}",
+        "questions": reordered,
+    }
+
+
+def export_variant_pack(payload, directory, origin):
+    exam = payload.get("exam")
+    ids = payload.get("questionIds")
+    format_ = payload.get("format", "docx")
+    if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
+        raise AIError("invalid_exam", "Đề cần danh sách câu để xuất.")
+    if format_ not in ("docx", "pdf", "html"):
+        raise AIError("unsupported_export", "Chọn Word, PDF hoặc HTML để xuất bộ mã.")
+    exam_variant(exam, {"questionIds": ids, "offset": 0})
+    variants = [
+        exam_variant(exam, {"questionIds": ids, "offset": offset})
+        for offset in range(min(6, len(ids)))
+    ]
+    headings = "".join(f"<th scope='col'>Mã {101 + i}</th>" for i in range(len(variants)))
+    original_numbers = {
+        question["id"]: i + 1
+        for i, question in enumerate(exam["questions"])
+        if question.get("id") in ids
+    }
+    rows = []
+    for i in range(len(exam["questions"])):
+        answers = []
+        for variant in variants:
+            question = variant["questions"][i]
+            source = original_numbers.get(question.get("id"), i + 1)
+            answer = (
+                "Xem hướng dẫn chấm"
+                if question.get("type") == "essay"
+                else saved_answer_label(question)
+            )
+            answers.append(f"<td>{html.escape(answer)} <small>(gốc: {source})</small></td>")
+        rows.append(f"<tr><th scope='row'>{i + 1}</th>{''.join(answers)}</tr>")
+    title = html.escape(str(exam.get("title") or "Đề thi"))
+    answer_key = (
+        '<!doctype html><html lang="vi"><meta charset="utf-8">'
+        "<title>Đối chiếu đáp án · Bản giáo viên</title>"
+        "<style>@page{size:A4;margin:18mm}body{font:16px system-ui}"
+        "table{border-collapse:collapse}th,td{border:1px solid;padding:8px}</style>"
+        f"<h1>Đối chiếu đáp án · Bản giáo viên</h1><p>{title}</p>"
+        "<p>Số trong ngoặc chỉ câu tương ứng trên đề gốc; dùng số này để tra hướng dẫn chấm.</p>"
+        f'<table><thead><tr><th scope="col">Câu</th>{headings}</tr></thead>'
+        f"<tbody>{''.join(rows)}</tbody></table></html>"
+    )
+    directory.mkdir(parents=True, exist_ok=True)
+    name = "De_thi_" + str(uuid4()) + ".zip"
+    target = directory / name
+    with tempfile.TemporaryDirectory(prefix="ma-de-", dir=directory) as temp:
+        staging = Path(temp)
+        bundle = staging / name
+        with zipfile.ZipFile(bundle, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for i, variant in enumerate(variants):
+                result = export_file(
+                    {"type": "exam", "exam": variant, "format": format_}, staging, origin
+                )
+                archive.write(staging / result["filename"], f"HOC_SINH/Ma_{101 + i}.{format_}")
+            archive.writestr("GIAO_VIEN/Doi_chieu_dap_an.html", answer_key)
+        bundle.replace(target)
+    return {"filename": name, "bytes": target.stat().st_size, "url": "/api/exports/" + name}
+
+
 def export_file(payload, directory, origin):
     kind = payload.get("type")
     format_ = payload.get("format", "html")
+    if kind == "variant-pack":
+        return export_variant_pack(payload, directory, origin)
     if kind == "exam":
         if format_ not in {"html", "pdf", "docx"}:
             raise AIError("unsupported_export", "Chọn Word, PDF hoặc HTML để xuất đề.")
         exam = payload.get("exam")
         if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
             raise AIError("invalid_exam", "Đề cần danh sách câu để xuất.")
-        rendered = []
+        if "variant" in payload:
+            exam = exam_variant(exam, payload["variant"])
+        rendered = {"figures": [], "math": {}}
         if format_ != "docx":
             formulas, figures = export_inputs(exam, payload.get("teacher") is True)
-            rendered = render_assets(formulas, figures, chrome_path())["figures"]
+            rendered = render_assets(formulas, figures, chrome_path())
         content = (
             exam_html(
                 exam,
                 payload.get("teacher") is True,
                 Path(__file__).resolve().parents[3].as_uri() if format_ == "pdf" else origin,
-                rendered,
+                rendered["figures"],
+                rendered_math=rendered["math"] if format_ == "html" else None,
             )
             if format_ != "docx"
             else ""
@@ -531,9 +650,7 @@ def export_file(payload, directory, origin):
         if not target.is_file() or not target.read_bytes().startswith(b"%PDF-"):
             raise AIError("export_failed", "Chưa tạo được PDF. Bản đề được giữ nguyên.")
     elif format_ == "docx":
-        target.write_bytes(
-            export_docx(payload["exam"], payload.get("teacher") is True, chrome_path())
-        )
+        target.write_bytes(export_docx(exam, payload.get("teacher") is True, chrome_path()))
     else:
         raise AIError("unsupported_export", "Định dạng xuất chưa được hỗ trợ.")
     return {"filename": name, "bytes": target.stat().st_size, "url": "/api/exports/" + name}

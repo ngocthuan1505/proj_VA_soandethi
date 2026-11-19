@@ -169,6 +169,79 @@ def test_local_http_import_export_and_download(exam, tmp_path):
         assert client.get("/api/exports/workspace.sqlite").status_code == 404
 
 
+def test_export_variant_reorders_questions_without_changing_saved_answers(exam, tmp_path):
+    first = {**exam["questions"][0], "id": "first", "pageBreak": True}
+    last = {**first, "id": "last", "stem": "Nam mang gì?", "answer": 2, "pageBreak": False}
+    held = {**first, "id": "held", "stem": "Giữ câu này."}
+    exam["questions"] = [first, held, last]
+    payload = {
+        "type": "exam",
+        "format": "html",
+        "teacher": True,
+        "exam": exam,
+        "variant": {"questionIds": ["last", "first"], "offset": 1},
+    }
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        result = client.post("/api/save-export", json=payload).raise_for_status().json()
+        output = client.get(result["url"]).raise_for_status().text
+        assert "Mã đề 102" in output and '<section class="page-break">' in output
+        assert (
+            output.index("Nam mang gì?") < output.index("Đáp án C.") < output.index("Giữ câu này.")
+        )
+        assert output.index("Mai báo với ai?") < output.rindex("Đáp án B.")
+        word = (
+            client.post("/api/save-export", json={**payload, "format": "docx"})
+            .raise_for_status()
+            .json()
+        )
+        with zipfile.ZipFile(
+            io.BytesIO(client.get(word["url"]).raise_for_status().content)
+        ) as archive:
+            xml = archive.read("word/document.xml").decode()
+        assert "Mã đề 102" in xml
+        assert xml.index("Nam mang gì?") < xml.index("Giữ câu này.") < xml.index("Mai báo với ai?")
+        batch = (
+            client.post(
+                "/api/save-export",
+                json={
+                    "type": "variant-pack",
+                    "format": "docx",
+                    "exam": exam,
+                    "questionIds": ["last", "first"],
+                    "teacher": True,
+                },
+            )
+            .raise_for_status()
+            .json()
+        )
+        with zipfile.ZipFile(
+            io.BytesIO(client.get(batch["url"]).raise_for_status().content)
+        ) as archive:
+            assert archive.namelist() == [
+                "HOC_SINH/Ma_101.docx",
+                "HOC_SINH/Ma_102.docx",
+                "GIAO_VIEN/Doi_chieu_dap_an.html",
+            ]
+            key = archive.read("GIAO_VIEN/Doi_chieu_dap_an.html").decode()
+            assert "B <small>(gốc: 1)" in key and "C <small>(gốc: 3)" in key
+            assert "Mã 101" in key and "Mã 102" in key and "<script>" not in key
+            for code in (101, 102):
+                with zipfile.ZipFile(io.BytesIO(archive.read(f"HOC_SINH/Ma_{code}.docx"))) as doc:
+                    student = doc.read("word/document.xml").decode()
+                assert f"Mã đề {code}" in student and "Chỉ dành cho giáo viên" not in student
+                assert (student.index("Mai báo với ai?") < student.index("Nam mang gì?")) == (
+                    code == 101
+                )
+        assert client.get("/api/kv?key=state").json() == {"value": None, "revision": 0}
+        for invalid in (
+            {"questionIds": ["first", "first"], "offset": 0},
+            {"questionIds": ["first", "missing"], "offset": 1},
+            {"questionIds": ["first", "last"], "offset": 2},
+        ):
+            assert client.post("/api/save-export", json={**payload, "variant": invalid}).is_error
+    assert exam["questions"] == [first, held, last]
+
+
 def test_extract_inline_validates_before_any_workspace_write(tmp_path):
     app = create_app(tmp_path)
     with TestClient(app, headers={"Origin": "http://testserver"}) as client:
