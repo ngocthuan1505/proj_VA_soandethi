@@ -2,18 +2,20 @@
 
 Nguồn yêu cầu: ảnh trao đổi quy định môn học do Thuận cung cấp ngày 02/11/2026: Python là ngôn ngữ chính, ngôn ngữ khác hỗ trợ, framework được chọn. Cần đối chiếu rubric chi tiết với giảng viên; không suy diễn một tỉ lệ phần trăm dòng code.
 
-## Phân biệt hiện trạng và đích đến
+## Phần đã chuyển trên nhánh tích hợp và điều kiện nghiệm thu
 
-| Phần | Hiện trạng | Đích nghiệm thu |
+| Phần | Bản tích hợp trên PR #46 | Phạm vi còn cần nghiệm thu |
 |---|---|---|
-| Frontend/editor | JavaScript, TipTap/MathLive/KaTeX | Giữ làm UI hỗ trợ, gọi API Python |
-| API/auth | Node `mvp-server.mjs`, `accounts.mjs` | Python/FastAPI, kiểm quyền phía server |
-| Database | SQLite KV trong Node | Python repository/transaction/migration theo ADR BE-3 |
-| Core đề/patch/phiên bản | JS domain + Node orchestration | Server kiểm nghiệp vụ/điểm/phạm vi/version bằng Python; JS có thể preview |
-| AI/job/SSE | Node bridge + worker Python | Điều phối/validation/job/cancel bằng Python, worker GreenNode chỉ Thuận vận hành |
-| Import/OCR/export | Thư viện Node | Python điều phối và xử lý tài liệu; công cụ trình duyệt phụ trợ được mô tả rõ |
+| Frontend/editor | Trình soạn JavaScript, TipTap/MathLive/KaTeX, gọi FastAPI | Người dùng thử thao tác bàn phím, IME, công thức và bản in trên máy của nhóm |
+| API/auth | `local_workspace.py`, `team_workspace.py` và `team_accounts.py` phục vụ API, phiên và kho theo tài khoản | Review quyền và cấu hình khi chuyển từ chế độ chạy cục bộ sang triển khai thật |
+| Database | `workspace_store.py` lưu SQLite. Kiểm phiên bản, biên nhận và khôi phục trên kho thử | So khớp ADR BE-3 và diễn tập chuyển kho đã được phép trên bản sao |
+| Đề, đề xuất sửa, phiên bản | FastAPI kiểm revision, phạm vi và áp đề xuất trong giao dịch. Trình soạn dựng preview, hỗ trợ cấu trúc richDoc ngoài lớp ghép của Python | Đối chiếu thêm các loại richDoc và dữ liệu nhóm đang dùng |
+| AI, job, SSE | Python điều phối model, gọi bộ kiểm, phát trạng thái và xử lý hủy/hết giờ. Giáo viên xác nhận trước khi ghi đề | Kết quả model thật trên candidate cuối, giới hạn vận hành và review |
+| Nhập, OCR, xuất | Python đọc/kiểm tệp và dựng Word, điều phối OCR, HTML và PDF. Trình duyệt hỗ trợ dựng công thức và PDF | Đo chất lượng OCR bằng mẫu được phép và kiểm bản in theo môn |
 
-`backend/` hiện là nền FastAPI có test health/readiness, **chưa là migration hoàn chỉnh**. Không phục vụ API cũ bằng proxy Python→Node rồi tuyên bố Python là core. Backend Node cũ còn tại gốc để so sánh, chạy golden fixture và tránh mất demo trong giai đoạn chuyển.
+Lệnh chạy bàn soạn dùng `mach_backend.local_workspace:app`. Bản có tài khoản dùng `mach_backend.team_workspace:app`. Hai entrypoint chạy bằng Uvicorn và dùng nghiệp vụ Python trong cùng tiến trình. Backend Node tại gốc phục vụ đối chiếu và kiểm hồi quy legacy. [Cách đo GitHub Languages, lệnh chạy và bằng chứng API Python](../testing/DOI_CHIEU_PYTHON.md)
+
+PR #46 là nhánh tích hợp đang chờ review. Số đo GitHub Languages của `main` theo bản đo đã ghi thuộc nhánh mặc định. Các mục nghiệm thu bên dưới vẫn cần bằng chứng của ứng viên cuối. [PR tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/46) · [Kịch bản nghiệm thu](../testing/KIEM_THU_TICH_HOP.md)
 
 ## Cách chuyển mà nhóm vẫn làm song song
 
