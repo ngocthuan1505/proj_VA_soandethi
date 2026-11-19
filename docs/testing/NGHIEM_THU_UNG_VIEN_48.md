@@ -12,7 +12,9 @@
 | Kế thừa nền | [`269cd6a63120ea97fc2fbb612bdf075b60ef27a4`](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/269cd6a63120ea97fc2fbb612bdf075b60ef27a4) | Ứng viên 47 từ PR #46 (*Chỉ gửi các ô cần sửa trong yêu cầu Ollama*) |
 | Pha 2 | [`47c40f8`](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/47c40f8) | Tối ưu vòng tự kiểm/sửa model local: thêm `passed_blind_cache` (`reuse_passed_reviews`), `skip_explanation_on_blind_fail`, gắn `ordinal` vào lỗi barem, chuẩn hóa `\u061f`/`\uff1f` → `?`, chặn lặp tiền/hậu tố của `avoid` (`_normalize_stem_compare`) trong [`matrix_agent.py`](../../backend/src/mach_backend/matrix_agent.py) và [`workspace_agent.py`](../../backend/src/mach_backend/workspace_agent.py). |
 | Pha 3 | [`8d37a0f`](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/8d37a0f) | Hoàn thiện 6 đặc tả/contract M1 ([luong-man-hinh.md](../design/luong-man-hinh.md), [tro-ly-va-job.md](../design/tro-ly-va-job.md), [ai.md](../contracts/ai.md), [http.md](../contracts/http.md), [tai-lieu.md](../contracts/tai-lieu.md), [job-va-sse.md](../contracts/job-va-sse.md)) và 3 bộ kiểm thử Python M2/M3 ([test_sample_exam_8b.py](../../backend/tests/test_sample_exam_8b.py), [test_be3_workspace_bridge.py](../../backend/tests/test_be3_workspace_bridge.py), [test_security_and_contracts.py](../../backend/tests/test_security_and_contracts.py)). |
-| Pha 5 | Commit hồ sơ & truy vết trên `codex/ban-thu-13` | Đồng bộ hồ sơ `CT-01..06`, đối chiếu Python/CI/tích hợp, [BAO_CAO_DO_AN.md](../reports/BAO_CAO_DO_AN.md), [THUC_HANH.md](../context/THUC_HANH.md) và tài liệu nghiệm thu này (bản JSON chi tiết từng tiêu chí lưu đồng bộ cục bộ tại `BAN_GIAO_QA/truy-vet-final.json`). |
+| Pha 5 | [`5e70450`](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/5e70450) | Đồng bộ hồ sơ `CT-01..06`, báo cáo `R1..R8`, [BAO_CAO_DO_AN.md](../reports/BAO_CAO_DO_AN.md), [THUC_HANH.md](../context/THUC_HANH.md) và tài liệu nghiệm thu này. |
+| Hợp nhất `main` + CI Public | [`a6046fc`](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/a6046fc), [`958fad9`](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/958fad9) | Merge `origin/main` (`2ecf411`, PR #48/#49) gỡ xung đột `README.md`, sửa `.github/workflows/phat-hanh-ban-thu.yml` cho repo Public kèm kiểm tra tệp cấm ZIP; đạt CI xanh [44573569423](https://github.com/ngocthuan1505/proj_VA_soandethi/actions/runs/44573569423). |
+| Ứng viên 49 — Mở rộng Python | [`69eb1e3`](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/69eb1e3) → [`0792542`](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/0792542) | Mở rộng nguồn phân cấp ([curriculum_sources.py](../../backend/src/mach_backend/curriculum_sources.py)), kho cộng đồng ([community_library.py](../../backend/src/mach_backend/community_library.py)), OCR giữ công thức/hình & xuất A4/DOCX ([ocr_structured.py](../../backend/src/mach_backend/ocr_structured.py), [exam_spec_export.py](../../backend/src/mach_backend/exam_spec_export.py)), đối chiếu Keep/Defer/Drop ([MO_RONG_THAM_KHAO.md](../product/MO_RONG_THAM_KHAO.md)) và nối vào [local_workspace.py](../../backend/src/mach_backend/local_workspace.py) + [team_workspace.py](../../backend/src/mach_backend/team_workspace.py) kèm [test_extended_workspace_integration.py](../../backend/tests/test_extended_workspace_integration.py). |
 
 ## 2. Ranh giới bảo toàn và tách vai
 
@@ -22,27 +24,27 @@
 
 ## 3. Đo ngôn ngữ lập trình & chứng minh runtime Python-chính
 
-| Chỉ tiêu đo | Trên `main` (`cecfd3de`, PR #46 chưa merge) | Trên `codex/ban-thu-13` (`8d37a0f`, `git ls-tree -rl HEAD`) |
-| --- | --- | --- |
-| Python (mã nguồn + test) | `42,188 B` (`1,54%`) | **`1,239,067 B`** (`48,73%` dự kiến theo Linguist; `backend/src` `579,659 B`, `scripts/` & gốc `106,315 B`, `backend/tests` `553,093 B`; không tính test vẫn `685,974 B`) |
-| JavaScript tự viết (UI/editor/test/legacy) | `2,642,845 B` (`96,72%` khi PR #46 chưa hợp nhất) | `1,121,180 B` (`44,09%`, không tính test: `857,159 B`; không ẩn mã tự viết, không thêm mã đệm) |
-| CSS | — | `169,091 B` (`6,65%`) |
-| Tài nguyên gán `.gitattributes` | — | `linguist-vendored`: `assets/katex/**` + `assets/mathlive/**` (`2,630,140 B` JS trong `4,030,667 B` tài nguyên); `linguist-generated`: [editor-engine.js](../../assets/editor-engine.js) (`447,254 B`) |
+| Chỉ tiêu đo | Trên `main` (`cecfd3de`) | Ứng viên 48 (`8d37a0f`) | Ứng viên 49 (`0792542`, `git ls-tree -rl HEAD`) |
+| --- | --- | --- | --- |
+| Python (mã nguồn + test) | `42,188 B` (`1,54%`) | `1,239,067 B` (`48,73%`) | **`1,488,000 B`** (**`53,56%`**; `backend/src` **`737,790 B`**, `scripts/` & gốc `106,315 B`, `backend/tests` **`643,895 B`**; chưa tính test vẫn `844,105 B`) |
+| JavaScript tự viết (UI/editor/test/legacy) | `2,642,845 B` (`96,72%`) | `1,121,180 B` (`44,09%`) | `1,120,990 B` (`40,35%`, chưa tính test: `857,159 B`; không ẩn mã tự viết, không thêm mã đệm) |
+| CSS tự viết | — | `169,091 B` (`6,65%`) | `169,091 B` (`6,09%`) |
+| Tài nguyên gán `.gitattributes` | — | `linguist-vendored`: `assets/katex/**` + `assets/mathlive/**` (`2,630,140 B` JS) · `linguist-generated`: [editor-engine.js](../../assets/editor-engine.js) (`447,254 B`) | Giữ nguyên |
 
 **Bằng chứng nghiệp vụ Python chạy độc lập khi Node API tắt (`shutil.which("node") is None`, `shutil.which("npm") is None`):**
-1. Chạy 12 bộ kiểm thử lõi trong `backend/tests/` (`test_foundation`, `test_local_workspace`, `test_team_workspace`, `test_workspace_transactions`, `test_workspace_shares`, `test_workspace_backup`, `test_patch_confirmation`, `test_poc_scoped_patch`, `test_matrix_agent`, `test_source_documents`, `test_word_export`, `test_security_and_contracts`) đạt **`167 passed, 1 warning in 51.99s`**.
-2. Giải nén `SoanDeThi-UngVien-48.zip` ra thư mục `%TEMP%` sạch ngoài repo, cài `uv sync --frozen --no-dev`, khởi động `uvicorn mach_backend.local_workspace:app --app-dir backend/src` với PATH không Node/npm: tạo/lưu/tải lại đề có công thức và xuất 4 tệp Word/PDF thật thành công.
+1. Trên `0792542`: chạy 16 bộ kiểm thử lõi + 4 bộ mở rộng (`test_foundation`, `test_local_workspace`, `test_team_workspace`, `test_workspace_transactions`, `test_workspace_shares`, `test_workspace_backup`, `test_patch_confirmation`, `test_poc_scoped_patch`, `test_matrix_agent`, `test_source_documents`, `test_word_export`, `test_security_and_contracts`, `test_curriculum_sources`, `test_community_library`, `test_extended_ocr_and_exports`, `test_extended_workspace_integration`) khi tước hoàn toàn Node/npm khỏi `PATH` đạt **`292 passed, 2 skipped, 1 warning in 75.11s`** (trên `8d37a0f` 12 tệp lõi đạt `167 passed`).
+2. Giải nén `SoanDeThi-UngVien-49.zip` (`SHA-256: b7eb24c53180088111d6f94dda3d1757863c9f860ab914eae98da54a4c7a363a`) ra thư mục `%TEMP%` sạch ngoài repo, cài `uv sync --frozen --no-dev`, khởi động `uvicorn mach_backend.local_workspace:app --app-dir backend/src` với PATH không Node/npm: lưu/tải lại đề có công thức, xuất kiểm 4 tệp Word/PDF thật và gọi thông suốt 3 nhóm API mở rộng (`/api/curriculum/sources`, `/api/community/*`, `/api/ocr/structure` + `/api/exports/*`).
 
-## 4. Tổng hợp kết quả kiểm thử trên `8d37a0f` (tách biệt theo loại ngữ liệu)
+## 4. Tổng hợp kết quả kiểm thử trên `0792542` (và đối chiếu `8d37a0f`)
 
 | Hạng mục kiểm | Ngữ liệu | Kết quả thực đo | Ghi chú trung thực |
 | --- | --- | --- | --- |
-| `uv sync --frozen`, `ruff format --check .`, `ruff check .`, `ty check src` | Tĩnh (Python) | **Đạt 100%** (`29` gói, `94` tệp format sạch) | Chạy từ `backend/` |
-| `uv run pytest -q` | Unit / Contract / Fixture | **`710 passed, 5 skipped`**, `1 warning`, `3 subtests passed` (`110.66s`) | 5 ca skip là ca gọi AI thật tùy chọn |
-| `pytest` (12 tệp lõi, tước Node/npm khỏi `PATH`) | Unit / Contract (không Node) | **`167 passed, 1 warning`** (`51.99s`) | Đạt 100% không cần Node |
+| `uv sync --frozen`, `ruff format --check .`, `ruff check .`, `ty check src` | Tĩnh (Python) | **Đạt 100%** (`29` gói, `102` tệp format sạch) | Chạy từ `backend/` |
+| `uv run pytest -q` (`0792542`) | Unit / Contract / Integration | **`751 passed, 5 skipped`**, `1 warning`, `3 subtests passed` (`122.49s`) | 5 ca skip là ca gọi AI thật tùy chọn (tăng từ `710 passed` ở `8d37a0f`) |
+| `pytest` (16 tệp lõi + mở rộng, không Node/npm trên `PATH`) | Unit / Contract (không Node) | **`292 passed, 2 skipped, 1 warning`** (`75.11s`) | Chứng minh toàn bộ lõi + mở rộng chạy thuần Python |
 | `npm test` / `npm run check:team` / `npm run build-editor` | Legacy JS / Kế hoạch / Bundle | `npm test`: **`139 passed`**; `check:team`: **`14 passed` (`Team plan OK`)**; `build-editor`: `436.8kb` | `git status` sạch sau build |
-| Chrome [kiem-ung-vien.py](../../scripts/kiem-ung-vien.py) (`IT-01..IT-11`) | Chrome + FastAPI (fixture) | Lượt 1: `10/11` (`IT-11` race `networkidle` ở `kiem-ui-khoi-phuc.mjs:37`, chạy đơn lẻ `--case 11` **đạt**). Lượt 2: `10/11` (`IT-05` race `.fill()` ở `ui2-baseline-browser.mjs:188`, chạy đơn lẻ `--case 05` **đạt**). | Toàn bộ `IT-01..IT-11` đều đã đạt trên `8d37a0f`; 2 flake Windows khi chạy nối tiếp được ghi nguyên trạng |
-| ZIP `SoanDeThi-UngVien-48.zip` ([dong-goi-ban-thu.py](../../scripts/dong-goi-ban-thu.py)) | Cài sạch ngoài repo + xuất thật | `215` tệp (`216` mục ZIP), **`SHA-256: 1a28c3c62d77fcc9eec1531e8222284b174bff5844c7e1c4a5813614f4e92f06`**, 0 tệp cấm. Xuất kiểm 4 tệp với công thức `` `$\frac{12}{4} + \sqrt{9}$` ``: `docx_student` `36,987 B` (`1 m:oMath`, 0 rò), `docx_teacher` `37,329 B` (`1 m:oMath`, đủ đáp án/rubric), `pdf_student` `53,436 B` (0 rò), `pdf_teacher` `69,026 B` (đủ đáp án/rubric) | Thư mục `%TEMP%` và server thử đã dọn sạch |
+| Chrome [kiem-ung-vien.py](../../scripts/kiem-ung-vien.py) (`IT-01..IT-11`, `0792542`) | Chrome + FastAPI (fixture) | Lượt `0792542`: `IT-01..IT-10` **đạt** (`10/11`), `IT-11` gặp race `PUT /api/kv` tại `kiem-ui-khoi-phuc.mjs:37`, chạy đơn lẻ `--case 11` **đạt** (trên `8d37a0f` 2 lượt + chạy lẻ `--case 11`, `--case 05` cũng đạt đủ 11/11) | Toàn bộ `IT-01..IT-11` đều đã đạt trên `0792542`; flake timing Windows khi chạy nối tiếp được ghi nguyên trạng |
+| ZIP `SoanDeThi-UngVien-49.zip` ([dong-goi-ban-thu.py](../../scripts/dong-goi-ban-thu.py)) | Cài sạch ngoài repo + xuất thật + 3 API mở rộng | `219` tệp (`220` mục ZIP), **`SHA-256: b7eb24c53180088111d6f94dda3d1757863c9f860ab914eae98da54a4c7a363a`**, 0 tệp cấm. Xuất kiểm 4 tệp với công thức `` `$\frac{12}{4} + \sqrt{9}$` ``: `docx_student` `37,089 B` (`2 m:oMath`, 0 rò), `docx_teacher` `37,482 B` (`2 m:oMath`, đủ đáp án/rubric), `pdf_student` `65,366 B` (0 rò), `pdf_teacher` `81,815 B` (đủ đáp án/rubric), đồng thời qua kiểm sống 3 cụm API mở rộng (kế thừa bản 48 `1a28c3...`) | Thư mục `%TEMP%` và server thử đã dọn sạch |
 | Model thật cục bộ Ollama `qwen3:4b` (Vulkan) | Model cục bộ (ngữ liệu tự tạo) | **v1** (`269cd6a`): `900.707s`, `timeout`, `8` lần kiểm, `traceVerified=true`. **v2** (sau `47c40f8`): `901.081s`, `status="failed"`, `errorCode="timeout"`, `checkedAttempts=7` (`19` lượt gọi `894.01s`), `traceVerified=true`, `evidenceIssues=[]`, `beforeRevision == afterRevision == 2`. **4/5 câu (`ordinal 0, 2, 3, 4`) qua `blind_content_check` và dùng lại cache** (`24.0s–45.4s`/vòng thay ~`121s`), còn `ordinal 1` thất bại | Giới hạn suy luận model 4B trên câu có hai số liệu (`24 sách truyện và 16 sách khoa học`) |
 
 ## 5. Bảng truy vết 30 issue (`#1–#24`, `#26–#31`) và phần còn mở
@@ -99,6 +101,6 @@ npm test
 npm run build-editor
 
 # Tích hợp trình duyệt IT-01..IT-11 (fixture) và đóng gói ZIP sạch
-uv run --project backend python scripts/kiem-ung-vien.py --ung-vien 48 --headless
-uv run --project backend python scripts/dong-goi-ban-thu.py --ung-vien 48
+uv run --project backend python scripts/kiem-ung-vien.py outputs/qa-ung-vien-49
+uv run --project backend python scripts/dong-goi-ban-thu.py --ung-vien 49
 ```

@@ -63,7 +63,13 @@ Trên Windows ở commit `6a998ec`, tiến trình kiểm thử dùng PATH chỉ 
     - Word Giáo viên: **`37.329` byte**, `1` node `m:oMath`, đủ đáp án và barem.
     - PDF Học sinh: **`53.436` byte**, đầu tệp `%PDF-`, `0` rò đáp án/chat.
     - PDF Giáo viên: **`69.026` byte**, đầu tệp `%PDF-`, đủ đáp án và barem.
-- **Phần vẫn chờ con người / Thuận (`[Chờ review nhóm / Thành viên xác nhận]`):** review chéo giữa các thành viên, một thành viên khác cài ZIP `ung-vien-48` trên máy sạch và mở trực quan bản Word/PDF bằng phần mềm văn phòng thật, khảo sát 3 người dùng `CT-01`, thẩm định sư phạm và vận hành GreenNode do `ngocthuan1505` tự thực hiện theo [runbook GreenNode](../../ops/greennode/README.md).
+- **Phần vẫn chờ con người / Thuận (`[Chờ review nhóm / Thành viên xác nhận]`):** review chéo giữa các thành viên, một thành viên khác cài ZIP mới nhất trên máy sạch và mở trực quan bản Word/PDF bằng phần mềm văn phòng thật, khảo sát 3 người dùng `CT-01`, thẩm định sư phạm và vận hành GreenNode do `ngocthuan1505` tự thực hiện theo [runbook GreenNode](../../ops/greennode/README.md).
+
+### Cập nhật đo trực tiếp trên Ứng viên 49 (`0792542`, `codex/ban-thu-13`, 20/11/2026)
+
+- **Phân bố byte trên `0792542` (`git ls-tree -rl HEAD`):** Python tổng đạt **`1.488.000` byte (`53,56%`)** (gồm `backend/src/`: **`737.790` B**, `scripts/` & gốc: `106.315` B, `backend/tests/`: **`643.895` B**; không tính test vẫn `844.105` B), vượt JavaScript tự viết **`1.120.990` B (`40,35%`**; chưa tính test: `857.159` B) và CSS tự viết **`169.091` B (`6,09%`)**. Không ẩn mã JS tự viết, không thêm mã đệm; `.gitattributes` chỉ khai báo thư viện bên thứ ba (`2.630.140` B JS) và `assets/editor-engine.js` (`447.254` B).
+- **Kiểm toàn bộ Python & không Node/npm trên `0792542`:** `uv run ruff format --check .` (`102` tệp), `uv run ruff check .`, `uv run ty check src` đạt; `uv run pytest -q` đạt **`751 passed, 5 skipped, 1 warning, 3 subtests passed`** (`122.49s`); lượt chạy khi tước `node` và `npm` khỏi `PATH` qua 16 tệp (12 lõi + 4 mở rộng/tích hợp) đạt **`292 passed, 2 skipped, 1 warning`** (`75.11s`).
+- **Đóng gói `SoanDeThi-UngVien-49.zip` (`b7eb24c53180088111d6f94dda3d1757863c9f860ab914eae98da54a4c7a363a`, `219` tệp, 0 tệp cấm):** cài sạch ngoài repo không Node/npm bằng `uv sync --frozen --no-dev`, xuất đạt `docx_student` (`37.089` B, `2 m:oMath`, 0 rò), `docx_teacher` (`37.482` B, `2 m:oMath`), `pdf_student` (`65.366` B, 0 rò), `pdf_teacher` (`81.815` B), và gọi thông suốt 3 nhóm API mở rộng (`/api/curriculum/sources`, `/api/community/*`, `/api/ocr/structure` + `/api/exports/*`). Chi tiết xem [NGHIEM_THU_UNG_VIEN_48.md](NGHIEM_THU_UNG_VIEN_48.md).
 
 ```powershell
 # Chạy từ backend với môi trường Python đã cài. Dùng PowerShell mới để giữ PATH riêng.
