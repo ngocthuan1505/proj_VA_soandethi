@@ -19,7 +19,9 @@ Các lượt đo dùng số byte gốc trong Git. Bảng là phép đối chiế
 
 Lượt đo lại trên PR #46 ở commit `715dc50` đếm **526.980 byte Python trong `backend/src/`**, so với 887 byte trên `main`. JavaScript ngoài thư viện và bundle vẫn có 566.641 byte trong nhóm giao diện và các tệp JS hỗ trợ, 112.949 byte ở nhóm `.mjs` gốc và 426.393 byte kiểm thử/công cụ dưới `tests/` và `scripts/`. Python kiểm thử và script được tính riêng khi đánh giá runtime. Dữ liệu GitHub Languages vừa kiểm lại vẫn thuộc `main` ở `cecfd3d`.
 
-Ở luồng sửa qua chat, FastAPI kiểm snapshot, scope và đáp án trước khi trả đề xuất. Bàn soạn còn ghép đề xuất vào tài liệu định dạng khi người dùng xác nhận và gửi snapshot qua API ghi có điều kiện. Phần quyết định áp bản sửa và bất biến dữ liệu vẫn cần kiểm riêng khi đánh giá chuyển nghiệp vụ Python.
+Ở luồng sửa qua chat, FastAPI kiểm snapshot, scope và đáp án trước khi trả đề xuất. Với trường thuần văn bản hoặc thay trong một run hay một nút công thức mà Python giữ được cấu trúc, FastAPI chuẩn bị bản sửa và xác nhận bằng một giao dịch SQLite. Giao dịch cập nhật câu, phiên bản và lịch sử hoàn tác cùng biên nhận. Gửi lại cùng mã trả cùng biên nhận. Bỏ đề xuất xóa bản chờ và khôi phục kho làm mất hiệu lực các bản chờ trước đó.
+
+Một số thay đổi rich text cắt qua nhiều run hoặc đoạn vẫn dùng bộ ghép của trình soạn. FastAPI vẫn kiểm phạm vi đề xuất trước khi bàn soạn dùng đường ghi snapshot có điều kiện. Giữ đường này trong giai đoạn chuyển để các thao tác sửa phong phú đang dùng tiếp tục hoạt động.
 
 ## Lệnh chạy chính
 

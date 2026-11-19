@@ -231,6 +231,7 @@ def restore(store, backup, base_revision):
         db.execute("DELETE FROM matrix_pending")
         db.execute("DELETE FROM matrix_trace")
         db.execute("DELETE FROM kv WHERE key LIKE 'matrix%'")
+        db.execute("DELETE FROM kv WHERE key LIKE 'scoped-patch:%'")
     return {"revision": revision, "restored": True}
 
 

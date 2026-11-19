@@ -55,6 +55,9 @@ try {
   const page = await browser.newPage({viewport: {width: 1366, height: 830}});
   page.setDefaultTimeout(12000);
   const errors = [];
+  let confirmations = 0;
+  const isConfirm = url => /\/edits\/[^/]+\/confirm$/.test(url);
+  page.on('request', request => { if (isConfirm(request.url())) confirmations++; });
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
   const action = name => page.locator('[data-action="' + name + '"]:visible').first();
@@ -128,6 +131,7 @@ try {
   const updated = (await state()).questions;
   assert.equal(updated[0].stem, original[0].stem.replace('kết quả', 'kết quả (đã sửa)'));
   assert.equal(updated[0].v, original[0].v + 1);
+  assert.equal(confirmations, 1);
   assert.deepEqual(updated[0].richDoc.content[0].content.slice(0, 3),
     original[0].richDoc.content[0].content.slice(0, 3));
   assert.deepEqual(updated.slice(1), original.slice(1));
@@ -159,10 +163,10 @@ try {
   other.value.exams[0].title += ' — phiên khác';
   other.value.exams[0].revision++;
   await save(other.value, other.revision);
-  const conflict = page.waitForResponse(response => response.url() === kv && response.status() === 409);
+  const conflict = page.waitForResponse(response => isConfirm(response.url()) && response.status() === 409);
   await dialog.locator('[data-action="apply-block-patch"]').click();
   await conflict;
-  await page.locator('#toast').getByText(/Chưa đồng bộ đề xuất sửa/).waitFor();
+  await dialog.getByText(/Chưa đồng bộ đề xuất sửa/).waitFor();
   assert.equal(await action('undo-ai').count(), 0);
   assert.deepEqual((await load()).value, other.value);
   assert.deepEqual(errors, []);
@@ -171,7 +175,7 @@ try {
     scenario: 'IT-06', fixture: true, askPreservedQuestions: true, diffPreservedQuestions: true,
     discardPreservedQuestions: true, repeatedConfirmAppliedOnce: true, richTextPreserved: true,
     undoRestoredQuestions: true, selectedRubricStepOnly: true, staleWriteRejected: true,
-    conflictDisplayed: true,
+    conflictDisplayed: true, pythonConfirmations: confirmations,
   }, null, 2));
   console.log('IT-06 đạt qua Chrome và FastAPI với phản hồi mẫu.');
 } finally {

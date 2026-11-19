@@ -3,6 +3,7 @@
 import asyncio
 import copy
 import json
+import time
 from pathlib import Path
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
@@ -21,8 +22,10 @@ from mach_backend.ai_contract import (
 )
 from mach_backend.ai_questions import ShortAnswer, saved_answer, validate_options
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
+from mach_backend.matrix_agent import sha256_json
 from mach_backend.poc_matrix import LocalModel, RunLog
 from mach_backend.poc_policy import CallBudget
+from mach_backend.rich_patch import update_rich
 
 FIELDS = ("stem", "options", "answer", "answerText", "truthValues", "explanation", "rubric")
 FIELDS_BY_TYPE = {
@@ -344,7 +347,137 @@ async def wait_for_disconnect(request: Request):
         pass
 
 
+def prepare_rich(question, doc, old, new, field):
+    if doc is None or old == new:
+        return doc
+    try:
+        target = BlockTarget(
+            questionId=UUID(question["id"]),
+            questionVersion=question["v"],
+            blockId=UUID(question["blockIds"][field]),
+            field="explanation",
+            text=old,
+        )
+    except (ValidationError, ValueError):
+        raise AIError("rich_document_conflict", "Chưa hỗ trợ cấu trúc định dạng này.") from None
+    return update_rich(
+        doc,
+        target,
+        new,
+    )
+
+
+def prepare_questions(exam, selected, candidates):
+    updated = {}
+    for original in exam["questions"]:
+        qid = original["id"]
+        if qid not in candidates:
+            continue
+        before, after = selected[qid], candidates[qid]
+        changed = {
+            field: after[field]
+            for field in FIELDS
+            if field in after and after[field] != before.get(field)
+        }
+        if after.get("answerKnown") != before.get("answerKnown"):
+            changed["answerKnown"] = after.get("answerKnown")
+        if not changed:
+            continue
+        question = copy.deepcopy(original)
+
+        for field, value in changed.items():
+            if field == "stem":
+                question["richDoc"] = prepare_rich(
+                    question, question.get("richDoc"), before[field], value, field
+                )
+                for derived in ("runs", "rule", "algebra", "verification"):
+                    question[derived] = None
+            elif field == "explanation":
+                question["explanationDoc"] = prepare_rich(
+                    question, question.get("explanationDoc"), before[field], value, field
+                )
+            elif field == "options":
+                docs = question.get("optionDocs") or []
+                question["optionDocs"] = [
+                    prepare_rich(question, docs[i] if i < len(docs) else None, old, new, field)
+                    for i, (old, new) in enumerate(zip(before[field], value, strict=True))
+                ]
+            elif field == "rubric":
+                value = copy.deepcopy(value)
+                for i, row in enumerate(value):
+                    old = before[field][i] if i < len(before[field]) else {}
+                    if old.get("richDoc"):
+                        row["richDoc"] = prepare_rich(
+                            question, old["richDoc"], old["text"], row["text"], field
+                        )
+            question[field] = value
+        question.update(v=original["v"] + 1, check=None, approval=None)
+        updated[qid] = question
+    return updated
+
+
+def commit_questions(store, exam_id, proposal_id):
+    key = "scoped-patch:" + str(proposal_id)
+    with store.connect() as db:
+        db.execute("BEGIN IMMEDIATE")
+        entry = store.get(key, db)["value"]
+        if not entry or entry["examId"] != str(exam_id):
+            raise AIError("proposal_not_found", "Không tìm thấy đề xuất sửa này.")
+        if entry.get("receipt"):
+            return entry["receipt"]
+        state, exam = store.exam(exam_id, db)
+        if sha256_json(exam) != entry["snapshot"]:
+            raise AIError("stale_snapshot", "Đề đã đổi. Chưa áp dụng đề xuất sửa.")
+        label = "AI sửa các khối được chọn và phần phụ thuộc"
+        previous = copy.deepcopy(exam)
+        for field in ("history", "undo", "redo"):
+            previous.pop(field, None)
+        history = exam.get("history", [])
+        revision = max([exam["revision"], *(item["revision"] for item in history)]) + 1
+        at = int(time.time() * 1000)
+        exam["questions"] = [entry["updates"].get(q["id"], q) for q in exam["questions"]]
+        exam.update(
+            revision=revision,
+            updated=at,
+            undo=[*exam.get("undo", []), {"label": label, "state": previous}][-60:],
+            redo=[],
+        )
+        history_state = {k: v for k, v in exam.items() if k not in {"history", "undo", "redo"}}
+        exam["history"] = [
+            *history,
+            {
+                "id": str(proposal_id),
+                "label": label,
+                "at": at,
+                "revision": revision,
+                "state": copy.deepcopy(history_state),
+            },
+        ][-100:]
+        exam["chat"] = [
+            *exam.get("chat", []),
+            {"role": "assistant", "text": entry["message"], "at": at, "undoRevision": revision},
+        ]
+        store.put("state", state, db=db)
+        receipt = {"examId": str(exam_id), "revision": revision}
+        store.put(key, {"examId": str(exam_id), "receipt": receipt}, db=db)
+        return receipt
+
+
 def install_scoped_patch(app: FastAPI, store, provider, fixture_call, directory: Path, lock):
+    @app.post("/api/exams/{exam_id}/edits/{proposal_id}/confirm")
+    def confirm_edit(exam_id: UUID, proposal_id: UUID):
+        return commit_questions(store, exam_id, proposal_id)
+
+    @app.post("/api/exams/{exam_id}/edits/{proposal_id}/discard")
+    def discard_edit(exam_id: UUID, proposal_id: UUID):
+        key = "scoped-patch:" + str(proposal_id)
+        with store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            entry = store.get(key, db)["value"]
+            if entry and entry["examId"] == str(exam_id) and not entry.get("receipt"):
+                db.execute("DELETE FROM kv WHERE key=?", (key,))
+        return {"discarded": True}
+
     @app.post("/api/assistant/patch")
     async def patch(submission: Submission, request: Request):
         work = asyncio.create_task(run(submission))
@@ -555,8 +688,39 @@ def install_scoped_patch(app: FastAPI, store, provider, fixture_call, directory:
             raise AIError(
                 "stale_snapshot", "Đề hoặc nguồn đã đổi trong lúc sửa. Chưa áp dụng kết quả."
             )
+        proposal_id = None
+        try:
+            updates = prepare_questions(exam, selected, candidates)
+        except AIError as error:
+            if error.code != "rich_document_conflict":
+                raise
+            # shortcut: cấu trúc nằm ngoài bộ sửa rich text Python vẫn dùng trình soạn cũ.
+            updates = {}
+        if updates:
+            proposal_id = uuid4()
+            with store.connect() as db:
+                db.execute("BEGIN IMMEDIATE")
+                _, latest = store.exam(request.exam.id, db)
+                if latest != exam:
+                    raise AIError("stale_snapshot", "Đề đã đổi. Chưa lưu đề xuất sửa.")
+                store.put(
+                    "scoped-patch:" + str(proposal_id),
+                    {
+                        "examId": request.exam.id,
+                        "snapshot": sha256_json(exam),
+                        "updates": updates,
+                        "message": draft.message,
+                    },
+                    db=db,
+                )
+                db.execute(
+                    "DELETE FROM kv WHERE key IN (SELECT key FROM kv "
+                    "WHERE key LIKE 'scoped-patch:%' "
+                    "ORDER BY rowid DESC LIMIT -1 OFFSET 50)"
+                )
         return {
             **draft.model_dump(mode="json"),
+            "confirmationId": str(proposal_id) if proposal_id else None,
             "checks": [
                 "Phạm vi và cấu trúc",
                 "Giải độc lập và đối chiếu đáp án đúng dạng câu hỏi",

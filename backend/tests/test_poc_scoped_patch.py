@@ -161,6 +161,72 @@ def test_edit_is_preview_only_and_review_is_blind(setup):
     assert question["stem"] == "Một cộng một bằng mấy?"
 
 
+def test_scoped_confirmation_is_transactional_and_replay_safe(setup, monkeypatch):
+    app, client, exam, question, body, _, _ = setup
+    preview = client.post("/api/assistant/patch", json=body)
+    preview.raise_for_status()
+    proposal_id = preview.json()["confirmationId"]
+    assert proposal_id
+    search = f"/api/exams/{exam['id']}/edits/{proposal_id}/confirm"
+    store = app.state.store
+    before = store.get("state")
+    assert before["value"]["exams"][0] == exam
+    wrong = client.post(f"/api/exams/{uuid4()}/edits/{proposal_id}/confirm", json={})
+    assert wrong.status_code == 409 and wrong.json()["code"] == "proposal_not_found"
+    put = store.put
+
+    def fail_receipt(key, value, *args, **kwargs):
+        if key.startswith("scoped-patch:"):
+            raise RuntimeError("Lỗi SQLite giả lập khi lưu biên nhận")
+        return put(key, value, *args, **kwargs)
+
+    with monkeypatch.context() as guard:
+        guard.setattr(store, "put", fail_receipt)
+        with pytest.raises(RuntimeError, match="Lỗi SQLite giả lập"):
+            client.post(search, json={})
+    assert store.get("state") == before
+    receipt = client.post(search, json={})
+    receipt.raise_for_status()
+    changed = store.get("state")
+    updated = changed["value"]["exams"][0]
+    assert changed["revision"] == before["revision"] + 1
+    assert receipt.json()["revision"] == exam["revision"] + 1 == updated["revision"]
+    assert updated["questions"][0]["id"] == question["id"]
+    assert updated["questions"][0]["stem"] == "Một cộng một được bao nhiêu?"
+    assert updated["questions"][0]["v"] == question["v"] + 1
+    assert updated["questions"][0]["approval"] is None
+    assert updated["questions"][1] == exam["questions"][1]
+    assert updated["undo"][-1]["state"] == exam
+    assert client.post(search, json={}).json() == receipt.json()
+    assert store.get("state") == changed
+
+
+def test_scoped_confirmation_rejects_change_without_version_bump(setup):
+    app, client, exam, _, body, _, _ = setup
+    preview = client.post("/api/assistant/patch", json=body)
+    preview.raise_for_status()
+    proposal_id = preview.json()["confirmationId"]
+    store = app.state.store
+    changed = store.get("state")["value"]
+    changed["exams"][0]["title"] = "Đổi từ phiên khác"
+    store.put("state", changed)
+    before = store.get("state")
+    result = client.post(f"/api/exams/{exam['id']}/edits/{proposal_id}/confirm", json={})
+    assert result.status_code == 409 and result.json()["code"] == "stale_snapshot"
+    assert store.get("state") == before
+
+
+def test_discarded_scoped_proposal_can_no_longer_be_confirmed(setup):
+    app, client, exam, _, body, _, _ = setup
+    preview = client.post("/api/assistant/patch", json=body)
+    preview.raise_for_status()
+    endpoint = f"/api/exams/{exam['id']}/edits/{preview.json()['confirmationId']}"
+    before = app.state.store.get("state")
+    assert client.post(endpoint + "/discard", json={}).json() == {"discarded": True}
+    assert client.post(endpoint + "/confirm", json={}).json()["code"] == "proposal_not_found"
+    assert app.state.store.get("state") == before
+
+
 @pytest.mark.parametrize("bad", ["consent", "revision", "version", "block", "config"])
 def test_rejects_invalid_snapshot_before_model(setup, bad):
     _, client, _, _, request, _, calls = setup
