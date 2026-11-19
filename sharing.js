@@ -25,11 +25,12 @@ export async function openSharing(c,api,{localPoC=false,sharedSnapshots=false}={
 
 export async function createSharing(c,api,form){
  if(form.dataset.creating)return;
+ const data=new FormData(form);
  form.dataset.creating='true';
  const submit=form.querySelector('[type=submit]');submit.disabled=true;submit.textContent='Đang tạo bản chia sẻ…';
  try{
   await c.persist();
-  const data=new FormData(form);
+  if(!form.isConnected||!document.querySelector('#dialog').open)return;
   const result=await api('/api/share',{examId:form.dataset.exam,baseRevision:Number(form.dataset.revision),answers:data.has('answers'),allowCopy:data.has('allowCopy')});
   if(!form.isConnected||!document.querySelector('#dialog').open){
    c.toast('Đã tạo liên kết. Mở Chia sẻ để lấy hoặc thu hồi.');return;

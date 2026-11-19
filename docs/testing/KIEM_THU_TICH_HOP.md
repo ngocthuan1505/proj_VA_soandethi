@@ -98,6 +98,12 @@ Chrome mở đề Ngữ văn với đáp án lưu B. Bộ giải mẫu trả A. 
 
 Khi chọn nguồn nhưng bộ giải bỏ trích dẫn, FastAPI trả lỗi `missing_evidence` và giữ nguyên câu. Lỗi này đến trễ cũng giữ hộp Thông tin đề đang mở và hiện thông báo trong hộp. Bàn soạn chờ kết thúc nhập dở trước khi mở kiểm, gửi, áp dụng hoặc duyệt. Pytest đối chiếu dữ liệu gửi đi và xác nhận bộ giải không nhận đáp án, lời giải hoặc barem đang lưu. Lượt Chrome dùng đáp án dựng sẵn. [Ca Chrome](../../scripts/kiem-ui-giai-doc-lap.mjs) · [Ca FastAPI](../../backend/tests/test_workspace_check.py)
 
+## Kiểm lại IT-10 khi xuất và chia sẻ đề
+
+Chrome xuất sáu tệp qua giao diện, gồm Word, PDF và HTML cho hai đối tượng. Mở HTML trong Chrome, đọc và dựng ảnh trang đầu của PDF, mở hai Word trong Microsoft Word và xác nhận mỗi tệp có một công thức chỉnh sửa được. Đối chiếu dấu thử tổng hợp trong nội dung: lời giải và barem chỉ có trong bản giáo viên, hội thoại vắng ở cả sáu bản.
+
+Khóa lựa chọn chia sẻ tại thời điểm bấm tạo. Nếu đóng hộp trước khi máy chủ nhận yêu cầu tạo liên kết, app dừng thao tác. Chrome trì hoãn lần lưu để kiểm cả hai trường hợp. Một phiên Chrome tách riêng mở được bản học sinh chỉ xem và nhận 404 sau khi chủ đề thu hồi. Kết quả xuất trả muộn giữ hộp Thông tin đề đang mở. Pytest kiểm thêm khách, owner khác, nội dung bàn soạn thay đổi khi dựng bản chia sẻ và quyền tải dữ liệu bản sao. [Ca Chrome](../../scripts/kiem-ui-xuat-chia-se.mjs) · [Ca xuất Word](../../backend/tests/test_word_export.py) · [Ca chia sẻ](../../backend/tests/test_workspace_shares.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.
