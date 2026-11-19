@@ -90,7 +90,7 @@ async def local_model_call(model, purpose, body):
                     "stem": {
                         **common["properties"]["stem"],
                         "description": (
-                            f"Ô {ordinal} — Chủ đề: {slot['topic']}. "
+                            f"Ô {ordinal} — Hỏi đúng chủ đề ở matrix.slots[{ordinal - 1}].topic. "
                             f"{slot['levelName']}: {slot['requiredTask']} "
                             f"{MIXED_STEM_GUIDES[kind]}"
                         ),

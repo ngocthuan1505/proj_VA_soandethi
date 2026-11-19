@@ -116,17 +116,22 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
     before = copy.deepcopy(body)
 
     async def model(purpose, request):
-        wire = structured_tool_request(request)["format"]
+        transport = structured_tool_request(request)
+        assert transport["messages"][1]["content"] == before["messages"][1]["content"]
+        assert "Chủ đề 3" not in transport["messages"][0]["content"]
+        wire = transport["format"]
         assert "RubricStep" in wire["$defs"]
         args = wire["oneOf"][0]["properties"]["arguments"]
         items = [item["properties"] for item in args["properties"]["questions"]["items"]]
         assert [i["options"]["minItems"] for i in items] == [4, 4, 4, 0, 0]
         assert [i["options"]["maxItems"] for i in items] == [4, 4, 4, 0, 0]
         assert items[0]["answer"]["enum"] == items[1]["answer"]["enum"] == list("0123")
-        assert "Ô 3 — Chủ đề: Chủ đề 3. Thông hiểu: Nối dữ kiện." in items[2]["stem"]["description"]
+        assert "matrix.slots[2].topic" in items[2]["stem"]["description"]
+        assert "Thông hiểu: Nối dữ kiện." in items[2]["stem"]["description"]
+        assert "Chủ đề 3" not in items[2]["stem"]["description"]
         assert "Bốn mệnh đề" in items[2]["options"]["description"]
         assert "đúng thứ tự" in items[2]["answer"]["description"]
-        assert "Chủ đề 5" in items[4]["stem"]["description"]
+        assert "matrix.slots[4].topic" in items[4]["stem"]["description"]
         assert len(items[2]["answer"]["enum"]) == 16 and "1010" in items[2]["answer"]["enum"]
         assert items[3]["answer"]["minLength"] == 1
         assert items[4]["answer"]["const"] == ""
