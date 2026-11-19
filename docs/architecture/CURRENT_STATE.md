@@ -1,6 +1,6 @@
 # Kiến trúc hiện tại và hướng chia module
 
-**Kiến trúc đích đã đổi: [Python/FastAPI là backend chính](PYTHON_MIGRATION.md). `backend/` hiện có scaffold chạy được, chưa migrate xong. Phần Node dưới đây chỉ mô tả prototype kế thừa.**
+**Bản tích hợp trên [PR #46](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/46) chạy backend Python/FastAPI.** FastAPI xử lý phiên, quyền, SQLite, điều phối AI, nhập tài liệu và xuất đề. Bàn soạn và dựng công thức/bản in dùng JavaScript và Chrome. Xem phạm vi đã kiểm và phần còn chuyển ở [đối chiếu Python](../testing/DOI_CHIEU_PYTHON.md).
 
 ## Đã có trong source prototype
 
@@ -33,7 +33,7 @@ Tạo backend Python riêng; chuyển từng vertical slice có pytest/OpenAPI v
 - BE-1/BE-5 chuẩn hóa job timeout/cancel/retry và provenance; không tự fallback sang API trả phí.
 - Hạ tầng thử không được coi là SLA 24/7. Thuận quyết định thời điểm mở server; repo/CI không có quyền auto-deploy.
 
-## API hiện có để nhóm dò source
+## Chỉ mục API Node của prototype
 
 | Nhóm | Ví dụ route hiện có | Nơi đọc |
 |---|---|---|

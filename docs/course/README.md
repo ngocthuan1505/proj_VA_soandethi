@@ -27,7 +27,7 @@ Topic 1 trang 36 và Topic 2 trang 45 minh họa Proposal/PoC ở tuần 5, phá
 
 Ba milestone kỹ thuật M1/M2/M3 trong repo là kế hoạch của nhóm, không đồng nhất máy móc với tuần học. [Lộ trình](WBS.md) gắn chúng với các đầu ra môn để nhóm chốt ngày sau. Các công cụ như Firebase, thanh toán, Maps hay weather trong lộ trình lab không có nghĩa app soạn đề phải tích hợp tất cả; cần xem đề bài lab riêng khi nộp.
 
-Python là ngôn ngữ chính theo **ảnh trao đổi giảng viên mà Thuận đã cung cấp trước**, không phải một tỉ lệ dòng code suy ra từ sáu PDF. Xem [kế hoạch Python](../architecture/PYTHON_MIGRATION.md). Backend hiện chỉ nền FastAPI; task chuyển nghiệp vụ còn phải làm.
+Python là ngôn ngữ chính theo **ảnh trao đổi giảng viên mà Thuận đã cung cấp trước**, không phải một tỉ lệ dòng code suy ra từ sáu PDF. Xem [kế hoạch Python](../architecture/PYTHON_MIGRATION.md). [Bản tích hợp Python](../testing/DOI_CHIEU_PYTHON.md) có bằng chứng chạy FastAPI không cần Node API. Xem phạm vi chuyển và giới hạn theo từng luồng trước khi ghi kết luận nghiệm thu.
 
 ## Đầu ra đã soạn khung để nhóm làm
 
