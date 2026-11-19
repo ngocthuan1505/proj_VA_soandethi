@@ -167,7 +167,7 @@ def test_mixed_rejects_wrong_truth_table_or_essay_solution(mixed, bad_verdict, b
 def test_mixed_rubric_cannot_borrow_points_from_another_question(mixed):
     job, arguments = mixed
     arguments["questions"][3]["rubric"][0]["pointsQ4"] = 9
-    with pytest.raises(AIError, match="barem"):
+    with pytest.raises(AIError, match="Câu 4: tổng barem là 9, cần 10 đơn vị"):
         candidate_proposal(job, arguments)
 
 

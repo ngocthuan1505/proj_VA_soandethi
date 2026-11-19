@@ -40,7 +40,10 @@ async def local_model_call(model, purpose, body):
         for tool in body["tools"]:
             if tool["function"]["name"] != "check_exam":
                 continue
-            questions = tool["function"]["parameters"]["properties"]["questions"]
+            parameters = tool["function"]["parameters"]
+            questions = parameters["properties"]["questions"]
+            definitions = parameters["$defs"]
+            rubric_step = definitions["RubricStep"]
             common = questions["items"]
             answers = {
                 **{kind: {"enum": values} for kind, values in MIXED_ANSWERS.items()},
@@ -50,6 +53,31 @@ async def local_model_call(model, purpose, body):
             questions["items"] = []
             for slot in slots:
                 kind = slot["type"]
+                points = slot["pointsQ4"]
+                rubric_name = f"RubricQ4_{points}"
+                if rubric_name not in definitions:
+                    step_fields = rubric_step["properties"]
+                    single_step = {
+                        **rubric_step,
+                        "properties": {**step_fields, "pointsQ4": {"const": points}},
+                    }
+                    single = {"type": "array", "items": [single_step]}
+                    definitions[rubric_name] = single
+                    if points > 1:
+                        bounded_step = {
+                            **rubric_step,
+                            "properties": {
+                                **step_fields,
+                                "pointsQ4": {**step_fields["pointsQ4"], "maximum": points - 1},
+                            },
+                        }
+                        multiple = {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": points,
+                            "items": bounded_step,
+                        }
+                        definitions[rubric_name] = {"oneOf": [single, multiple]}
                 count = 4 if kind in ("mcq", "truefalse") else 0
                 properties = {
                     **common["properties"],
@@ -59,6 +87,7 @@ async def local_model_call(model, purpose, body):
                         "maxItems": count,
                     },
                     "answer": {"type": "string", **answers[kind]},
+                    "rubric": {"$ref": f"#/$defs/{rubric_name}"},
                 }
                 questions["items"].append({**common, "properties": properties})
         return await model(purpose, body)

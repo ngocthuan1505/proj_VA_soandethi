@@ -161,7 +161,7 @@ def validate_generation(job: GenerateJob, raw: str) -> GenerateProposal:
     proposal = read_result(job, raw, GenerateProposal)
     if len(proposal.questions) != len(job.slots):
         raise AIError("invalid_plan", "Số câu AI trả về chưa khớp ma trận đã duyệt.")
-    for slot, question in zip(job.slots, proposal.questions, strict=True):
+    for index, (slot, question) in enumerate(zip(job.slots, proposal.questions, strict=True), 1):
         if (slot.type, slot.topic, slot.level, slot.pointsQ4) != (
             question.type,
             question.topic,
@@ -173,8 +173,13 @@ def validate_generation(job: GenerateJob, raw: str) -> GenerateProposal:
         validate_options(question.type, question.options)
         validate_answer(question.type, question.answer)
         validate_ai_text(question.explanation)
-        if sum(step.pointsQ4 for step in question.rubric) != slot.pointsQ4:
-            raise AIError("invalid_rubric", "Tổng điểm barem chưa bằng điểm của câu.")
+        total = sum(step.pointsQ4 for step in question.rubric)
+        if total != slot.pointsQ4:
+            raise AIError(
+                "invalid_rubric",
+                f"Câu {index}: tổng barem là {total}, cần {slot.pointsQ4} đơn vị 0,25 điểm. "
+                "Nhân điểm với 4 để được số đơn vị. Ví dụ, 2 điểm bằng 8 đơn vị.",
+            )
         for step in question.rubric:
             validate_ai_text(step.text)
         validate_evidence(job, question.evidence)

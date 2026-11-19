@@ -91,7 +91,16 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
             {"role": "system", "content": "Soạn bộ câu."},
             {
                 "role": "user",
-                "content": json.dumps({"matrix": {"slots": [{"type": kind} for kind in kinds]}}),
+                "content": json.dumps(
+                    {
+                        "matrix": {
+                            "slots": [
+                                {"type": kind, "pointsQ4": points}
+                                for kind, points in zip(kinds, [8, 8, 8, 1, 12], strict=True)
+                            ]
+                        }
+                    }
+                ),
             },
         ],
         "tools": [{"function": {"name": "check_exam", "parameters": schema}}],
@@ -109,6 +118,12 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
         assert len(items[2]["answer"]["enum"]) == 16 and "1010" in items[2]["answer"]["enum"]
         assert items[3]["answer"]["minLength"] == 1
         assert items[4]["answer"]["const"] == ""
+        assert items[0]["rubric"]["$ref"] == items[2]["rubric"]["$ref"] == "#/$defs/RubricQ4_8"
+        single, multiple = wire["$defs"]["RubricQ4_8"]["oneOf"]
+        assert single["items"][0]["properties"]["pointsQ4"] == {"const": 8}
+        assert multiple["minItems"] == 2 and multiple["maxItems"] == 8
+        assert multiple["items"]["properties"]["pointsQ4"]["maximum"] == 7
+        assert wire["$defs"]["RubricQ4_1"]["items"][0]["properties"]["pointsQ4"] == {"const": 1}
 
     asyncio.run(local_model_call(model, "agent", body))
     assert body == before
