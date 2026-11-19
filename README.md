@@ -2,9 +2,9 @@
 
 Trợ lý soạn đề thi tiếng Việt. Bản thử hiện dùng FastAPI cho backend và JavaScript cho giao diện.
 
-**Muốn thử app?** Mở [trang kiểm thử #47](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/47) để tải bản mới, chọn ca thử và báo lỗi. Bản ZIP có tệp `CHAY_THU_NHOM.cmd` và hướng dẫn cài uv. Dùng `CHAY_DEMO_VA_LOG.cmd` nếu cần demo và ghi log JSON.
+**Tester** · [Tải ZIP trong Releases](https://github.com/ngocthuan1505/proj_VA_soandethi/releases) → [Mở app, chọn ca và báo kết quả ở #47](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/47). Giải nén rồi dùng `CHAY_THU_NHOM.cmd` theo hướng dẫn cài uv trong gói. Dùng `CHAY_DEMO_VA_LOG.cmd` nếu cần demo và ghi log JSON.
 
-**Vừa sửa xong app?** Xem [cách phát hành bản thử](docs/team/KIEM_THU_NHOM.md#người-sửa-app). Từ một commit có CI xanh, người phụ trách có thể dùng [Actions → Phát hành bản thử](https://github.com/ngocthuan1505/proj_VA_soandethi/actions/workflows/phat-hanh-ban-thu.yml) để đóng ZIP và báo bản mới ở #47.
+**Người sửa app** · [Xem lỗi nhóm đã báo](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+is%3Aopen+label%3Atype%3Abug) → [Sửa qua PR và gửi bản mới cho tester](docs/team/KIEM_THU_NHOM.md#người-sửa-app). Từ commit có CI xanh, dùng [Actions → Phát hành bản thử](https://github.com/ngocthuan1505/proj_VA_soandethi/actions/workflows/phat-hanh-ban-thu.yml) để đóng ZIP và báo bản mới ở #47.
 
 [Hướng dẫn chạy, demo và log](HUONG_DAN_TEST_NHOM.md) · [Bảng kiểm thử bản 13](docs/testing/NGHIEM_THU_BAN_13.md) · [Bảng tiến độ nhóm](https://github.com/users/ngocthuan1505/projects/1/views/1)
 
