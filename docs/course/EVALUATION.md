@@ -36,7 +36,18 @@ Trong kho thử trống, tạo đề Toán lớp 5, nhập nguồn và ma trận
 | `c02daca` | Sau lần nộp trùng, rút bộ cũ khỏi ngữ cảnh và giữ ma trận, nguồn, lỗi | Lần ba viết lại cả năm câu, qua cấu trúc rồi trượt rà nội dung. Bộ giải từng tính được 40 nhưng chỉ phương án ghi 30. |
 | `20201ea` | Bộ giải trả nội dung phương án, Python tìm vị trí | Ánh xạ đúng 6/6 lần ở ba lượt rà. Sai Đúng/Sai, lệch mức và bất đồng bảng đánh giá vẫn bị chặn. |
 
-Ba lượt đều kết thúc vì hết thời gian, revision giữ ở 1 và lưu 0 câu. Kết quả 6/6 đo ánh xạ của Python, còn chất lượng câu hỏi và đáp án cần kiểm riêng. Dữ liệu chỉ gồm một đề và một lượt cho mỗi commit, chưa dùng để so tốc độ hoặc suy rộng tỷ lệ đạt. Nhật ký đầy đủ nằm trong kho QA cục bộ, kèm mã commit và file kiểm đối chiếu từng lượt. [Nhánh tích hợp và ca hồi quy](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/46)
+Ba lượt trên đều hết thời gian, revision giữ ở 1 và lưu 0 câu. Kết quả 6/6 đo riêng ánh xạ đáp án của Python.
+
+| Commit runtime | Thay đổi đang đo | Quan sát trên một lượt Qwen3 thật |
+| --- | --- | --- |
+| `1fadef7` | Giới hạn câu cần sửa theo mã lỗi | Lượt sửa hai câu giữ nguyên ba câu còn lại. Lỗi trùng chưa có mã câu nên lượt sau phải soạn lại cả bộ. Hết giờ khi rà lần nộp thứ năm. |
+| `6ea407e` | Gắn mã câu vào lỗi trùng | 19/20 lượt nộp sửa theo phạm vi. Sau lỗi trùng, lần nộp tiếp chỉ thay câu thứ hai nhưng quay về cách hỏi bị đánh giá lệch mức. Chạm 24 lần gọi model. |
+
+Hai lượt trên giữ revision 1 và lưu 0 câu. Đây là cùng một đề với một lượt chạy trên mỗi commit. Cần thêm dữ liệu để so tốc độ, độ đúng và tỷ lệ hội tụ giữa các bản. Nhật ký kỹ thuật gồm mã commit, đầu vào tự tạo và kết quả theo từng phép kiểm. [Thuật toán và dry run](ALGORITHM.md) · [Nhánh tích hợp](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/46)
+
+### Ca tích hợp Chrome với phản hồi mẫu
+
+Ở `21377e1`, bài kiểm dùng cùng năm câu và thay phản hồi HTTP Ollama bằng dữ liệu kiểm soát. Lượt một bị báo câu thứ hai lệch mức. Lượt hai gửi một câu thay thế, giữ bốn câu còn lại, qua bộ kiểm và hiện bản xem trước. Đề đang lưu giữ revision 1 cho tới khi người thử bấm xác nhận. Sau tải lại, có đủ năm câu, bốn dạng, 10 điểm và revision 2. Kết quả này đo luồng tích hợp, phạm vi sửa và lưu dữ liệu. Độ chính xác sư phạm của model thật được đánh giá riêng. [Kế hoạch kiểm tích hợp](../testing/KIEM_THU_TICH_HOP.md)
 
 Quyết định sau thử nghiệm là giữ kiểm độc lập và chặn khi bộ kiểm mâu thuẫn. Khi đề xuất chưa đạt trong ngân sách, giáo viên giữ bản đang soạn và có thể soạn tiếp thủ công. Phần cần xác nhận tiếp là model thật sửa qua kiểm, sau đó người rà độc lập kiểm nội dung và mức nhận thức.
 

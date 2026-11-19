@@ -53,6 +53,10 @@ Pseudocode/flowchart, dry run, điều kiện dừng/lỗi, phân tích chi phí
 
 Ứng viên `0198f75` qua 11 ca Chrome với phản hồi mẫu và 669 ca pytest trên Windows. Năm ca gọi model được bỏ qua trong lượt pytest mặc định. Lượt pytest chạy với PATH không chứa Node hoặc npm. Ca nhập tài liệu và ca gợi ý cơ cấu chờ bàn soạn lưu ID khối của đề mẫu trước khi ghi nhận mốc so sánh. [Cách chạy lại bộ kiểm](../testing/KIEM_THU_TICH_HOP.md) · [Mã nguồn ứng viên](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/0198f75ad02881fd04ad3391dc95e206765a9656).
 
+Ứng viên `21377e1` qua 686 pytest (5 ca gọi model tùy chọn bỏ qua), 11 ca Chrome dùng dữ liệu mẫu và hai job CI. Bản ZIP được cài riêng, lưu đề rồi xuất bản học sinh và giáo viên ở cả Word/PDF. Hai DOCX mở thành công trong Word. Ca bổ sung kiểm Word, Excel và PDF có bảng chữ qua FastAPI: đọc tại máy, giữ đề trong lúc xem trước, áp ma trận sau xác nhận. PDF chưa đọc được tại máy cần đồng ý trước khi gửi tới Gemini. [Mã ứng viên 40](https://github.com/ngocthuan1505/proj_VA_soandethi/commit/21377e11e414fff199674a62b45da518035e540e)
+
+Lượt Qwen3 thật trên `6ea407e` xác nhận Python giữ các câu ngoài phạm vi khi sửa. Bộ đề vẫn chưa qua hết phép kiểm khi chạm giới hạn gọi model. Ca Chrome giả lập trên ứng viên 40 đã đi qua nhánh sửa, xem trước và xác nhận đủ năm câu. Hai kết quả phục vụ hai câu hỏi đánh giá riêng. [Kết quả trước/sau và kế hoạch đánh giá](../course/EVALUATION.md)
+
 Phiên bản/giả thuyết từng vòng; functional + value + usability + accessibility; input/environment/commit/mẫu số; bug/feedback và cách kiểm lại. So sánh trước/sau có phương pháp, nêu trade-off, phương án khác, giữ/sửa/bỏ. Link CT-06; chưa có số liệu thì ghi chưa đo, không điền số minh họa.
 
 ## 9. Demo và tái lập
