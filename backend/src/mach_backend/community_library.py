@@ -568,6 +568,7 @@ def install_community_library(
     *,
     owner_resolver: OwnerResolver | None = None,
     clock: Callable[[], float] = time.time,
+    require_auth_for_read: bool = False,
 ) -> None:
     """Cài đặt các route kho cộng đồng vào ứng dụng FastAPI với SQLite độc lập."""
     connect = _make_connector(connect_or_db_path)
@@ -719,6 +720,7 @@ def install_community_library(
 
     @router.get("/items")
     async def list_items(
+        request: Request,
         grade: int | None = Query(default=None, ge=1, le=12),
         subject: str | None = Query(default=None),
         series: str | None = Query(default=None),
@@ -727,6 +729,8 @@ def install_community_library(
         q: str | None = Query(default=None),
         include_answers: bool | None = Query(default=None),
     ) -> dict[str, Any]:
+        if require_auth_for_read:
+            await _resolve_owner(request)
         clauses = ["status = 'published'"]
         params: list[Any] = []
         if grade is not None:
@@ -760,7 +764,9 @@ def install_community_library(
         return {"items": matched, "total": len(matched)}
 
     @router.get("/items/{item_id}")
-    async def get_item(item_id: str) -> dict[str, Any]:
+    async def get_item(item_id: str, request: Request) -> dict[str, Any]:
+        if require_auth_for_read:
+            await _resolve_owner(request)
         with connect() as db:
             row = db.execute(
                 f"SELECT {_ITEM_SELECT_COLUMNS} FROM community_items WHERE id = ?",

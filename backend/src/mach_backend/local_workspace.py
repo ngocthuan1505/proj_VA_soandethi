@@ -28,7 +28,10 @@ from mach_backend.ai_questions import (
     validate_generation,
 )
 from mach_backend.ai_service import check_question
+from mach_backend.community_library import install_community_library
+from mach_backend.curriculum_sources import install_curriculum_sources
 from mach_backend.exam_planning import PlanRequest, propose_structure
+from mach_backend.exam_spec_export import install_extended_exports
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
 from mach_backend.generation_submission import GenerationInputs
 from mach_backend.local_documents import chrome_path, export_file, extract_text
@@ -907,12 +910,20 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         job_status(exam_id, job_id)
         return store.discard(owner_id, exam_id, job_id)
 
+    install_curriculum_sources(app, store.connect, owner_resolver=lambda _request: owner_id)
+    install_extended_exports(app, owner_resolver=lambda _request: owner_id)
+
     if account_info is None:
         install_shares(
             app,
             store.connect,
             lambda _request: owner_id,
             lambda _request, exam_id: store.exam(exam_id),
+        )
+        install_community_library(
+            app,
+            store.connect,
+            owner_resolver=lambda _request: owner_id,
         )
 
     @app.api_route(
