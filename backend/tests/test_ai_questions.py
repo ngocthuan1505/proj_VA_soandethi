@@ -119,6 +119,8 @@ def test_generate_four_types_in_approved_order_without_mutating_plan(generation)
     def check_payload(data, schema):
         assert data["slots"] == job.model_dump(mode="json")["slots"]
         assert "questions" in schema and "edits" not in schema
+        for key in ("jobId", "examId", "baseRevision"):
+            assert schema[key] == {"const": data[key]}
         questions = schema["questions"]
         assert questions["minItems"] == questions["maxItems"] == 4
         by_type = {}

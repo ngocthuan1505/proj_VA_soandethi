@@ -277,6 +277,8 @@ def test_ollama_adapter_sends_only_selected_payload(job, proposal):
         assert data["stream"] is False
         assert data["format"]["properties"]["edits"]
         prompt = json.loads(data["messages"][1]["content"])
+        for key in ("jobId", "examId", "baseRevision"):
+            assert data["format"]["properties"][key] == {"const": prompt[key]}
         assert prompt["targets"] == [
             {"blockId": str(job.targets[0].blockId), "text": FIXTURE["selectionText"]}
         ]
