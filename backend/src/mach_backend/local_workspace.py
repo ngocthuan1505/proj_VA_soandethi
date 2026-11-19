@@ -281,7 +281,13 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
     agent_mode = provider is None
     model_name = os.environ.get("MACH_MODEL", "qwen2.5:3b")
     provider = (
-        AgentGeneration(store, model_name, directory / "agent-logs", call=agent_call)
+        AgentGeneration(
+            store,
+            model_name,
+            directory / "agent-logs",
+            job_status=lambda job: runner.status(job.ownerId, job.examId, job.jobId),
+            call=agent_call,
+        )
         if agent_mode
         else RetryingGeneration(provider, store)
     )

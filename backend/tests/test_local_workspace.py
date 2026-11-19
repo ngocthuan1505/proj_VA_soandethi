@@ -662,7 +662,10 @@ def test_timeout_keeps_partial_reports_unknown_and_draft_unchanged(
     async def call(purpose, body):
         if purpose == "explanation_check":
             if runner_timeout:
-                await asyncio.sleep(10)
+                try:
+                    await asyncio.sleep(10)
+                except asyncio.CancelledError:
+                    raise asyncio.CancelledError from None
             raise httpx.ReadTimeout("Fixture dịch vụ quá thời gian.")
         return await model(purpose, body)
 

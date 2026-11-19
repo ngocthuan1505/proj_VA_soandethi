@@ -13,7 +13,6 @@ import httpx
 from mach_backend.ai_contract import AIError
 from mach_backend.gemini_model import GEMINI_MODEL, GeminiKeyPool, GeminiModel
 from mach_backend.matrix_agent import run_matrix_agent, sha256_json
-from mach_backend.patch_jobs import JOB_DEADLINE
 from mach_backend.poc_matrix import LocalModel, RunLog
 from mach_backend.poc_policy import CallBudget, RunPolicy
 
@@ -263,7 +262,8 @@ async def local_model_call(model, purpose, body):
 
 
 class AgentGeneration:
-    def __init__(self, store, model: str, directory: Path, *, call=None):
+    def __init__(self, store, model: str, directory: Path, *, job_status, call=None):
+        self.job_status = job_status
         self.store, self.model, self.directory, self.call = store, model, directory, call
         self.provider_name, self.gemini_key, self.gemini_free_tier = "ollama", "", False
         self.gemini_backup_key = ""
@@ -486,11 +486,12 @@ class AgentGeneration:
                 result = await run_matrix_agent(
                     job, current_call, emit, max_attempts=None, max_turns=policy.maxModelCalls + 2
                 )
-            except asyncio.CancelledError as error:
-                # Khi bộ chạy hết giờ, nó dừng coroutine sau khi đã báo timeout cho API.
+            except asyncio.CancelledError:
+                # HTTP transport có thể bỏ thông tin gắn với CancelledError.
                 terminal = {"status": "cancelled", "saved": False}
-                if error.args == (JOB_DEADLINE,):
-                    terminal.update(status="failed", errorCode="timeout")
+                state = self.job_status(job)
+                if state.status == "failed" and state.errorCode:
+                    terminal.update(status=state.status, errorCode=state.errorCode)
                 summary = {**terminal, **metrics()}
                 log.write("result.json", summary)
                 self.store.put("matrix-agent-result:" + str(job.jobId), summary)
