@@ -40,7 +40,7 @@ try{
  await picker.locator('[name="page"][value="1"]').uncheck();
  await picker.locator('[name="source"]').check();
  await picker.getByRole('button',{name:'Dùng các nguồn đã chọn'}).click();
- await picker.waitFor({state:'detached'});
+ await picker.waitFor({state:'hidden'});
  await send();await page.locator('.matrix-chat-plan').waitFor();assert.equal(generations,0);assert.equal(chats,0);
  await page.getByRole('button',{name:'Dùng ma trận này',exact:true}).click();
  await page.locator('#matrix-source-text').waitFor();assert.equal(await page.locator('#dialog[open]').count(),0);
