@@ -158,8 +158,13 @@ try {
   await action('export').click();
   const variants = dialog.locator('#export-variants');
   await variants.locator('summary').click();
-  for (const checkbox of await variants.getByRole('checkbox').all()) await checkbox.check();
+  for (const checkbox of await variants.locator('input[data-kind]').all()) await checkbox.check();
   await variants.locator('select').selectOption('1');
+  await variants.getByRole('button', {name: 'Xem trước mã đã chọn'}).click();
+  const preview = variants.locator('[data-variant-preview]');
+  await preview.getByRole('heading', {name: /Mã đề 102/}).waitFor();
+  assert.match(await preview.locator('section > ol > li').first().innerText(), /Tính diện tích.*Câu gốc 2/);
+  assert.doesNotMatch(await preview.innerText(), /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/);
   await dialog.locator('[data-action="export-file"][data-teacher="false"][data-format="html"]').click();
   await dialog.locator('.saved-export-link').waitFor();
   const variantURL = new URL(await dialog.locator('.saved-export-link').getAttribute('href'), base);
@@ -230,6 +235,34 @@ try {
   })).ok());
   assert.equal((await page.request.get(publicationUrl.href)).status(), 404);
   assert.deepEqual((await (await page.request.get(base + '/api/community-exams')).json()).exams, []);
+
+  const quiz = blank('Toán');
+  quiz.title = 'Đề thử trộn phương án';
+  quiz.questions = [{
+    id: uid(), v: 1, type: 'mcq', stem: 'Chọn số chẵn.', points: 5,
+    options: ['một', 'hai', 'ba', 'năm'], answer: 1,
+  }, {
+    id: uid(), v: 1, type: 'mcq', stem: 'Chọn đáp án tổng hợp.', points: 5,
+    options: ['ba', 'bảy', 'mười', 'Cả hai phương án trên'], answer: 3,
+  }];
+  ensureBlocks(quiz);
+  const state = await (await page.request.get(kv + '?key=state')).json();
+  const seeded = await page.request.put(kv, {
+    headers: {Origin: base, 'If-Match': String(state.revision)},
+    data: {key: 'state', value: {...state.value, current: quiz.id, exams: [...state.value.exams, quiz]}},
+  });
+  assert(seeded.ok(), await seeded.text());
+  await page.reload();
+  await action('export').click();
+  await variants.locator('summary').click();
+  for (const checkbox of await variants.locator('input[data-kind]').all()) await checkbox.check();
+  await variants.getByLabel(/Trộn phương án/).check();
+  await variants.locator('select').selectOption('1');
+  await variants.getByRole('button', {name: 'Xem trước mã đã chọn'}).click();
+  await preview.getByRole('heading', {name: /Mã đề 102/}).waitFor();
+  const optionLabels = await preview.locator('ol[type=A] li').allTextContents();
+  assert.deepEqual(optionLabels, ['ba','bảy','mười','Cả hai phương án trên','ba','năm','một','hai']);
+  await page.screenshot({path: path.join(out, 'xem-truoc-ma-102.png')});
   assert.deepEqual(errors, []);
   await fs.writeFile(path.join(out, 'browser-result.json'), JSON.stringify({
     scenario: 'IT-10', exports, closedShareFormCreatedNoLink: true,
@@ -237,6 +270,8 @@ try {
     lateExportPreservedDialog: true,
     variantExportPreservedOriginal: true,
     variantPackPdfWithTeacherKey: true,
+    variantPreviewMatchesOutput: true,
+    browserShufflesIndependentOptionsOnly: true,
     communityPublishedCopiedAttachedAndRevoked: true,
   }, null, 2));
   console.log('IT-10: sáu bản xuất và luồng chia sẻ Chrome/FastAPI đạt.');

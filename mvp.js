@@ -106,36 +106,72 @@ let exportVariantSelection;
 function showExport(){const e=current();c.modal('Xuất đề',`${note('Xuất Word, PDF hoặc HTML. Bản Word giữ công thức có thể chỉnh sửa; hình học được nhúng dưới dạng ảnh.')}${status?.matrixPython&&e.questions.length>=2?`<details id="export-variants"><summary>Tạo mã đề</summary><fieldset><legend>Câu được đổi thứ tự</legend><p>Chọn ít nhất hai câu độc lập, cùng dạng. Thứ tự phương án và đáp án từng câu được giữ.</p>${e.questions.map((q,i)=>`<label class="consent"><input type="checkbox" value="${esc(q.id)}" data-kind="${esc(q.type||'mcq')}"> Câu ${i+1} · ${esc((q.stem||'').slice(0,90))}</label>`).join('')}</fieldset><label for="export-variant-code">Bản xuất</label><select id="export-variant-code"></select><p data-variant-status role="status"></p></details>`:''}<div class="grid2">${[false,true].map(t=>`<div class="choice-card"><h3>${t?'Bản giáo viên':'Bản học sinh'}</h3><p>${t?'Có đáp án, giải thích, nguồn và trạng thái rà soát.':'Không chứa đáp án, giải thích hoặc hội thoại.'}</p><div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-file',format==='docx'?'Word (.docx)':format==='pdf'?'PDF':'HTML',format==='docx'?'primary':'',`data-teacher="${t}" data-format="${format}"`)).join('')}</div></div>`).join('')}</div><div class="alert">${e.questions.filter(q=>!isApproved(q)).length} câu chưa được giáo viên duyệt.</div>${foot(btn('backup-local','Sao lưu toàn bộ đề (.json)'))}`);
  const variants=$('#export-variants');
  if(!variants)return;
+ const guide=variants.querySelector('fieldset p');
+ guide.textContent='Chọn ít nhất hai câu cùng phần, cùng dạng và cùng ngữ liệu bảng.';
+ variants.insertAdjacentHTML('beforeend',`<label class="consent"><input type="checkbox" id="export-shuffle-options"> Trộn phương án trắc nghiệm phù hợp và đổi đáp án theo</label>
+ <p class="hint">Phương án phụ thuộc vị trí, ví dụ “Cả hai phương án trên”, được giữ theo thứ tự gốc.</p>
+ <button type="button" data-action="preview-variant">Xem trước mã đã chọn</button>
+ <div data-variant-preview aria-live="polite"></div>`);
  variants.insertAdjacentHTML('beforeend',`<div data-variant-pack hidden>
   <p>Mỗi mã có một bản học sinh. Bảng đối chiếu đáp án nằm trong thư mục giáo viên.</p>
   <div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-pack','Bộ '+({docx:'Word',pdf:'PDF',html:'HTML'}[format]),'',`data-format="${format}"`)).join('')}</div>
  </div>`);
  const code=$('#export-variant-code'), previous=exportVariantSelection?.examId===e.id?exportVariantSelection:null;
- for(const input of variants.querySelectorAll('input'))input.checked=previous?.questionIds.includes(input.value)===true;
+ const shuffle=$('#export-shuffle-options');
+ for(const input of variants.querySelectorAll('input[data-kind]'))input.checked=previous?.questionIds.includes(input.value)===true;
+ shuffle.checked=previous?.shuffleOptions===true;
  variants.open=Boolean(previous?.questionIds.length);
  function update(preferred){
-  const selected=[...variants.querySelectorAll('input:checked')];
+  const selected=[...variants.querySelectorAll('input[data-kind]:checked')];
   const valid=selected.length>=2&&new Set(selected.map(input=>input.dataset.kind)).size===1;
   code.replaceChildren(new Option('Đề gốc',''));
   if(valid)for(let i=0;i<Math.min(selected.length,6);i++)code.add(new Option('Mã đề '+(101+i),String(i)));
   code.value=[...code.options].some(option=>option.value===preferred)?preferred:'';
+  shuffle.disabled=!valid||selected[0]?.dataset.kind!=='mcq';
+  variants.querySelector('[data-action="preview-variant"]').disabled=!code.value;
   variants.querySelector('[data-variant-pack]').hidden=!valid;
-  variants.querySelector('[data-variant-status]').textContent=valid?'Chọn mã rồi chọn định dạng cần tải.':'Chọn ít nhất hai câu cùng dạng để tạo mã.';
+  variants.querySelector('[data-variant-status]').textContent=valid?'Chọn mã để xem trước hoặc tải.':'Chọn ít nhất hai câu cùng dạng để tạo mã.';
  }
  update(previous?.code);
- variants.addEventListener('change',event=>{if(event.target!==code)update(code.value);});
+ variants.addEventListener('change',()=>{
+  update(code.value);
+  variants.querySelector('[data-variant-preview]').replaceChildren();
+ });
+}
+function exportVariantSettings(){
+ const shuffle=$('#export-shuffle-options');
+ return {
+  questionIds:[...document.querySelectorAll('#export-variants input[data-kind]:checked')].map(input=>input.value),
+  shuffleOptions:Boolean(shuffle?.checked&&!shuffle.disabled),
+ };
+}
+async function previewVariant(node){
+ if(!flushEditor())throw Error('Gõ xong chữ đang nhập rồi thử lại.');
+ const exam=clone(current()),view=node.parentElement.querySelector('[data-variant-preview]');
+ const code=$('#export-variant-code').value;
+ if(!code)return;
+ const pending=document.createElement('p');
+ pending.textContent='Đang chuẩn bị thứ tự câu…';
+ view.replaceChildren(pending);
+ try{
+  const result=await api('/api/preview-variant',{exam,variant:{...exportVariantSettings(),offset:Number(code)}});
+  if(!pending.isConnected||!$('#dialog').open||current().id!==exam.id||current().revision!==exam.revision)return;
+  view.innerHTML=`<section class="small-card"><h3>${esc(result.title)}</h3><p>Đối chiếu đề gốc theo số ghi cạnh mỗi câu.</p><ol>${result.questions.map(q=>`<li><p>${katexFragment(String(q.stem||''))} <small>· Câu gốc ${q.originalNumber}</small></p>${Array.isArray(q.options)&&q.options.length?`<ol type="A">${q.options.map(o=>`<li>${katexFragment(String(o))}</li>`).join('')}</ol>`:''}</li>`).join('')}</ol></section>`;
+ }catch(error){
+  if(pending.isConnected)pending.textContent=error.message;
+ }
 }
 async function exportFile(node,batch=false){
  if(!flushEditor())throw Error('Gõ xong chữ đang nhập rồi thử lại.');
  const exam=clone(current()),format=node.dataset.format,code=$('#export-variant-code')?.value;
- const questionIds=[...document.querySelectorAll('#export-variants input:checked')].map(input=>input.value);
- exportVariantSelection={examId:exam.id,questionIds,code};
- const variant=code?{questionIds,offset:Number(code)}:null;
+ const settings=exportVariantSettings(),{questionIds}=settings;
+ exportVariantSelection={examId:exam.id,...settings,code};
+ const variant=code?{...settings,offset:Number(code)}:null;
  c.modal('Đang xuất tệp',`<div class="busy"><span class="spinner"></span><span role="status">Đang tạo ${format.toUpperCase()} từ đề hiện tại…</span></div>`);
  const pendingExport=document.querySelector('#dialog .busy');
  try{
   const result=await api('/api/save-export',batch
-   ?{type:'variant-pack',exam,format,questionIds}
+   ?{type:'variant-pack',exam,format,...settings}
    :{type:'exam',exam,format,teacher:node.dataset.teacher==='true',...(variant?{variant}:{})});
   if(!pendingExport.isConnected||!$('#dialog').open){c.toast('Đã tạo tệp '+result.filename);return;}
   if(batch){
@@ -204,6 +240,7 @@ export async function handleMVPAction(action,node){flushEditor();if(await handle
  case 'export':showExport();return true;
  case 'export-file':await exportFile(node);return true;
  case 'export-pack':await exportFile(node,true);return true;
+ case 'preview-variant':await previewVariant(node);return true;
  case 'web-search':showSearch();return true;
  case 'read-web-result':await readResult(Number(node.dataset.index));return true;
  default:return false;

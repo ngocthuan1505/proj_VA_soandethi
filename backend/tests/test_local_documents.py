@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from mach_backend.ai_contract import AIError
-from mach_backend.local_documents import exam_html, export_file, extract_text
+from mach_backend.local_documents import exam_html, exam_variant, export_file, extract_text
 from mach_backend.local_workspace import create_app
 
 
@@ -240,6 +240,85 @@ def test_export_variant_reorders_questions_without_changing_saved_answers(exam, 
         ):
             assert client.post("/api/save-export", json={**payload, "variant": invalid}).is_error
     assert exam["questions"] == [first, held, last]
+
+
+def test_variant_preview_and_exports_share_shuffle_and_keep_dependent_options(exam, tmp_path):
+    first = {
+        **exam["questions"][0],
+        "id": "first",
+        "optionDocs": [
+            None,
+            {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {"type": "text", "text": "Cô Loan", "marks": [{"type": "bold"}]}
+                        ],
+                    }
+                ],
+            },
+        ],
+    }
+    second = {
+        **first,
+        "id": "second",
+        "stem": "Ai đã đến?",
+        "options": ["Nam", "Cô Loan", "Hà", "Cả hai đáp án trên"],
+        "answer": 3,
+    }
+    exam["questions"] = [first, second]
+    settings = {"questionIds": ["first", "second"], "shuffleOptions": True}
+    choice = {**settings, "offset": 1}
+    variant = exam_variant(exam, choice)
+    assert variant["questions"][0]["options"] == second["options"]
+    assert variant["questions"][0]["answer"] == 3
+    assert variant["questions"][1]["options"] == ["Hà", "Lan", "Nam", "Cô Loan"]
+    assert variant["questions"][1]["optionDocs"] == [None, None, None, first["optionDocs"][1]]
+    assert variant["questions"][1]["answer"] == 3
+    assert first["answer"] == 1 and first["options"][1] == "Cô Loan"
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        preview = client.post("/api/preview-variant", json={"exam": exam, "variant": choice})
+        assert preview.raise_for_status().json()["questions"] == [
+            {"originalNumber": 2, "stem": second["stem"], "options": second["options"]},
+            {
+                "originalNumber": 1,
+                "stem": first["stem"],
+                "options": variant["questions"][1]["options"],
+            },
+        ]
+        assert not (tmp_path / "exports").exists()
+        batch = (
+            client.post(
+                "/api/save-export",
+                json={"type": "variant-pack", "exam": exam, "format": "html", **settings},
+            )
+            .raise_for_status()
+            .json()
+        )
+        with zipfile.ZipFile(
+            io.BytesIO(client.get(batch["url"]).raise_for_status().content)
+        ) as archive:
+            student = archive.read("HOC_SINH/Ma_102.html").decode()
+            key = archive.read("GIAO_VIEN/Doi_chieu_dap_an.html").decode()
+        assert "Đáp án" not in student and student.index("Hà") < student.rindex("Cô Loan")
+        assert "D <small>(gốc: 1)" in key and "D <small>(gốc: 2)" in key
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"dataLinked": True},
+        {"groupId": "khác"},
+        {"stem": "Dựa vào Câu 1 để trả lời."},
+    ],
+)
+def test_variant_refuses_to_move_across_a_linked_group(exam, changes):
+    first = {**exam["questions"][0], "id": "first"}
+    exam["questions"] = [first, {**first, "id": "second", **changes}]
+    with pytest.raises(AIError, match="Chọn câu trong cùng phần|Có câu được nhắc theo số"):
+        exam_variant(exam, {"questionIds": ["first", "second"], "offset": 1})
 
 
 def test_extract_inline_validates_before_any_workspace_write(tmp_path):

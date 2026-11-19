@@ -19,7 +19,7 @@ from pypdf import PdfReader, apply_configuration
 from pypdf.errors import PyPdfError
 
 from mach_backend.ai_contract import AIError
-from mach_backend.ai_questions import saved_answer_label
+from mach_backend.ai_questions import saved_answer, saved_answer_label
 from mach_backend.export_assets import render_assets
 from mach_backend.matrix_import import validate_raster
 from mach_backend.word_export import (
@@ -477,10 +477,44 @@ def chrome_path():
     return next((p for p in candidates if p and Path(p).is_file()), None)
 
 
+# shortcut: recognize common positional wording until the editor can mark an option as fixed.
+_POSITION_DEPENDENT = re.compile(
+    r"\b[A-D]\b|(?i:cả (?:hai|ba|bốn)|(?:tất cả|không có).{0,30}(?:trên|sau)|"
+    r"phương án (?:trên|dưới|[a-d]\b)|(?:chọn|đáp án)\s*\(?[a-d]\b|all of|none of|both)",
+)
+_QUESTION_REFERENCE = re.compile(r"\b(?:câu|bài)\s*(?:số\s*)?(\d+)\b", re.IGNORECASE)
+
+
+def shuffle_variant_question(question, offset):
+    options = question.get("options")
+    docs = question.get("optionDocs")
+    if (
+        question.get("type", "mcq") != "mcq"
+        or not isinstance(options, list)
+        or len(options) != 4
+        or any(not isinstance(option, str) or not option.strip() for option in options)
+        or len(set(options)) != 4
+        or (docs is not None and (not isinstance(docs, list) or len(docs) > 4))
+    ):
+        return question
+    texts = [question.get("stem"), question.get("explanation"), *options]
+    if any(_POSITION_DEPENDENT.search(text) for text in texts if isinstance(text, str)):
+        return question
+    order = [(i + offset % 3 + 1) % 4 for i in range(4)]
+    answer = saved_answer(question)
+    result = {**question, "options": [options[i] for i in order]}
+    if docs is not None:
+        result["optionDocs"] = [docs[i] if i < len(docs) else None for i in order]
+    if type(answer) is int:
+        result["answer"] = order.index(answer)
+    return result
+
+
 def exam_variant(exam, variant):
     questions = exam["questions"]
     ids = variant.get("questionIds") if isinstance(variant, dict) else None
     offset = variant.get("offset") if isinstance(variant, dict) else None
+    shuffle = variant.get("shuffleOptions", False) if isinstance(variant, dict) else False
     if (
         not isinstance(ids, list)
         or not 2 <= len(ids) <= 300
@@ -488,23 +522,72 @@ def exam_variant(exam, variant):
         or len(set(ids)) != len(ids)
         or type(offset) is not int
         or not 0 <= offset < min(6, len(ids))
+        or type(shuffle) is not bool
+        or any(not isinstance(q, dict) for q in questions)
     ):
         raise AIError("invalid_variant", "Chọn ít nhất hai câu và một mã đề hợp lệ.")
     selected = set(ids)
     positions = [i for i, q in enumerate(questions) if q.get("id") in selected]
     if len(positions) != len(ids) or {questions[i]["id"] for i in positions} != selected:
         raise AIError("invalid_variant", "Danh sách câu đã thay đổi. Chọn lại câu cần trộn.")
+    selected_numbers = {str(i + 1) for i in positions}
+    if any(
+        selected_numbers.intersection(_QUESTION_REFERENCE.findall(text))
+        for question in questions
+        for text in (
+            question.get("stem"),
+            *(question["options"] if isinstance(question.get("options"), list) else []),
+            question.get("explanation"),
+        )
+        if isinstance(text, str)
+    ):
+        raise AIError("invalid_variant", "Có câu được nhắc theo số trong đề. Hãy bỏ chọn câu đó.")
     group = [questions[i] for i in positions]
-    if len({q.get("type", "mcq") for q in group}) != 1:
-        raise AIError("invalid_variant", "Chỉ chọn các câu cùng dạng để giữ cấu trúc đề.")
+    first = group[0]
+    if any(
+        q.get("type", "mcq") != first.get("type", "mcq")
+        or uses_table(q) != uses_table(first)
+        or q.get("sectionId") != first.get("sectionId")
+        or q.get("groupId") != first.get("groupId")
+        or q.get("passageId") != first.get("passageId")
+        for q in questions[positions[0] : positions[-1] + 1]
+    ):
+        raise AIError(
+            "invalid_variant",
+            "Chọn câu trong cùng phần, cùng dạng và cùng ngữ liệu bảng.",
+        )
     reordered = questions.copy()
     for index, question in zip(positions, group[offset:] + group[:offset], strict=True):
-        reordered[index] = {**question, "pageBreak": questions[index].get("pageBreak", False)}
+        candidate = shuffle_variant_question(question, offset) if shuffle else question
+        reordered[index] = {**candidate, "pageBreak": questions[index].get("pageBreak", False)}
     code = str(101 + offset)
     return {
         **exam,
         "title": f"{exam.get('title') or 'Đề thi'} · Mã đề {code}",
         "questions": reordered,
+    }
+
+
+def preview_exam_variant(payload):
+    exam = payload.get("exam")
+    if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
+        raise AIError("invalid_exam", "Đề cần danh sách câu để xem trước.")
+    variant = exam_variant(exam, payload.get("variant"))
+    original = {
+        q["id"]: i + 1 for i, q in enumerate(exam["questions"]) if isinstance(q.get("id"), str)
+    }
+    return {
+        "title": variant["title"],
+        "questions": [
+            {
+                "originalNumber": original.get(q.get("id"), i + 1)
+                if isinstance(q.get("id"), str)
+                else i + 1,
+                "stem": q.get("stem", ""),
+                "options": q.get("options", []),
+            }
+            for i, q in enumerate(variant["questions"])
+        ],
     }
 
 
@@ -516,10 +599,14 @@ def export_variant_pack(payload, directory, origin):
         raise AIError("invalid_exam", "Đề cần danh sách câu để xuất.")
     if format_ not in ("docx", "pdf", "html"):
         raise AIError("unsupported_export", "Chọn Word, PDF hoặc HTML để xuất bộ mã.")
-    exam_variant(exam, {"questionIds": ids, "offset": 0})
+    settings = {"questionIds": ids, "shuffleOptions": payload.get("shuffleOptions", False)}
+    first = exam_variant(exam, {**settings, "offset": 0})
     variants = [
-        exam_variant(exam, {"questionIds": ids, "offset": offset})
-        for offset in range(min(6, len(ids)))
+        first,
+        *[
+            exam_variant(exam, {**settings, "offset": offset})
+            for offset in range(1, min(6, len(ids)))
+        ],
     ]
     headings = "".join(f"<th scope='col'>Mã {101 + i}</th>" for i in range(len(variants)))
     original_numbers = {
