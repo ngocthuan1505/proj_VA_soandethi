@@ -74,6 +74,33 @@ try {
   }, {url: kv, id: exam.questions[0].id});
   await page.reload();
   await page.locator('.question-assets img[alt="Sơ đồ phác QA 731"]').waitFor();
+
+  const phone = await browser.newPage({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
+  await phone.goto(base);
+  await phone.locator('[data-action="menu"][data-menu="insert"]:visible').first().click();
+  await phone.locator('[data-action="studio-sketch"]:visible').first().click();
+  const phoneCanvas = phone.locator('#sketch-board canvas');
+  await phoneCanvas.scrollIntoViewIfNeeded();
+  const phoneBox = await phoneCanvas.boundingBox();
+  assert(phoneBox && phoneBox.width <= 390);
+  const touchInput = await phone.context().newCDPSession(phone);
+  await touchInput.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [
+    {x: phoneBox.x + phoneBox.width * .25, y: phoneBox.y + phoneBox.height * .3}
+  ]});
+  await touchInput.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [
+    {x: phoneBox.x + phoneBox.width * .68, y: phoneBox.y + phoneBox.height * .65}
+  ]});
+  await touchInput.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
+  await phone.waitForFunction(() => !document.querySelector('#sketch-board [type=submit]').disabled);
+  const pixels = await phoneCanvas.evaluate(element => {
+    const rgba = element.getContext('2d').getImageData(0, 0, element.width, element.height).data;
+    return rgba.filter((value, index) => index % 4 === 3 && value !== 0).length;
+  });
+  assert(pixels > 100);
+  await phone.screenshot({path: path.join(out, 'bang-ve-phac-dien-thoai.png')});
+  await phone.locator('#dialog').getByRole('button', {name: 'Đóng', exact: true}).click();
+  await phone.close();
+
   const exports = [];
   for (const teacher of [false, true]) {
     for (const format of ['docx', 'pdf', 'html']) {
@@ -181,6 +208,7 @@ try {
   await recipient.getByText('Rút gọn phân số', {exact: false}).last().waitFor();
   const publicText = await recipient.locator('body').innerText();
   assert.doesNotMatch(publicText, /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731|Tạo bản sao riêng/);
+  assert.equal(await recipient.locator('img[alt="Sơ đồ phác QA 731"]').count(), 1);
   await dialog.locator('[data-action=share]').click();
   await dialog.locator('[data-action=revoke-share]').click();
   await dialog.locator('[data-action=revoke-share]').waitFor({state: 'detached'});
@@ -300,6 +328,7 @@ try {
   await fs.writeFile(path.join(out, 'browser-result.json'), JSON.stringify({
     scenario: 'IT-10', exports, closedShareFormCreatedNoLink: true,
     sketchMouseUndoKeyboardReloadAndExport: true,
+    sketchTouch: true,
     lateAnswerToggleWasIgnored: true, recipientRead: true, revoked: true,
     lateExportPreservedDialog: true,
     variantExportPreservedOriginal: true,
