@@ -522,6 +522,36 @@ def test_ollama_structured_tool_keeps_references_at_schema_root():
     assert nested["properties"]["questions"] == parameters["properties"]["questions"]
 
 
+def test_ollama_restarts_context_after_exact_repeat_without_losing_feedback():
+    feedback = {
+        "ok": False,
+        "reusedFromAttempt": 1,
+        "errors": [{"ordinal": 0, "code": "level_disagreement"}],
+    }
+    assignment = {"role": "user", "content": '{"matrix":{"slots":[]},"source":[]}'}
+    messages = [
+        {"role": "system", "content": "Soạn đề."},
+        assignment,
+        {"role": "assistant", "tool_calls": [tool("check_exam", draft(3))]},
+        {"role": "tool", "tool_name": "check_exam", "content": '{"ok":false}'},
+        {"role": "assistant", "tool_calls": [tool("check_exam", draft(3))]},
+        {"role": "tool", "tool_name": "check_exam", "content": json.dumps(feedback)},
+    ]
+    request = structured_tool_request(
+        {
+            "messages": messages,
+            "tools": [{"function": {"name": "check_exam", "parameters": {"type": "object"}}}],
+        }
+    )
+    assert len(request["messages"]) == 3 and len(messages) == 6
+    assert request["messages"][1] == assignment
+    assert json.loads(request["messages"][-1]["content"]) == {
+        "toolResult": "check_exam",
+        "result": feedback,
+    }
+    assert "đặt câu hỏi mới" in request["messages"][0]["content"]
+
+
 @pytest.mark.parametrize("budget_seconds", [None, 900])
 def test_model_call_budget_and_raw_response_are_kept(tmp_path, budget_seconds):
     def respond(request):

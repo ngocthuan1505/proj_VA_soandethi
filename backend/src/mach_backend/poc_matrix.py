@@ -46,8 +46,17 @@ def structured_tool_request(body):
     schema = {"oneOf": choices}
     if definitions:
         schema["$defs"] = definitions
+    history = body["messages"]
+    restart = (
+        len(history) >= 4
+        and history[-1].get("tool_name") == "check_exam"
+        and json.loads(history[-1]["content"]).get("reusedFromAttempt") is not None
+    )
+    if restart:
+        # Mẫu trả lời trùng trong lịch sử khiến model tiếp tục chép lại cả bộ cũ.
+        history = [*history[:2], history[-1]]
     messages = []
-    for message in body["messages"]:
+    for message in history:
         if message["role"] == "tool":
             messages.append(
                 {
@@ -81,6 +90,13 @@ def structured_tool_request(body):
         "và làm theo result.repairInstruction nếu có trước khi nộp lại. "
         "Trả đúng JSON theo schema: " + json.dumps(schema, ensure_ascii=False)
     )
+    if restart:
+        messages[0]["content"] += (
+            " Bộ câu trước bị nộp lặp và đã rút khỏi ngữ cảnh. "
+            "Hãy soạn lại toàn bộ từ ma trận và nguồn ban đầu. Với mỗi lỗi có ordinal "
+            "(đếm từ 0), đặt câu hỏi mới cho đúng ô đó, dùng dữ kiện hoặc cách hỏi khác. "
+            "Tự giải từng câu mới rồi mới nộp qua check_exam."
+        )
     return {"messages": messages, "format": schema}
 
 
