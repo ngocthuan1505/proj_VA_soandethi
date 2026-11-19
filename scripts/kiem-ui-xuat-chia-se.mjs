@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {chromium} from 'playwright-core';
 import {blank, uid} from '../core.js';
 import {ensureBlocks} from '../blocks.js';
@@ -56,8 +57,15 @@ try {
       exports.push({filename, teacher, format, bytes: data.length});
       if (format === 'html') {
         const opened = await browser.newPage();
-        await opened.goto(url);
+        const networkAttempts = [];
+        await opened.route(/^https?:/, route => {
+          networkAttempts.push(route.request().url());
+          return route.abort();
+        });
+        await opened.goto(pathToFileURL(path.join(out, filename)).href);
         await opened.getByText('Rút gọn phân số', {exact: false}).last().waitFor();
+        assert.equal(await opened.locator('math mfrac').count(), 1);
+        assert.deepEqual(networkAttempts, []);
         assert.equal(await opened.getByText('LOI_GIAI_RIENG_731').count() > 0, teacher);
         assert.equal(await opened.getByText('CHAT_NOI_BO_731').count(), 0);
         await opened.close();

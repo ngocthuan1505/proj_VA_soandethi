@@ -269,7 +269,7 @@ def field(text, document=None, runs=None):
     return rich(field_document(text, document, runs))
 
 
-def exam_html(exam, teacher, origin, figures=None):
+def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
     figures = list(figures or [])
     if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
         raise AIError("invalid_exam", "Đề xuất chưa hợp lệ.")
@@ -406,6 +406,33 @@ def exam_html(exam, teacher, origin, figures=None):
             )
         body += "</section>"
     origin = html.escape(origin.rstrip("/"), quote=True)
+    math_css, math_script = "", ""
+    if rendered_math is None:
+        math_css = f'<link rel="stylesheet" href="{origin}/assets/katex/katex.min.css">'
+        math_script = (
+            f'<script type="module">import katex from "{origin}/assets/katex/katex.mjs";'
+            f'import "{origin}/assets/katex/contrib/mhchem.mjs";'
+            'for(const n of document.querySelectorAll(".math")){'
+            "katex.render(n.textContent,n,{throwOnError:false,trust:false,"
+            'displayMode:n.dataset.display==="true"});}</script>'
+        )
+    else:
+
+        def embed_math(match):
+            latex = html.unescape(match["text"].replace("<br>", "\n"))
+            mathml = rendered_math.get(latex)
+            if mathml is None:
+                raise AIError("export_render_failed", "Thiếu công thức đã dựng; chưa xuất tệp.")
+            if match["display"] == "true":
+                mathml = mathml.replace("<math ", '<math display="block" ', 1)
+            return mathml
+
+        body = re.sub(
+            r'<(?P<tag>span|div) class="math"(?: data-display="(?P<display>true|false)")?>'
+            r"(?P<text>.*?)</(?P=tag)>",
+            embed_math,
+            body,
+        )
     layout = exam.get("layout") or {}
     font = (
         layout.get("font")
@@ -416,9 +443,9 @@ def exam_html(exam, teacher, origin, figures=None):
     return (
         '<!doctype html><html lang="vi"><meta charset="utf-8"><title>'
         + plain(exam.get("title"))
-        + '</title><link rel="stylesheet" href="'
-        + origin
-        + '/assets/katex/katex.min.css"><style>'
+        + "</title>"
+        + math_css
+        + "<style>"
         f'body{{font:{size}pt "{font}",serif;max-width:760px;margin:30px auto;color:#111}}'
         "h1{font-size:18pt;text-align:center}section{margin:20px 0}"
         "section>b{display:block;break-after:avoid}"
@@ -429,15 +456,7 @@ def exam_html(exam, teacher, origin, figures=None):
         "blockquote,small{font-size:11pt;color:#444}@page{size:A4;margin:18mm}"
         ".page-break{break-before:page}"
         "@media print{body{margin:0}section,ol,ul{break-inside:avoid}"
-        ".rubric-title{break-after:avoid}}</style><body>"
-        + body
-        + '<script type="module">import katex from "'
-        + origin
-        + '/assets/katex/katex.mjs";import "'
-        + origin
-        + '/assets/katex/contrib/mhchem.mjs";for(const n of document.querySelectorAll(".math")){'
-        "katex.render(n.textContent,n,{throwOnError:false,trust:false,"
-        'displayMode:n.dataset.display==="true"});}</script></body></html>'
+        ".rubric-title{break-after:avoid}}</style><body>" + body + math_script + "</body></html>"
     )
 
 
@@ -463,16 +482,17 @@ def export_file(payload, directory, origin):
         exam = payload.get("exam")
         if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
             raise AIError("invalid_exam", "Đề cần danh sách câu để xuất.")
-        rendered = []
+        rendered = {"figures": [], "math": {}}
         if format_ != "docx":
             formulas, figures = export_inputs(exam, payload.get("teacher") is True)
-            rendered = render_assets(formulas, figures, chrome_path())["figures"]
+            rendered = render_assets(formulas, figures, chrome_path())
         content = (
             exam_html(
                 exam,
                 payload.get("teacher") is True,
                 Path(__file__).resolve().parents[3].as_uri() if format_ == "pdf" else origin,
-                rendered,
+                rendered["figures"],
+                rendered_math=rendered["math"] if format_ == "html" else None,
             )
             if format_ != "docx"
             else ""
