@@ -13,6 +13,7 @@ from mach_backend.ai_contract import (
     SourceFragment,
     validate_locator,
 )
+from mach_backend.lesson_catalog import lesson_catalog
 
 type WireUUID = Annotated[UUID, Field(strict=False)]
 type SourceKey = tuple[UUID, Locator]
@@ -70,6 +71,9 @@ def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...]):
     chosen = {
         (str(source_id), locator.index) for source_id, locator in keys if locator.kind == "page"
     }
+    if not chosen:
+        return ()
+    catalog = {collection["id"]: collection for collection in lesson_catalog()}
     sources = []
     for doc in exam.get("docs", []):
         doc_id = doc.get("id")
@@ -84,9 +88,29 @@ def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...]):
                 "Nguồn chưa có quyền dùng cho AI hoặc đang bị hạn chế.",
                 http_status=403,
             )
-        pages = doc.get("pages") or [{"number": 1, "text": doc.get("text", "")}]
+        collection = catalog.get(doc_id)
+        if collection is None:
+            if doc.get("catalog") is True:
+                raise AIError("source_not_found", "Học liệu đã chọn không còn trong thư viện.")
+            pages = doc.get("pages") or [{"number": 1, "text": doc.get("text", "")}]
+            version = doc.get("version", 1)
+        else:
+            if doc.get("version", 1) != collection["version"]:
+                raise AIError("stale_snapshot", "Học liệu đã đổi. Hãy chọn lại bài trong thư viện.")
+            pages = [
+                {
+                    "number": lesson["number"],
+                    "text": (
+                        f"Bài {lesson['number']}. {lesson['title']}\n{lesson['text']}\n"
+                        f"Mục tiêu: {lesson['outcome']}"
+                    ),
+                }
+                for lesson in collection["lessons"]
+            ]
+            version = collection["version"]
         for page in pages:
-            if (doc_id, page.get("number")) not in chosen:
+            number = page.get("number")
+            if type(number) is not int or (doc_id, number) not in chosen:
                 continue
             text = page.get("text")
             if not isinstance(text, str) or not text.strip():
@@ -98,8 +122,8 @@ def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...]):
                     SourceFragment(
                         ownerId=owner_id,
                         sourceId=UUID(doc_id),
-                        sourceVersion=doc.get("version", 1),
-                        locator=Locator(kind="page", index=page["number"]),
+                        sourceVersion=version,
+                        locator=Locator(kind="page", index=number),
                         text=text,
                     )
                 )

@@ -93,12 +93,20 @@ try {
  await picker.locator('[name=volume]').selectOption('Tập 1');
  assert.equal(await picker.locator('[data-lesson-collection]').count(),1);
  const chapter=picker.locator('fieldset').filter({has:page.getByText('Phương trình và hệ phương trình',{exact:true})});
+ await picker.locator('[name=query]').fill('giai he bang phep the');
+ const volume=picker.getByRole('checkbox',{name:/Chọn cả tập/});
+ await volume.check();
+ await picker.locator('[name=query]').fill('');
+ assert.equal(await picker.locator('[name=lesson]:checked').count(),await picker.locator('[name=lesson]').count());
+ await volume.uncheck();
+ assert.equal(await picker.locator('[name=lesson]:checked').count(),0);
  await chapter.getByRole('checkbox',{name:'Chọn cả chương',exact:true}).check();
  await picker.locator('[name=query]').fill('giai he bang phep the');
  await picker.getByText('Giải hệ bằng phép thế',{exact:true}).waitFor();
  assert.equal(await picker.locator('[name=lesson]:checked').count(),1);
  await picker.getByText('Xem học liệu',{exact:true}).click();
  assert.match(await picker.locator('details[open]').innerText(),/Mục tiêu/);
+ await page.screenshot({path:path.join(out,'bo-chon-hoc-lieu.png')});
  await picker.locator('[name=grade]').selectOption('5');
  await picker.locator('[name=query]').fill('');
  await picker.getByRole('checkbox',{name:'So sánh số thập phân'}).check();
@@ -115,7 +123,7 @@ try {
   scenario:'IT-09',previewReadOnly:true,sourceIdPreserved:true,linkedPageOpened:true,
   chosenQuotePreserved:true,answerPreserved:true,relatedApprovalInvalidated:true,
   unrelatedQuestionUnchanged:true,sourcePageEdited:2,sourceVersion:2,mobileReload:true,fixture:true,
-  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true},
+  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true},
  },null,2));
 } finally {
  await browser.close();
