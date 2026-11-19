@@ -517,6 +517,44 @@ async def local_model_call(model, purpose, body):
         if any(q.get("type", "mcq") != "mcq" for q in questions):
             return await model(purpose, body)
     if purpose == "agent":
+        messages = body["messages"]
+        if len(messages) >= 4 and messages[-1].get("tool_name") == "check_exam":
+            report = json.loads(messages[-1]["content"])
+            slots = json.loads(messages[1]["content"])["matrix"]["slots"]
+            errors = report.get("errors", [])
+            if not report.get("ok") and {e.get("ordinal") for e in errors} == set(
+                range(len(slots))
+            ):
+                # A fully rejected draft is a poor example for the next structured response.
+                rejected = messages[-2].get("tool_calls", [])
+                questions = (
+                    rejected[0]["function"]["arguments"].get("questions", [])
+                    if len(rejected) == 1 and rejected[0]["function"]["name"] == "check_exam"
+                    else []
+                )
+                notes = {
+                    "ok": False,
+                    "errors": [
+                        {k: e[k] for k in ("ordinal", "code", "requiredTask", "reason") if k in e}
+                        for e in errors
+                    ],
+                    "rejectedStems": [
+                        q["stem"]
+                        for q in questions
+                        if isinstance(q, dict) and isinstance(q.get("stem"), str)
+                    ]
+                    if isinstance(questions, list)
+                    else [],
+                    "repairInstruction": (
+                        "Viết bộ câu mới theo từng ô từ nguồn ban đầu. Tránh câu tương đương "
+                        "với rejectedStems. Chọn dữ kiện, thao tác hoặc tình huống khác."
+                    ),
+                }
+                body["messages"] = [
+                    *messages[:2],
+                    {**messages[-1], "content": json.dumps(notes, ensure_ascii=False)},
+                ]
+                body["options"] = {**body.get("options", {}), "temperature": 0.45}
         for tool in body["tools"]:
             if tool["function"]["name"] == "check_exam":
                 question_schema = tool["function"]["parameters"]["properties"]["questions"]["items"]
@@ -531,6 +569,7 @@ async def local_model_call(model, purpose, body):
             "Ba phương án nhiễu phải sai hoặc không phù hợp với chính câu hỏi. "
             "Với Thông hiểu, yêu cầu so sánh hai hành động, suy ra đặc điểm chung "
             "hoặc ý nghĩa từ hai chi tiết. Không hỏi lại nguyên nhân đã viết sẵn. "
+            "Với Vận dụng, nêu tình huống mới cụ thể rồi yêu cầu suy ra kết quả. "
             "Viết câu hỏi và lời giải ngắn gọn, không lặp lại ma trận trong lời giải."
         )
         for message in body["messages"]:
@@ -587,13 +626,13 @@ async def local_model_call(model, purpose, body):
             for option in question["options"]:
                 option["letter"] = "ABCD"[option.pop("index")]
             single["messages"][0]["content"] = (
-                "Giải độc lập câu hỏi dựa trên nguồn. answer là CHỮ phương án A/B/C/D. "
-                "Nếu nhiều phương án đúng hoặc thiếu căn cứ, đặt uncertain=true, "
-                "optionVerdicts gồm bốn nhãn correct/incorrect/unknown theo thứ tự A/B/C/D. "
-                "Kiểm RIÊNG "
-                "từng phương án có trả lời đúng chính câu hỏi dựa trên nguồn không. "
-                "Đừng chỉ kiểm phương án đầu tiên rồi bỏ qua phương án còn lại. "
-                "answer=chua_ket_luan. supported chỉ đúng khi nguồn đủ căn cứ. "
+                "Giải độc lập dựa trên nguồn. Xác định đối tượng hoặc kết luận trong stem. "
+                "Xét riêng bốn phương án theo thứ tự A/B/C/D trong optionVerdicts. "
+                "Chỉ dùng correct nếu phương án vừa có căn cứ vừa trực tiếp trả lời stem. "
+                "Một phát biểu đúng về kiến thức nhưng trả lời việc khác là incorrect. "
+                "Nếu không có đúng một phương án hoặc thiếu căn cứ, ghi uncertain=true, "
+                "answer=chua_ket_luan. Nếu có đúng một phương án, answer là chữ A/B/C/D "
+                "khớp vị trí correct và uncertain=false. supported chỉ đúng khi nguồn đủ căn cứ. "
                 "topicMatches kiểm chủ đề thật của câu. observedLevel là TÊN mức, "
                 "duplicateWith liệt kê mã câu trong priorQuestions hỏi lại cùng kiến thức "
                 "và thao tác, không chỉ vì cùng chủ đề. Chưa rõ thì duplicateUncertain=true. "

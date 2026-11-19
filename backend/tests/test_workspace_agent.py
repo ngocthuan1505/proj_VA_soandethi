@@ -5,7 +5,7 @@ import json
 import pytest
 
 from mach_backend.ai_contract import AIError
-from mach_backend.matrix_agent import ContentReviews, MixedContentReviews, sha256_json
+from mach_backend.matrix_agent import ContentReviews, DraftBatch, MixedContentReviews, sha256_json
 from mach_backend.mixed_questions import MixedDraftBatch, MixedDraftQuestion
 from mach_backend.poc_matrix import structured_tool_request
 from mach_backend.workspace_agent import local_model_call
@@ -49,6 +49,8 @@ def test_local_reviewer_receives_one_question_without_saved_answers():
         prior = json.loads(request["messages"][1]["content"])["priorQuestions"]
         assert [q["ordinal"] for q in prior] == list(range(ordinal))
         assert all("answer" not in q for q in prior)
+        assert "trả lời việc khác là incorrect" in request["messages"][0]["content"]
+        assert "Nếu có đúng một phương án" in request["messages"][0]["content"]
         assert request["format"]["$defs"]["ContentReview"]["properties"]["ordinal"] == {
             "const": ordinal
         }
@@ -78,6 +80,69 @@ def test_local_reviewer_receives_one_question_without_saved_answers():
         for i in range(2)
     ]
     assert len(calls) == 2 and body == before
+
+
+@pytest.mark.parametrize("failed", [[0], [0, 1]])
+def test_only_full_mcq_rejection_replaces_draft_with_concise_feedback(failed):
+    notes = {
+        "ok": False,
+        "errors": [
+            {"ordinal": i, "code": "level_disagreement", "reason": "Hỏi lại nguồn"} for i in failed
+        ],
+        "checks": [{"input": "Báo cáo dài"}],
+    }
+    body = {
+        "messages": [
+            {"role": "system", "content": "Soạn theo ma trận"},
+            {
+                "role": "user",
+                "content": json.dumps({"matrix": {"slots": [{"level": 0}, {"level": 1}]}}),
+            },
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "function": {
+                            "name": "check_exam",
+                            "arguments": {
+                                "questions": [
+                                    {"stem": "Câu cũ thứ nhất"},
+                                    {"stem": "Câu cũ thứ hai"},
+                                ]
+                            },
+                        }
+                    }
+                ],
+            },
+            {"role": "tool", "tool_name": "check_exam", "content": json.dumps(notes)},
+        ],
+        "tools": [
+            {"function": {"name": "check_exam", "parameters": DraftBatch.model_json_schema()}}
+        ],
+    }
+    schema = body["tools"][0]["function"]["parameters"]
+    schema["properties"]["questions"]["items"] = copy.deepcopy(schema["$defs"]["DraftQuestion"])
+    captured = []
+
+    async def model(_purpose, request):
+        captured.append(request)
+        return {"content": "", "tool_calls": []}
+
+    before = copy.deepcopy(body)
+    asyncio.run(local_model_call(model, "agent", body))
+    assert body == before
+    (request,) = captured
+    report = json.loads(request["messages"][-1]["content"])
+    if failed == [0, 1]:
+        assert [m["role"] for m in request["messages"]] == ["system", "user", "tool"]
+        assert report["errors"] == notes["errors"]
+        assert report["rejectedStems"] == ["Câu cũ thứ nhất", "Câu cũ thứ hai"]
+        assert "checks" not in report
+        assert request["options"]["temperature"] == 0.45
+    else:
+        assert report == notes
+        assert request["messages"][-2] == before["messages"][-2]
 
 
 def mixed_tool_body():
