@@ -71,6 +71,7 @@ Gọi model với ma trận và nguồn đã duyệt
 Lặp trong ngân sách
   Nếu lượt trước định vị được lỗi ở một phần bộ câu
     Gửi các vị trí cần sửa, nội dung cần tránh lặp và báo cáo lỗi
+    Kèm tối đa bốn lỗi đã thấy gần đây ở chính những vị trí đó
     Nhận đúng số câu thay thế theo thứ tự vị trí
     Ghép vào bản nháp trước theo vị trí
   Nếu chưa có bản nháp hoặc lỗi chưa khoanh được theo câu

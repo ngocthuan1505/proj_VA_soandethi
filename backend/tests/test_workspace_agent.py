@@ -156,7 +156,7 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
     assert body == before
 
 
-@pytest.mark.parametrize("mode", ["scoped", "malformed", "unscoped"])
+@pytest.mark.parametrize("mode", ["scoped", "malformed", "unscoped", "history"])
 def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode):
     body = mixed_tool_body()
     previous = [{"stem": f"Câu {i}?"} for i in range(5)]
@@ -164,6 +164,8 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
     feedback = {"ok": False, "errors": [{"ordinal": 2, "code": "level_disagreement"}]}
     if mode == "unscoped":
         feedback["errors"].append({"code": "invalid_result"})
+    if mode == "history":
+        feedback["errors"][0]["code"] = "duplicate_question"
     body["messages"] += [
         {
             "role": "assistant",
@@ -173,6 +175,25 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
         },
         {"role": "tool", "tool_name": "check_exam", "content": json.dumps(feedback)},
     ]
+    if mode == "history":
+        initial = copy.deepcopy(previous)
+        initial[2]["stem"] = "Cách hỏi đã bị báo sai mức."
+        old_report = {
+            "ok": False,
+            "errors": [
+                {"ordinal": 2, "code": "level_disagreement", "requiredTask": "Nối hai dữ kiện."},
+                {"ordinal": 3, "code": "level_disagreement", "requiredTask": "Mức của câu khác."},
+            ],
+        }
+        body["messages"][2:2] = [
+            {
+                "role": "assistant",
+                "tool_calls": [
+                    {"function": {"name": "check_exam", "arguments": {"questions": initial}}}
+                ],
+            },
+            {"role": "tool", "tool_name": "check_exam", "content": json.dumps(old_report)},
+        ]
     repaired = {
         "stem": "Hãy xét lại từng mệnh đề.",
         "statements": [
@@ -193,11 +214,22 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
             return {}
         assert assignment["repairOrdinals"] == [2]
         assert assignment["previousStems"] == [row["stem"] for row in previous]
+        if mode == "history":
+            assert assignment["earlierRejected"] == [
+                {
+                    "ordinal": 2,
+                    "stem": "Cách hỏi đã bị báo sai mức.",
+                    "code": "level_disagreement",
+                    "reason": "Nối hai dữ kiện.",
+                }
+            ]
+        else:
+            assert "earlierRejected" not in assignment
         assert len(transport["messages"]) == 3
         assert json.loads(transport["messages"][-1]["content"])["result"] == feedback
         assert questions["minItems"] == questions["maxItems"] == len(questions["items"]) == 1
         assert "matrix.slots[2].topic" in questions["items"][0]["properties"]["stem"]["description"]
-        replacements = [copy.deepcopy(repaired)] if mode == "scoped" else [repaired, repaired]
+        replacements = [repaired, repaired] if mode == "malformed" else [copy.deepcopy(repaired)]
         return {
             "tool_calls": [
                 {"function": {"name": "check_exam", "arguments": {"questions": replacements}}}

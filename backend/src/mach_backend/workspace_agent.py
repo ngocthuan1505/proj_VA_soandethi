@@ -6,6 +6,7 @@ import hashlib
 import json
 import platform
 import time
+from itertools import pairwise
 from pathlib import Path
 
 import httpx
@@ -108,15 +109,42 @@ def scope_mixed_repair(body, assignment):
         or len(ordinals) == count
     ):
         return None
+    prior_failures = {}
+    for earlier_draft, earlier_result in pairwise(messages[2:-2]):
+        if earlier_result.get("tool_name") != "check_exam":
+            continue
+        earlier_calls = earlier_draft.get("tool_calls", [])
+        if len(earlier_calls) != 1 or earlier_calls[0]["function"]["name"] != "check_exam":
+            continue
+        earlier_rows = earlier_calls[0]["function"]["arguments"].get("questions")
+        if not isinstance(earlier_rows, list) or len(earlier_rows) != count:
+            continue
+        for issue in json.loads(earlier_result["content"]).get("errors", []):
+            ordinal = issue.get("ordinal")
+            if type(ordinal) is not int or ordinal not in ordinals:
+                continue
+            row = earlier_rows[ordinal]
+            if isinstance(row, dict) and isinstance(row.get("stem"), str):
+                key = (ordinal, issue["code"])
+                prior_failures.pop(key, None)
+                prior_failures[key] = {
+                    "ordinal": ordinal,
+                    "stem": row["stem"],
+                    "code": issue["code"],
+                    "reason": issue.get("requiredTask") or issue.get("reason") or "",
+                }
     assignment["repairOrdinals"] = ordinals
     assignment["previousStems"] = [row["stem"] for row in previous]
+    if prior_failures:
+        assignment["earlierRejected"] = list(prior_failures.values())[-4:]
     messages[1]["content"] = json.dumps(assignment, ensure_ascii=False)
     body["messages"] = [*messages[:2], messages[-1]]
     messages[0]["content"] += (
         " Đây là lượt sửa. Hãy nộp chỉ các câu tương ứng repairOrdinals (đếm từ 0), "
         "đúng thứ tự danh sách. Python giữ các câu còn lại và kiểm lại cả bộ. "
-        "Sửa nội dung theo lỗi, tránh chép previousStems. Mỗi câu trắc nghiệm hỏi "
-        "một giá trị hoặc kết luận cụ thể, với đúng một phương án trả lời câu hỏi."
+        "Sửa nội dung theo lỗi, tránh chép previousStems hoặc quay lại cách hỏi "
+        "đã bị từ chối trong earlierRejected. Mỗi câu trắc nghiệm hỏi một giá trị "
+        "hoặc kết luận cụ thể, với đúng một phương án trả lời câu hỏi."
     )
     return ordinals, previous
 
