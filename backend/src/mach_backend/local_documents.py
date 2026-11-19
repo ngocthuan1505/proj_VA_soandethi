@@ -473,6 +473,37 @@ def chrome_path():
     return next((p for p in candidates if p and Path(p).is_file()), None)
 
 
+def exam_variant(exam, variant):
+    questions = exam["questions"]
+    ids = variant.get("questionIds") if isinstance(variant, dict) else None
+    offset = variant.get("offset") if isinstance(variant, dict) else None
+    if (
+        not isinstance(ids, list)
+        or not 2 <= len(ids) <= 300
+        or any(not isinstance(value, str) or not value for value in ids)
+        or len(set(ids)) != len(ids)
+        or type(offset) is not int
+        or not 0 <= offset < min(6, len(ids))
+    ):
+        raise AIError("invalid_variant", "Chọn ít nhất hai câu và một mã đề hợp lệ.")
+    selected = set(ids)
+    positions = [i for i, q in enumerate(questions) if q.get("id") in selected]
+    if len(positions) != len(ids) or {questions[i]["id"] for i in positions} != selected:
+        raise AIError("invalid_variant", "Danh sách câu đã thay đổi. Chọn lại câu cần trộn.")
+    group = [questions[i] for i in positions]
+    if len({q.get("type", "mcq") for q in group}) != 1:
+        raise AIError("invalid_variant", "Chỉ chọn các câu cùng dạng để giữ cấu trúc đề.")
+    reordered = questions.copy()
+    for index, question in zip(positions, group[offset:] + group[:offset], strict=True):
+        reordered[index] = {**question, "pageBreak": questions[index].get("pageBreak", False)}
+    code = str(101 + offset)
+    return {
+        **exam,
+        "title": f"{exam.get('title') or 'Đề thi'} · Mã đề {code}",
+        "questions": reordered,
+    }
+
+
 def export_file(payload, directory, origin):
     kind = payload.get("type")
     format_ = payload.get("format", "html")
@@ -482,6 +513,8 @@ def export_file(payload, directory, origin):
         exam = payload.get("exam")
         if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
             raise AIError("invalid_exam", "Đề cần danh sách câu để xuất.")
+        if "variant" in payload:
+            exam = exam_variant(exam, payload["variant"])
         rendered = {"figures": [], "math": {}}
         if format_ != "docx":
             formulas, figures = export_inputs(exam, payload.get("teacher") is True)

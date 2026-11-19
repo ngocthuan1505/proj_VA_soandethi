@@ -22,6 +22,10 @@ exam.questions = [{
   explanation: 'LOI_GIAI_RIENG_731',
   rubric: [{text: 'BAREM_RIENG_731', points: 10}],
 }];
+exam.questions.push({
+  id: uid(), type: 'essay', v: 1, points: 1, options: [],
+  stem: 'Tính diện tích hình vuông cạnh 3 cm.', explanation: 'Diện tích là 9 cm vuông.',
+});
 ensureBlocks(exam);
 const saved = await fetch(kv, {
   method: 'PUT',
@@ -149,11 +153,27 @@ try {
   assert.equal((await recipient.reload()).status(), 404);
   await isolated.close();
   assert.deepEqual(await list(), []);
+  await page.keyboard.press('Escape');
+  await action('export').click();
+  const variants = dialog.locator('#export-variants');
+  await variants.locator('summary').click();
+  for (const checkbox of await variants.getByRole('checkbox').all()) await checkbox.check();
+  await variants.locator('select').selectOption('1');
+  await dialog.locator('[data-action="export-file"][data-teacher="false"][data-format="html"]').click();
+  await dialog.locator('.saved-export-link').waitFor();
+  const variantURL = new URL(await dialog.locator('.saved-export-link').getAttribute('href'), base);
+  const variantHtml = await (await page.request.get(variantURL.href)).text();
+  assert.match(variantHtml, /Mã đề 102/);
+  assert(variantHtml.indexOf('Tính diện tích') < variantHtml.indexOf('Rút gọn phân số'));
+  assert.doesNotMatch(variantHtml, /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/);
+  const persisted = await (await page.request.get(kv + '?key=state')).json();
+  assert.deepEqual(persisted.value.exams[0].questions.map(q => q.id), exam.questions.map(q => q.id));
   assert.deepEqual(errors, []);
   await fs.writeFile(path.join(out, 'browser-result.json'), JSON.stringify({
     scenario: 'IT-10', exports, closedShareFormCreatedNoLink: true,
     lateAnswerToggleWasIgnored: true, recipientRead: true, revoked: true,
     lateExportPreservedDialog: true,
+    variantExportPreservedOriginal: true,
   }, null, 2));
   console.log('IT-10: sáu bản xuất và luồng chia sẻ Chrome/FastAPI đạt.');
 } finally {

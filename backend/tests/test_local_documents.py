@@ -169,6 +169,36 @@ def test_local_http_import_export_and_download(exam, tmp_path):
         assert client.get("/api/exports/workspace.sqlite").status_code == 404
 
 
+def test_export_variant_reorders_questions_without_changing_saved_answers(exam, tmp_path):
+    first = {**exam["questions"][0], "id": "first", "pageBreak": True}
+    last = {**first, "id": "last", "stem": "Nam mang gì?", "answer": 2, "pageBreak": False}
+    held = {**first, "id": "held", "stem": "Giữ câu này."}
+    exam["questions"] = [first, held, last]
+    payload = {
+        "type": "exam",
+        "format": "html",
+        "teacher": True,
+        "exam": exam,
+        "variant": {"questionIds": ["last", "first"], "offset": 1},
+    }
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        result = client.post("/api/save-export", json=payload).raise_for_status().json()
+        output = client.get(result["url"]).raise_for_status().text
+        assert "Mã đề 102" in output and '<section class="page-break">' in output
+        assert (
+            output.index("Nam mang gì?") < output.index("Đáp án C.") < output.index("Giữ câu này.")
+        )
+        assert output.index("Mai báo với ai?") < output.rindex("Đáp án B.")
+        assert client.get("/api/kv?key=state").json() == {"value": None, "revision": 0}
+        for invalid in (
+            {"questionIds": ["first", "first"], "offset": 0},
+            {"questionIds": ["first", "missing"], "offset": 1},
+            {"questionIds": ["first", "last"], "offset": 2},
+        ):
+            assert client.post("/api/save-export", json={**payload, "variant": invalid}).is_error
+    assert exam["questions"] == [first, held, last]
+
+
 def test_extract_inline_validates_before_any_workspace_write(tmp_path):
     app = create_app(tmp_path)
     with TestClient(app, headers={"Origin": "http://testserver"}) as client:
