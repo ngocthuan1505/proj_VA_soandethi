@@ -256,6 +256,58 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
             ]
 
 
+@pytest.mark.parametrize("mode", ["valid", "old_stem", "malformed", "ignored"])
+def test_repeated_level_error_plans_one_stem_before_scoped_generation(mode):
+    body = mixed_tool_body()
+    assignment = json.loads(body["messages"][1]["content"])
+    assignment["matrix"].update(subject="Toán", grade="5", instructions="")
+    assignment["source"] = [{"id": 0, "text": "Kệ có 24 và 16 cuốn sách."}]
+    body["messages"][1]["content"] = json.dumps(assignment)
+    chosen = "Hai nhóm sách cộng lại có bao nhiêu cuốn?"
+    previous = [{"stem": f"Câu {i}?"} for i in range(5)]
+    feedback = {"ok": False, "errors": [{"ordinal": 1, "code": "level_disagreement"}]}
+    submission = {
+        "role": "assistant",
+        "tool_calls": [{"function": {"name": "check_exam", "arguments": {"questions": previous}}}],
+    }
+    report = {"role": "tool", "tool_name": "check_exam", "content": json.dumps(feedback)}
+    body["messages"].extend([submission, report, submission, report])
+    seen = []
+
+    async def model(purpose, request):
+        seen.append(purpose)
+        data = json.loads(request["messages"][1]["content"])
+        if purpose == "repair_stem":
+            assert data["source"] == assignment["source"]
+            assert data["target"]["topic"] == assignment["matrix"]["slots"][1]["topic"]
+            assert "matrix" not in data and "options" not in data and "answer" not in data
+            assert data["avoid"] == [row["stem"] for row in previous]
+            content = json.dumps({"stem": " CÂU 1? " if mode == "old_stem" else chosen})
+            return {"content": "{" if mode == "malformed" else content}
+        assert data["repairOrdinals"] == [1]
+        stem_schema = request["tools"][0]["function"]["parameters"]["properties"]["questions"][
+            "items"
+        ][0]["properties"]["stem"]
+        if mode in {"valid", "ignored"}:
+            assert stem_schema["const"] == data["plannedStem"] == chosen
+        else:
+            assert "const" not in stem_schema and "plannedStem" not in data
+        change = {"stem": "Câu không theo kế hoạch?" if mode == "ignored" else chosen}
+        return {
+            "tool_calls": [
+                {"function": {"name": "check_exam", "arguments": {"questions": [change]}}}
+            ]
+        }
+
+    result = asyncio.run(local_model_call(model, "agent", body))
+    args = result["tool_calls"][0]["function"]["arguments"]
+    assert seen == ["repair_stem", "agent"]
+    if mode == "ignored":
+        assert args == {}
+    else:
+        assert args["questions"] == [previous[0], {"stem": chosen}, *previous[2:]]
+
+
 @pytest.mark.parametrize("answer", ["40", "3"])
 def test_mixed_reviewer_maps_answer_content_and_keeps_verdicts(answer):
     values = ["24", "16", "40", "30"]

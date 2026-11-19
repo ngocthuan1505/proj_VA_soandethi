@@ -88,6 +88,12 @@ def repair_submission(request, arguments, previous):
         or set(arguments) != {"questions"}
     ):
         return {}
+    if (stem := assignment.get("plannedStem")) is not None and (
+        len(replacements) != 1
+        or not isinstance(replacements[0], dict)
+        or replacements[0].get("stem") != stem
+    ):
+        return {}
     combined = baseline.copy()
     for index, question in zip(indices, replacements, strict=True):
         combined[index] = question
