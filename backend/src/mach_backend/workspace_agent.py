@@ -686,12 +686,7 @@ async def local_model_call(model, purpose, body):
             item["observedLevel"] = LEVEL_NAMES.index(level) if level in LEVEL_NAMES else None
             count = verdicts.count("correct")
             if count != 1 or "unknown" in verdicts:
-                item.update(
-                    uncertain=True,
-                    answer=None,
-                    reason=f"Có {count} phương án đúng theo lượt rà hoặc còn phương án chưa rõ. "
-                    "Cần viết lại câu hỏi rõ một đáp án.",
-                )
+                item.update(uncertain=True, answer=None)
             elif not item.get("uncertain") and item["answer"] != verdicts.index("correct"):
                 raise AIError(
                     "invalid_review", "Lượt rà chọn đáp án mâu thuẫn bảng đối chiếu phương án."

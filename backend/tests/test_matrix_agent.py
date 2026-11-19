@@ -369,7 +369,11 @@ def test_per_option_and_duplicate_uncertainty_block_finish(job, patch, code):
     _, emit = events()
     result = asyncio.run(run_matrix_agent(job, review, emit))
     assert result["status"] == "attempt_limit"
-    assert code in [e["code"] for e in result["report"]["errors"]]
+    finding = next(e for e in result["report"]["errors"] if e["code"] == code)
+    if code == "option_verdicts_failed":
+        verdicts = patch["optionVerdicts"]
+        assert f"{verdicts.count('correct')} phương án đúng" in finding["reason"]
+        assert f"{verdicts.count('unknown')} phương án chưa rõ" in finding["reason"]
     assert "proposal" not in result
 
 

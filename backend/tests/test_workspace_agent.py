@@ -481,7 +481,7 @@ def test_review_with_multiple_correct_options_is_uncertain():
     result = asyncio.run(local_model_call(model, "blind_content_check", body))
     review = json.loads(result["content"])["reviews"][0]
     assert review["uncertain"] is True and review["answer"] is None
-    assert "2 phương án" in review["reason"]
+    assert review["reason"] == "Phương án A đúng."
 
 
 def test_generation_translates_letter_without_changing_original_request():
