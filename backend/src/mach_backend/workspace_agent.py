@@ -24,10 +24,6 @@ LEVEL_DESCRIPTION = (
     "van_dung: áp dụng vào tình huống MỚI chưa xảy ra trong nguồn. "
     "Giải thích sự việc đã kể không tự trở thành vận dụng."
 )
-MIXED_ANSWERS = {
-    "mcq": list("0123"),
-    "truefalse": [f"{value:04b}" for value in range(16)],
-}
 MIXED_STEM_GUIDES = {
     "mcq": "Trắc nghiệm: học sinh chọn đúng một trong bốn phương án.",
     "truefalse": "Đúng/Sai: yêu cầu xét từng mệnh đề, tránh câu hỏi chọn một phương án.",
@@ -101,7 +97,8 @@ async def local_model_call(model, purpose, body):
             rubric_step = definitions["RubricStep"]
             common = questions["items"]
             answers = {
-                **{kind: {"enum": values} for kind, values in MIXED_ANSWERS.items()},
+                "mcq": {"enum": list("0123")},
+                "truefalse": {},
                 "short": {**common["properties"]["answer"], "minLength": 1},
                 "essay": {"const": ""},
             }
@@ -195,11 +192,12 @@ async def local_model_call(model, purpose, body):
         questions = json.loads(body["messages"][1]["content"])["questions"]
         common = body["format"]["$defs"]["MixedContentReview"]
         mcq_options = {}
+        truefalse_ordinals = set()
         items = []
         for question in questions:
             kind = question["type"]
             ordinal = question["ordinal"]
-            count = 4 if kind in MIXED_ANSWERS else 0
+            count = 4 if kind in ("mcq", "truefalse") else 0
             properties = {
                 **common["properties"],
                 "ordinal": {"const": ordinal},
@@ -214,17 +212,20 @@ async def local_model_call(model, purpose, body):
                     "maxItems": count,
                 },
             }
+            required = common["required"]
             if kind == "mcq":
                 options = [option["text"] for option in question["options"]]
                 mcq_options[ordinal] = options
                 properties["answer"] = {"enum": [*options, ""]}
-            elif kind in MIXED_ANSWERS:
-                properties["answer"] = {"enum": [*MIXED_ANSWERS[kind], ""]}
+            elif kind == "truefalse":
+                truefalse_ordinals.add(ordinal)
+                del properties["answer"]
+                required = [name for name in required if name != "answer"]
             elif kind == "essay":
                 properties["answer"] = {"const": ""}
-            items.append({**common, "properties": properties})
+            items.append({**common, "properties": properties, "required": required})
         body["format"]["properties"]["reviews"]["items"] = items
-        if not mcq_options:
+        if not mcq_options and not truefalse_ordinals:
             return await model(purpose, body)
         body["messages"][0]["content"] = body["messages"][0]["content"].replace(
             "mcq dùng '0'/'1'/'2'/'3'", "mcq dùng nguyên văn phương án đúng"
@@ -233,11 +234,32 @@ async def local_model_call(model, purpose, body):
             "hoặc chuỗi rỗng nếu chưa chắc. Không ghi chỉ số hoặc chữ cái. "
             "Vẫn đánh giá từng phương án theo đúng thứ tự trong optionVerdicts."
         )
+        if truefalse_ordinals:
+            system = body["messages"][0]
+            system["content"] = system["content"].replace(TRUEFALSE_ANSWER_GUIDE, "") + (
+                " Khi rà truefalse, chỉ ghi bốn phán định theo thứ tự trong optionVerdicts. "
+                "Dùng unknown nếu thiếu căn cứ. Không ghi trường answer cho truefalse."
+            )
         response = await model(purpose, body)
         payload = json.loads(response["content"])
         for review in payload["reviews"]:
             options = mcq_options.get(review["ordinal"])
-            if options is not None and review["answer"] != "":
+            if review["ordinal"] in truefalse_ordinals:
+                verdicts = review.get("optionVerdicts")
+                if (
+                    "answer" in review
+                    or not isinstance(verdicts, list)
+                    or len(verdicts) != 4
+                    or any(v not in ("correct", "incorrect", "unknown") for v in verdicts)
+                ):
+                    raise AIError("invalid_review", "Lượt rà Đúng/Sai phải trả đủ bốn phán định.")
+                uncertain = review.get("uncertain") is True or "unknown" in verdicts
+                review["answer"] = (
+                    "" if uncertain else "".join("1" if v == "correct" else "0" for v in verdicts)
+                )
+                if uncertain:
+                    review["uncertain"] = True
+            elif options is not None and review["answer"] != "":
                 if review["answer"] not in options:
                     raise AIError(
                         "invalid_review", "Đáp án bộ giải phải khớp nguyên văn phương án."

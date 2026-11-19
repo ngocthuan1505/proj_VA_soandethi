@@ -186,7 +186,7 @@ def test_mixed_rejects_bad_answer_transport(kind, value):
         decode_answer(kind, value)
 
 
-@pytest.mark.parametrize("variant", ["paired", "old", "numeric"])
+@pytest.mark.parametrize("variant", ["paired", "old", "numeric", "unknown", "disagree"])
 def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed, variant):
     job, args = mixed
     model = MixedModel(job, args)
@@ -197,7 +197,7 @@ def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed
             for message in body["messages"]:
                 for tool in message.get("tool_calls", []):
                     old = tool["function"]["arguments"]["questions"][1]
-                    if variant == "paired":
+                    if variant not in {"old", "numeric"}:
                         assert "options" not in old and "answer" not in old
                         assert [s["isTrue"] for s in old["statements"]] == [
                             True,
@@ -217,9 +217,14 @@ def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed
                 if variant == "numeric":
                     question["statements"][0]["isTrue"] = 1
         elif purpose == "blind_content_check":
+            assert "1010 là đúng" not in body["messages"][0]["content"]
             content = json.loads(response["content"])
             review = content["reviews"][0]
             review["answer"] = args["questions"][0]["options"][int(review["answer"])]
+            truefalse = content["reviews"][1]
+            del truefalse["answer"]
+            if variant in {"unknown", "disagree"}:
+                truefalse["optionVerdicts"][0] = "unknown" if variant == "unknown" else "incorrect"
             response["content"] = json.dumps(content)
         return response
 
@@ -232,7 +237,15 @@ def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed
     )
     if variant != "paired":
         assert result["status"] == "attempt_limit"
-        assert result["report"]["errors"][0]["code"] == "invalid_result"
+        assert (
+            result["report"]["errors"][0]["code"]
+            == {
+                "old": "invalid_result",
+                "numeric": "invalid_result",
+                "unknown": "uncertain_answer",
+                "disagree": "answer_disagreement",
+            }[variant]
+        )
         return
     assert result["status"] == "ready_for_teacher_review"
     assert result["proposal"]["questions"][0]["answer"] == 2
@@ -254,7 +267,8 @@ def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed
         0,
     ]
     assert review_items[0]["properties"]["answer"]["enum"] == [*args["questions"][0]["options"], ""]
-    assert len(review_items[1]["properties"]["answer"]["enum"]) == 17
+    assert "answer" not in review_items[1]["properties"]
+    assert "answer" not in review_items[1]["required"]
     assert review_items[3]["properties"]["answer"] == {"const": ""}
     assert review_items[0]["properties"]["duplicateWith"]["maxItems"] == 0
     assert review_items[2]["properties"]["duplicateWith"]["items"]["enum"] == [0, 1]
