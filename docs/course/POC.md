@@ -4,6 +4,12 @@
 
 **Cập nhật 12/11/2026 theo hai ảnh góp ý của giảng viên do Thuận cung cấp:** trọng tâm hiện tại là sinh cả bộ câu theo ma trận, có hậu xử lý và gọi lại khi lỗi, kiểm mức nhận thức thực tế. Phép sửa vùng bên dưới giữ làm thí nghiệm trước đây, không còn được dùng một mình để chứng minh phần rủi ro nhất. Bằng chứng và trạng thái lát tích hợp app thật ở [PoC ma trận](../testing/POC_MA_TRAN_APP_THAT.md). Chưa có kết luận thành công cho tới khi kiểm được model thật qua bàn soạn, xem trước/rà/xác nhận và các ca lỗi; fixture chỉ kiểm code.
 
+## Phiếu rà độc lập cho một lượt PoC
+
+Dùng [phiếu tự giải](poc-ra-doc-lap/1_TU_GIAI_VA_NHAN_DINH.md) trước khi mở [phiếu đối chiếu](poc-ra-doc-lap/2_DOI_CHIEU_SAU_KHI_TU_GIAI.md). Hai phiếu và [manifest](poc-ra-doc-lap/DOI_CHIEU_NGUON.json) giữ nguyên từ [PR #43 của nhóm](https://github.com/ngocthuan1505/proj_VA_soandethi/pull/43).
+
+Bốn câu trong phiếu trích từ phản hồi ở lượt thử thứ hai của Qwen2.5 3B. Manifest ghi tác vụ kết thúc vì hết lượt thử và đề chưa được lưu vào bàn soạn. Các ô nhận xét còn trống. Hồ sơ này hỗ trợ chấm độc lập từng câu trong CT-04 và CT-06 khi có người rà thực hiện.
+
 ## Thí nghiệm sửa vùng đã lập trước phản hồi mới
 
 Trạng thái: **kế hoạch, chưa có kết quả thí nghiệm này**. Nguồn: Topic 4 trang 31, 36–40; Topic 6 trang 7–8, 14, 17. BE-1 điều phối, UI-3 và BE-5 hỗ trợ; mọi thao tác GreenNode do Thuận thực hiện sau khi có server.
