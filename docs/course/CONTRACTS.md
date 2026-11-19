@@ -12,6 +12,30 @@ Trạng thái: **đã có mô hình Abstraction, UML, Schema, ADT và Interface 
 
 Mỗi field trong schema thật cần tên, kiểu, bắt buộc/null, đơn vị hoặc format, giới hạn, ví dụ hợp lệ/lỗi. Đặc biệt điểm dùng biểu diễn chính xác theo ADR; thời lượng ghi đơn vị; timestamp thống nhất múi giờ/format; enum job dùng cùng một tập giá trị giữa UI/API/DB.
 
+## Đối chiếu QuestionVersion với nhánh tích hợp FastAPI
+
+| Trường trong Abstraction | Trường trên bàn soạn và API | Kiểu và bất biến |
+|---|---|---|
+| `questionId` | Câu lưu `id`, job sửa nhận `targets[].questionId` | UUID, giữ khi sửa cùng câu. Thứ tự hiển thị có thể đổi. |
+| `versionId` | Câu lưu `v`, job sửa nhận `questionVersion` | Số nguyên ≥ 1. `baseRevision` là phiên bản cả đề. Hai số đều phải khớp snapshot khi áp sửa. |
+| `content` | `stem`, `options`, `answer`, `explanation`, `rubric` và tài liệu richDoc nếu có | Cấu trúc và kiểu đáp án phụ thuộc dạng câu. Điểm truyền ở ma trận/sinh đề là `pointsQ4` nguyên, 1 đơn vị bằng 0,25 điểm. |
+| `questionType` | `type` | `mcq`, `truefalse`, `short` hoặc `essay`. Tool check giữ dạng tương ứng với ô ma trận. |
+| `evidence` | `Evidence` trong kết quả | Mỗi mục có `sourceId` UUID, `sourceVersion` nguyên ≥ 1, `locator` và `quote`. Danh sách có thể rỗng khi yêu cầu cho phép làm không kèm nguồn. |
+| `verificationStatus` | Trạng thái kiểm trên câu | Khi nội dung thay đổi, Python đưa về `unverified`. Kết quả lượt kiểm được ghi ở báo cáo theo job. |
+| `approvalStatus` | Trạng thái duyệt trên câu | Khi nội dung thay đổi, Python đưa về `draft`. Trạng thái của cả đề nằm ở `draftStatus`. |
+
+Các DTO định nghĩa phiên bản, vùng, căn cứ và các giới hạn trường trong [ai_contract.py](../../backend/src/mach_backend/ai_contract.py) và [ai_questions.py](../../backend/src/mach_backend/ai_questions.py). Bàn soạn hiện giữ đề trong SQLite KV và lưu đề xuất/biên nhận ở `matrix_pending`, nhật ký ở `matrix_trace`. Xem [workspace_store.py](../../backend/src/mach_backend/workspace_store.py). ERD 15 bảng là schema đích của bộ migration, có từ điển riêng. [Từ điển dữ liệu và migration](../contracts/du-lieu.md)
+
+### Ba đường kiểm của CT-03
+
+| Ca | Đầu vào → kết quả mong đợi | Kiểm thử trên nhánh tích hợp |
+|---|---|---|
+| T01 · Phiên bản và đề xuất | Sinh từ revision 1, kết quả qua kiểm ở trạng thái `complete`. Sau khi giáo viên xác nhận bằng `{"baseRevision":1,"teacherConfirmation":true}`, SQLite ghi revision 2, biên nhận và lịch sử. Đọc lại sau khi mở app giữ kết quả đã lưu. | `test_agent_preview_survives_app_restart` trong [test_local_workspace.py](../../backend/tests/test_local_workspace.py) và [hợp đồng confirm](../contracts/ai.md#xác-nhận-lưu-đề-mới) |
+| T02 · Phiên bản cũ hoặc nguồn thiếu vị trí | Job hết hiệu lực khi đề/nguồn đổi. Xác nhận lại có thể trả `409 stale_snapshot`. Nguồn cần locator có loại `page`, `passage` hoặc `region` và chỉ số từ 1. Thiếu locator bị lỗi cấu trúc. | `test_http_submit_refuses_invalid_scope_source_or_consent` trong [test_patch_confirmation.py](../../backend/tests/test_patch_confirmation.py) và [kiểm nguồn](../../backend/src/mach_backend/ai_sources.py) |
+| T03 · Cấu trúc editor | Câu có nhiều nút công thức hoặc vùng chọn trong bảng. Giữ ID công thức khi thay đúng thứ tự, chặn ghép qua hai ô khác nhau và báo vùng không rõ nếu công thức đổi chỗ. | `test_formula_ids_survive_multiple_updates_but_reordering_is_ambiguous` và `test_editor_change_cannot_merge_distinct_table_cells` trong [test_poc_scoped_patch.py](../../backend/tests/test_poc_scoped_patch.py) |
+
+Hồ sơ giữ ID, phiên bản, nội dung có cấu trúc và căn cứ vì chúng quyết định có được áp sửa. Đồng biên tập thời gian thực vẫn ngoài phạm vi. Fixture dùng mã và nguồn tự viết để tái lập kiểm thử. Còn cần BE-2, BE-3 và phía dùng hợp đồng review cách ánh xạ với slide và quyết định thời điểm chuyển schema đích.
+
 ## Mẫu hợp đồng cho từng hàm hoặc route
 
 ```text
