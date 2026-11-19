@@ -14,6 +14,14 @@ try {
  page.setDefaultTimeout(10000);
  await page.goto(base);
  await page.waitForLoadState('networkidle');
+ // Chờ lần lưu ID khối của đề mẫu để mốc so sánh chỉ đo thao tác nhập tệp.
+ await page.waitForFunction(async()=>{
+  const response=await fetch('/api/kv?key=state');
+  if(!response.ok)return false;
+  const {value}=await response.json();
+  const current=value?.exams?.find(e=>e.id===value.current);
+  return current?.blockIds?.heading&&current.questions.every(q=>q.blockIds?.stem);
+ },undefined,{polling:150});
  const snapshot=async()=>{const response=await page.request.get(base+'/api/kv?key=state');assert(response.ok());return response.json();};
  const chooser=async()=>{
   await page.getByRole('button',{name:'Tệp',exact:true}).click();
