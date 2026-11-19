@@ -126,6 +126,38 @@ Dùng worktree sạch và chọn thư mục kết quả mới dưới `outputs/`
 
 Bộ Chrome dùng ngữ liệu tự tạo và phản hồi mẫu. Kiểm Word bằng Microsoft Word, đối chiếu nhiều trang, model thật và nghiệm thu độc lập vẫn cần bằng chứng riêng theo checklist.
 
+## Kết quả chạy trên nhánh `codex/ban-thu-13` (commit `8d37a0f`)
+
+> Phân định rạch ròi ba loại bằng chứng tại `8d37a0f5f1b4845f4907353706780f31b89180c4` (kế thừa `269cd6a`, thêm Pha 2 `47c40f8` và Pha 3 `8d37a0f`): phần kiểm thử tự động Python (`[Hiện có / Đã chạy bằng Python]`), phần kiểm thử UI/fixture (`[Fixture / Mock]`), và phần model cục bộ thật hoặc hạng mục chờ xác nhận. Xem thêm [đặc tả màn hình](../design/luong-man-hinh.md), [trợ lý và job](../design/tro-ly-va-job.md) và bộ hợp đồng [AI](../contracts/ai.md) · [HTTP](../contracts/http.md) · [Tài liệu](../contracts/tai-lieu.md) · [Job & SSE](../contracts/job-va-sse.md).
+
+### 1. Bộ kiểm Python, hồi quy JS/UI & gói cài sạch không Node
+
+- **Python (`backend/`, `[Hiện có / Đã chạy bằng Python]`):** `uv sync --frozen`, `uv run ruff format --check .` (`94` tệp), `uv run ruff check .` và `uv run ty check src` đều đạt. `uv run pytest -q` đạt **`710 passed, 5 skipped, 1 warning, 3 subtests passed`** (`110.66s`), bổ sung ba tệp test mới ở Pha 3: [test_sample_exam_8b.py](../../backend/tests/test_sample_exam_8b.py) (`1/1`), [test_be3_workspace_bridge.py](../../backend/tests/test_be3_workspace_bridge.py) (`1/1`), [test_security_and_contracts.py](../../backend/tests/test_security_and_contracts.py) (`5/5` khi chạy riêng tệp); [test_check_routes.py](../../backend/tests/test_check_routes.py) đạt `40 passed, 1 skipped` khi chạy riêng tệp (cộng gộp với 5 ca bảo mật không tranh chấp GPU là `45 passed, 1 skipped`).
+- **Tắt Node/npm khỏi `PATH` (`[Hiện có / Đã chạy bằng Python]`):** khi xác nhận `shutil.which('node') is None` và `shutil.which('npm') is None`, bộ kiểm tra FastAPI/kho/chia sẻ/khôi phục/nhập-xuất/bảo mật đạt **`167 passed`** (`51.99s`).
+- **Hồi quy JS/UI & đóng gói (`[Fixture / Mock]`):** `npm test` đạt **`139 passed`** (`0` lỗi); `npm run check:team` đạt **`14 passed` + `Team plan OK`**; `npm run build-editor` sinh `assets/editor-engine.js` (`436.8kb`) sạch worktree.
+- **Đóng gói ZIP sạch [dong-goi-ban-thu.py](../../scripts/dong-goi-ban-thu.py) (`--ung-vien 48`, `[Hiện có / Đã chạy bằng Python]`):** tạo `outputs/ung-vien-48/SoanDeThi-UngVien-48.zip` gồm `215` tệp (`216` mục zip), `SHA-256: 1a28c3c62d77fcc9eec1531e8222284b174bff5844c7e1c4a5813614f4e92f06`. Giải nén ra thư mục tạm sạch ngoài repo, chạy `uv sync --frozen --no-dev` và `uvicorn mach_backend.local_workspace:app --app-dir backend/src` **không có Node trong `PATH`**, lưu/đọc lại đề có công thức và xuất kiểm thật 4 tệp: Word HS (`36.987 B`, `1 m:oMath`, `0` rò đáp án/lời giải/barem/chat), Word GV (`37.329 B`, `1 m:oMath`, đủ đáp án/barem), PDF HS (`53.436 B`, `%PDF-`, `0` rò đáp án/chat), PDF GV (`69.026 B`, `%PDF-`, đủ đáp án/barem). Chi tiết tỷ lệ ngôn ngữ tại [DOI_CHIEU_PYTHON.md](DOI_CHIEU_PYTHON.md).
+
+### 2. Hai lượt chạy Chrome `IT-01..IT-11` trên `8d37a0f` (`[Fixture / Mock]`)
+
+Chạy bằng [kiem-ung-vien.py](../../scripts/kiem-ung-vien.py) với worktree sạch tại `8d37a0f`, ghi trung thực cả lỗi timing/flaky của script UI ở từng lượt:
+
+| Lượt chạy (thư mục artifact cục bộ) | Kết quả cả lượt | Ca gặp lỗi & nguyên nhân thực tế trong script UI | Chạy lại riêng ca lỗi (`--case`) |
+| --- | --- | --- | --- |
+| **Lượt 1** (`outputs/qa-antigravity-it`) | **`10/11` đạt** (`IT-01`..`IT-10` đạt) | **`IT-11` lỗi** tại `scripts/kiem-ui-khoi-phuc.mjs:37` (`assert(changed.value.exams.length > backup.state.exams.length)`): `waitForLoadState('networkidle')` trả về trước khi `PUT /api/kv` sau thao tác `create-blank` kịp hoàn tất trên loopback. | `--case 11` (`outputs/qa-antigravity-it-check11`): **`IT-11` đạt** |
+| **Lượt 2** (`outputs/qa-antigravity-it-final`) | **`10/11` đạt** (`IT-01`..`IT-04`, `IT-06`..`IT-11` đạt) | **`IT-05` lỗi** tại `tests/ui2-baseline-browser.mjs:188`: lệnh Playwright `.fill()` trên `contenteditable` TipTap ở dòng `181` không chọn hết đoạn đang có mà chèn xen vào giữa chữ `"chứa căn"`. | `--case 05` (`outputs/qa-antigravity-it-check05`): **`IT-05` đạt** |
+
+### 3. Đối chiếu model thật `qwen3:4b` Vulkan cục bộ (tách riêng khỏi fixture)
+
+Chạy mẫu Toán lớp 5 (5 câu, 4 dạng, 10 điểm, nguồn tự viết, ngưỡng `900s`) qua Ollama cục bộ Vulkan (tắt thinking). Hai lượt đều kết thúc an toàn không ghi đè đề:
+- **Lượt v1** (`outputs/qa-antigravity-qwen3`): `900.707s`, `status="failed"`, `errorCode="timeout"`, `checkedAttempts=8`, `traceVerified=true`, `evidenceIssues=[]`.
+- **Lượt v2 sau Pha 2 `47c40f8`** (`outputs/qa-antigravity-qwen3-v2`): `901.081s`, `status="failed"`, `errorCode="timeout"`, `checkedAttempts=7` (`19` lượt gọi model / `894.01s`), `traceVerified=true`, `evidenceIssues=[]`, `beforeRevision == afterRevision == 2`. Toàn bộ `7/7` lượt `structure_check` đạt; **`4/5` câu (`ordinal` `0, 2, 3, 4`) pass `blind_content_check` và cache ổn định (`24.0s`–`45.4s`/lượt)**; duy nhất `ordinal 1` vượt khả năng model `4B` trên câu suy diễn từ nguồn 1 câu 2 số. Chi tiết xem [POC.md](../course/POC.md) và [EVALUATION.md](../course/EVALUATION.md).
+
+### 4. Hạng mục còn chờ con người & chủ dự án (`[Chờ review nhóm / Thành viên xác nhận]`)
+
+- Phỏng vấn 3 người dùng thật `CT-01`, đối chiếu benchmark công cụ và lịch/hạn nộp chính thức của lớp.
+- Review chéo giữa các thành viên (nhất là hợp nhất router `local_workspace` vs `patch_routes`/`check_routes` và kiểm mở bản xuất Word/PDF thật trên máy thành viên khác từ ZIP `ung-vien-48`).
+- Thẩm định sư phạm độc lập cho đề mẫu/đề AI sinh và vận hành/diễn tập GreenNode do riêng `ngocthuan1505` thực hiện theo [ops/greennode/README.md](../../ops/greennode/README.md).
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

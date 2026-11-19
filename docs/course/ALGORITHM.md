@@ -106,3 +106,24 @@ uv run pytest -q tests/test_mixed_questions.py tests/test_workspace_agent.py tes
 ```
 
 Đối chiếu log tải từ app bằng hướng dẫn [theo dõi và kiểm log PoC](../testing/THEO_DOI_LOG_POC.md). Bộ đọc log ghép lại bản đầy đủ trước khi so sánh, vì một phản hồi ngắn hơn có thể chứa nguyên câu cũ. Kết quả phát lại mới chỉ chứng minh khả năng định vị lỗi. Chất lượng đề cuối cần một lượt model thật đi qua toàn bộ bộ kiểm và một lượt rà sư phạm độc lập.
+
+## Cải tiến vòng tự kiểm/sửa (Pha 2 `47c40f8`) & Đối chiếu hiện thực trên `8d37a0f`
+
+Kế thừa đường chạy `matrix_agent.py` và `workspace_agent.py` ở trên, bản Pha 2 ([`47c40f8`](../../backend/src/mach_backend/matrix_agent.py)) và Pha 3 (`8d37a0f`) bổ sung các bước tối ưu và kiểm tra tất định sau (`[Hiện có / Đã chạy bằng Python]`):
+
+1. **Cache kết quả `blind_content_check` theo khóa nội dung (`passed_blind_cache`, `reuse_passed_reviews`):**
+   - Trong `inspect_candidate()` ([matrix_agent.py](../../backend/src/mach_backend/matrix_agent.py)), mỗi câu tạo khóa băm `question_keys[i] = sha256_json({sources, blind[i], slot, answer})` và khóa ngữ cảnh cùng chủ đề phía trước `prior_same_topic_keys[i]`.
+   - Nếu câu `i` đã đạt ở lượt trước và cả hai khóa khớp, kết quả `review` và `level` được tái sử dụng từ `passed_blind_cache`; chỉ tập `uncached_indices` được gửi lại model kèm `priorQuestions` để vẫn kiểm trùng ý với các câu trước.
+2. **Bỏ qua `explanation_check` khi `blind_content_check` chưa đạt (`skip_explanation_on_blind_fail`):**
+   - Khi bật cờ này cho lượt kiểm Ollama cục bộ thật (`real_ollama_review = not self.call and review_provider == "ollama"` trong `AgentGeneration`), nếu `blind_content_check` có bất kỳ lỗi nào thì nhánh `check_explanation` ghi `UNKNOWN` (`"Chờ sửa các lỗi giải mù trước khi kiểm lời giải."`) thay vì gọi thêm một lượt model cho bản nháp đã bị loại.
+3. **Kiểm tổng barem (`invalid_rubric`) & khớp số lượng nhận xét (`review_coverage`):**
+   - `candidate_proposal()` từ chối sớm bằng `CandidateQuestionError("invalid_rubric", ..., ordinal)` nếu `sum(step.pointsQ4 for step in item.rubric) != slot.pointsQ4`; `review_coverage()` kiểm khớp tập `uncached_indices` thay vì luôn giả định toàn bộ `0..count-1`.
+4. **Chuẩn hóa `propose_repair_stem()` ([workspace_agent.py](../../backend/src/mach_backend/workspace_agent.py)):**
+   - Lọc văn tự ngoài bảng chữ hợp lệ qua `_has_disallowed_script()` (`DISALLOWED_STEM_SCRIPTS`: `ARABIC`, `HEBREW`, `CJK`, `HIRAGANA`, `KATAKANA`, `HANGUL`, `CYRILLIC`, `THAI`, `DEVANAGARI`, hoặc `\u061f`), chuẩn hóa `?`, đối chiếu tiền tố/toàn văn bằng `_normalize_stem_compare()` với các câu đã loại, và hợp nhất `priorQuestions` trong `local_model_call()`.
+
+### Chi phí và bằng chứng thực nghiệm ở `8d37a0f`
+
+- **Phân tích chi phí bổ sung:** Bước tính hash SHA-256 và đối chiếu cache tiêu tốn `O(q)` thao tác theo số câu `q` (`q <= 30`) và bộ nhớ giữ `q` mục cache trong một job; đổi lại giảm số câu phải gọi model `blind_content_check` từ `q` xuống `k <= q` câu thực sự đổi. Tuy nhiên, nếu một câu lặp lại lỗi qua nhiều vòng (như `ordinal 1` trên model 4B), tổng thời gian vẫn bị chi phối bởi lượt `agent` + `repair_stem` + kiểm câu lỗi và dừng an toàn khi chạm trần `900s` (`RunPolicy.timeoutSeconds`).
+- **Kiểm chứng trên fixture Python (`[Hiện có / Đã chạy bằng Python]`):** [test_matrix_agent.py](../../backend/tests/test_matrix_agent.py) (`42` ca), [test_workspace_agent.py](../../backend/tests/test_workspace_agent.py) (`22` ca), [test_poc_scoped_patch.py](../../backend/tests/test_poc_scoped_patch.py) (`25` ca), [test_patch_confirmation.py](../../backend/tests/test_patch_confirmation.py) (`42` ca), [test_be3_workspace_bridge.py](../../backend/tests/test_be3_workspace_bridge.py) (`1` ca di trú/idempotency/rollback) và [test_security_and_contracts.py](../../backend/tests/test_security_and_contracts.py) (`5` ca an toàn, SSE `Last-Event-ID`, cancel sát `publish`, timeout monotonic); toàn bộ suite đạt `710 passed, 5 skipped` (`110.66s`).
+- **Đo trước/sau trên model `qwen3:4b` Vulkan cục bộ:** lượt v2 (`outputs/qa-antigravity-qwen3-v2`) đạt `7/7` lần `structure_check` và cache `4/5` câu ổn định (`24.0s`–`45.4s`/lượt kiểm mù), nhưng vẫn chạm `timeout` (`901.081s`, `checkedAttempts=7`, `19` lượt gọi model / `894.01s`, `beforeRevision == afterRevision == 2`) tại `ordinal 1`. Chi tiết xem [EVALUATION.md](EVALUATION.md), [Hợp đồng AI](../contracts/ai.md), [Hợp đồng Job & SSE](../contracts/job-va-sse.md) và [Thiết kế trợ lý](../design/tro-ly-va-job.md).
+- **Phần chờ review (`[Chờ review nhóm / Thành viên xác nhận]`):** reviewer độc lập đối chiếu flowchart/trace `CT-05`, rà thêm phản ví dụ `richDoc` đa nút và xác nhận ngưỡng/model cuối với `ngocthuan1505`.

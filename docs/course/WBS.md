@@ -77,9 +77,15 @@ Tuần 1–11 trong Topic 1 là khung môn; Thuận xác nhận tuần hiện t�
 
 ## Trách nhiệm tài liệu chung
 
-UI-1 điều phối Problem Brief/flow; UI-2 đóng góp mẫu công thức và tính đúng bản in; UI-3 đóng góp giả thuyết chat/preview; BE-1 PoC AI và runbook riêng; BE-2 hợp đồng/thuật toán; BE-3 model/version/restore; BE-4 import/export; BE-5 CI, test log và báo cáo tổng hợp. Người điều phối tổng hợp, không làm thay phần bằng chứng của bảy người còn lại.
+UI-1 điều phối Problem Brief/flow ([đặc tả màn hình](../design/luong-man-hinh.md)); UI-2 đóng góp mẫu công thức và tính đúng bản in ([đặc tả editor & richDoc](../design/editor-va-richdoc.md)); UI-3 đóng góp giả thuyết chat/preview ([trợ lý và job](../design/tro-ly-va-job.md)); BE-1 PoC AI và runbook riêng ([hợp đồng AI](../contracts/ai.md)); BE-2 hợp đồng/thuật toán ([hợp đồng HTTP](../contracts/http.md)); BE-3 model/version/restore ([hợp đồng dữ liệu](../contracts/du-lieu.md)); BE-4 import/export ([hợp đồng tài liệu](../contracts/tai-lieu.md)); BE-5 CI, test log và báo cáo tổng hợp ([hợp đồng Job & SSE](../contracts/job-va-sse.md)). Người điều phối tổng hợp, không làm thay phần bằng chứng của bảy người còn lại.
 
-Thiếu GreenNode không chặn phỏng vấn, wireframe, OpenAPI, DB local, thuật toán hay fixture. Chỉ ghi chặn model thật/triển khai thật trong phần cần server, chuẩn bị code/runbook để Thuận tự chạy sau.
+Thiếu GreenNode không chặn phỏng vấn, wireframe, OpenAPI, DB local, thuật toán hay fixture. Chỉ ghi chặn model thật/triển khai thật trong phần cần server, chuẩn bị code/runbook tại [ops/greennode/README.md](../../ops/greennode/README.md) để Thuận tự chạy sau.
+
+### Đối chiếu hiện trạng thực thi trên nhánh `codex/ban-thu-13` (`8d37a0f`)
+
+- **`[Hiện có / Đã chạy bằng Python]`:** Bộ kiểm tra Python tại `8d37a0f` đạt **`710 passed, 5 skipped, 1 warning, 3 subtests passed`** (`110.66s`), cùng `ruff format --check .` (`94` tệp), `ruff check .`, `ty check src` đạt; lượt kiểm với `PATH` tắt Node/npm đạt **`167 passed`** (`51.99s`); gói cài sạch `ung-vien-48` (`SHA-256: 1a28c3c62d77fcc9eec1531e8222284b174bff5844c7e1c4a5813614f4e92f06`) xuất thực Word/PDF HS-GV không cần Node; tỷ lệ mã nguồn trong Git (`git ls-tree -rl HEAD`) đạt `1.239.067 B` Python (dự kiến **`48,73%`** Linguist khi merge PR #46) so với `1.121.180 B` JS tự viết (`44,09%`). Chi tiết tại [DOI_CHIEU_PYTHON.md](../testing/DOI_CHIEU_PYTHON.md).
+- **`[Fixture / Mock]`:** Hồi quy `npm test` (`139 passed`), `npm run check:team` (`14 passed`), `npm run build-editor` (`436.8kb`), và 11 ca Chrome `IT-01`..`IT-11` chạy qua hai lượt (`10/11` + rerun `--case 11` và `10/11` + rerun `--case 05` đạt đủ). Chi tiết tại [KIEM_THU_TICH_HOP.md](../testing/KIEM_THU_TICH_HOP.md).
+- **`[Chờ review nhóm / Thành viên xác nhận]` & model thật:** Lượt `qwen3:4b` Vulkan cục bộ mới nhất sau Pha 2 (`47c40f8`) đạt `4/5` câu qua `blind_content_check` với cache ổn định nhưng dừng `timeout` tại `ordinal 1` (`901.081s`, giữ nguyên kho); vẫn chờ review chéo các tài liệu M1/M2 và PR giữa thành viên, khảo sát 3 người dùng `CT-01`, lịch môn chính thức, thẩm định sư phạm và diễn tập GreenNode do `ngocthuan1505` tự thực hiện.
 
 [1]: https://github.com/ngocthuan1505/proj_VA_soandethi/issues/1
 [2]: https://github.com/ngocthuan1505/proj_VA_soandethi/issues/2
