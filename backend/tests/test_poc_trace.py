@@ -191,6 +191,10 @@ class TestPoCTrace(unittest.TestCase):
 
         fixed = MODULE.repair_submission(request(), body, previous)
         self.assertEqual(fixed["questions"], [baseline[0], body["questions"][0]])
+        assignment["plannedStem"] = "Gợi ý sai"
+        self.assertEqual(MODULE.repair_submission(request(), body, previous), {})
+        assignment["suggestedStem"] = assignment.pop("plannedStem")
+        self.assertEqual(MODULE.repair_submission(request(), body, previous), fixed)
         previous["arguments"]["questions"][0]["stem"] = "Khác nhật ký"
         with self.assertRaises(ValueError):
             MODULE.repair_submission(request(), body, previous)

@@ -261,18 +261,20 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
             ]
 
 
-@pytest.mark.parametrize("mode", ["valid", "old_stem", "malformed", "ignored", "copies_source"])
+@pytest.mark.parametrize("mode", ["valid", "old_stem", "malformed", "corrected", "copies_source"])
 def test_repeated_level_error_plans_one_stem_before_scoped_generation(mode):
     body = mixed_tool_body()
     assignment = json.loads(body["messages"][1]["content"])
     assignment["matrix"].update(subject="Toán", grade="5", instructions="")
     assignment["source"] = [
-        {"id": 0, "text": "Kệ có 24 và 16 cuốn sách."},
+        {"id": 0, "text": "Kệ có 24 sách truyện và 16 sách khoa học."},
         {"id": 1, "text": "Buổi sáng mở cửa lúc 8 giờ."},
         {"id": 2, "text": "Ngày đọc sách là thứ sáu."},
     ]
     body["messages"][1]["content"] = json.dumps(assignment)
     chosen = "Hai nhóm sách cộng lại có bao nhiêu cuốn?"
+    wrong_comparison = "Số sách khoa học nhiều hơn số sách truyện bao nhiêu cuốn?"
+    corrected = "Số sách truyện nhiều hơn số sách khoa học bao nhiêu cuốn?"
     previous = [{"stem": f"Câu {i}?"} for i in range(5)]
     previous[1]["evidenceIds"] = [0]
     feedback = {"ok": False, "errors": [{"ordinal": 1, "code": "level_disagreement"}]}
@@ -294,6 +296,7 @@ def test_repeated_level_error_plans_one_stem_before_scoped_generation(mode):
             assert data["avoid"] == [row["stem"] for row in previous]
             stem = {
                 "old_stem": " CÂU 1? ",
+                "corrected": wrong_comparison,
                 "copies_source": " ".join(row["text"] for row in assignment["source"])
                 + " "
                 + chosen,
@@ -305,11 +308,12 @@ def test_repeated_level_error_plans_one_stem_before_scoped_generation(mode):
         stem_schema = request["tools"][0]["function"]["parameters"]["properties"]["questions"][
             "items"
         ][0]["properties"]["stem"]
-        if mode in {"valid", "ignored"}:
-            assert stem_schema["const"] == data["plannedStem"] == chosen
+        assert "const" not in stem_schema
+        if mode in {"valid", "corrected"}:
+            assert data["suggestedStem"] == (wrong_comparison if mode == "corrected" else chosen)
         else:
-            assert "const" not in stem_schema and "plannedStem" not in data
-        change = {"stem": "Câu không theo kế hoạch?" if mode == "ignored" else chosen}
+            assert "suggestedStem" not in data
+        change = {"stem": corrected if mode == "corrected" else chosen}
         return {
             "tool_calls": [
                 {"function": {"name": "check_exam", "arguments": {"questions": [change]}}}
@@ -319,10 +323,8 @@ def test_repeated_level_error_plans_one_stem_before_scoped_generation(mode):
     result = asyncio.run(local_model_call(model, "agent", body))
     args = result["tool_calls"][0]["function"]["arguments"]
     assert seen == ["repair_stem", "agent"]
-    if mode == "ignored":
-        assert args == {}
-    else:
-        assert args["questions"] == [previous[0], {"stem": chosen}, *previous[2:]]
+    expected = corrected if mode == "corrected" else chosen
+    assert args["questions"] == [previous[0], {"stem": expected}, *previous[2:]]
 
 
 @pytest.mark.parametrize("answer", ["40", "3"])
@@ -476,7 +478,7 @@ def test_propose_repair_stem_rejects_disallowed_scripts_and_punct_duplicates(bad
         if purpose == "repair_stem":
             return {"content": json.dumps({"stem": bad_stem}, ensure_ascii=False)}
         data = json.loads(request["messages"][1]["content"])
-        assert "plannedStem" not in data
+        assert "suggestedStem" not in data
         stem_schema = request["tools"][0]["function"]["parameters"]["properties"]["questions"][
             "items"
         ][0]["properties"]["stem"]

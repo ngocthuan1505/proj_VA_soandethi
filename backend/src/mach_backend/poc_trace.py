@@ -96,6 +96,7 @@ def repair_submission(request, arguments, previous):
         or set(arguments) != {"questions"}
     ):
         return {}
+    # Nhật ký cũ dùng plannedStem như ràng buộc, suggestedStem chỉ là gợi ý.
     if (stem := assignment.get("plannedStem")) is not None and (
         len(replacements) != 1
         or not isinstance(replacements[0], dict)

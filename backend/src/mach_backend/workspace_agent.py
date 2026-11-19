@@ -301,10 +301,10 @@ async def local_model_call(model, purpose, body):
             else None
         )
         if stem:
-            assignment["plannedStem"] = stem
+            assignment["suggestedStem"] = stem
             body["messages"][0]["content"] += (
-                " Dùng nguyên plannedStem cho câu đang sửa. Hãy soạn phương án và lời giải "
-                "của chính câu đó, rồi nộp để Python kiểm lại."
+                " Giải câu suggestedStem dựa vào nguồn trước khi nộp. Nếu tiền đề sai hoặc "
+                "câu chưa đúng mức yêu cầu, hãy sửa thân câu rồi viết đáp án và lời giải khớp."
             )
         if repair:
             assignment["matrix"]["slots"] = [
@@ -373,8 +373,6 @@ async def local_model_call(model, purpose, body):
                     "answer": {"type": "string", **answers[kind]},
                     "rubric": {"$ref": f"#/$defs/{rubric_name}"},
                 }
-                if stem:
-                    properties["stem"]["const"] = stem
                 required = common["required"]
                 if kind == "truefalse":
                     options = properties.pop("options")
@@ -428,7 +426,6 @@ async def local_model_call(model, purpose, body):
                     set(arguments) != {"questions"}
                     or not isinstance(patch, list)
                     or len(patch) != len(ordinals)
-                    or (stem and (not isinstance(patch[0], dict) or patch[0].get("stem") != stem))
                 ):
                     arguments.clear()
                     continue
