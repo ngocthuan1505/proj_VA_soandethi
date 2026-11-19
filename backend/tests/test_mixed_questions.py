@@ -186,13 +186,24 @@ def test_mixed_rejects_bad_answer_transport(kind, value):
         decode_answer(kind, value)
 
 
-def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed):
+@pytest.mark.parametrize("uses_statements", [True, False])
+def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed, uses_statements):
     job, args = mixed
     model = MixedModel(job, args)
 
     async def local_response(purpose, body):
         response = await model(purpose, body)
-        if purpose == "blind_content_check":
+        if purpose == "agent":
+            for message in body["messages"]:
+                for tool in message.get("tool_calls", []):
+                    old = tool["function"]["arguments"]["questions"][1]
+                    assert ("statements" in old) == uses_statements
+                    assert "options" not in old
+            arguments = response["tool_calls"][0]["function"]["arguments"]
+            if uses_statements and "questions" in arguments:
+                question = arguments["questions"][1]
+                question["statements"] = question.pop("options")
+        elif purpose == "blind_content_check":
             content = json.loads(response["content"])
             review = content["reviews"][0]
             review["answer"] = args["questions"][0]["options"][int(review["answer"])]
@@ -206,8 +217,13 @@ def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed
             lambda *_a, **_kw: None,
         )
     )
+    if not uses_statements:
+        assert result["status"] == "attempt_limit"
+        assert result["report"]["errors"][0]["code"] == "invalid_result"
+        return
     assert result["status"] == "ready_for_teacher_review"
     assert result["proposal"]["questions"][0]["answer"] == 2
+    assert result["proposal"]["questions"][1]["options"] == list(args["questions"][1]["options"])
     items = model.calls[0][1]["tools"][0]["function"]["parameters"]["properties"]["questions"][
         "items"
     ]

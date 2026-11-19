@@ -123,13 +123,16 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
         assert "RubricStep" in wire["$defs"]
         args = wire["oneOf"][0]["properties"]["arguments"]
         items = [item["properties"] for item in args["properties"]["questions"]["items"]]
-        assert [i["options"]["minItems"] for i in items] == [4, 4, 4, 0, 0]
-        assert [i["options"]["maxItems"] for i in items] == [4, 4, 4, 0, 0]
+        fields = ["options", "options", "statements", "options", "options"]
+        assert [i[f]["minItems"] for i, f in zip(items, fields, strict=True)] == [4, 4, 4, 0, 0]
+        assert [i[f]["maxItems"] for i, f in zip(items, fields, strict=True)] == [4, 4, 4, 0, 0]
+        assert "options" not in items[2]
+        assert "statements" in args["properties"]["questions"]["items"][2]["required"]
         assert items[0]["answer"]["enum"] == items[1]["answer"]["enum"] == list("0123")
         assert "matrix.slots[2].topic" in items[2]["stem"]["description"]
         assert "Thông hiểu: Nối dữ kiện." in items[2]["stem"]["description"]
         assert "Chủ đề 3" not in items[2]["stem"]["description"]
-        assert "Bốn mệnh đề" in items[2]["options"]["description"]
+        assert "Bốn mệnh đề" in items[2]["statements"]["description"]
         assert "đúng thứ tự" in items[2]["answer"]["description"]
         assert "matrix.slots[4].topic" in items[4]["stem"]["description"]
         assert len(items[2]["answer"]["enum"]) == 16 and "1010" in items[2]["answer"]["enum"]
@@ -141,6 +144,7 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
         assert multiple["minItems"] == 2 and multiple["maxItems"] == 8
         assert multiple["items"]["properties"]["pointsQ4"]["maximum"] == 7
         assert wire["$defs"]["RubricQ4_1"]["items"][0]["properties"]["pointsQ4"] == {"const": 1}
+        return {}
 
     asyncio.run(local_model_call(model, "agent", body))
     assert body == before

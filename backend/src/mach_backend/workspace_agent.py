@@ -35,6 +35,24 @@ MIXED_STEM_GUIDES = {
 }
 
 
+def rename_truefalse_field(message, slots, source, target):
+    for tool in message.get("tool_calls", []):
+        call = tool["function"]
+        if call["name"] != "check_exam":
+            continue
+        questions = call["arguments"].get("questions")
+        if not isinstance(questions, list):
+            continue
+        for slot, question in zip(slots, questions, strict=False):
+            if slot["type"] != "truefalse" or not isinstance(question, dict):
+                continue
+            if source in question and target not in question:
+                question[target] = question.pop(source)
+            elif source == "statements" and source not in question:
+                # Giữ lỗi cấu trúc để bộ kiểm trả lại model ở lần sửa sau.
+                question.pop("options", None)
+
+
 async def local_model_call(model, purpose, body):
     """Chia lượt rà thành từng câu để model local không lẫn đáp án giữa các câu."""
     body = copy.deepcopy(body)
@@ -103,8 +121,10 @@ async def local_model_call(model, purpose, body):
                     "answer": {"type": "string", **answers[kind]},
                     "rubric": {"$ref": f"#/$defs/{rubric_name}"},
                 }
+                required = common["required"]
                 if kind == "truefalse":
-                    properties["options"]["description"] = (
+                    properties["statements"] = properties.pop("options")
+                    properties["statements"]["description"] = (
                         "Bốn mệnh đề có thể xét đúng/sai riêng. Mỗi mệnh đề có chủ thể "
                         "và điều khẳng định cụ thể. Tránh số hoặc cụm từ đứng riêng."
                     )
@@ -112,8 +132,18 @@ async def local_model_call(model, purpose, body):
                         "Giải từng mệnh đề rồi ghi 1 nếu đúng, 0 nếu sai, "
                         "theo đúng thứ tự bốn mệnh đề."
                     )
-                questions["items"].append({**common, "properties": properties})
-        return await model(purpose, body)
+                    required = ["statements" if name == "options" else name for name in required]
+                questions["items"].append(
+                    {**common, "properties": properties, "required": required}
+                )
+        body["messages"][0]["content"] += (
+            " Riêng câu Đúng/Sai, điền bốn mệnh đề vào trường statements theo schema của ô."
+        )
+        for message in body["messages"]:
+            rename_truefalse_field(message, slots, "options", "statements")
+        response = await model(purpose, body)
+        rename_truefalse_field(response, slots, "statements", "options")
+        return response
     if "MixedContentReview" in body.get("format", {}).get("$defs", {}):
         questions = json.loads(body["messages"][1]["content"])["questions"]
         common = body["format"]["$defs"]["MixedContentReview"]
