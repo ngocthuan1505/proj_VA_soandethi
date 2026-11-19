@@ -172,6 +172,11 @@ def test_model_uses_tool_and_repairs_wrong_answer_before_finish(job):
     assert answer_error["actualAnswer"] == 3
     assert answer_error["checkedAnswer"] == 2
     assert [row["ok"] for row in log if row["event"] == "generation_result"] == [False, True]
+    assert [
+        [tool["function"]["name"] for tool in request["tools"]]
+        for purpose, request in model.calls
+        if purpose == "agent"
+    ] == [["check_exam"], ["check_exam"], ["check_exam", "finish_exam"]]
     schema = model.calls[0][1]["tools"][0]["function"]["parameters"]
     matrix = json.loads(model.calls[0][1]["messages"][1]["content"])["matrix"]
     assert matrix["slots"][0]["level"] == 0

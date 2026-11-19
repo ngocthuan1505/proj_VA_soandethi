@@ -643,7 +643,9 @@ async def run_matrix_agent(
     ] = 1 if job.requireEvidence else 0
     attempts, tool_calls, last, report = 0, 0, None, {"ok": False, "errors": []}
     for _turn in range(turns):
-        response = await call("agent", {"messages": messages, "tools": tools})
+        response = await call(
+            "agent", {"messages": messages, "tools": tools if report["ok"] else tools[:1]}
+        )
         message = {"role": "assistant", "content": response.get("content", "")}
         calls = response.get("tool_calls", [])
         if not isinstance(calls, list) or not calls:

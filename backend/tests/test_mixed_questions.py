@@ -202,3 +202,14 @@ def test_local_adapter_preserves_mixed_wire_instead_of_coercing_it_to_abcd(mixed
     ]
     assert len(items) == len(job.slots)
     assert all(item["properties"]["answer"]["type"] == "string" for item in items)
+    blind = next(request for purpose, request in model.calls if purpose == "blind_content_check")
+    review_items = blind["format"]["properties"]["reviews"]["items"]
+    assert [item["properties"]["ordinal"]["const"] for item in review_items] == list(range(4))
+    assert [item["properties"]["optionVerdicts"]["maxItems"] for item in review_items] == [
+        4,
+        4,
+        0,
+        0,
+    ]
+    assert review_items[0]["properties"]["answer"]["enum"] == ["0", "1", "2", "3", ""]
+    assert review_items[3]["properties"]["answer"] == {"const": ""}

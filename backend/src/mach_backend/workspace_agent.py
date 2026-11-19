@@ -23,6 +23,10 @@ LEVEL_DESCRIPTION = (
     "van_dung: áp dụng vào tình huống MỚI chưa xảy ra trong nguồn. "
     "Giải thích sự việc đã kể không tự trở thành vận dụng."
 )
+MIXED_ANSWERS = {
+    "mcq": list("0123"),
+    "truefalse": [f"{value:04b}" for value in range(16)],
+}
 
 
 async def local_model_call(model, purpose, body):
@@ -39,8 +43,7 @@ async def local_model_call(model, purpose, body):
             questions = tool["function"]["parameters"]["properties"]["questions"]
             common = questions["items"]
             answers = {
-                "mcq": {"enum": list("0123")},
-                "truefalse": {"enum": [f"{value:04b}" for value in range(16)]},
+                **{kind: {"enum": values} for kind, values in MIXED_ANSWERS.items()},
                 "short": {**common["properties"]["answer"], "minLength": 1},
                 "essay": {"const": ""},
             }
@@ -60,6 +63,27 @@ async def local_model_call(model, purpose, body):
                 questions["items"].append({**common, "properties": properties})
         return await model(purpose, body)
     if "MixedContentReview" in body.get("format", {}).get("$defs", {}):
+        questions = json.loads(body["messages"][1]["content"])["questions"]
+        common = body["format"]["$defs"]["MixedContentReview"]
+        items = []
+        for question in questions:
+            kind = question["type"]
+            count = 4 if kind in MIXED_ANSWERS else 0
+            properties = {
+                **common["properties"],
+                "ordinal": {"const": question["ordinal"]},
+                "optionVerdicts": {
+                    **common["properties"]["optionVerdicts"],
+                    "minItems": count,
+                    "maxItems": count,
+                },
+            }
+            if kind in MIXED_ANSWERS:
+                properties["answer"] = {"enum": [*MIXED_ANSWERS[kind], ""]}
+            elif kind == "essay":
+                properties["answer"] = {"const": ""}
+            items.append({**common, "properties": properties})
+        body["format"]["properties"]["reviews"]["items"] = items
         return await model(purpose, body)
     if purpose == "explanation_check":
         questions = json.loads(body["messages"][1]["content"])["questions"]
