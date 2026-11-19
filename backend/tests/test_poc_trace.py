@@ -166,6 +166,35 @@ class TestPoCTrace(unittest.TestCase):
         self.assertFalse(report["traceVerified"])
         self.assertTrue(report["evidenceIssues"])
 
+    def test_duplicate_repair_requires_matching_hash_of_baseline_stems(self):
+        baseline = [{"stem": "Trùng", "answer": "1"}, {"stem": "Trùng", "answer": "2"}]
+        errors = [{"ordinal": 1, "code": "duplicate_question"}]
+        report = {"ok": False, "errors": errors}
+        previous = {"arguments": {"questions": baseline}, "report": report, "callId": None}
+        assignment = {
+            "repairOrdinals": [1],
+            "repairStemsHash": MODULE.sha256_json([row.get("stem") for row in baseline]),
+        }
+        body = {"questions": [{"stem": "Khác", "answer": "3"}]}
+
+        def request():
+            return {
+                "messages": [
+                    {"role": "system", "content": "sửa"},
+                    {"role": "user", "content": json.dumps(assignment)},
+                    {
+                        "role": "user",
+                        "content": json.dumps({"toolResult": "check_exam", "result": report}),
+                    },
+                ]
+            }
+
+        fixed = MODULE.repair_submission(request(), body, previous)
+        self.assertEqual(fixed["questions"], [baseline[0], body["questions"][0]])
+        previous["arguments"]["questions"][0]["stem"] = "Khác nhật ký"
+        with self.assertRaises(ValueError):
+            MODULE.repair_submission(request(), body, previous)
+
     def test_changed_answer_without_feedback_does_not_prove_self_repair(self):
         self.write_run(feedback=False)
         report = MODULE.inspect_run(self.directory)

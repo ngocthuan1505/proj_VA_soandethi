@@ -5,7 +5,7 @@ import json
 import pytest
 
 from mach_backend.ai_contract import AIError
-from mach_backend.matrix_agent import ContentReviews, MixedContentReviews
+from mach_backend.matrix_agent import ContentReviews, MixedContentReviews, sha256_json
 from mach_backend.mixed_questions import MixedDraftBatch, MixedDraftQuestion
 from mach_backend.poc_matrix import structured_tool_request
 from mach_backend.workspace_agent import local_model_call
@@ -215,19 +215,22 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
             assert len(questions["items"]) == len(previous)
             return {}
         assert assignment["repairOrdinals"] == [2]
-        assert assignment["previousStems"] == [row["stem"] for row in previous]
         if mode in {"history", "repeat"}:
+            assert "previousStems" not in assignment
+            assert assignment["repairStemsHash"] == sha256_json([row["stem"] for row in previous])
             assert assignment["earlierRejected"] == [
                 {
                     "ordinal": 2,
-                    "stem": "Cách hỏi đã bị báo sai mức.",
                     "code": "duplicate_question" if mode == "repeat" else "level_disagreement",
-                    "reason": "Nối hai dữ kiện.",
                 }
             ]
+            assert not any(row["stem"] in transport["messages"][1]["content"] for row in previous)
+            assert "Cách hỏi đã bị báo sai mức." not in transport["messages"][1]["content"]
+            assert transport["options"] == {"temperature": 0.45}
         else:
-            assert "earlierRejected" not in assignment
-        assert transport.get("options") == ({"temperature": 0.45} if mode == "repeat" else None)
+            assert assignment["previousStems"] == [row["stem"] for row in previous]
+            assert "earlierRejected" not in assignment and "repairStemsHash" not in assignment
+            assert "options" not in transport
         assert len(transport["messages"]) == 3
         assert json.loads(transport["messages"][-1]["content"])["result"] == feedback
         assert questions["minItems"] == questions["maxItems"] == len(questions["items"]) == 1

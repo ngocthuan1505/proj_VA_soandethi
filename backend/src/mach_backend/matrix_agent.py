@@ -215,7 +215,7 @@ def candidate_proposal(job: GenerateJob, arguments: dict) -> GenerateProposal:
             prior = normalized.index(stem) + 1
             raise CandidateQuestionError(
                 "duplicate_question",
-                f"Câu {index + 1} trùng câu {prior}: {proposal.questions[index].stem} "
+                f"Câu {index + 1} trùng câu {prior}. "
                 f"Phải viết câu {index + 1} mới, giữ chủ đề và mức của ô {index + 1}.",
                 index,
             )

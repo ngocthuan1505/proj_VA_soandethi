@@ -134,25 +134,39 @@ def scope_mixed_repair(body, assignment):
                     "reason": issue.get("requiredTask") or issue.get("reason") or "",
                 }
     assignment["repairOrdinals"] = ordinals
-    assignment["previousStems"] = [row["stem"] for row in previous]
-    if prior_failures:
-        assignment["earlierRejected"] = list(prior_failures.values())[-4:]
-    if any((error["ordinal"], error["code"]) in prior_failures for error in errors):
+    duplicate = any(error["code"] == "duplicate_question" for error in errors)
+    recent = list(prior_failures.values())[-4:]
+    if duplicate:
+        assignment["repairStemsHash"] = sha256_json([row["stem"] for row in previous])
+        guidance = (
+            " Các câu lỗi trùng phải được đặt lại theo đúng kiểu câu, chủ đề và mức "
+            "của ô. Chọn một chi tiết hoặc quan hệ khác trong nguồn."
+        )
+        recent = [{"ordinal": row["ordinal"], "code": row["code"]} for row in recent]
+    else:
+        assignment["previousStems"] = [row["stem"] for row in previous]
+        guidance = (
+            " Sửa nội dung theo lỗi, tránh chép previousStems hoặc quay lại cách hỏi "
+            "đã bị từ chối trong earlierRejected."
+        )
+    if recent:
+        assignment["earlierRejected"] = recent
+    if duplicate or any((error["ordinal"], error["code"]) in prior_failures for error in errors):
         body["options"] = {"temperature": 0.45}
     messages[1]["content"] = json.dumps(assignment, ensure_ascii=False)
     body["messages"] = [*messages[:2], messages[-1]]
     messages[0]["content"] += (
         " Đây là lượt sửa. Hãy nộp chỉ các câu tương ứng repairOrdinals (đếm từ 0), "
-        "đúng thứ tự danh sách. Python giữ các câu còn lại và kiểm lại cả bộ. "
-        "Sửa nội dung theo lỗi, tránh chép previousStems hoặc quay lại cách hỏi "
-        "đã bị từ chối trong earlierRejected. Mỗi câu trắc nghiệm hỏi một giá trị "
-        "hoặc kết luận cụ thể, với đúng một phương án trả lời câu hỏi."
+        "đúng thứ tự danh sách. Python giữ các câu còn lại và kiểm lại cả bộ."
+        + guidance
+        + " Mỗi câu trắc nghiệm hỏi một giá trị hoặc kết luận cụ thể, "
+        "với đúng một phương án trả lời câu hỏi."
     )
     return ordinals, previous
 
 
 async def propose_repair_stem(model, body, assignment, ordinals, previous):
-    if len(ordinals) != 1:
+    if len(ordinals) != 1 or "previousStems" not in assignment:
         return None
     ordinal = ordinals[0]
     matrix = assignment["matrix"]

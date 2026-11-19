@@ -221,6 +221,7 @@ def test_mixed_duplicate_after_scoped_repair_identifies_later_question(mixed):
     )
     assert proposal is None and not report["ok"]
     assert report["errors"][0]["code"] == "duplicate_question"
+    assert arguments["questions"][0]["stem"] not in json.dumps(report, ensure_ascii=False)
     assert report["errors"][0]["ordinal"] == 1
     duplicates = next(
         check for check in report["checks"] if check["toolName"] == "check_duplicates"

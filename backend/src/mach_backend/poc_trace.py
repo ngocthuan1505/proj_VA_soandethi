@@ -5,6 +5,7 @@ import json
 from itertools import pairwise
 from pathlib import Path
 
+from mach_backend.matrix_agent import sha256_json
 from mach_backend.poc_policy import CHECK_NAMES
 
 
@@ -77,10 +78,17 @@ def repair_submission(request, arguments, previous):
         or any(type(i) is not int or not 0 <= i < len(baseline) for i in indices)
         or any(type(e.get("ordinal")) is not int for e in errors)
         or indices != sorted({e["ordinal"] for e in errors})
-        or assignment.get("previousStems") != [row.get("stem") for row in baseline]
         or not feedback_matches(request, previous["report"], previous["callId"])
     ):
         raise ValueError("Phạm vi sửa không khớp bộ câu và lỗi trước đó.")
+    if "repairStemsHash" in assignment:
+        same_baseline = any(
+            error.get("code") == "duplicate_question" for error in errors
+        ) and assignment["repairStemsHash"] == sha256_json([row.get("stem") for row in baseline])
+    else:
+        same_baseline = assignment.get("previousStems") == [row.get("stem") for row in baseline]
+    if not same_baseline:
+        raise ValueError("Bộ câu gốc của lượt sửa không khớp nhật ký.")
     replacements = arguments.get("questions") if isinstance(arguments, dict) else None
     if (
         not isinstance(replacements, list)
