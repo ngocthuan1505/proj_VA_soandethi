@@ -133,9 +133,10 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
         assert "Thông hiểu: Nối dữ kiện." in items[2]["stem"]["description"]
         assert "Chủ đề 3" not in items[2]["stem"]["description"]
         assert "Bốn mệnh đề" in items[2]["statements"]["description"]
-        assert "đúng thứ tự" in items[2]["answer"]["description"]
+        assert "answer" not in items[2]
+        assert items[2]["statements"]["items"]["required"] == ["text", "isTrue"]
+        assert items[2]["statements"]["items"]["properties"]["isTrue"]["type"] == "boolean"
         assert "matrix.slots[4].topic" in items[4]["stem"]["description"]
-        assert len(items[2]["answer"]["enum"]) == 16 and "1010" in items[2]["answer"]["enum"]
         assert items[3]["answer"]["minLength"] == 1
         assert items[4]["answer"]["const"] == ""
         assert items[0]["rubric"]["$ref"] == items[2]["rubric"]["$ref"] == "#/$defs/RubricQ4_8"

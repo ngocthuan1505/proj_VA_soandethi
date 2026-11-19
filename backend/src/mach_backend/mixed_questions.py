@@ -7,10 +7,14 @@ from pydantic import Field
 from mach_backend.ai_contract import AIError, BlockText, ContractModel
 from mach_backend.ai_questions import Answer, RubricStep, validate_answer
 
+TRUEFALSE_ANSWER_GUIDE = (
+    "truefalse dùng đúng bốn ký tự 1/0 theo thứ tự nhận định (1010 là đúng,sai,đúng,sai); "
+)
 ANSWER_GUIDE = (
     "Đề hỗn hợp: làm đúng type của từng slot, không đổi loại câu. "
-    "answer luôn là CHUỖI: mcq dùng '0'/'1'/'2'/'3'; truefalse dùng đúng bốn ký tự 1/0 "
-    "theo thứ tự nhận định (1010 là đúng,sai,đúng,sai); short ghi đáp án ngắn; essay dùng ''. "
+    "answer là CHUỖI: mcq dùng '0'/'1'/'2'/'3'; "
+    + TRUEFALSE_ANSWER_GUIDE
+    + "short ghi đáp án ngắn; essay dùng ''. "
     "Đáp án short phải theo yêu cầu trong stem: nếu đề yêu cầu điền số hoặc đã ghi đơn vị "
     "ở ô trả lời thì chỉ ghi số, giữ đơn vị và phép tính trong lời giải; nếu đề yêu cầu "
     "đơn vị trong đáp án thì ghi đủ đơn vị. Không tự bỏ đơn vị khi đề chưa xác định. "

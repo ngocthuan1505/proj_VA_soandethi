@@ -186,8 +186,8 @@ def test_mixed_rejects_bad_answer_transport(kind, value):
         decode_answer(kind, value)
 
 
-@pytest.mark.parametrize("uses_statements", [True, False])
-def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed, uses_statements):
+@pytest.mark.parametrize("variant", ["paired", "old", "numeric"])
+def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed, variant):
     job, args = mixed
     model = MixedModel(job, args)
 
@@ -197,12 +197,25 @@ def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed
             for message in body["messages"]:
                 for tool in message.get("tool_calls", []):
                     old = tool["function"]["arguments"]["questions"][1]
-                    assert ("statements" in old) == uses_statements
-                    assert "options" not in old
+                    if variant == "paired":
+                        assert "options" not in old and "answer" not in old
+                        assert [s["isTrue"] for s in old["statements"]] == [
+                            True,
+                            False,
+                            True,
+                            False,
+                        ]
             arguments = response["tool_calls"][0]["function"]["arguments"]
-            if uses_statements and "questions" in arguments:
+            if variant != "old" and "questions" in arguments:
                 question = arguments["questions"][1]
-                question["statements"] = question.pop("options")
+                question["statements"] = [
+                    {"text": text, "isTrue": bit == "1"}
+                    for text, bit in zip(
+                        question.pop("options"), question.pop("answer"), strict=True
+                    )
+                ]
+                if variant == "numeric":
+                    question["statements"][0]["isTrue"] = 1
         elif purpose == "blind_content_check":
             content = json.loads(response["content"])
             review = content["reviews"][0]
@@ -217,18 +230,20 @@ def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed
             lambda *_a, **_kw: None,
         )
     )
-    if not uses_statements:
+    if variant != "paired":
         assert result["status"] == "attempt_limit"
         assert result["report"]["errors"][0]["code"] == "invalid_result"
         return
     assert result["status"] == "ready_for_teacher_review"
     assert result["proposal"]["questions"][0]["answer"] == 2
     assert result["proposal"]["questions"][1]["options"] == list(args["questions"][1]["options"])
+    assert result["proposal"]["questions"][1]["answer"] == [True, False, True, False]
     items = model.calls[0][1]["tools"][0]["function"]["parameters"]["properties"]["questions"][
         "items"
     ]
     assert len(items) == len(job.slots)
-    assert all(item["properties"]["answer"]["type"] == "string" for item in items)
+    assert all(items[i]["properties"]["answer"]["type"] == "string" for i in (0, 2, 3))
+    assert "answer" not in items[1]["properties"]
     blind = next(request for purpose, request in model.calls if purpose == "blind_content_check")
     review_items = blind["format"]["properties"]["reviews"]["items"]
     assert [item["properties"]["ordinal"]["const"] for item in review_items] == list(range(4))

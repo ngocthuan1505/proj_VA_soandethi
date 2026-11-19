@@ -13,6 +13,7 @@ import httpx
 from mach_backend.ai_contract import AIError
 from mach_backend.gemini_model import GEMINI_MODEL, GeminiKeyPool, GeminiModel
 from mach_backend.matrix_agent import run_matrix_agent, sha256_json
+from mach_backend.mixed_questions import TRUEFALSE_ANSWER_GUIDE
 from mach_backend.poc_matrix import LocalModel, RunLog
 from mach_backend.poc_policy import CallBudget, RunPolicy
 
@@ -35,7 +36,7 @@ MIXED_STEM_GUIDES = {
 }
 
 
-def rename_truefalse_field(message, slots, source, target):
+def convert_truefalse_statements(message, slots, *, to_ollama):
     for tool in message.get("tool_calls", []):
         call = tool["function"]
         if call["name"] != "check_exam":
@@ -46,11 +47,41 @@ def rename_truefalse_field(message, slots, source, target):
         for slot, question in zip(slots, questions, strict=False):
             if slot["type"] != "truefalse" or not isinstance(question, dict):
                 continue
-            if source in question and target not in question:
-                question[target] = question.pop(source)
-            elif source == "statements" and source not in question:
-                # Giữ lỗi cấu trúc để bộ kiểm trả lại model ở lần sửa sau.
-                question.pop("options", None)
+            if to_ollama:
+                options, answer = question.get("options"), question.get("answer")
+                if (
+                    "statements" not in question
+                    and isinstance(options, list)
+                    and isinstance(answer, str)
+                    and len(options) == len(answer) == 4
+                    and set(answer) <= {"0", "1"}
+                ):
+                    question["statements"] = [
+                        {"text": text, "isTrue": bit == "1"}
+                        for text, bit in zip(options, answer, strict=True)
+                    ]
+                    del question["options"], question["answer"]
+                continue
+            statements = question.get("statements")
+            if (
+                "options" not in question
+                and "answer" not in question
+                and isinstance(statements, list)
+                and len(statements) == 4
+                and all(
+                    isinstance(item, dict)
+                    and item.keys() == {"text", "isTrue"}
+                    and isinstance(item["text"], str)
+                    and type(item["isTrue"]) is bool
+                    for item in statements
+                )
+            ):
+                question["options"] = [item["text"] for item in statements]
+                question["answer"] = "".join("1" if item["isTrue"] else "0" for item in statements)
+                del question["statements"]
+            else:
+                # Giữ lỗi cấu trúc để bộ kiểm có thể phản hồi cho model.
+                question.setdefault("statements", None)
 
 
 async def local_model_call(model, purpose, body):
@@ -123,26 +154,42 @@ async def local_model_call(model, purpose, body):
                 }
                 required = common["required"]
                 if kind == "truefalse":
-                    properties["statements"] = properties.pop("options")
-                    properties["statements"]["description"] = (
-                        "Bốn mệnh đề có thể xét đúng/sai riêng. Mỗi mệnh đề có chủ thể "
-                        "và điều khẳng định cụ thể. Tránh số hoặc cụm từ đứng riêng."
-                    )
-                    properties["answer"]["description"] = (
-                        "Giải từng mệnh đề rồi ghi 1 nếu đúng, 0 nếu sai, "
-                        "theo đúng thứ tự bốn mệnh đề."
-                    )
-                    required = ["statements" if name == "options" else name for name in required]
+                    options = properties.pop("options")
+                    del properties["answer"]
+                    properties["statements"] = {
+                        **options,
+                        "description": "Bốn mệnh đề hoàn chỉnh, mỗi mệnh đề có nhãn đúng/sai.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "text": options["items"],
+                                "isTrue": {"type": "boolean", "description": "Mệnh đề này đúng."},
+                            },
+                            "required": ["text", "isTrue"],
+                            "additionalProperties": False,
+                        },
+                    }
+                    required = [
+                        "statements" if name == "options" else name
+                        for name in required
+                        if name != "answer"
+                    ]
                 questions["items"].append(
                     {**common, "properties": properties, "required": required}
                 )
-        body["messages"][0]["content"] += (
-            " Riêng câu Đúng/Sai, điền bốn mệnh đề vào trường statements theo schema của ô."
+        system = body["messages"][0]
+        system["content"] = (
+            system["content"]
+            .replace(TRUEFALSE_ANSWER_GUIDE, "")
+            .replace("mcq và truefalse có bốn options", "mcq có bốn options")
+            .replace("mỗi option là một mệnh đề", "mỗi statements[].text là một mệnh đề")
+            + " Riêng câu Đúng/Sai dùng bốn phần tử statements, không có answer. "
+            "Giải từng mệnh đề rồi ghi isTrue=true nếu đúng và false nếu sai ngay cạnh text."
         )
         for message in body["messages"]:
-            rename_truefalse_field(message, slots, "options", "statements")
+            convert_truefalse_statements(message, slots, to_ollama=True)
         response = await model(purpose, body)
-        rename_truefalse_field(response, slots, "statements", "options")
+        convert_truefalse_statements(response, slots, to_ollama=False)
         return response
     if "MixedContentReview" in body.get("format", {}).get("$defs", {}):
         questions = json.loads(body["messages"][1]["content"])["questions"]
