@@ -598,3 +598,138 @@ def test_multi_call_workflow_timeout_is_bounded(job):
     assert len(proposal.questions) == 1
     with pytest.raises(ValueError, match="900"):
         asyncio.run(propose_exam(job, provider, current, timeout_seconds=901))
+
+
+def test_reuse_passed_reviews_and_skip_explanation_on_blind_fail(job):
+    multi_job = job.model_copy(
+        update={
+            "slots": (
+                job.slots[0].model_copy(update={"topic": "Chủ đề A", "pointsQ4": 14}),
+                job.slots[0].model_copy(update={"topic": "Chủ đề B", "pointsQ4": 13}),
+                job.slots[0].model_copy(update={"topic": "Chủ đề A", "pointsQ4": 13}),
+            )
+        }
+    )
+
+    def make_q(i, ans):
+        return {
+            "stem": f"Câu kiểm tra độc lập {i}?",
+            "options": ["A", "B", "C", "D"],
+            "answer": ans,
+            "explanation": f"Lời giải cho câu {i}.",
+            "evidenceIds": [0],
+        }
+
+    first_draft = {"questions": [make_q(0, 3), make_q(1, 2), make_q(2, 2)]}
+    second_draft = {"questions": [make_q(0, 2), make_q(1, 2), make_q(2, 2)]}
+    blind_ordinals = []
+    prior_ordinals = []
+    purposes = []
+
+    async def model(purpose, body):
+        purposes.append(purpose)
+        if purpose == "agent":
+            last = body["messages"][-1]
+            if last["role"] == "tool":
+                res = json.loads(last["content"])
+                if res["ok"]:
+                    return {"tool_calls": [tool("finish_exam", {})]}
+                return {"tool_calls": [tool("check_exam", second_draft)]}
+            return {"tool_calls": [tool("check_exam", first_draft)]}
+        if purpose == "blind_content_check":
+            payload = json.loads(body["messages"][1]["content"])
+            ordinals = [q["ordinal"] for q in payload["questions"]]
+            blind_ordinals.append(ordinals)
+            prior_ordinals.append([q["ordinal"] for q in payload.get("priorQuestions", [])])
+            return {
+                "content": json.dumps(
+                    {
+                        "reviews": [
+                            {
+                                "ordinal": o,
+                                "answer": 2,
+                                "observedLevel": 0,
+                                "supported": True,
+                                "topicMatches": True,
+                                "uncertain": False,
+                                "optionVerdicts": [
+                                    "incorrect",
+                                    "incorrect",
+                                    "correct",
+                                    "incorrect",
+                                ],
+                                "duplicateWith": [],
+                                "duplicateUncertain": False,
+                                "reason": "Khớp nguồn.",
+                            }
+                            for o in ordinals
+                        ]
+                    },
+                    ensure_ascii=False,
+                )
+            }
+        assert purpose == "explanation_check"
+        return {
+            "content": json.dumps(
+                {
+                    "reviews": [
+                        {"ordinal": o, "consistent": True, "reason": "Đúng."} for o in range(3)
+                    ]
+                }
+            )
+        }
+
+    _, emit = events()
+    result = asyncio.run(
+        run_matrix_agent(
+            multi_job,
+            model,
+            emit,
+            reuse_passed_reviews=True,
+            skip_explanation_on_blind_fail=True,
+        )
+    )
+    assert result["status"] == "ready_for_teacher_review"
+    assert blind_ordinals == [[0, 1, 2], [0, 2]]
+    assert prior_ordinals == [[], [1]]
+    assert purposes == [
+        "agent",
+        "blind_content_check",
+        "agent",
+        "blind_content_check",
+        "explanation_check",
+        "agent",
+    ]
+
+
+def test_mixed_invalid_rubric_carries_ordinal(job):
+    from mach_backend.matrix_agent import CandidateQuestionError, candidate_proposal
+
+    mixed_job = job.model_copy(
+        update={
+            "slots": (
+                job.slots[0],
+                job.slots[0].model_copy(update={"type": "essay", "pointsQ4": 8}),
+            )
+        }
+    )
+    q0 = {
+        "stem": "Câu trắc nghiệm hợp lệ?",
+        "options": ["Phương án A", "Phương án B", "Phương án C", "Phương án D"],
+        "answer": "0",
+        "explanation": "Giải thích câu 1.",
+        "rubric": [{"text": "Chọn đúng", "pointsQ4": job.slots[0].pointsQ4}],
+        "evidenceIds": [0],
+    }
+    q1 = {
+        "stem": "Hãy trình bày lời giải tự luận?",
+        "options": [],
+        "answer": "",
+        "explanation": "Lời giải mẫu đầy đủ.",
+        "rubric": [{"text": "Bước 1", "pointsQ4": 3}, {"text": "Bước 2", "pointsQ4": 4}],
+        "evidenceIds": [0],
+    }
+    with pytest.raises(CandidateQuestionError) as raised:
+        candidate_proposal(mixed_job, {"questions": [q0, q1]})
+    assert raised.value.code == "invalid_rubric"
+    assert raised.value.ordinal == 1

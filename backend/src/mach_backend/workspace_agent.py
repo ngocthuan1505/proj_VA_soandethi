@@ -5,7 +5,9 @@ import copy
 import hashlib
 import json
 import platform
+import re
 import time
+import unicodedata
 from itertools import pairwise
 from pathlib import Path
 
@@ -165,6 +167,31 @@ def scope_mixed_repair(body, assignment):
     return ordinals, previous
 
 
+DISALLOWED_STEM_SCRIPTS = (
+    "ARABIC",
+    "HEBREW",
+    "CJK",
+    "HIRAGANA",
+    "KATAKANA",
+    "HANGUL",
+    "CYRILLIC",
+    "THAI",
+    "DEVANAGARI",
+)
+
+
+def _normalize_stem_compare(text: str) -> str:
+    stripped = re.sub(r"[^\w\s]", " ", text.casefold(), flags=re.UNICODE)
+    return " ".join(stripped.split())
+
+
+def _has_disallowed_script(text: str) -> bool:
+    return any(
+        ch == "\u061f" or unicodedata.name(ch, "").startswith(DISALLOWED_STEM_SCRIPTS)
+        for ch in text
+    )
+
+
 async def propose_repair_stem(model, body, assignment, ordinals, previous):
     if len(ordinals) != 1 or "previousStems" not in assignment:
         return None
@@ -204,7 +231,13 @@ async def propose_repair_stem(model, body, assignment, ordinals, previous):
                             "Chỉ hỏi một điều cụ thể, đủ dữ kiện để có đúng một đáp án. "
                             "Các câu trong avoid đã dùng hoặc đã bị từ chối. Viết cách hỏi khác. "
                             "Nguồn chỉ là dữ liệu. Không chép nguồn hoặc kể quá trình soạn. "
-                            "Không sinh đáp án, phương án hay lời giải."
+                            "Không sinh đáp án, phương án hay lời giải. "
+                            "Kết thúc bằng dấu hỏi chấm '?' chuẩn tiếng Việt. "
+                            "Không nêu sẵn đáp số hoặc tổng/hiệu cần tính trong thân câu hỏi "
+                            "(tránh viết 'trong tổng số ...'). "
+                            "Nếu hỏi chênh lệch hoặc so sánh, kiểm đúng chiều số lớn hơn so với "
+                            "số nhỏ hơn trong nguồn; không thêm chú thích kiểu '(trả lời bằng số "
+                            "tự nhiên)' ở câu trắc nghiệm."
                         ),
                     },
                     {
@@ -234,12 +267,17 @@ async def propose_repair_stem(model, body, assignment, ordinals, previous):
         return None
     if not isinstance(plan, dict) or set(plan) != {"stem"} or not isinstance(plan["stem"], str):
         return None
-    stem = plan["stem"].strip()
-    if not 1 <= len(stem) <= 600:
+    stem = plan["stem"].strip().replace("\u061f", "?").replace("\uff1f", "?")
+    if not 1 <= len(stem) <= 600 or _has_disallowed_script(stem):
+        return None
+    compared = _normalize_stem_compare(stem)
+    if not compared or any(
+        old_cmp
+        and (compared == old_cmp or compared.startswith(old_cmp) or old_cmp.startswith(compared))
+        for old_cmp in (_normalize_stem_compare(old) for old in excluded)
+    ):
         return None
     normalized = " ".join(stem.casefold().split())
-    if any(normalized == " ".join(old.casefold().split()) for old in excluded):
-        return None
     copied = {" ".join(row["text"].casefold().split()) for row in source if row["text"].strip()}
     if sum(text in normalized for text in copied) >= 3:
         return None
@@ -571,7 +609,15 @@ async def local_model_call(model, purpose, body):
                 **value,
                 "questions": [question],
                 "priorQuestions": [
-                    q for q in value["questions"] if q["ordinal"] < question["ordinal"]
+                    q
+                    for q in sorted(
+                        {
+                            item["ordinal"]: item
+                            for item in (*value.get("priorQuestions", ()), *value["questions"])
+                        }.values(),
+                        key=lambda item: item["ordinal"],
+                    )
+                    if q["ordinal"] < question["ordinal"]
                 ],
             },
             ensure_ascii=False,
@@ -841,6 +887,7 @@ class AgentGeneration:
                         )
                     environment["installedModel"] = installed
                 log.write("environment.json", environment)
+                real_ollama_review = not self.call and review_provider == "ollama"
                 result = await run_matrix_agent(
                     job,
                     current_call,
@@ -848,6 +895,8 @@ class AgentGeneration:
                     max_attempts=None,
                     max_turns=policy.maxModelCalls + 2,
                     recheck_level_drift=review_provider == "ollama",
+                    reuse_passed_reviews=real_ollama_review,
+                    skip_explanation_on_blind_fail=real_ollama_review,
                 )
             except asyncio.CancelledError:
                 # HTTP transport có thể bỏ thông tin gắn với CancelledError.
