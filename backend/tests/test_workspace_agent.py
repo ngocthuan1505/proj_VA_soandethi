@@ -447,3 +447,160 @@ def test_generation_translates_letter_without_changing_original_request():
     response = asyncio.run(local_model_call(model, "agent", body))
     assert response["tool_calls"][0]["function"]["arguments"]["questions"][0]["answer"] == 2
     assert body == before
+
+
+@pytest.mark.parametrize(
+    "bad_stem",
+    [
+        "Thư viện có bao nhiêu quyển sách \u0628?",
+        " CÂU 1!! ",
+        "Tổng số sách 汉字 là bao nhiêu?",
+    ],
+)
+def test_propose_repair_stem_rejects_disallowed_scripts_and_punct_duplicates(bad_stem):
+    body = mixed_tool_body()
+    assignment = json.loads(body["messages"][1]["content"])
+    assignment["matrix"].update(subject="Toán", grade="5", instructions="")
+    assignment["source"] = [{"id": 0, "text": "Kệ có 24 và 16 cuốn sách."}]
+    body["messages"][1]["content"] = json.dumps(assignment)
+    previous = [{"stem": f"Câu {i}?"} for i in range(5)]
+    feedback = {"ok": False, "errors": [{"ordinal": 1, "code": "level_disagreement"}]}
+    submission = {
+        "role": "assistant",
+        "tool_calls": [{"function": {"name": "check_exam", "arguments": {"questions": previous}}}],
+    }
+    report = {"role": "tool", "tool_name": "check_exam", "content": json.dumps(feedback)}
+    body["messages"].extend([submission, report, submission, report])
+
+    async def model(purpose, request):
+        if purpose == "repair_stem":
+            return {"content": json.dumps({"stem": bad_stem}, ensure_ascii=False)}
+        data = json.loads(request["messages"][1]["content"])
+        assert "plannedStem" not in data
+        stem_schema = request["tools"][0]["function"]["parameters"]["properties"]["questions"][
+            "items"
+        ][0]["properties"]["stem"]
+        assert "const" not in stem_schema
+        return {
+            "tool_calls": [
+                {
+                    "function": {
+                        "name": "check_exam",
+                        "arguments": {"questions": [{"stem": "Câu sửa hợp lệ?"}]},
+                    }
+                }
+            ]
+        }
+
+    result = asyncio.run(local_model_call(model, "agent", body))
+    assert result["tool_calls"][0]["function"]["arguments"]["questions"][1] == {
+        "stem": "Câu sửa hợp lệ?"
+    }
+
+
+def test_local_reviewer_merges_prior_questions_from_cached_subset():
+    body = {
+        "format": ContentReviews.model_json_schema(),
+        "messages": [
+            {"role": "system", "content": "Giải độc lập"},
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "sources": [],
+                        "priorQuestions": [
+                            {
+                                "ordinal": 0,
+                                "stem": "Một?",
+                                "options": [{"index": 0, "text": "a"}, {"index": 1, "text": "b"}],
+                            }
+                        ],
+                        "questions": [
+                            {
+                                "ordinal": 1,
+                                "stem": "Hai?",
+                                "options": [{"index": 0, "text": "c"}, {"index": 1, "text": "d"}],
+                            }
+                        ],
+                    }
+                ),
+            },
+        ],
+    }
+
+    async def model(_purpose, request):
+        payload = json.loads(request["messages"][1]["content"])
+        assert [q["ordinal"] for q in payload["questions"]] == [1]
+        assert [q["ordinal"] for q in payload["priorQuestions"]] == [0]
+        return {
+            "content": json.dumps(
+                {
+                    "reviews": [
+                        {
+                            "ordinal": 1,
+                            "answer": "B",
+                            "observedLevel": "nhan_biet",
+                            "optionVerdicts": ["incorrect", "correct", "incorrect", "incorrect"],
+                        }
+                    ]
+                }
+            )
+        }
+
+    result = asyncio.run(local_model_call(model, "blind_content_check", body))
+    assert [r["ordinal"] for r in json.loads(result["content"])["reviews"]] == [1]
+
+
+def test_propose_repair_stem_normalizes_question_marks_and_blocks_tail_extension():
+    from mach_backend.workspace_agent import propose_repair_stem
+
+    excluded_stem = (
+        "Thư viện trường có 24 sách truyện và 16 sách khoa học. "
+        "Số sách khoa học nhiều hơn số sách truyện bao nhiêu quyển?"
+    )
+    assignment = {
+        "matrix": {
+            "subject": "Toán",
+            "grade": "5",
+            "instructions": "Mức Thông hiểu",
+            "slots": [
+                {
+                    "type": "mcq",
+                    "topic": "Thư viện",
+                    "level": 0,
+                    "pointsQ4": 4,
+                    "levelName": "Nhận biết",
+                    "requiredTask": "Tìm chi tiết.",
+                },
+                {
+                    "type": "mcq",
+                    "topic": "Thư viện",
+                    "level": 1,
+                    "pointsQ4": 8,
+                    "levelName": "Thông hiểu",
+                    "requiredTask": "Nối dữ kiện.",
+                },
+            ],
+        },
+        "source": [{"id": 0, "text": "Thư viện trường có 24 sách truyện và 16 sách khoa học."}],
+        "previousStems": [excluded_stem],
+        "earlierRejected": [{"ordinal": 1, "code": "level_disagreement", "stem": excluded_stem}],
+    }
+    body = {
+        "messages": [
+            {"role": "user", "content": json.dumps({"errors": [{"code": "level_disagreement"}]})}
+        ]
+    }
+    previous = [{}, {"evidenceIds": [0]}]
+
+    async def run(proposed):
+        async def model(_purpose, _request):
+            return {"content": json.dumps({"stem": proposed}, ensure_ascii=False)}
+
+        return await propose_repair_stem(model, body, assignment, [1], previous)
+
+    assert (
+        asyncio.run(run("Số sách truyện nhiều hơn số sách khoa học bao nhiêu quyển\u061f"))
+        == "Số sách truyện nhiều hơn số sách khoa học bao nhiêu quyển?"
+    )
+    assert asyncio.run(run(excluded_stem + " (trả lời bằng số tự nhiên).")) is None
