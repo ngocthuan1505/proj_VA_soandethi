@@ -1,5 +1,5 @@
 import {esc,clone,touch,check,recordCheck,questionAnswer} from './core.js';
-import {reconcileEditorRich} from './editor.js';
+import {flushEditor,reconcileEditorRich} from './editor.js';
 import {richTextHTML} from './math-content.js';
 
 export const answerLabel=(type,answer)=>answer===null||answer===undefined?'Chưa kết luận':type==='mcq'?'ABCD'[answer]:type==='truefalse'?answer.map((v,i)=>`${i+1}. ${v?'Đúng':'Sai'}`).join(' · '):String(answer);
@@ -21,6 +21,7 @@ export async function openQuestionCheck(c,workspaceHeaders){
   event.preventDefault();event.stopPropagation();if(running)return;
   const error=form.querySelector('[data-check-error]');error.textContent='';
   try{
+   if(!flushEditor())throw Error('Gõ xong chữ đang nhập rồi thử lại.');
    if(!current()||c.exam().revision!==identity.revision)throw Error('Đề hoặc câu đã đổi; mở lại trước khi kiểm.');
    if(!form.querySelector('#question-check-consent').checked)throw Error('Cần xác nhận kết nối trước khi gửi.');
    const selected=[...form.querySelectorAll('[name=check-source]:checked')].map(n=>sources[Number(n.value)]);
@@ -46,6 +47,7 @@ export async function openQuestionCheck(c,workspaceHeaders){
    document.querySelector('[data-use-checked-answer]')?.addEventListener('click',async event=>{
     const button=event.currentTarget;button.disabled=true;
     try{
+     if(!flushEditor())throw Error('Gõ xong chữ đang nhập rồi thử lại.');
      if(!current()||c.exam().revision!==reviewRevision||JSON.stringify(questionAnswer(q))!==JSON.stringify(before.answer)||q.explanation!==before.explanation)throw Error('Câu đã đổi; giải lại trước khi áp dụng.');
      const explanationDoc=reconcileEditorRich(q.explanationDoc,q.explanation||'',result.explanation);
      c.change('Dùng kết quả giải lại sau đối chiếu',()=>{
@@ -61,6 +63,6 @@ export async function openQuestionCheck(c,workspaceHeaders){
      await c.persist();document.querySelector('#dialog').close();c.toast('Đã dùng kết quả; bản mới cần rà soát và duyệt lại. Có thể hoàn tác.');
     }catch(e){button.disabled=false;c.toast(e.message);}
    });
-  }catch(e){running=false;if(form.isConnected){error.textContent=e.message;form.querySelector('[type=submit]').disabled=false;}else if(busyMessage&&!document.querySelector('#dialog').open)c.toast(e.message);else c.modal('Chưa hoàn tất kiểm câu',`<p role="alert">${esc(e.message)}</p><p class="hint">Chưa dùng đáp án hoặc lời giải mới. Mở lại kiểm câu để thử tiếp.</p>`);}
+  }catch(e){running=false;if(form.isConnected){error.textContent=e.message;form.querySelector('[type=submit]').disabled=false;}else if(!busyMessage?.isConnected||!document.querySelector('#dialog').open)c.toast(e.message);else c.modal('Chưa hoàn tất kiểm câu',`<p role="alert">${esc(e.message)}</p><p class="hint">Chưa dùng đáp án hoặc lời giải mới. Mở lại kiểm câu để thử tiếp.</p>`);}
  };
 }

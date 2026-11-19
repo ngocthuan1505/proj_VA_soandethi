@@ -92,6 +92,12 @@ Chrome dùng chế độ Chỉ hỏi, rồi bôi đen chữ trong câu tự lu�
 
 Khi một phiên khác ghi sau bước xem khác biệt, FastAPI trả 409 và giữ nguyên dữ liệu của phiên đã lưu. Giao diện báo chưa đồng bộ và giữ bản nháp cục bộ. Lời nhắn xác nhận và nút hoàn tác riêng chỉ xuất hiện sau khi máy chủ nhận lưu. Bàn soạn chờ kết thúc thao tác nhập dở trước khi gửi, xem hoặc xác nhận đề xuất. Pytest riêng kiểm scope/version sai, hủy kết nối và kiểm đáp án độc lập với phản hồi mẫu. Lượt này chưa thử qua model thật hoặc thiết bị di động thật. [Ca Chrome](../../scripts/kiem-ui-de-xuat-sua.mjs) · [Ca FastAPI](../../backend/tests/test_poc_scoped_patch.py)
 
+## Kiểm lại IT-07 khi giải độc lập và duyệt câu
+
+Chrome mở đề Ngữ văn với đáp án lưu B. Bộ giải mẫu trả A. Kết quả ghi bất đồng và thiếu trích dẫn, giữ nguyên nội dung câu và để trống dấu duyệt. Thao tác duyệt của giáo viên gắn với phiên bản hiện tại và giữ báo cáo bất đồng. Khi người dùng chủ động áp dụng kết quả giải lại, câu tăng phiên bản và mất dấu duyệt cũ.
+
+Khi chọn nguồn nhưng bộ giải bỏ trích dẫn, FastAPI trả lỗi `missing_evidence` và giữ nguyên câu. Lỗi này đến trễ cũng giữ hộp Thông tin đề đang mở và hiện thông báo trong hộp. Bàn soạn chờ kết thúc nhập dở trước khi mở kiểm, gửi, áp dụng hoặc duyệt. Pytest đối chiếu dữ liệu gửi đi và xác nhận bộ giải không nhận đáp án, lời giải hoặc barem đang lưu. Lượt Chrome dùng đáp án dựng sẵn. [Ca Chrome](../../scripts/kiem-ui-giai-doc-lap.mjs) · [Ca FastAPI](../../backend/tests/test_workspace_check.py)
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

@@ -92,7 +92,7 @@ class FixtureCase:
                                 "locator": source["locator"],
                                 "quote": source["text"][:1000],
                             }
-                            for source in data["sources"]
+                            for source in (data["sources"] if self.case != "unsupported" else [])
                         ],
                     },
                     ensure_ascii=False,
