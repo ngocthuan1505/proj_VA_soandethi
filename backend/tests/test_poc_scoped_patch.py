@@ -284,6 +284,59 @@ def test_editor_change_cannot_merge_distinct_table_cells():
     assert doc == original
 
 
+@pytest.mark.parametrize("old_latex", [None, "x+1"])
+def test_mixed_editor_change_writes_editable_formula(old_latex):
+    nodes = [{"type": "text", "text": "Vế trái."}]
+    if old_latex:
+        nodes.append({"type": "mathInline", "attrs": {"id": "math-id", "latex": old_latex}})
+    doc = {"type": "doc", "content": [{"type": "paragraph", "content": nodes}]}
+    original = project(doc, [])
+    target = BlockTarget(
+        questionId=uuid4(),
+        questionVersion=1,
+        blockId=uuid4(),
+        field="explanation",
+        text=original,
+    )
+    updated = update_rich(doc, target, "Vế phải $x+2$.\nDòng sau.")
+    first, second = updated["content"]
+    formula = next(node for node in first["content"] if node["type"] == "mathInline")
+    assert formula["attrs"]["latex"] == "x+2" and formula["attrs"]["id"]
+    if old_latex:
+        assert formula["attrs"]["id"] == "math-id"
+    assert project(updated, []) == "Vế phải $x+2$.\nDòng sau."
+    assert project(second, []) == "Dòng sau."
+    assert project(doc, []) == original
+
+
+def test_confirmation_keeps_repeated_text_in_its_selected_style_run(setup):
+    app, client, exam, question, body, edits, _ = setup
+    store = app.state.store
+    state = store.get("state")["value"]
+    q = state["exams"][0]["questions"][0]
+    marked = {"type": "text", "text": "x", "marks": [{"type": "bold"}]}
+    plain = {"type": "text", "text": "x"}
+    q["stem"] = "xx"
+    q["richDoc"] = {
+        "type": "doc",
+        "content": [{"type": "paragraph", "content": [marked, plain]}],
+    }
+    store.put("state", state)
+    body["scopes"][0].update(wholeField=False, start=0, end=1, text="x")
+    edits[0]["content"] = "xxx"
+    preview = client.post("/api/assistant/patch", json=body)
+    preview.raise_for_status()
+    proposal_id = preview.json()["confirmationId"]
+    assert proposal_id
+    client.post(f"/api/exams/{exam['id']}/edits/{proposal_id}/confirm", json={}).raise_for_status()
+    _, result = store.exam(exam["id"])
+    nodes = result["questions"][0]["richDoc"]["content"][0]["content"]
+    assert nodes[-1] == plain
+    assert all(node.get("marks") == marked["marks"] for node in nodes[:-1])
+    assert "".join(node["text"] for node in nodes[:-1]) == "xx"
+    assert result["questions"][0]["id"] == question["id"]
+
+
 def test_multiline_editor_change_is_committed_by_python(setup):
     app, client, exam, question, body, edits, _ = setup
     store = app.state.store

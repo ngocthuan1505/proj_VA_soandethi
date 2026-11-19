@@ -92,7 +92,7 @@ Chrome dùng chế độ Chỉ hỏi, rồi bôi đen chữ trong câu tự lu�
 
 Khi một phiên khác ghi sau bước xem khác biệt, FastAPI trả 409 và giữ nguyên dữ liệu của phiên đã lưu. Giao diện báo chưa đồng bộ và giữ bản nháp cục bộ. Lời nhắn xác nhận và nút hoàn tác riêng chỉ xuất hiện sau khi máy chủ nhận lưu. Bàn soạn chờ kết thúc thao tác nhập dở trước khi gửi, xem hoặc xác nhận đề xuất. Pytest riêng kiểm scope/version sai, hủy kết nối và kiểm đáp án độc lập với phản hồi mẫu. Lượt này chưa thử qua model thật hoặc thiết bị di động thật. [Ca Chrome](../../scripts/kiem-ui-de-xuat-sua.mjs) · [Ca FastAPI](../../backend/tests/test_poc_scoped_patch.py)
 
-Với các trường Python giữ được tài liệu định dạng, ca Chrome xác nhận qua `/api/exams/{exam_id}/edits/{proposal_id}/confirm`. Pytest gửi lại xác nhận, bỏ rồi thử xác nhận, và giả lập lỗi khi lưu biên nhận để kiểm rollback. Chrome cũng bôi đen qua hai đoạn và xác nhận thành ba đoạn qua cùng endpoint, cả ở cấp ngoài và trong cùng một ô bảng. Công thức, chữ in nghiêng, ID và ô bên cạnh được giữ. Hoàn tác khôi phục bản gốc. Pytest kiểm trường hợp cắt ngang hai ô bị từ chối ở bộ ghép Python.
+Với các trường Python giữ được tài liệu định dạng, ca Chrome xác nhận qua `/api/exams/{exam_id}/edits/{proposal_id}/confirm`. Pytest gửi lại xác nhận, bỏ rồi thử xác nhận, và giả lập lỗi khi lưu biên nhận để kiểm rollback. Chrome cũng bôi đen qua hai đoạn, cả ở cấp ngoài và trong cùng một ô bảng, rồi sửa khu vực có cả chữ và công thức. Công thức, chữ in nghiêng, ID và ô bên cạnh được giữ khi nằm ngoài phần thực sự đổi. Hoàn tác khôi phục bản gốc. Pytest kiểm từ chối ghép qua hai ô, bảo toàn node công thức và áp đúng run đã bôi đen khi chữ trùng.
 
 ## Kiểm lại IT-07 khi giải độc lập và duyệt câu
 

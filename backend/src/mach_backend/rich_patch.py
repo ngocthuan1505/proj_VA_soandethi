@@ -6,7 +6,13 @@ from uuid import uuid4
 
 from pydantic import JsonValue
 
-from mach_backend.ai_contract import MATH_DELIMITERS, AIError, BlockTarget, selection_parts
+from mach_backend.ai_contract import (
+    MATH_DELIMITERS,
+    AIError,
+    BlockTarget,
+    selection_parts,
+    validate_math_markers,
+)
 
 JOIN_LINES = {
     "doc",
@@ -104,9 +110,61 @@ def inline_slice(paragraph, start, end):
     return result
 
 
-def replace_paragraphs(doc, start, end, changed):
-    if MATH_DELIMITERS.search(changed):
+def replacement_lines(changed, marks, formulas: list[Leaf]):
+    try:
+        validate_math_markers(changed)
+    except AIError:
+        raise rich_error() from None
+    lines = []
+    count = 0
+    for line in changed.split("\n"):
+        nodes = []
+        cursor = 0
+        matches = list(MATH_DELIMITERS.finditer(line))
+        if len(matches) % 2:
+            raise rich_error()
+        for left, right in zip(matches[::2], matches[1::2], strict=True):
+            marker = left.group(1)
+            if marker not in ("$", "$$") or right.group(1) != marker:
+                raise rich_error()
+            if left.start(1) > cursor:
+                nodes.append(marked_text(line[cursor : left.start(1)], marks))
+            latex = line[left.end(1) : right.start(1)]
+            if not latex.strip() or (formulas and count >= len(formulas)):
+                raise rich_error()
+            original: dict[str, JsonValue] = (
+                formulas[count].node if formulas else {"type": "mathInline", "attrs": {}}
+            )
+            if formulas and project(original, []) == marker + latex + marker:
+                nodes.append(original)
+            else:
+                if len(formulas) > 1:
+                    raise rich_error()
+                attrs = original.get("attrs")
+                if not isinstance(attrs, dict):
+                    raise rich_error()
+                updated = {**attrs, "latex": latex, "display": marker == "$$"}
+                if not formulas:
+                    updated["id"] = str(uuid4())
+                nodes.append({**original, "attrs": updated})
+            count += 1
+            cursor = right.end(1)
+        if cursor < len(line):
+            nodes.append(marked_text(line[cursor:], marks))
+        lines.append(nodes)
+    if formulas and count != len(formulas):
         raise rich_error()
+    return lines
+
+
+def marked_text(text, marks):
+    node = {"type": "text", "text": text}
+    if marks:
+        node["marks"] = marks
+    return node
+
+
+def replace_paragraphs(doc, start, end, changed, formulas):
     blocks = doc.get("content", [])
     first = last = None
     offset = 0
@@ -114,7 +172,7 @@ def replace_paragraphs(doc, start, end, changed):
     for i, block in enumerate(blocks):
         stop = offset + len(project(block, []))
         if offset <= start <= end <= stop and block["type"] in JOIN_LINES | {"tableRow"}:
-            replace_paragraphs(block, start - offset, end - offset, changed)
+            replace_paragraphs(block, start - offset, end - offset, changed, formulas)
             return
         if offset <= start <= stop:
             first = (i, start - offset)
@@ -132,14 +190,10 @@ def replace_paragraphs(doc, start, end, changed):
     prefix, suffix = inline_slice(head, 0, left), inline_slice(tail, right, length)
     marks = prefix[-1].get("marks") if prefix else None
     result = []
-    lines = changed.split("\n")
-    for index, line in enumerate(lines):
+    lines = replacement_lines(changed, marks, formulas)
+    for index, nodes in enumerate(lines):
         content = list(prefix) if index == 0 else []
-        if line:
-            node = {"type": "text", "text": line}
-            if marks:
-                node["marks"] = marks
-            content.append(node)
+        content.extend(nodes)
         if index == len(lines) - 1:
             content.extend(suffix)
         if index == 0:
@@ -185,17 +239,23 @@ def update_rich(doc: JsonValue, target: BlockTarget, replacement: str) -> JsonVa
     end -= right
     changed = revised[left : len(revised) - right]
     candidates = [leaf for leaf in leaves if leaf.start <= start <= end <= leaf.end]
-    if len(candidates) != 1 or "\n" in changed:
-        if any(
-            leaf.node["type"] == "mathInline" and leaf.start < end and start < leaf.end
+    if (
+        len(candidates) != 1
+        or "\n" in changed
+        or (candidates[0].node["type"] == "text" and MATH_DELIMITERS.search(changed))
+    ):
+        formulas = [
+            leaf
             for leaf in leaves
-        ):
-            raise rich_error()
-        replace_paragraphs(result, start, end, changed)
+            if leaf.node["type"] == "mathInline" and leaf.start < end and start < leaf.end
+        ]
+        if formulas:
+            lower, upper = min(start, formulas[0].start), max(end, formulas[-1].end)
+            changed = target.text[lower:start] + changed + target.text[end:upper]
+            start, end = lower, upper
+        replace_paragraphs(result, start, end, changed, formulas)
     elif (leaf := candidates[0]).node["type"] == "text":
         value = target.text[leaf.start : start] + changed + target.text[end : leaf.end]
-        if MATH_DELIMITERS.search(changed):
-            raise rich_error()
         if value:
             leaf.node["text"] = value
         else:

@@ -347,9 +347,17 @@ async def wait_for_disconnect(request: Request):
         pass
 
 
-def prepare_rich(question, doc, old, new, field):
+def prepare_rich(question, doc, old, new, field, scopes, index=None):
     if doc is None or old == new:
         return doc
+    selections = [
+        scope
+        for scope in scopes
+        if scope.field == field and scope.index == index and not scope.wholeField
+    ]
+    if len(selections) > 1:
+        raise AIError("rich_document_conflict", "Chọn một vùng liên tục để giữ định dạng.")
+    selected = selections[0] if selections else None
     try:
         target = BlockTarget(
             questionId=UUID(question["id"]),
@@ -357,6 +365,7 @@ def prepare_rich(question, doc, old, new, field):
             blockId=UUID(question["blockIds"][field]),
             field="explanation",
             text=old,
+            selection=(selected.start, selected.end) if selected else None,
         )
     except (ValidationError, ValueError):
         raise AIError("rich_document_conflict", "Chưa hỗ trợ cấu trúc định dạng này.") from None
@@ -367,7 +376,7 @@ def prepare_rich(question, doc, old, new, field):
     )
 
 
-def prepare_questions(exam, selected, candidates):
+def prepare_questions(exam, selected, candidates, scopes):
     updated = {}
     for original in exam["questions"]:
         qid = original["id"]
@@ -384,22 +393,25 @@ def prepare_questions(exam, selected, candidates):
         if not changed:
             continue
         question = copy.deepcopy(original)
+        own = [scope for scope in scopes if scope.id == qid]
 
         for field, value in changed.items():
             if field == "stem":
                 question["richDoc"] = prepare_rich(
-                    question, question.get("richDoc"), before[field], value, field
+                    question, question.get("richDoc"), before[field], value, field, own
                 )
                 for derived in ("runs", "rule", "algebra", "verification"):
                     question[derived] = None
             elif field == "explanation":
                 question["explanationDoc"] = prepare_rich(
-                    question, question.get("explanationDoc"), before[field], value, field
+                    question, question.get("explanationDoc"), before[field], value, field, own
                 )
             elif field == "options":
                 docs = question.get("optionDocs") or []
                 question["optionDocs"] = [
-                    prepare_rich(question, docs[i] if i < len(docs) else None, old, new, field)
+                    prepare_rich(
+                        question, docs[i] if i < len(docs) else None, old, new, field, own, i
+                    )
                     for i, (old, new) in enumerate(zip(before[field], value, strict=True))
                 ]
             elif field == "rubric":
@@ -408,7 +420,7 @@ def prepare_questions(exam, selected, candidates):
                     old = before[field][i] if i < len(before[field]) else {}
                     if old.get("richDoc"):
                         row["richDoc"] = prepare_rich(
-                            question, old["richDoc"], old["text"], row["text"], field
+                            question, old["richDoc"], old["text"], row["text"], field, own, i
                         )
             question[field] = value
         question.update(v=original["v"] + 1, check=None, approval=None)
@@ -690,7 +702,7 @@ def install_scoped_patch(app: FastAPI, store, provider, fixture_call, directory:
             )
         proposal_id = None
         try:
-            updates = prepare_questions(exam, selected, candidates)
+            updates = prepare_questions(exam, selected, candidates, request.scopes)
         except AIError as error:
             if error.code != "rich_document_conflict":
                 raise

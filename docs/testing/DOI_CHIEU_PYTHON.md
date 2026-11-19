@@ -21,7 +21,7 @@ Lượt đo lại trên PR #46 ở commit `715dc50` đếm **526.980 byte Python
 
 Ở luồng sửa qua chat, FastAPI kiểm snapshot, scope và đáp án trước khi trả đề xuất. Với trường thuần văn bản hoặc thay trong một run hay một nút công thức mà Python giữ được cấu trúc, FastAPI chuẩn bị bản sửa và xác nhận bằng một giao dịch SQLite. Giao dịch cập nhật câu, phiên bản và lịch sử hoàn tác cùng biên nhận. Gửi lại cùng mã trả cùng biên nhận. Bỏ đề xuất xóa bản chờ và khôi phục kho làm mất hiệu lực các bản chờ trước đó.
 
-FastAPI cũng ghép được chữ trong nhiều run ở các đoạn văn liền nhau, kể cả trong cùng một ô bảng, mục danh sách hoặc khối trích dẫn. Ca Chrome sửa hai đoạn thành ba, giữ ID đoạn ngoài vùng, công thức và phần in nghiêng. Ca trong ô bảng giữ ID bảng, ID ô và nội dung ô kế bên. Hoàn tác khôi phục bản gốc. Bộ ghép Python từ chối vượt ranh giới ô. Đề xuất cắt qua công thức hoặc cấu trúc chưa hỗ trợ vẫn có thể đi qua bộ ghép của trình soạn và ghi snapshot có điều kiện.
+FastAPI cũng ghép được chữ trong nhiều run ở các đoạn văn liền nhau, kể cả trong cùng một ô bảng, mục danh sách hoặc khối trích dẫn. Ca Chrome sửa nhiều đoạn và vùng có chữ lẫn công thức, giữ ID đoạn ngoài vùng, nút công thức và phần in nghiêng. Ca trong ô bảng giữ ID bảng, ID ô và nội dung ô kế bên. Hoàn tác khôi phục bản gốc. Bộ ghép Python từ chối vượt ranh giới ô. Backend có thể chèn công thức mới hoặc sửa một công thức ở vùng có cả chữ, đồng thời ưu tiên offset vùng chọn khi có chữ trùng. Các đề xuất đổi nhiều công thức cùng lúc hoặc chạm cấu trúc chưa hỗ trợ vẫn có thể dùng bộ ghép của trình soạn và ghi snapshot có điều kiện.
 
 ## Lệnh chạy chính
 

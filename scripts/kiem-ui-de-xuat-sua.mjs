@@ -168,8 +168,10 @@ try {
     await editor.locator('.tiptap').evaluate((element, args) => {
       element.focus();
       const [first, second] = element.querySelectorAll(args.selector);
-      const head = first.lastChild;
-      const tail = second.firstChild;
+      const head = [...first.childNodes].find(node => node.nodeType === Node.TEXT_NODE
+        && node.textContent.includes(args.start));
+      const tail = [...second.childNodes].find(node => node.nodeType === Node.TEXT_NODE
+        && node.textContent.includes(args.end));
       const range = document.createRange();
       range.setStart(head, head.textContent.indexOf(args.start));
       range.setEnd(tail, tail.textContent.indexOf(args.end) + args.end.length);
@@ -229,6 +231,26 @@ try {
   await undo();
   assert.deepEqual((await state()).questions, original);
 
+  await selectAcross(':scope > p', 'sau khi tính', 'bước.');
+  await send('Viết lại đoạn có công thức đang chọn');
+  await proposal.waitFor();
+  await action('show-block-diff').click();
+  await dialog.locator('ins').getByText(/Nêu cách làm/).waitFor();
+  const formulaConfirmation = page.waitForResponse(response => isConfirm(response.url()) && response.ok());
+  await dialog.locator('[data-action="apply-block-patch"]').click();
+  await formulaConfirmation;
+  await action('undo-ai').waitFor();
+  const afterFormulaEdit = (await state()).questions[0];
+  assert.equal(afterFormulaEdit.stem, original[0].stem.replace(
+    'sau khi tính $x+1$. Hãy tính kết quả.\nTrình bày mỗi bước.',
+    'Đánh giá $x+1$.\nNêu cách làm.',
+  ));
+  assert.deepEqual(afterFormulaEdit.richDoc.content[0].content.find(node => node.type === 'mathInline'),
+    beforeBlocks[0].content.find(node => node.type === 'mathInline'));
+  assert.deepEqual(afterFormulaEdit.richDoc.content.at(-1), beforeBlocks.at(-1));
+  await undo();
+  assert.deepEqual((await state()).questions, original);
+
   await askToEdit();
   const confirmationsBeforeDoubleClick = confirmations;
   await dialog.locator('[data-action="apply-block-patch"]').evaluate(button => {
@@ -283,7 +305,7 @@ try {
     discardPreservedQuestions: true, repeatedConfirmAppliedOnce: true, richTextPreserved: true,
     undoRestoredQuestions: true, selectedRubricStepOnly: true, staleWriteRejected: true,
     conflictDisplayed: true, pythonConfirmations: confirmations, multilineConfirmedByPython: true,
-    nestedTableCellConfirmedByPython: true,
+    nestedTableCellConfirmedByPython: true, mixedFormulaConfirmedByPython: true,
   }, null, 2));
   console.log('IT-06 đạt qua Chrome và FastAPI với phản hồi mẫu.');
 } finally {
