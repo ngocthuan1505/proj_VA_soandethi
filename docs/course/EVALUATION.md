@@ -42,6 +42,22 @@ Quyết định sau thử nghiệm là giữ kiểm độc lập và chặn khi 
 
 ## Nhật ký dữ liệu mẫu
 
+### Cách ghi một lượt người dùng thử
+
+1. Ghi mã người tham gia ẩn danh, vai trò, SHA bản cài, hệ điều hành, trình duyệt, màn hình và chế độ AI. Dùng đề tự viết và hỏi có đồng ý ghi thao tác hay không. Nếu chạy hai phiên bản, dùng cùng kịch bản, cùng môi trường và ghi thứ tự thử.
+2. Đọc nguyên yêu cầu tác vụ trước khi bấm giờ. Bắt đầu khi người dùng thực hiện thao tác đầu tiên, kết thúc khi đạt điều kiện bên dưới hoặc khi họ dừng. Ghi số lần họ cần trợ giúp, lỗi quan sát được và phần đã làm xong. Với tác vụ AI, ghi riêng thời gian chờ model để nhìn được thao tác của người dùng.
+3. Dùng các trạng thái **tự hoàn thành**, **hoàn thành có trợ giúp**, **dừng vì không hoàn thành** hoặc **chưa thử**. Trình bày số ca trên mẫu số đã chạy. Các ca dừng được giữ trong bảng và ghi nguyên nhân.
+
+| Tác vụ giao cho người thử | Dấu hiệu hoàn thành để người quan sát kiểm |
+|---|---|
+| Chèn phân số 3/4 vào Câu 1 bằng trình chọn mẫu. | Trình soạn hiển thị đúng 3/4. Sau khi lưu và mở lại, nút công thức vẫn sửa được. |
+| Chọn một đoạn ở Câu 2, yêu cầu trợ lý sửa riêng đoạn đó, xem trước rồi áp dụng và hoàn tác. | Chỉ vùng đã chọn đổi sau khi áp dụng. Câu kế bên giữ nguyên và hoàn tác trả lại đoạn gốc. Ghi lại nếu không chạy được model được phép. |
+| Lưu đề có bảng, đóng rồi mở lại từ kho đề. | Bảng giữ số hàng/cột và nội dung ô. Bản ghi mở lại đúng đề mà người thử vừa lưu. |
+| Xuất Word học sinh và mở trong Word hoặc phần mềm tương thích. | Bản mở thành công, có đề và công thức. Đáp án và barem chỉ có trong bản giáo viên. Ghi công cụ thực tế dùng để mở. |
+| Dùng Tab và Shift+Tab mở ô nhập công thức rồi quay lại trình soạn. | Thấy tiêu điểm, đọc được nhãn điều khiển và có đường quay lại vùng soạn bằng bàn phím. Ghi nơi bị kẹt nếu có. |
+
+Thành viên có thể dùng bảng này để chạy thử nội bộ. Phần R1 và CT-01 vẫn cần phản hồi từ ít nhất ba người dùng thật thuộc nhóm mục tiêu. Các ngưỡng định lượng về thời gian và trợ giúp cần được nhóm chốt trước khi đo. [Problem Brief](PROBLEM_BRIEF.md)
+
 | Mã ca/người ẩn danh | Commit/môi trường | Tác vụ/kỳ vọng | Thời gian/lỗi/trợ giúp | Kết quả và bằng chứng | Vấn đề cần sửa |
 |---|---|---|---|---|---|
 | Chưa chạy | — | — | — | — | — |
