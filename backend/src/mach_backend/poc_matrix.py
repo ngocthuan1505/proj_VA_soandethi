@@ -97,7 +97,10 @@ def structured_tool_request(body):
             "(đếm từ 0), đặt câu hỏi mới cho đúng ô đó, dùng dữ kiện hoặc cách hỏi khác. "
             "Tự giải từng câu mới rồi mới nộp qua check_exam."
         )
-    return {"messages": messages, "format": schema}
+    request = {"messages": messages, "format": schema}
+    if "options" in body:
+        request["options"] = body["options"]
+    return request
 
 
 def structured_tool_response(message):
@@ -167,8 +170,13 @@ class LocalModel:
             "model": self.model,
             "stream": False,
             "keep_alive": "5m",
-            "options": {"temperature": 0, "num_ctx": 8192, "num_predict": 2400},
             **body,
+            "options": {
+                "temperature": 0,
+                "num_ctx": 8192,
+                "num_predict": 2400,
+                **body.get("options", {}),
+            },
         }
         self.log.write(f"call-{index:02}-request.json", payload)
         self.log.emit("model_start", modelCall=index, purpose=purpose, model=self.model)

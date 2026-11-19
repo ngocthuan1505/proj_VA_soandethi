@@ -137,6 +137,8 @@ def scope_mixed_repair(body, assignment):
     assignment["previousStems"] = [row["stem"] for row in previous]
     if prior_failures:
         assignment["earlierRejected"] = list(prior_failures.values())[-4:]
+    if any((error["ordinal"], error["code"]) in prior_failures for error in errors):
+        body["options"] = {"temperature": 0.45}
     messages[1]["content"] = json.dumps(assignment, ensure_ascii=False)
     body["messages"] = [*messages[:2], messages[-1]]
     messages[0]["content"] += (
