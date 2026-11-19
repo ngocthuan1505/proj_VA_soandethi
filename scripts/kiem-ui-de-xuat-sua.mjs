@@ -76,6 +76,33 @@ try {
   if (!(await page.locator('#chat-input').isVisible())) await action('toggle-ai').click();
   await saved();
   const original = (await state()).questions;
+  const undo = async ({pause = false} = {}) => {
+    const started = Promise.withResolvers(), release = Promise.withResolvers();
+    const hold = async route => {
+      if (route.request().method() === 'PUT') {
+        started.resolve();
+        await release.promise;
+      }
+      await route.continue();
+    };
+    if (pause) await page.route(kv, hold);
+    const written = page.waitForResponse(response => response.url() === kv
+      && response.request().method() === 'PUT' && response.ok()
+      && response.request().postDataJSON().value.exams[0].questions[0].v === original[0].v);
+    await action('undo-ai').click();
+    if (pause) {
+      try {
+        await Promise.race([started.promise, written]);
+        const labels = await page.locator('[data-save-status]').allTextContents();
+        assert(labels.length > 0 && labels.every(label => label === 'Đang lưu…'));
+      } finally {
+        release.resolve();
+      }
+    }
+    await written;
+    if (pause) await page.unroute(kv, hold);
+    await saved();
+  };
   const send = async text => {
     await page.locator('#chat-input').fill(text);
     await page.locator('#chat-form button[type="submit"]').click();
@@ -161,8 +188,7 @@ try {
   assert.deepEqual(afterBlocks[0].content.slice(0, 3), beforeBlocks[0].content.slice(0, 3));
   assert.deepEqual(afterBlocks[2].content.at(-1), beforeBlocks[1].content.at(-1));
   assert.deepEqual(afterBlocks.at(-1), beforeBlocks.at(-1));
-  await action('undo-ai').click();
-  await saved();
+  await undo({pause: true});
   assert.deepEqual((await state()).questions, original);
 
   await askToEdit();
@@ -180,8 +206,7 @@ try {
   assert.deepEqual(updated[0].richDoc.content[0].content.slice(0, 3),
     original[0].richDoc.content[0].content.slice(0, 3));
   assert.deepEqual(updated.slice(1), original.slice(1));
-  await action('undo-ai').click();
-  await saved();
+  await undo();
   assert.deepEqual((await state()).questions, original);
 
   const rubric = page.locator('[data-rich-id="' + question.id + '"][data-rich-field="rubric"][data-rich-index="1"]');
@@ -198,8 +223,7 @@ try {
   assert.equal(marked[0].rubric[1].text, 'Tính đúng kết quả (đã sửa).');
   assert.equal(marked[0].rubric[1].points, original[0].rubric[1].points);
   assert.deepEqual(marked[0].richDoc, original[0].richDoc);
-  await action('undo-ai').click();
-  await saved();
+  await undo();
   assert.deepEqual((await state()).questions, original);
 
   await askToEdit();
