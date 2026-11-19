@@ -34,6 +34,9 @@ function flush(editor){if(!editor||!dirty.has(editor)||editor.isDestroyed||!edit
   return;
  }
  const d=descriptor(editor);if(!d?.holder)return;const {q,field,index,holder}=d,doc=editor.getJSON(),text=richPlain(doc);dirty.delete(editor);if(JSON.stringify(d.doc)===JSON.stringify(doc)&&d.value===text)return;const changed=d.value!==text;ctx.change('Sửa '+({stem:'đề bài',explanation:'lời giải',rubric:'bước chấm',option:'phương án'}[field]||'nội dung')+' '+(ctx.exam().questions.indexOf(q)+1),()=>{if(field==='rubric'){holder.text=text;holder.richDoc=doc;}else if(field==='option'){q.options[index]=text;(q.optionDocs??=[])[index]=doc;}else{q[field]=text;q[field==='stem'?'richDoc':field+'Doc']=doc;if(field==='stem')q.runs=getRuns(doc);}if(changed){if(field==='stem'&&q.rule&&!q.rule.startsWith('math-')){q.dataLinked=true;q.rule=null;}touch(q);check(ctx.exam(),q);}},{renderPage:false,coalesceKey:q.id+':'+field+':'+index});ctx.refreshInline();if(changed&&field==='stem')ctx.onManualChange?.(q);document.dispatchEvent(new CustomEvent('editor-content-changed',{detail:{id:q.id,field}}));}
+export function hasPendingEditorChanges(){
+ return [...editors.values()].some(editor=>dirty.has(editor)&&!editor.isDestroyed&&editor.options.element.isConnected);
+}
 export function flushEditor(){
  if([...editors.values()].some(editor=>editor.options.element.isConnected&&editor.view.composing))return false;
  for(const timer of timers.values())clearTimeout(timer);
