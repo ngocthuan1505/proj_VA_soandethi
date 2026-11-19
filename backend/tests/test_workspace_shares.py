@@ -1,11 +1,14 @@
 """Snapshot và thu hồi bằng ngữ liệu tự viết, không gọi AI."""
 
+import base64
+import io
 import json
 from copy import deepcopy
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from mach_backend.local_workspace import create_app
 from mach_backend.share_snapshot import snapshot
@@ -321,8 +324,16 @@ def test_teacher_snapshot_keeps_split_answers_but_student_cannot_read_them(
 def test_community_consent_filters_clone_and_revoke_audit(tmp_path, exam):
     exam["series"] = "Kết nối tri thức"
     exam["chapter"] = "Động học cơ bản"
-    formula_id = str(uuid4())
-    exam["questions"][0]["formulas"] = [{"id": formula_id, "latex": "v = s / t", "display": False}]
+    image_buf = io.BytesIO()
+    Image.new("RGB", (2, 2), "white").save(image_buf, format="PNG")
+    image_id = str(uuid4())
+    exam["questions"][0]["images"] = [
+        {
+            "id": image_id,
+            "data": "data:image/png;base64," + base64.b64encode(image_buf.getvalue()).decode(),
+            "caption": "Hình minh họa",
+        }
+    ]
 
     app = create_team_app(tmp_path)
     accounts = app.state.accounts
@@ -404,7 +415,7 @@ def test_community_consent_filters_clone_and_revoke_audit(tmp_path, exam):
             "revision": exam["revision"],
         }
         assert cloned_exam["questions"][0]["id"] != exam["questions"][0]["id"]
-        assert cloned_exam["questions"][0]["formulas"][0]["id"] != formula_id
+        assert cloned_exam["questions"][0]["images"][0]["id"] != image_id
         assert "_KÍN" not in json.dumps(cloned_exam, ensure_ascii=False)
 
         # Chỉ tác giả được revoke (cloner nhận 404); sau revoke không clone mới được (410)
