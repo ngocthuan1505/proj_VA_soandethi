@@ -2,6 +2,9 @@
 
 **Tên tạm: Soạn đề thi (Exam Maker). Nhóm chưa chốt tên sản phẩm.**
 
+**Muốn thử app?** [Tải bản mới, chọn ca thử và báo lỗi](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/47).
+
+**Vừa sửa xong app?** [Xem cách gửi bản mới cho tester](docs/team/KIEM_THU_NHOM.md#người-sửa-app).
 
 **Mới vào repo? Chỉ đọc [bản tóm tắt trong 5 phút](DOC_REPO_TRONG_5_PHUT.md) trước.** Có bản đồ source, phần đã có/còn thiếu, lệnh mở demo và đường dẫn tự chọn việc; chưa cần đọc toàn bộ backlog.
 
