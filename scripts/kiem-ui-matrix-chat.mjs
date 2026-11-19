@@ -16,7 +16,9 @@ const exam=blank('Ngữ văn',[]),docId=uid();
 exam.title='KIỂM UI CHAT · PHẢN HỒI GIẢ LẬP';exam.grade='8';exam.chat=[];
 exam.matrix=[{topic:'Đọc hiểu',targets:[1,1,0]}];exam.matrixConfirmed=false;
 const source='Mai mở cửa thư viện. Nam xếp sách lên kệ. Cô giáo ghi nhận việc giúp đỡ của hai bạn.';
-exam.docs=[{id:docId,name:'Nguồn fixture tự viết',kind:'text',version:1,text:source}];exam.assistantSources=[docId];
+exam.docs=[{id:docId,name:'Nguồn fixture tự viết',kind:'text',version:3,text:source,pages:[
+ {number:1,text:'Trang ngoài phạm vi này không được gửi.'},{number:2,text:source},
+]}];
 const prior=(await api('/api/kv?key=state')).value||{exams:[],prefs:[]};
 prior.exams.push(exam);prior.current=exam.id;
 await api('/api/kv',{key:'state',value:prior},'PUT');
@@ -30,9 +32,21 @@ try{
  const generate=async()=>{await page.locator('#matrix-request-settings').evaluate(n=>n.open=true);await page.locator('#matrix-inputs').evaluate(n=>n.open=true);await page.locator('#matrix-consent').check();await page.locator('#matrix-start').click();await page.locator('.matrix-document-preview [data-matrix-question]').first().waitFor();await page.waitForFunction(()=>!document.querySelector('#matrix-confirm-save')?.disabled);};
  const state=async()=>(await api('/api/kv?key=state')).value.exams.find(e=>e.id===exam.id);
  await page.goto(base);await page.waitForLoadState('networkidle');
+ const attached=page.locator('[data-ux-action="attach"]');
+ await attached.click();
+ await page.locator('.ux-attach-menu [data-action="assistant-sources"]').click();
+ const picker=page.locator('#assistant-source-form');
+ await picker.locator('summary').click();
+ await picker.locator('[name="page"][value="1"]').uncheck();
+ await picker.locator('[name="source"]').check();
+ await picker.getByRole('button',{name:'Dùng các nguồn đã chọn'}).click();
+ await picker.waitFor({state:'detached'});
  await send();await page.locator('.matrix-chat-plan').waitFor();assert.equal(generations,0);assert.equal(chats,0);
  await page.getByRole('button',{name:'Dùng ma trận này',exact:true}).click();
  await page.locator('#matrix-source-text').waitFor();assert.equal(await page.locator('#dialog[open]').count(),0);
+ const sourcePreview=await page.locator('#matrix-source-text').inputValue();
+ assert.match(sourcePreview,/Trang 2/);
+ assert.doesNotMatch(sourcePreview,/ngoài phạm vi/);
  await page.locator('#matrix-start').click();await page.waitForFunction(()=>document.querySelector('#matrix-status').textContent.includes('Cần cho phép'));
  assert.equal(generations,0);
  let droppedStatus=false;
@@ -43,7 +57,11 @@ try{
   return route.abort('failed');
  });
  await page.locator('#matrix-consent').check();
+ const approvedPages=page.waitForRequest(r=>r.method()==='POST'&&r.url().endsWith('/matrix/approve'));
  await page.locator('#matrix-start').click();
+ const approvalPayload=(await approvedPages).postDataJSON();
+ assert.equal(approvalPayload.sourceText,'');
+ assert.deepEqual(approvalPayload.sources,[{sourceId:docId,sourceVersion:3,locator:{kind:'page',index:2}}]);
  const retry=page.getByRole('button',{name:'Tải lại trạng thái',exact:true});
  await retry.waitFor();
  assert(droppedStatus);assert.equal(generations,1);assert.equal((await state()).questions.length,0);

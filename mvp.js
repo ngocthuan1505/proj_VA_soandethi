@@ -181,7 +181,7 @@ export async function handleMVPAction(action,node){flushEditor();if(await handle
   if(!doc||!pagesOf(doc).some(p=>p.text?.trim()))throw Error('Tài liệu chưa có văn bản để soạn đề.');
   const selected=current().assistantSources||[];
   if(selected.length!==1||selected[0]!==doc.id){
-   c.change('Chọn tài liệu nguồn để soạn đề',e=>{e.assistantSources=[doc.id];},{renderPage:false});
+   c.change('Chọn tài liệu nguồn để soạn đề',e=>{e.assistantSources=[doc.id];delete e.assistantSourcePages;},{renderPage:false});
   }
   await c.act('generate');
   return true;

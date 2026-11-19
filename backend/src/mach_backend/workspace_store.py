@@ -186,8 +186,9 @@ class WorkspaceStore:
             (self.owner,),
         ):
             pending = PendingGeneration.model_validate_json(payload)
-            if str(pending.job.examId) != str(exam_id) or not any(
-                s.text == source_text for s in pending.job.sources
+            if (
+                str(pending.job.examId) != str(exam_id)
+                or "\n\n".join(s.text for s in pending.job.sources) != source_text
             ):
                 continue
             reviews = json.loads(raw_reviews)

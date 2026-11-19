@@ -1,4 +1,5 @@
 import {openSharing,createSharing} from './sharing.js';
+import {selectedDocumentPages} from './assistant-sources.js';
 import {openMatrixChat,mountMatrixChat,isMatrixRequest,matrixChatRunning} from './matrix-chat.js';
 import {refreshUsability} from './assets/usability.js';
 import {closeFloating} from './reference.js';
@@ -44,7 +45,7 @@ export function mountWorkbench(context){c=context;if(mountedExam!==c.exam().id){
 function paginate(){const paper=$('.paper');if(!paper)return;paper.querySelectorAll('.page-separator').forEach(n=>n.remove());const max=1123*paper.offsetWidth/794,children=[...paper.querySelectorAll(':scope>.question,:scope>.marking-guide')];let next=max-80;for(const child of children){const top=child.offsetTop-paper.offsetTop;if(top+Math.min(child.offsetHeight,180)>next){const gap=document.createElement('div');gap.className='page-separator';gap.setAttribute('aria-label','Ngắt trang');child.before(gap);next=top+max-80;}}}
 export async function initWorkbench(context){c=context;await refreshAccount();const copy=new URLSearchParams(location.search).get('copy');if(copy){try{const result=await api('/api/share/read/'+encodeURIComponent(copy));if(!result.allowCopy)throw Error('Liên kết chỉ cho xem.');const e=duplicateExam(result.exam);c.getState().exams.push(e);c.getState().current=e.id;await c.persist();history.replaceState({},'',location.pathname);c.render();}catch(e){c.toast(e.message);}}await watchJob(c.exam().activeAIJob||null); }
 
-function selectedSources(e){const ids=e.assistantSources||[];return e.docs.filter(d=>ids.includes(d.id)).flatMap(d=>(d.pages?.length?d.pages:[{number:1,text:d.text}]).filter(p=>p.text).map(p=>({docId:d.id,page:p.number,location:d.name+' · Trang '+p.number,text:p.text})));}
+function selectedSources(e){const ids=e.assistantSources||[];return e.docs.filter(d=>ids.includes(d.id)).flatMap(d=>selectedDocumentPages(e,d).filter(p=>p.text).map(p=>({docId:d.id,page:p.number,location:d.name+' · Trang '+p.number,text:p.text})));}
 function addMessage(role,text,extra={}){c.exam().chat.push({role,text,at:Date.now(),...extra});c.persist();refreshWorkbench();}
 function openAI(){document.querySelector('.workspace').classList.remove('chat-hidden','focus-mode');document.querySelector('.assistant').classList.add('open');}
 async function planRequest(text){if(accountInfo?.localPoC){await openMatrixChat(c,{request:text});return;}stage='Hệ thống đang phân tích yêu cầu của bạn…';busy=true;refreshWorkbench();try{const e=c.exam(),result=await api('/api/assistant/plan',{text,exam:{subject:e.subject,grade:e.grade},pending:e.aiClarification||null,sources:selectedSources(e),matrix:e.matrixConfirmed?e.matrix:null,consent:e.aiConsent});if(result.kind==='clarify'){e.aiClarification=result;addMessage('assistant',result.message);}else{e.aiClarification=null;e.aiPlan=result;addMessage('assistant',result.message);}await c.persist();}finally{busy=false;stage='';refreshWorkbench();}}

@@ -2,13 +2,13 @@
 
 import json
 from typing import Annotated, Literal
-from uuid import UUID
 
 import httpx
 from pydantic import Field, ValidationError
 
-from mach_backend.ai_contract import AIError, Locator, SourceFragment
+from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import BlindQuestion, CheckProposal, saved_answer
+from mach_backend.ai_sources import workspace_page_sources
 from mach_backend.check_routes import CheckInputs, build_check_router
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
 from mach_backend.poc_matrix import LocalModel, RunLog
@@ -49,35 +49,7 @@ def install_workspace_check(app, store, provider, fixture_call, directory, *, ow
                 stem += "\nCông thức kèm câu: $" + formula["latex"] + "$"
             for table in question.get("tables", []):
                 stem += "\nBảng kèm câu:\n" + "\n".join(" | ".join(row) for row in table["rows"])
-            sources = []
-            for doc in exam.get("docs", []):
-                if doc.get("id") not in {str(source_id) for source_id, _ in keys}:
-                    continue
-                pages = doc.get("pages") or [{"number": 1, "text": doc.get("text", "")}]
-                for page in pages:
-                    locator = Locator(kind="page", index=page["number"])
-                    if (UUID(doc["id"]), locator) in keys:
-                        text = page.get("text")
-                        if not isinstance(text, str) or not text.strip():
-                            raise AIError("invalid_source", "Trang nguồn không có văn bản hợp lệ.")
-                        if len(text) > 12000:
-                            raise AIError(
-                                "source_limit",
-                                "Trang nguồn vượt12.000ký tự; tách đoạn trước khi kiểm.",
-                            )
-                        sources.append(
-                            SourceFragment(
-                                ownerId=owner,
-                                sourceId=UUID(doc["id"]),
-                                sourceVersion=doc.get("version", 1),
-                                locator=locator,
-                                text=text,
-                            )
-                        )
-            if sum(len(s.text) for s in sources) > 12000:
-                raise AIError(
-                    "source_limit", "Lượt giải lại nhận tối đa12.000ký tự; chọn ít trang nguồn hơn."
-                )
+            sources = workspace_page_sources(exam, owner, keys)
             try:
                 blind = BlindQuestion.model_validate_json(
                     json.dumps(
@@ -97,7 +69,7 @@ def install_workspace_check(app, store, provider, fixture_call, directory, *, ow
                     "invalid_question",
                     "Câu đang lưu thiếu nội dung hoặc sai định dạng; sửa trước khi kiểm.",
                 ) from None
-            return CheckInputs(owner, exam_id, exam["revision"], blind, saved, tuple(sources))
+            return CheckInputs(owner, exam_id, exam["revision"], blind, saved, sources)
         except AIError:
             raise
         except (ValueError, TypeError, KeyError, IndexError):

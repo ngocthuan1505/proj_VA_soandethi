@@ -1,6 +1,7 @@
 import {richTextHTML,diffContentHTML} from './math-content.js';
 import {esc, LEVELS, QUESTION_TYPES} from './core.js';
 import * as db from './storage.js';
+import {selectedDocumentPages} from './assistant-sources.js';
 
 async function api(url, body, headers={}){
  const response=await fetch(url,{
@@ -27,17 +28,23 @@ export async function openMatrixSynthesis(c, options={}){
  if(!exam.matrixConfirmed){c.toast('Lưu và xác nhận ma trận trước khi sinh.');return;}
  const rows=exam.matrix||[],count=rows.flatMap(r=>r.targets).reduce((n,x)=>n+x,0);
  const currentDocs=exam.docs.filter(d=>exam.assistantSources?.includes(d.id));
- const pendingPages=currentDocs.flatMap(d=>(d.pages?.length?d.pages:[{number:1}])
+ const pendingPages=currentDocs.flatMap(d=>selectedDocumentPages(exam,d)
   .filter(p=>p.needsOCR||(p.needsReview??(d.needsReview||p.uncertain===true||p.uncertain?.length)))
   .map(p=>d.name+' · trang '+p.number));
- let source=currentDocs.map(d=>d.text||d.pages?.map(p=>p.text).join('\n')).filter(Boolean).join('\n\n');
+ const attachedPages=currentDocs.flatMap(doc=>selectedDocumentPages(exam,doc)
+  .filter(page=>page.text?.trim()).map(page=>({doc,page})));
+ const sourceRefs=attachedPages.map(({doc,page})=>({
+  sourceId:doc.id,sourceVersion:doc.version||1,locator:{kind:'page',index:page.number},
+ }));
+ const attachedPreview=attachedPages.map(({doc,page})=>doc.name+' · Trang '+page.number+'\n'+page.text).join('\n\n');
+ let source=attachedPreview;
  let job=null,lastCandidate=null,approval=null,closed=false,reviews={},polling=false,deciding=false;
  const errorNames={incomplete_response:'AI bị ngắt trước khi trả đủ bộ câu; bản đề giữ nguyên. Có thể giảm số câu hoặc thử lại; tải log để xem chi tiết',duplicate_question:'Câu hỏi bị trùng',invalid_options:'Phương án chưa hợp lệ',answer_disagreement:'Đáp án chưa khớp lượt giải lại',level_disagreement:'Mức thực tế chưa khớp ma trận',explanation_disagreement:'Lời giải chưa khớp',uncertain_answer:'Lượt giải chưa đủ chắc chắn',unsupported_answer:'Chưa đủ căn cứ',topic_disagreement:'Chưa đúng chủ đề',invalid_review:'Lượt rà trả dữ liệu chưa hợp lệ',attempt_limit:'Đã hết giới hạn của lượt thử cũ',call_budget:'Đã hết ngân sách gọi AI',timeout:'Đã hết thời gian tự xử lý',provider_http_error:'Dịch vụ AI đang trả lỗi',provider_quota:'Đã hết hạn mức dịch vụ AI',provider_auth:'Khóa Gemini chưa hợp lệ; mở Kết nối để thay khóa',provider_timeout:'Dịch vụ AI quá thời gian chờ; bản đề giữ nguyên',check_not_completed:'Một số phép kiểm chưa hoàn tất',option_verdicts_failed:'Có nhiều đáp án đúng hoặc phương án chưa rõ',semantic_duplicate:'Câu hỏi trùng ý',uncertain_duplicate:'Chưa kết luận được trùng ý',interrupted:'App đã khởi động lại khi tác vụ chưa hoàn tất',stale_snapshot:'Đề hoặc nguồn đã thay đổi',provider_unavailable:'Chưa kết nối được AI đã chọn'};
  const errorText=e=>(e.ordinal!==undefined?'Câu '+(e.ordinal+1)+': ':'')+(errorNames[e.code]||e.code)+(e.reason?' — '+e.reason:'')+(e.details?.length?' · '+e.details.map(d=>d.message).join('; '):'');
  const markup=`${inline?'<p>Trợ lý soạn, tự kiểm và sửa bộ câu. Xem lại trên trang đề rồi chọn chấp nhận hoặc bỏ.</p><details><summary>Kết nối và giới hạn</summary>':''}<p>Sinh bằng <b>${esc(status.model)}</b> · kiểm bằng <b>${esc(status.reviewer?.model||status.model)}</b>. Nguồn được gửi tới ${esc(destination)}. ${status.matrixAgent?`Trợ lý tự soạn, gọi công cụ kiểm và sửa theo lỗi trong ngân sách ${budget.maxModelCalls} lần gọi AI, tối đa ${budget.timeoutSeconds} giây. Thầy cô không cần xử lý từng vòng.`:'Bản thử cũ sinh từng ô, mỗi ô có giới hạn lượt riêng.'} Chỉ trả bản cuối đã qua bộ kiểm; thầy cô xem lại trước khi xác nhận lưu.</p>${inline?'</details>':''}
  <details class="matrix-chat-summary"><summary>Ma trận đã xác nhận · ${count} câu</summary><table class="matrix-full"><thead><tr><th>Chủ đề / loại câu</th>${LEVELS.map(x=>'<th>'+x+'</th>').join('')}</tr></thead><tbody>${rows.map(r=>'<tr><td>'+esc(r.topic)+' · '+esc(QUESTION_TYPES[r.type||'mcq'])+'</td>'+r.targets.map(n=>'<td>'+n+'</td>').join('')+'</tr>').join('')}</tbody></table></details>
  ${inline?'<button type="button" id="matrix-edit-plan">Chỉnh / tải file ma trận</button>':''}<p>${count} / tối đa 30 câu, bốn dạng · tổng 10 điểm. Chia điểm theo bước 0,25; phần dư phân theo thứ tự ô.</p>
- <label>Cách soạn<select id="matrix-source-mode"><option value="provided" ${source?'selected':''}>Theo tài liệu nguồn</option><option value="general" ${source?'':'selected'}>Theo kiến thức môn/lớp · không có tài liệu đối chiếu</option></select></label><p class="hint" id="matrix-general-note">Soạn không nguồn vẫn giải lại và rà lời giải, nhưng chưa xác minh với SGK/tài liệu. Giáo viên cần kiểm tra kiến thức và phạm vi.</p><details id="matrix-inputs" ${source?'open':''}><summary>Thêm tài liệu nguồn (tùy chọn)</summary><label>Tên nguồn<input id="matrix-source-name" maxlength="200" value="${esc(currentDocs.map(d=>d.name).join('; '))}" placeholder="Ghi đúng tên hoặc ghi ngữ liệu tự viết"></label>
+ <label>Cách soạn<select id="matrix-source-mode">${sourceRefs.length?'<option value="attached" selected>Theo trang đã chọn trong kho</option>':''}<option value="provided">Theo ngữ liệu dán</option><option value="general" ${source?'':'selected'}>Theo kiến thức môn/lớp · không có tài liệu đối chiếu</option></select></label><p class="hint" id="matrix-general-note">Soạn không nguồn vẫn giải lại và rà lời giải, nhưng chưa xác minh với SGK/tài liệu. Giáo viên cần kiểm tra kiến thức và phạm vi.</p><details id="matrix-inputs" ${source?'open':''}><summary>Thêm tài liệu nguồn (tùy chọn)</summary><label>Tên nguồn<input id="matrix-source-name" maxlength="200" value="${esc(currentDocs.map(d=>d.name).join('; ').slice(0,200))}" placeholder="Ghi đúng tên hoặc ghi ngữ liệu tự viết"></label>
  <label>Nội dung nguồn cho lượt sinh<textarea id="matrix-source-text" rows="4" maxlength="12000" placeholder="Dán ngữ liệu cần ra câu hỏi. Không tự coi đây là trích SGK nếu chưa có nguồn.">${esc(source)}</textarea></label>
  ${pendingPages.length?`<p id="matrix-source-warning" class="hint">Trang chưa đọc hoặc chưa đối chiếu: ${esc(pendingPages.slice(0,6).join('; '))}${pendingPages.length>6?' và '+(pendingPages.length-6)+' trang nữa':''}. Rà lại phần văn bản trước khi sinh.</p>`:''}
  <label><input type="checkbox" id="matrix-consent" style="width:auto"> Cho phép gửi yêu cầu và tài liệu đã chọn tới ${esc(destination)} để sinh và tự kiểm đề.</label></details>
@@ -86,6 +93,14 @@ export async function openMatrixSynthesis(c, options={}){
  }
  const guard=fn=>async event=>{event?.preventDefault();event?.stopPropagation();try{await fn();}catch(error){preparing=false;$('matrix-status').dataset.error='true';setStatus(error.message);$('matrix-start').disabled=job?.status==='running';syncPhase();}};
  const lockSources=locked=>{for(const id of ['matrix-source-name','matrix-source-text','matrix-consent','matrix-source-mode'])$(id).disabled=locked;};
+ const sourceInput=$('matrix-source-text');
+ sourceInput.readOnly=sourceRefs.length>0;
+ let pastedSource='';
+ $('matrix-source-mode').addEventListener('change',()=>{
+  if(!sourceInput.readOnly)pastedSource=sourceInput.value;
+  sourceInput.readOnly=$('matrix-source-mode').value==='attached';
+  sourceInput.value=sourceInput.readOnly?attachedPreview:pastedSource;
+ });
  const decide=fn=>guard(async()=>{if(deciding)return;deciding=true;lockSources(true);for(const id of ['matrix-confirm-save','matrix-discard','matrix-start'])if($(id))$(id).disabled=true;try{await fn();}finally{deciding=false;if(dialog.isConnected){lockSources(job?.status==='running');if($('matrix-discard'))$('matrix-discard').disabled=false;$('matrix-start').disabled=job?.status==='running';updateConfirm();}}});
  const discardCandidate=async()=>{const candidate=job?.status==='complete'?job:lastCandidate;if(candidate){await api('/api/exams/'+exam.id+'/proposals/'+candidate.jobId+'/discard',{});lastCandidate=null;}};
  for(const id of ['matrix-source-name','matrix-source-text','matrix-source-mode'])$(id).addEventListener('input',()=>{if(job?.status==='running')return;job=null;reviews={};$('matrix-review-pack').disabled=true;$('matrix-audit').textContent='';$('matrix-download').disabled=true;options.clearPreview?.();$('matrix-preview').innerHTML='';$('matrix-checks').innerHTML='';$('matrix-metrics').textContent='';$('matrix-final-check').checked=false;updateConfirm();setStatus('Nguồn đã đổi. Bấm sinh để tạo và kiểm bộ câu theo nguồn mới.');});
@@ -124,7 +139,7 @@ export async function openMatrixSynthesis(c, options={}){
    <p>${richTextHTML(q.stem)}</p><ol type="A">${q.options.map(x=>'<li>'+richTextHTML(x)+'</li>').join('')}</ol>
    <p>Đáp án AI đề xuất: <b>${q.type==='essay'?'Tự luận':diffContentHTML(q.type==='mcq'?'answer':q.type==='truefalse'?'truthValues':'answerText',q.answer)}</b>. ${richTextHTML(q.explanation)}</p>
    ${q.rubric?.length?'<div class="matrix-rubric"><b>Hướng dẫn chấm</b>'+diffContentHTML('rubric',q.rubric.map(r=>({...r,points:r.pointsQ4/4})))+'</div>':''}
-   ${q.evidence.map(e=>'<blockquote>“'+esc(e.quote)+'”<br><small title="'+esc(e.sourceId)+'">'+esc($('matrix-source-name').value||'Nguồn đã chọn')+' · bản '+e.sourceVersion+' · đoạn '+e.locator.index+'</small></blockquote>').join('')}
+   ${q.evidence.map(e=>'<blockquote>“'+esc(e.quote)+'”<br><small title="'+esc(e.sourceId)+'">'+esc(currentDocs.find(d=>d.id===e.sourceId)?.name||$('matrix-source-name').value||'Nguồn đã chọn')+' · bản '+e.sourceVersion+(e.locator.kind==='page'?' · trang ':' · đoạn ')+e.locator.index+'</small></blockquote>').join('')}
    <details><summary>Góp ý câu này nếu còn vấn đề</summary><form data-matrix-review="${i}"><label>Người rà<input name="reviewer" required maxlength="120" value="${esc($('matrix-reviewer').value)}" placeholder="Tên người ghi nhận xét…"></label><label>Mức thực tế theo người rà<select name="observed" required><option value="">Chọn sau khi đọc câu</option>${LEVELS.map((l,n)=>'<option value="'+n+'">'+l+'</option>').join('')}<option value="-1">Chưa đủ căn cứ</option></select></label><label>Lý do (học sinh cần làm gì; đáp án/căn cứ có vấn đề gì?)<input name="reason" required minlength="4" maxlength="600"></label><label><input type="checkbox" name="contentOk" style="width:auto"> Đã đối chiếu và thấy đáp án, giải thích, căn cứ phù hợp</label><button type="submit">Ghi nhận đánh giá</button><output></output></form></details></section>`).join('');
   for(const form of $('matrix-preview').querySelectorAll('[data-matrix-review]')){const previous=reviews[form.dataset.matrixReview];if(previous){form.elements.reviewer.value=previous.reviewer||'';form.elements.observed.value=String(previous.observed);form.elements.reason.value=previous.reason;form.elements.contentOk.checked=previous.contentOk;form.querySelector('output').textContent='Đã có nhận xét của '+previous.reviewer;}}
   for(const form of $('matrix-preview').querySelectorAll('[data-matrix-review]'))form.onsubmit=guard(async()=>{
@@ -172,8 +187,9 @@ export async function openMatrixSynthesis(c, options={}){
   if(job?.saved)throw Error('Bộ câu đã lưu. Tải lại trang để đồng bộ trước khi soạn tiếp.');
   if(job?.status==='running')return;
   if(count<1||count>30)throw Error('Nhận từ1đến30câu theo ma trận. Hãy chỉnh ma trận.');
-  const useSource=$('matrix-source-mode').value==='provided';
-  if(useSource&&(!$('matrix-source-name').value.trim()||$('matrix-source-text').value.trim().length<20))throw Error('Điền tên nguồn và ít nhất 20 ký tự nội dung nguồn.');
+  const mode=$('matrix-source-mode').value,useSource=mode!=='general';
+  if(mode==='provided'&&(!$('matrix-source-name').value.trim()||sourceInput.value.trim().length<20))throw Error('Điền tên nguồn và ít nhất 20 ký tự nội dung nguồn.');
+  if(mode==='attached'&&pendingPages.length)throw Error('Đối chiếu các trang nguồn đã chọn hoặc chọn lại trang trước khi sinh.');
   if(!$('matrix-consent').checked)throw Error('Cần cho phép gửi nguồn tới '+destination+' trước khi sinh.');
   preparing=true;delete $('matrix-status').dataset.error;setStatus('Đang chuẩn bị yêu cầu…');syncPhase();
   $('matrix-start').disabled=true;$('matrix-confirm-save').disabled=true;$('matrix-progress').open=true;
@@ -182,8 +198,8 @@ export async function openMatrixSynthesis(c, options={}){
   await c.persist();
   options.clearPreview?.();
   job=null;
-  source=useSource?$('matrix-source-text').value.trim():'';
-  approval=await api('/api/exams/'+exam.id+'/matrix/approve',{baseRevision,sourceText:source,sourceName:useSource?$('matrix-source-name').value.trim():'Kiến thức chung · không có nguồn đối chiếu',sourceMode:useSource?'provided':'general'});
+  source=mode==='provided'?sourceInput.value.trim():'';
+  approval=await api('/api/exams/'+exam.id+'/matrix/approve',{baseRevision,sourceText:source,sourceName:useSource?$('matrix-source-name').value.trim()||'Trang đã chọn trong kho':'Kiến thức chung · không có nguồn đối chiếu',sourceMode:useSource?'provided':'general',...(mode==='attached'?{sources:sourceRefs}:{})});
   setStatus('Trợ lý đang tự sinh và kiểm. Chưa thay câu nào trong đề.');
   $('matrix-preview').innerHTML='';$('matrix-checks').innerHTML='';$('matrix-metrics').textContent='';$('matrix-audit').textContent='';$('matrix-review-pack').disabled=true;
   job=await api('/api/exams/'+exam.id+'/proposals/generate',{requestId:crypto.randomUUID(),baseRevision,consent:true,requireEvidence:useSource,plan:approval.plan,sources:approval.sources},{'X-PoC-Config':status.config?.fingerprint||'legacy'});
@@ -238,6 +254,6 @@ export async function openMatrixSynthesis(c, options={}){
  });
  syncPhase();
  const latest=await api('/api/exams/'+exam.id+'/proposals/latest');
- if(latest&&latest.baseRevision===baseRevision&&!latest.saved&&!latest.discarded){job=latest;if(latest.input){source=latest.input.sourceText||'';$('matrix-source-text').value=source;$('matrix-source-name').value=latest.input.sourceName||'';approval=latest.input.approval;$('matrix-source-mode').value=approval?.sources?.length?'provided':'general';}lockSources(job.status==='running');$('matrix-start').disabled=job.status==='running';$('matrix-stop').disabled=job.status!=='running';syncPhase();await poll();}
+ if(latest&&latest.baseRevision===baseRevision&&!latest.saved&&!latest.discarded){job=latest;if(latest.input){source=latest.input.sourceText||'';$('matrix-source-text').value=source;$('matrix-source-name').value=latest.input.sourceName||'';approval=latest.input.approval;$('matrix-source-mode').value=approval?.sources?.some(s=>s.locator.kind==='page')&&sourceRefs.length?'attached':approval?.sources?.length?'provided':'general';sourceInput.readOnly=$('matrix-source-mode').value==='attached';if(sourceInput.readOnly)sourceInput.value=attachedPreview;}lockSources(job.status==='running');$('matrix-start').disabled=job.status==='running';$('matrix-stop').disabled=job.status!=='running';syncPhase();await poll();}
  return {refresh:updateConfirm};
 }

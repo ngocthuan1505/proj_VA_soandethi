@@ -28,6 +28,13 @@ from mach_backend.ai_questions import (
     validate_generation,
 )
 from mach_backend.ai_service import check_question
+from mach_backend.ai_sources import (
+    SelectedSource,
+    SourceSelection,
+    read_selected_sources,
+    selected_source_keys,
+    workspace_page_sources,
+)
 from mach_backend.exam_planning import PlanRequest, propose_structure
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
 from mach_backend.generation_submission import GenerationInputs
@@ -112,6 +119,7 @@ class Approval(BaseModel):
     sourceText: str = Field(max_length=12000)
     sourceName: str = Field(min_length=1, max_length=200)
     sourceMode: Literal["provided", "general"] = "provided"
+    sources: list[SelectedSource] = Field(default_factory=list, max_length=12)
 
 
 class Review(BaseModel):
@@ -705,7 +713,14 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
 
     @app.post("/api/exams/{exam_id}/matrix/approve")
     def approve(exam_id: UUID, request: Approval):
-        if request.sourceMode == "provided" and len(request.sourceText.strip()) < 20:
+        attached = bool(request.sources)
+        if attached and (request.sourceText.strip() or request.sourceMode != "provided"):
+            raise AIError("invalid_source", "Chọn trang từ kho hoặc nhập ngữ liệu riêng.")
+        if (
+            request.sourceMode == "provided"
+            and not attached
+            and len(request.sourceText.strip()) < 20
+        ):
             raise AIError("missing_source", "Nguồn đã chọn cần ít nhất 20 ký tự nội dung.")
         if request.sourceMode == "general" and request.sourceText.strip():
             raise AIError(
@@ -717,32 +732,40 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             _, exam = store.exam(exam_id, db)
             if exam["revision"] != request.baseRevision:
                 raise AIError("stale_snapshot", "Đề đã đổi. Mở lại ma trận để xác nhận.")
-            feedback = store.prior_feedback(exam_id, request.sourceText, db)
-            plan = plan_from_exam(exam, general=request.sourceMode == "general", feedback=feedback)
-            source = (
-                SourceFragment(
-                    ownerId=owner_id,
-                    sourceId=uuid4(),
-                    sourceVersion=1,
-                    locator=Locator(kind="passage", index=1),
-                    text=request.sourceText,
+            sources = ()
+            if attached:
+                selection = SourceSelection(consent=True, sources=request.sources)
+                keys = selected_source_keys(selection)
+                sources = read_selected_sources(
+                    owner_id, selection, workspace_page_sources(exam, owner_id, keys)
                 )
-                if request.sourceMode == "provided"
-                else None
-            )
+            elif request.sourceMode == "provided":
+                sources = (
+                    SourceFragment(
+                        ownerId=owner_id,
+                        sourceId=uuid4(),
+                        sourceVersion=1,
+                        locator=Locator(kind="passage", index=1),
+                        text=request.sourceText,
+                    ),
+                )
+            source_text = "\n\n".join(s.text for s in sources)
+            feedback = store.prior_feedback(exam_id, source_text, db)
+            plan = plan_from_exam(exam, general=request.sourceMode == "general", feedback=feedback)
             store.put("matrix:" + str(exam_id), plan.model_dump(mode="json"), db=db)
             store.put(
                 "matrix-source:" + str(exam_id),
-                [source.model_dump(mode="json")] if source else [],
+                [source.model_dump(mode="json") for source in sources],
                 db=db,
             )
             store.put("matrix-source-name:" + str(exam_id), request.sourceName, db=db)
             return {
                 "baseRevision": exam["revision"],
                 "plan": plan,
-                "sources": [source.model_dump(include={"sourceId", "sourceVersion", "locator"})]
-                if source
-                else [],
+                "sources": [
+                    source.model_dump(include={"sourceId", "sourceVersion", "locator"})
+                    for source in sources
+                ],
             }
 
     async def owner():
