@@ -216,6 +216,12 @@ def test_local_adapter_uses_option_text_without_changing_canonical_answers(mixed
                 ]
                 if variant == "numeric":
                     question["statements"][0]["isTrue"] = 1
+            if "questions" in arguments:
+                assignment = json.loads(body["messages"][1]["content"])
+                if "repairOrdinals" in assignment:
+                    ordinals = assignment["repairOrdinals"]
+                    assert ordinals == ([0] if variant == "paired" else [0, 1])
+                    arguments["questions"] = [arguments["questions"][i] for i in ordinals]
         elif purpose == "blind_content_check":
             assert "1010 là đúng" not in body["messages"][0]["content"]
             content = json.loads(response["content"])
