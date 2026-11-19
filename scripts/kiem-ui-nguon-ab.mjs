@@ -89,9 +89,9 @@ try {
  const picker=dialog.locator('#lesson-picker');
  await picker.locator('[name=subject]').selectOption('Toán');
  await picker.locator('[name=grade]').selectOption('9');
- const chapter=picker.locator('fieldset').filter({has:picker.getByText('Phương trình và hệ phương trình',{exact:true})});
+ const chapter=picker.locator('fieldset').filter({has:page.getByText('Phương trình và hệ phương trình',{exact:true})});
  await chapter.getByRole('checkbox',{name:'Chọn cả chương',exact:true}).check();
- await picker.locator('[name=query]').fill('phep the');
+ await picker.locator('[name=query]').fill('giai he bang phep the');
  await picker.getByText('Giải hệ bằng phép thế',{exact:true}).waitFor();
  assert.equal(await picker.locator('[name=lesson]:checked').count(),1);
  await picker.getByText('Xem học liệu',{exact:true}).click();
