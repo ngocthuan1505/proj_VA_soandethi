@@ -25,7 +25,7 @@ from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
 from mach_backend.matrix_agent import sha256_json
 from mach_backend.poc_matrix import LocalModel, RunLog
 from mach_backend.poc_policy import CallBudget
-from mach_backend.rich_patch import update_rich
+from mach_backend.rich_patch import rich_error, update_rich
 
 FIELDS = ("stem", "options", "answer", "answerText", "truthValues", "explanation", "rubric")
 FIELDS_BY_TYPE = {
@@ -350,6 +350,8 @@ async def wait_for_disconnect(request: Request):
 def prepare_rich(question, doc, old, new, field):
     if doc is None or old == new:
         return doc
+    if old.count("\n") != new.count("\n"):
+        raise rich_error()
     try:
         target = BlockTarget(
             questionId=UUID(question["id"]),

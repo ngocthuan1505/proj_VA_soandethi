@@ -227,6 +227,23 @@ def test_discarded_scoped_proposal_can_no_longer_be_confirmed(setup):
     assert app.state.store.get("state") == before
 
 
+def test_multiline_editor_change_preserves_existing_browser_path(setup):
+    app, client, _, question, body, edits, _ = setup
+    store = app.state.store
+    state = store.get("state")["value"]
+    state["exams"][0]["questions"][0]["richDoc"] = {
+        "type": "doc",
+        "content": [{"type": "paragraph", "content": [{"type": "text", "text": question["stem"]}]}],
+    }
+    store.put("state", state)
+    edits[0]["content"] = "Một cộng một bằng mấy?\nGiải thích."
+    preview = client.post("/api/assistant/patch", json=body)
+    preview.raise_for_status()
+    assert preview.json()["confirmationId"] is None
+    assert preview.json()["edits"][0]["content"] == edits[0]["content"]
+    assert store.get("state")["value"] == state
+
+
 @pytest.mark.parametrize("bad", ["consent", "revision", "version", "block", "config"])
 def test_rejects_invalid_snapshot_before_model(setup, bad):
     _, client, _, _, request, _, calls = setup
