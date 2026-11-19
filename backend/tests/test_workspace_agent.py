@@ -95,8 +95,16 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
                     {
                         "matrix": {
                             "slots": [
-                                {"type": kind, "pointsQ4": points}
-                                for kind, points in zip(kinds, [8, 8, 8, 1, 12], strict=True)
+                                {
+                                    "type": kind,
+                                    "pointsQ4": points,
+                                    "topic": f"Chủ đề {i}",
+                                    "levelName": "Thông hiểu",
+                                    "requiredTask": "Nối dữ kiện.",
+                                }
+                                for i, (kind, points) in enumerate(
+                                    zip(kinds, [8, 8, 8, 1, 12], strict=True), 1
+                                )
                             ]
                         }
                     }
@@ -115,6 +123,10 @@ def test_local_mixed_schema_fixes_type_by_approved_slot():
         assert [i["options"]["minItems"] for i in items] == [4, 4, 4, 0, 0]
         assert [i["options"]["maxItems"] for i in items] == [4, 4, 4, 0, 0]
         assert items[0]["answer"]["enum"] == items[1]["answer"]["enum"] == list("0123")
+        assert "Ô 3 — Chủ đề: Chủ đề 3. Thông hiểu: Nối dữ kiện." in items[2]["stem"]["description"]
+        assert "Bốn mệnh đề" in items[2]["options"]["description"]
+        assert "đúng thứ tự" in items[2]["answer"]["description"]
+        assert "Chủ đề 5" in items[4]["stem"]["description"]
         assert len(items[2]["answer"]["enum"]) == 16 and "1010" in items[2]["answer"]["enum"]
         assert items[3]["answer"]["minLength"] == 1
         assert items[4]["answer"]["const"] == ""

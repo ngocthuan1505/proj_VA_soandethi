@@ -141,8 +141,10 @@ type Emit = Callable[..., None]
 
 LEVEL_RULES = (
     "Mức 0 Nhận biết: tìm hoặc nhớ thông tin nêu trực tiếp. "
-    "Mức 1 Thông hiểu: giải thích, suy ra hoặc liên hệ các chi tiết; "
-    "câu hỏi bắt đầu bằng vì sao chưa chắc là Thông hiểu. "
+    "Mức 1 Thông hiểu: giải thích, suy ra hoặc liên hệ các chi tiết. "
+    "Theo rubric này, ghép hai số liệu trong nguồn để tính một tổng chưa nêu "
+    "là Thông hiểu. Hỏi lại một số đã ghi sẵn là Nhận biết. "
+    "Câu hỏi bắt đầu bằng vì sao chưa chắc là Thông hiểu. "
     "Mức 2 Vận dụng: dùng kiến thức xử lý tình huống mới. "
     "Mức 3 Vận dụng cao: phối hợp nhiều kiến thức, lập luận nhiều bước để giải quyết "
     "tình huống phức tạp hoặc không quen; không chỉ tăng số lớn hay đổi nhãn. "

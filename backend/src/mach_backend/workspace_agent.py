@@ -27,6 +27,12 @@ MIXED_ANSWERS = {
     "mcq": list("0123"),
     "truefalse": [f"{value:04b}" for value in range(16)],
 }
+MIXED_STEM_GUIDES = {
+    "mcq": "Trắc nghiệm: học sinh chọn đúng một trong bốn phương án.",
+    "truefalse": "Đúng/Sai: yêu cầu xét từng mệnh đề, tránh câu hỏi chọn một phương án.",
+    "short": "Trả lời ngắn: nêu rõ giá trị hoặc cụm từ học sinh cần điền.",
+    "essay": "Tự luận: yêu cầu trình bày cách giải cho chính chủ đề của ô.",
+}
 
 
 async def local_model_call(model, purpose, body):
@@ -51,7 +57,7 @@ async def local_model_call(model, purpose, body):
                 "essay": {"const": ""},
             }
             questions["items"] = []
-            for slot in slots:
+            for ordinal, slot in enumerate(slots, 1):
                 kind = slot["type"]
                 points = slot["pointsQ4"]
                 rubric_name = f"RubricQ4_{points}"
@@ -81,6 +87,14 @@ async def local_model_call(model, purpose, body):
                 count = 4 if kind in ("mcq", "truefalse") else 0
                 properties = {
                     **common["properties"],
+                    "stem": {
+                        **common["properties"]["stem"],
+                        "description": (
+                            f"Ô {ordinal} — Chủ đề: {slot['topic']}. "
+                            f"{slot['levelName']}: {slot['requiredTask']} "
+                            f"{MIXED_STEM_GUIDES[kind]}"
+                        ),
+                    },
                     "options": {
                         **common["properties"]["options"],
                         "minItems": count,
@@ -89,6 +103,15 @@ async def local_model_call(model, purpose, body):
                     "answer": {"type": "string", **answers[kind]},
                     "rubric": {"$ref": f"#/$defs/{rubric_name}"},
                 }
+                if kind == "truefalse":
+                    properties["options"]["description"] = (
+                        "Bốn mệnh đề có thể xét đúng/sai riêng. Mỗi mệnh đề có chủ thể "
+                        "và điều khẳng định cụ thể. Tránh số hoặc cụm từ đứng riêng."
+                    )
+                    properties["answer"]["description"] = (
+                        "Giải từng mệnh đề rồi ghi 1 nếu đúng, 0 nếu sai, "
+                        "theo đúng thứ tự bốn mệnh đề."
+                    )
                 questions["items"].append({**common, "properties": properties})
         return await model(purpose, body)
     if "MixedContentReview" in body.get("format", {}).get("$defs", {}):
