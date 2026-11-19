@@ -552,10 +552,18 @@ def test_ollama_restarts_context_after_exact_repeat_without_losing_feedback():
     assert "đặt câu hỏi mới" in request["messages"][0]["content"]
 
 
-@pytest.mark.parametrize("budget_seconds", [None, 900])
-def test_model_call_budget_and_raw_response_are_kept(tmp_path, budget_seconds):
+@pytest.mark.parametrize(
+    ("budget_seconds", "model_name", "protocol", "think"),
+    [(None, "qwen2.5:3b", "native", None), (900, "qwen3:4b", "structured", False)],
+)
+def test_model_call_budget_and_raw_response_are_kept(
+    tmp_path, budget_seconds, model_name, protocol, think
+):
     def respond(request):
-        assert json.loads(request.content)["options"] == {
+        payload = json.loads(request.content)
+        assert payload.get("think") is think
+        assert ("think" in payload) == (think is not None)
+        assert payload["options"] == {
             "temperature": 0.45,
             "num_ctx": 8192,
             "num_predict": 2400,
@@ -573,8 +581,10 @@ def test_model_call_budget_and_raw_response_are_kept(tmp_path, budget_seconds):
     async def run():
         async with httpx.AsyncClient(transport=httpx.MockTransport(respond), timeout=1) as client:
             budget = CallBudget(4, budget_seconds) if budget_seconds else None
-            model = LocalModel(client, "qwen2.5:3b", RunLog(tmp_path / "log"), budget=budget)
-            return await model("agent", {"messages": [], "options": {"temperature": 0.45}})
+            model = LocalModel(
+                client, model_name, RunLog(tmp_path / "log"), protocol=protocol, budget=budget
+            )
+            return await model("review", {"messages": [], "options": {"temperature": 0.45}})
 
     assert asyncio.run(run())["content"] == "{}"
     response = json.loads((tmp_path / "log/call-01-response.json").read_text())

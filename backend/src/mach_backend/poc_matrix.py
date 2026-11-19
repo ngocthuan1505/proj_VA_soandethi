@@ -178,6 +178,9 @@ class LocalModel:
                 **body.get("options", {}),
             },
         }
+        if self.protocol == "structured" and self.model.partition(":")[0] == "qwen3":
+            # Qwen3 can spend the entire output limit on thinking before emitting any JSON.
+            payload.setdefault("think", False)
         self.log.write(f"call-{index:02}-request.json", payload)
         self.log.emit("model_start", modelCall=index, purpose=purpose, model=self.model)
         at = time.perf_counter()
