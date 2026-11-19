@@ -213,3 +213,5 @@ def test_local_adapter_preserves_mixed_wire_instead_of_coercing_it_to_abcd(mixed
     ]
     assert review_items[0]["properties"]["answer"]["enum"] == ["0", "1", "2", "3", ""]
     assert review_items[3]["properties"]["answer"] == {"const": ""}
+    assert review_items[0]["properties"]["duplicateWith"]["maxItems"] == 0
+    assert review_items[2]["properties"]["duplicateWith"]["items"]["enum"] == [0, 1]

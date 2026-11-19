@@ -68,10 +68,16 @@ async def local_model_call(model, purpose, body):
         items = []
         for question in questions:
             kind = question["type"]
+            ordinal = question["ordinal"]
             count = 4 if kind in MIXED_ANSWERS else 0
             properties = {
                 **common["properties"],
-                "ordinal": {"const": question["ordinal"]},
+                "ordinal": {"const": ordinal},
+                "duplicateWith": {
+                    "type": "array",
+                    "items": {"enum": list(range(ordinal))} if ordinal else {"type": "integer"},
+                    "maxItems": ordinal,
+                },
                 "optionVerdicts": {
                     **common["properties"]["optionVerdicts"],
                     "minItems": count,
