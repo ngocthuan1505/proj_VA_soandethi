@@ -104,6 +104,20 @@ Chrome xuất sáu tệp qua giao diện, gồm Word, PDF và HTML cho hai đố
 
 Khóa lựa chọn chia sẻ tại thời điểm bấm tạo. Nếu đóng hộp trước khi máy chủ nhận yêu cầu tạo liên kết, app dừng thao tác. Chrome trì hoãn lần lưu để kiểm cả hai trường hợp. Một phiên Chrome tách riêng mở được bản học sinh chỉ xem và nhận 404 sau khi chủ đề thu hồi. Kết quả xuất trả muộn giữ hộp Thông tin đề đang mở. Pytest kiểm thêm khách, owner khác, nội dung bàn soạn thay đổi khi dựng bản chia sẻ và quyền tải dữ liệu bản sao. [Ca Chrome](../../scripts/kiem-ui-xuat-chia-se.mjs) · [Ca xuất Word](../../backend/tests/test_word_export.py) · [Ca chia sẻ](../../backend/tests/test_workspace_shares.py)
 
+## Chạy lại 11 ca Chrome trên cùng commit
+
+Từ thư mục repo trên Windows, với Chrome và Node đã cài, chạy:
+
+```powershell
+npm ci
+uv sync --project backend --frozen
+uv run --project backend --frozen python -X utf8 scripts/kiem-ung-vien.py outputs/kiem-ung-vien
+```
+
+Dùng worktree sạch và chọn thư mục kết quả mới dưới `outputs/` cho mỗi lần chạy. Có thể chạy riêng từng ca bằng `--case 06`. Lệnh khởi động FastAPI và tạo kho riêng cho từng ca trên cổng loopback, kèm tài khoản thử cho ca nhóm. Node chạy bộ kiểm Chrome. Xem SHA và kết quả tại `result.json`, cùng log và báo cáo trong từng thư mục IT.
+
+Bộ Chrome dùng ngữ liệu tự tạo và phản hồi mẫu. Kiểm Word bằng Microsoft Word, đối chiếu nhiều trang, model thật và nghiệm thu độc lập vẫn cần bằng chứng riêng theo checklist.
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.
