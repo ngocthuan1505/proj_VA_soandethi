@@ -2,14 +2,14 @@
 
 **Tên tạm: Soạn đề thi (Exam Maker). Nhóm chưa chốt tên sản phẩm.**
 
-**Muốn thử app?** [Tải bản mới, chọn ca thử và báo lỗi](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/47).
+**Tester** · [Tải ZIP trong Releases](https://github.com/ngocthuan1505/proj_VA_soandethi/releases) → [Mở app, chọn ca và báo kết quả ở #47](https://github.com/ngocthuan1505/proj_VA_soandethi/issues/47).
 
-**Vừa sửa xong app?** [Xem cách gửi bản mới cho tester](docs/team/KIEM_THU_NHOM.md#người-sửa-app).
-
-**Mới vào repo? Chỉ đọc [bản tóm tắt trong 5 phút](DOC_REPO_TRONG_5_PHUT.md) trước.** Có bản đồ source, phần đã có/còn thiếu, lệnh mở demo và đường dẫn tự chọn việc; chưa cần đọc toàn bộ backlog.
+**Người sửa app** · [Xem lỗi nhóm đã báo](https://github.com/ngocthuan1505/proj_VA_soandethi/issues?q=is%3Aissue+is%3Aopen+label%3Atype%3Abug) → [Sửa qua PR và gửi bản mới cho tester](docs/team/KIEM_THU_NHOM.md#người-sửa-app).
 
 <details>
 <summary>Tài liệu chi tiết, hồ sơ và kế hoạch nhóm</summary>
+
+Mới đọc mã nguồn? Mở [bản tóm tắt repo trong 5 phút](DOC_REPO_TRONG_5_PHUT.md).
 
 **Thành viên mới:** [Cẩm nang có link task và cách bật app](docs/team/HUONG_DAN_GUI_DISCORD.md) · [PDF để gửi Discord](docs/team/HUONG_DAN_NHOM_SOAN_DE_THI.pdf).
 
