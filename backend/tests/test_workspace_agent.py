@@ -215,6 +215,8 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
             assert len(questions["items"]) == len(previous)
             return {}
         assert assignment["repairOrdinals"] == [2]
+        original_slots = json.loads(body["messages"][1]["content"])["matrix"]["slots"]
+        assert assignment["matrix"]["slots"] == [{**original_slots[2], "ordinal": 2}]
         if mode in {"history", "repeat"}:
             assert "previousStems" not in assignment
             assert assignment["repairStemsHash"] == sha256_json([row["stem"] for row in previous])
@@ -234,7 +236,7 @@ def test_local_mixed_repair_retains_other_questions_and_limits_wire_schema(mode)
         assert len(transport["messages"]) == 3
         assert json.loads(transport["messages"][-1]["content"])["result"] == feedback
         assert questions["minItems"] == questions["maxItems"] == len(questions["items"]) == 1
-        assert "matrix.slots[2].topic" in questions["items"][0]["properties"]["stem"]["description"]
+        assert "matrix.slots[0].topic" in questions["items"][0]["properties"]["stem"]["description"]
         replacements = [repaired, repaired] if mode == "malformed" else [copy.deepcopy(repaired)]
         return {
             "tool_calls": [
@@ -299,6 +301,7 @@ def test_repeated_level_error_plans_one_stem_before_scoped_generation(mode):
             content = json.dumps({"stem": stem})
             return {"content": "{" if mode == "malformed" else content}
         assert data["repairOrdinals"] == [1]
+        assert data["matrix"]["slots"] == [{**assignment["matrix"]["slots"][1], "ordinal": 1}]
         stem_schema = request["tools"][0]["function"]["parameters"]["properties"]["questions"][
             "items"
         ][0]["properties"]["stem"]

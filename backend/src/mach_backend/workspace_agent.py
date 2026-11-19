@@ -153,11 +153,11 @@ def scope_mixed_repair(body, assignment):
         assignment["earlierRejected"] = recent
     if duplicate or any((error["ordinal"], error["code"]) in prior_failures for error in errors):
         body["options"] = {"temperature": 0.45}
-    messages[1]["content"] = json.dumps(assignment, ensure_ascii=False)
     body["messages"] = [*messages[:2], messages[-1]]
     messages[0]["content"] += (
         " Đây là lượt sửa. Hãy nộp chỉ các câu tương ứng repairOrdinals (đếm từ 0), "
-        "đúng thứ tự danh sách. Python giữ các câu còn lại và kiểm lại cả bộ."
+        "đúng thứ tự danh sách. matrix.slots chỉ gồm các ô đang sửa, theo cùng thứ tự. "
+        "Python giữ các câu còn lại và kiểm lại cả bộ."
         + guidance
         + " Mỗi câu trắc nghiệm hỏi một giá trị hoặc kết luận cụ thể, "
         "với đúng một phương án trả lời câu hỏi."
@@ -264,11 +264,15 @@ async def local_model_call(model, purpose, body):
         )
         if stem:
             assignment["plannedStem"] = stem
-            body["messages"][1]["content"] = json.dumps(assignment, ensure_ascii=False)
             body["messages"][0]["content"] += (
                 " Dùng nguyên plannedStem cho câu đang sửa. Hãy soạn phương án và lời giải "
                 "của chính câu đó, rồi nộp để Python kiểm lại."
             )
+        if repair:
+            assignment["matrix"]["slots"] = [
+                {**slots[index], "ordinal": index} for index in ordinals
+            ]
+            body["messages"][1]["content"] = json.dumps(assignment, ensure_ascii=False)
         for tool in body["tools"]:
             if tool["function"]["name"] != "check_exam":
                 continue
@@ -284,7 +288,7 @@ async def local_model_call(model, purpose, body):
                 "essay": {"const": ""},
             }
             questions["items"] = []
-            for index in ordinals:
+            for position, index in enumerate(ordinals):
                 ordinal, slot = index + 1, slots[index]
                 kind = slot["type"]
                 points = slot["pointsQ4"]
@@ -318,7 +322,7 @@ async def local_model_call(model, purpose, body):
                     "stem": {
                         **common["properties"]["stem"],
                         "description": (
-                            f"Ô {ordinal} — Hỏi đúng chủ đề ở matrix.slots[{ordinal - 1}].topic. "
+                            f"Ô {ordinal} — Hỏi đúng chủ đề ở matrix.slots[{position}].topic. "
                             f"{slot['levelName']}: {slot['requiredTask']} "
                             f"{MIXED_STEM_GUIDES[kind]}"
                         ),
