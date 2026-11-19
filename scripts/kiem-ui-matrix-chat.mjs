@@ -90,10 +90,19 @@ try{
  await page.reload();await page.waitForLoadState('networkidle');assert.equal(await page.locator('.question').count(),2);
  const acceptedRevision=(await state()).revision;
  await send();await generate();
- await page.locator('.header-title').fill('Tên sửa sau khi AI hoàn tất');await page.locator('.header-title').press('Tab');
+ const renamed='Tên sửa sau khi AI hoàn tất';
+ const savedRename=page.waitForResponse(response=>{
+  const request=response.request();
+  if(response.url()!==base+'/api/kv'||request.method()!=='PUT')return false;
+  return request.postDataJSON()?.value?.exams?.some(item=>item.id===exam.id&&item.title===renamed);
+ });
+ await page.locator('.header-title').fill(renamed);await page.locator('.header-title').press('Tab');
  await page.waitForFunction(()=>document.querySelector('#matrix-confirm-save')?.disabled);
  assert((await page.locator('#matrix-review-summary').innerText()).includes('Đề đã thay đổi'));
- await page.locator('#matrix-discard').click();assert((await state()).revision>acceptedRevision);
+ assert((await savedRename).ok());
+ assert((await state()).revision>acceptedRevision);
+ await page.locator('#matrix-discard').click();
+ await page.locator('.matrix-document-preview').waitFor({state:'detached'});
  await page.setViewportSize({width:390,height:844});await page.locator('[data-action="toggle-ai"]').first().click();
  await send();await page.locator('#matrix-source-text').waitFor();
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
