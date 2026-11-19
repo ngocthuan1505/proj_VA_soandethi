@@ -19,3 +19,15 @@
 @media(max-width:650px){.studio .editing-bar{top:0}}
 .studio .exam-heading textarea.title-input{display:block;width:100%;resize:none;overflow:hidden;min-height:30px;border:0;background:transparent;font:700 14pt/1.4 "Times New Roman",serif;text-align:center;padding:0;color:#111;white-space:pre-wrap}.studio .exam-heading textarea.title-input:hover{background:#f5f8fc}.studio .page-rubric-table th{color:#111}
 .studio .outline-item.active:not(.in-view){background:transparent!important}.studio .outline-item.active:not(.in-view) .outline-title{color:#43505f}.studio .outline-section.in-view{background:#e8f1f6;color:#397fb3;border-radius:3px}
+
+.sketch-board .sketch-tools { display:flex; align-items:end; flex-wrap:wrap; gap:.75rem; margin-bottom:.75rem; }
+.sketch-board .sketch-tools label { margin:0; min-width:8rem; }
+.sketch-board canvas {
+ display:block; width:min(100%,81dvh); height:auto; aspect-ratio:16/9;
+ touch-action:none; cursor:crosshair; border-radius:8px; box-shadow:0 0 0 1px #bfd0c6;
+ background-color:#fff; background-size:24px 24px;
+ background-image:linear-gradient(#dce9e2 1px,transparent 1px),linear-gradient(90deg,#dce9e2 1px,transparent 1px);
+}
+.sketch-board canvas:focus-visible { outline:3px solid #176853; outline-offset:3px; }
+.sketch-board #sketch-help { margin-top:.75rem; }
+.sketch-board [data-sketch-status]:empty { display:none; }

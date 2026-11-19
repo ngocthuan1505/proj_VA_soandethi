@@ -41,7 +41,12 @@ from mach_backend.exam_spec_export import install_extended_exports
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
 from mach_backend.generation_submission import GenerationInputs
 from mach_backend.lesson_catalog import lesson_catalog
-from mach_backend.local_documents import chrome_path, export_file, extract_text
+from mach_backend.local_documents import (
+    chrome_path,
+    export_file,
+    extract_text,
+    preview_exam_variant,
+)
 from mach_backend.matrix_import import matrix_slots, read_matrix
 from mach_backend.patch_confirmation import PendingGeneration, confirm_patch
 from mach_backend.patch_jobs import PatchJobRunner
@@ -664,6 +669,10 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             return {"message": message, "credits": {"balance": 1000}}
 
     export_slot = asyncio.Semaphore(1)
+
+    @app.post("/api/preview-variant")
+    def preview_variant(payload: dict):
+        return preview_exam_variant(payload)
 
     @app.post("/api/save-export")
     async def save_export(request: Request):

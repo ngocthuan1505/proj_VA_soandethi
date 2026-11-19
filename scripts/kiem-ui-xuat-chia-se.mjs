@@ -46,6 +46,61 @@ try {
   await page.waitForLoadState('networkidle');
   const action = name => page.locator('[data-action="' + name + '"]:visible').first();
   const dialog = page.locator('#dialog');
+  await page.locator('.outline-item[data-id="' + exam.questions[0].id + '"]:visible').first().click();
+  await page.locator('[data-action="menu"][data-menu="insert"]:visible').first().click();
+  await action('studio-sketch').click();
+  const board = dialog.locator('#sketch-board'), canvas = board.locator('canvas');
+  const insertSketch = board.getByRole('button', {name: 'Chèn hình vào câu'});
+  assert(await insertSketch.isDisabled());
+  const box = await canvas.boundingBox();
+  assert(box);
+  await page.mouse.move(box.x + box.width * .25, box.y + box.height * .25);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * .66, box.y + box.height * .75, {steps: 8});
+  await page.mouse.up();
+  await board.getByRole('button', {name: 'Hoàn tác nét'}).click();
+  await page.waitForFunction(() => document.querySelector('#sketch-board [type=submit]').disabled);
+  await canvas.focus();
+  await canvas.press('Space');
+  for (const key of ['ArrowUp', 'ArrowUp', 'ArrowRight', 'ArrowRight']) await canvas.press(key);
+  await canvas.press('Space');
+  await board.getByLabel('Chú thích hình').fill('Sơ đồ phác QA 731');
+  await page.screenshot({path: path.join(out, 'bang-ve-phac.png')});
+  await insertSketch.click();
+  await page.locator('.question-assets img[alt="Sơ đồ phác QA 731"]').waitFor();
+  await page.waitForFunction(async ({url,id}) => {
+    const {value} = await (await fetch(url + '?key=state')).json();
+    return value.exams[0].questions.find(q => q.id === id).images?.[0].data.startsWith('data:image/png;');
+  }, {url: kv, id: exam.questions[0].id});
+  await page.reload();
+  await page.locator('.question-assets img[alt="Sơ đồ phác QA 731"]').waitFor();
+
+  const phone = await browser.newPage({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
+  await phone.goto(base);
+  await phone.locator('[data-action="menu"][data-menu="insert"]:visible').first().click();
+  await phone.locator('[data-action="studio-sketch"]:visible').first().click();
+  const phoneCanvas = phone.locator('#sketch-board canvas');
+  await phoneCanvas.scrollIntoViewIfNeeded();
+  const phoneBox = await phoneCanvas.boundingBox();
+  assert(phoneBox && phoneBox.width <= 390);
+  const touchInput = await phone.context().newCDPSession(phone);
+  await touchInput.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [
+    {x: phoneBox.x + phoneBox.width * .25, y: phoneBox.y + phoneBox.height * .3}
+  ]});
+  await touchInput.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [
+    {x: phoneBox.x + phoneBox.width * .68, y: phoneBox.y + phoneBox.height * .65}
+  ]});
+  await touchInput.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
+  await phone.waitForFunction(() => !document.querySelector('#sketch-board [type=submit]').disabled);
+  const pixels = await phoneCanvas.evaluate(element => {
+    const rgba = element.getContext('2d').getImageData(0, 0, element.width, element.height).data;
+    return rgba.filter((value, index) => index % 4 === 3 && value !== 0).length;
+  });
+  assert(pixels > 100);
+  await phone.screenshot({path: path.join(out, 'bang-ve-phac-dien-thoai.png')});
+  await phone.locator('#dialog').getByRole('button', {name: 'Đóng', exact: true}).click();
+  await phone.close();
+
   const exports = [];
   for (const teacher of [false, true]) {
     for (const format of ['docx', 'pdf', 'html']) {
@@ -60,6 +115,10 @@ try {
       const filename = (teacher ? 'giao-vien' : 'hoc-sinh') + '.' + format;
       await fs.writeFile(path.join(out, filename), data);
       exports.push({filename, teacher, format, bytes: data.length});
+      if (format === 'docx') {
+        const word = await JSZip.loadAsync(data);
+        assert(Object.keys(word.files).some(name => /word\/media\/.*\.png$/.test(name)));
+      }
       if (format === 'html') {
         const opened = await browser.newPage();
         const networkAttempts = [];
@@ -70,6 +129,7 @@ try {
         await opened.goto(pathToFileURL(path.join(out, filename)).href);
         await opened.getByText('Rút gọn phân số', {exact: false}).last().waitFor();
         assert.equal(await opened.locator('math mfrac').count(), 1);
+        assert.equal(await opened.locator('img[alt="Sơ đồ phác QA 731"]').count(), 1);
         assert.deepEqual(networkAttempts, []);
         assert.equal(await opened.getByText('LOI_GIAI_RIENG_731').count() > 0, teacher);
         assert.equal(await opened.getByText('CHAT_NOI_BO_731').count(), 0);
@@ -148,6 +208,7 @@ try {
   await recipient.getByText('Rút gọn phân số', {exact: false}).last().waitFor();
   const publicText = await recipient.locator('body').innerText();
   assert.doesNotMatch(publicText, /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731|Tạo bản sao riêng/);
+  assert.equal(await recipient.locator('img[alt="Sơ đồ phác QA 731"]').count(), 1);
   await dialog.locator('[data-action=share]').click();
   await dialog.locator('[data-action=revoke-share]').click();
   await dialog.locator('[data-action=revoke-share]').waitFor({state: 'detached'});
@@ -158,8 +219,13 @@ try {
   await action('export').click();
   const variants = dialog.locator('#export-variants');
   await variants.locator('summary').click();
-  for (const checkbox of await variants.getByRole('checkbox').all()) await checkbox.check();
+  for (const checkbox of await variants.locator('input[data-kind]').all()) await checkbox.check();
   await variants.locator('select').selectOption('1');
+  await variants.getByRole('button', {name: 'Xem trước mã đã chọn'}).click();
+  const preview = variants.locator('[data-variant-preview]');
+  await preview.getByRole('heading', {name: /Mã đề 102/}).waitFor();
+  assert.match(await preview.locator('section > ol > li').first().innerText(), /Tính diện tích.*Câu gốc 2/);
+  assert.doesNotMatch(await preview.innerText(), /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/);
   await dialog.locator('[data-action="export-file"][data-teacher="false"][data-format="html"]').click();
   await dialog.locator('.saved-export-link').waitFor();
   const variantURL = new URL(await dialog.locator('.saved-export-link').getAttribute('href'), base);
@@ -230,13 +296,45 @@ try {
   })).ok());
   assert.equal((await page.request.get(publicationUrl.href)).status(), 404);
   assert.deepEqual((await (await page.request.get(base + '/api/community-exams')).json()).exams, []);
+
+  const quiz = blank('Toán');
+  quiz.title = 'Đề thử trộn phương án';
+  quiz.questions = [{
+    id: uid(), v: 1, type: 'mcq', stem: 'Chọn số chẵn.', points: 5,
+    options: ['một', 'hai', 'ba', 'năm'], answer: 1,
+  }, {
+    id: uid(), v: 1, type: 'mcq', stem: 'Chọn đáp án tổng hợp.', points: 5,
+    options: ['ba', 'bảy', 'mười', 'Cả hai phương án trên'], answer: 3,
+  }];
+  ensureBlocks(quiz);
+  const state = await (await page.request.get(kv + '?key=state')).json();
+  const seeded = await page.request.put(kv, {
+    headers: {Origin: base, 'If-Match': String(state.revision)},
+    data: {key: 'state', value: {...state.value, current: quiz.id, exams: [...state.value.exams, quiz]}},
+  });
+  assert(seeded.ok(), await seeded.text());
+  await page.reload();
+  await action('export').click();
+  await variants.locator('summary').click();
+  for (const checkbox of await variants.locator('input[data-kind]').all()) await checkbox.check();
+  await variants.getByLabel(/Trộn phương án/).check();
+  await variants.locator('select').selectOption('1');
+  await variants.getByRole('button', {name: 'Xem trước mã đã chọn'}).click();
+  await preview.getByRole('heading', {name: /Mã đề 102/}).waitFor();
+  const optionLabels = await preview.locator('ol[type=A] li').allTextContents();
+  assert.deepEqual(optionLabels, ['ba','bảy','mười','Cả hai phương án trên','ba','năm','một','hai']);
+  await page.screenshot({path: path.join(out, 'xem-truoc-ma-102.png')});
   assert.deepEqual(errors, []);
   await fs.writeFile(path.join(out, 'browser-result.json'), JSON.stringify({
     scenario: 'IT-10', exports, closedShareFormCreatedNoLink: true,
+    sketchMouseUndoKeyboardReloadAndExport: true,
+    sketchTouch: true,
     lateAnswerToggleWasIgnored: true, recipientRead: true, revoked: true,
     lateExportPreservedDialog: true,
     variantExportPreservedOriginal: true,
     variantPackPdfWithTeacherKey: true,
+    variantPreviewMatchesOutput: true,
+    browserShufflesIndependentOptionsOnly: true,
     communityPublishedCopiedAttachedAndRevoked: true,
   }, null, 2));
   console.log('IT-10: sáu bản xuất và luồng chia sẻ Chrome/FastAPI đạt.');
