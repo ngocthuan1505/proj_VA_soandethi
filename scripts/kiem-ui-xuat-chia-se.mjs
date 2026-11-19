@@ -242,6 +242,7 @@ try {
   const publicText = await recipient.locator('body').innerText();
   assert.doesNotMatch(publicText, /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731|Tạo bản sao riêng/);
   assert.equal(await recipient.locator('img[alt="Sơ đồ phác QA 731"]').count(), 1);
+  assert.equal(await recipient.locator('math mfrac').count(), 1);
   await dialog.locator('[data-action=share]').click();
   await dialog.locator('[data-action=revoke-share]').click();
   await dialog.locator('[data-action=revoke-share]').waitFor({state: 'detached'});
@@ -363,6 +364,7 @@ try {
     sketchMouseUndoKeyboardReloadAndExport: true,
     sketchTouch: true,
     studentOfflinePresentationAndPrint: true,
+    sharedStudentSnapshotKeepsMathMl: true,
     lateAnswerToggleWasIgnored: true, recipientRead: true, revoked: true,
     lateExportPreservedDialog: true,
     variantExportPreservedOriginal: true,
