@@ -675,7 +675,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
 
     @app.get("/api/exports/{name}")
     def exported(name: str):
-        if re.fullmatch(r"De_thi_[0-9a-f-]{36}\.(html|pdf|docx|json)", name) is None:
+        if re.fullmatch(r"De_thi_[0-9a-f-]{36}\.(html|pdf|docx|json|zip)", name) is None:
             raise HTTPException(404)
         target = directory / "exports" / name
         if not target.is_file():

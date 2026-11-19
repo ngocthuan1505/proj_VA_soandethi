@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {chromium} from 'playwright-core';
+import JSZip from 'jszip';
 import {blank, uid} from '../core.js';
 import {ensureBlocks} from '../blocks.js';
 
@@ -166,6 +167,23 @@ try {
   assert.match(variantHtml, /Mã đề 102/);
   assert(variantHtml.indexOf('Tính diện tích') < variantHtml.indexOf('Rút gọn phân số'));
   assert.doesNotMatch(variantHtml, /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/);
+  await page.keyboard.press('Escape');
+  await action('export').click();
+  await variants.getByRole('button', {name: 'Bộ PDF'}).click();
+  const packLink = dialog.getByRole('link', {name: 'Tải bộ mã đề (.zip)'});
+  await packLink.waitFor({timeout: 90000});
+  const packResponse = await page.request.get(new URL(await packLink.getAttribute('href'), base).href);
+  assert(packResponse.ok());
+  const pack = await packResponse.body();
+  await fs.writeFile(path.join(out, 'bo-ma-de.pdf.zip'), pack);
+  const archive = await JSZip.loadAsync(pack);
+  for (const code of [101, 102]) {
+    const pdf = await archive.file('HOC_SINH/Ma_' + code + '.pdf').async('nodebuffer');
+    assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
+  }
+  const key = await archive.file('GIAO_VIEN/Doi_chieu_dap_an.html').async('string');
+  assert.match(key, /Mã 101.*Mã 102/);
+  assert.match(key, /Xem hướng dẫn chấm <small>\(gốc: 2\)<\/small>/);
   const persisted = await (await page.request.get(kv + '?key=state')).json();
   assert.deepEqual(persisted.value.exams[0].questions.map(q => q.id), exam.questions.map(q => q.id));
 
@@ -218,6 +236,7 @@ try {
     lateAnswerToggleWasIgnored: true, recipientRead: true, revoked: true,
     lateExportPreservedDialog: true,
     variantExportPreservedOriginal: true,
+    variantPackPdfWithTeacherKey: true,
     communityPublishedCopiedAttachedAndRevoked: true,
   }, null, 2));
   console.log('IT-10: sáu bản xuất và luồng chia sẻ Chrome/FastAPI đạt.');

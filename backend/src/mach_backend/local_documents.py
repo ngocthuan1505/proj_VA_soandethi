@@ -271,7 +271,11 @@ def field(text, document=None, runs=None):
 
 def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
     figures = list(figures or [])
-    if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
+    if (
+        not isinstance(exam, dict)
+        or not isinstance(exam.get("questions"), list)
+        or any(not isinstance(question, dict) for question in exam["questions"])
+    ):
         raise AIError("invalid_exam", "Đề xuất chưa hợp lệ.")
     body = (
         f"<h1>{inline_html(exam.get('title'))}</h1><p>{inline_html(exam.get('school'))}</p>"
@@ -504,9 +508,71 @@ def exam_variant(exam, variant):
     }
 
 
+def export_variant_pack(payload, directory, origin):
+    exam = payload.get("exam")
+    ids = payload.get("questionIds")
+    format_ = payload.get("format", "docx")
+    if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
+        raise AIError("invalid_exam", "Đề cần danh sách câu để xuất.")
+    if format_ not in ("docx", "pdf", "html"):
+        raise AIError("unsupported_export", "Chọn Word, PDF hoặc HTML để xuất bộ mã.")
+    exam_variant(exam, {"questionIds": ids, "offset": 0})
+    variants = [
+        exam_variant(exam, {"questionIds": ids, "offset": offset})
+        for offset in range(min(6, len(ids)))
+    ]
+    headings = "".join(f"<th scope='col'>Mã {101 + i}</th>" for i in range(len(variants)))
+    original_numbers = {
+        question["id"]: i + 1
+        for i, question in enumerate(exam["questions"])
+        if question.get("id") in ids
+    }
+    rows = []
+    for i in range(len(exam["questions"])):
+        answers = []
+        for variant in variants:
+            question = variant["questions"][i]
+            source = original_numbers.get(question.get("id"), i + 1)
+            answer = (
+                "Xem hướng dẫn chấm"
+                if question.get("type") == "essay"
+                else saved_answer_label(question)
+            )
+            answers.append(f"<td>{html.escape(answer)} <small>(gốc: {source})</small></td>")
+        rows.append(f"<tr><th scope='row'>{i + 1}</th>{''.join(answers)}</tr>")
+    title = html.escape(str(exam.get("title") or "Đề thi"))
+    answer_key = (
+        '<!doctype html><html lang="vi"><meta charset="utf-8">'
+        "<title>Đối chiếu đáp án · Bản giáo viên</title>"
+        "<style>@page{size:A4;margin:18mm}body{font:16px system-ui}"
+        "table{border-collapse:collapse}th,td{border:1px solid;padding:8px}</style>"
+        f"<h1>Đối chiếu đáp án · Bản giáo viên</h1><p>{title}</p>"
+        "<p>Số trong ngoặc chỉ câu tương ứng trên đề gốc; dùng số này để tra hướng dẫn chấm.</p>"
+        f'<table><thead><tr><th scope="col">Câu</th>{headings}</tr></thead>'
+        f"<tbody>{''.join(rows)}</tbody></table></html>"
+    )
+    directory.mkdir(parents=True, exist_ok=True)
+    name = "De_thi_" + str(uuid4()) + ".zip"
+    target = directory / name
+    with tempfile.TemporaryDirectory(prefix="ma-de-", dir=directory) as temp:
+        staging = Path(temp)
+        bundle = staging / name
+        with zipfile.ZipFile(bundle, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for i, variant in enumerate(variants):
+                result = export_file(
+                    {"type": "exam", "exam": variant, "format": format_}, staging, origin
+                )
+                archive.write(staging / result["filename"], f"HOC_SINH/Ma_{101 + i}.{format_}")
+            archive.writestr("GIAO_VIEN/Doi_chieu_dap_an.html", answer_key)
+        bundle.replace(target)
+    return {"filename": name, "bytes": target.stat().st_size, "url": "/api/exports/" + name}
+
+
 def export_file(payload, directory, origin):
     kind = payload.get("type")
     format_ = payload.get("format", "html")
+    if kind == "variant-pack":
+        return export_variant_pack(payload, directory, origin)
     if kind == "exam":
         if format_ not in {"html", "pdf", "docx"}:
             raise AIError("unsupported_export", "Chọn Word, PDF hoặc HTML để xuất đề.")
@@ -584,9 +650,7 @@ def export_file(payload, directory, origin):
         if not target.is_file() or not target.read_bytes().startswith(b"%PDF-"):
             raise AIError("export_failed", "Chưa tạo được PDF. Bản đề được giữ nguyên.")
     elif format_ == "docx":
-        target.write_bytes(
-            export_docx(payload["exam"], payload.get("teacher") is True, chrome_path())
-        )
+        target.write_bytes(export_docx(exam, payload.get("teacher") is True, chrome_path()))
     else:
         raise AIError("unsupported_export", "Định dạng xuất chưa được hỗ trợ.")
     return {"filename": name, "bytes": target.stat().st_size, "url": "/api/exports/" + name}

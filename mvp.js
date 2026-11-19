@@ -106,6 +106,10 @@ let exportVariantSelection;
 function showExport(){const e=current();c.modal('Xuất đề',`${note('Xuất Word, PDF hoặc HTML. Bản Word giữ công thức có thể chỉnh sửa; hình học được nhúng dưới dạng ảnh.')}${status?.matrixPython&&e.questions.length>=2?`<details id="export-variants"><summary>Tạo mã đề</summary><fieldset><legend>Câu được đổi thứ tự</legend><p>Chọn ít nhất hai câu độc lập, cùng dạng. Thứ tự phương án và đáp án từng câu được giữ.</p>${e.questions.map((q,i)=>`<label class="consent"><input type="checkbox" value="${esc(q.id)}" data-kind="${esc(q.type||'mcq')}"> Câu ${i+1} · ${esc((q.stem||'').slice(0,90))}</label>`).join('')}</fieldset><label for="export-variant-code">Bản xuất</label><select id="export-variant-code"></select><p data-variant-status role="status"></p></details>`:''}<div class="grid2">${[false,true].map(t=>`<div class="choice-card"><h3>${t?'Bản giáo viên':'Bản học sinh'}</h3><p>${t?'Có đáp án, giải thích, nguồn và trạng thái rà soát.':'Không chứa đáp án, giải thích hoặc hội thoại.'}</p><div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-file',format==='docx'?'Word (.docx)':format==='pdf'?'PDF':'HTML',format==='docx'?'primary':'',`data-teacher="${t}" data-format="${format}"`)).join('')}</div></div>`).join('')}</div><div class="alert">${e.questions.filter(q=>!isApproved(q)).length} câu chưa được giáo viên duyệt.</div>${foot(btn('backup-local','Sao lưu toàn bộ đề (.json)'))}`);
  const variants=$('#export-variants');
  if(!variants)return;
+ variants.insertAdjacentHTML('beforeend',`<div data-variant-pack hidden>
+  <p>Mỗi mã có một bản học sinh. Bảng đối chiếu đáp án nằm trong thư mục giáo viên.</p>
+  <div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-pack','Bộ '+({docx:'Word',pdf:'PDF',html:'HTML'}[format]),'',`data-format="${format}"`)).join('')}</div>
+ </div>`);
  const code=$('#export-variant-code'), previous=exportVariantSelection?.examId===e.id?exportVariantSelection:null;
  for(const input of variants.querySelectorAll('input'))input.checked=previous?.questionIds.includes(input.value)===true;
  variants.open=Boolean(previous?.questionIds.length);
@@ -115,12 +119,13 @@ function showExport(){const e=current();c.modal('Xuất đề',`${note('Xuất W
   code.replaceChildren(new Option('Đề gốc',''));
   if(valid)for(let i=0;i<Math.min(selected.length,6);i++)code.add(new Option('Mã đề '+(101+i),String(i)));
   code.value=[...code.options].some(option=>option.value===preferred)?preferred:'';
+  variants.querySelector('[data-variant-pack]').hidden=!valid;
   variants.querySelector('[data-variant-status]').textContent=valid?'Chọn mã rồi chọn định dạng cần tải.':'Chọn ít nhất hai câu cùng dạng để tạo mã.';
  }
  update(previous?.code);
  variants.addEventListener('change',event=>{if(event.target!==code)update(code.value);});
 }
-async function exportFile(node){
+async function exportFile(node,batch=false){
  if(!flushEditor())throw Error('Gõ xong chữ đang nhập rồi thử lại.');
  const exam=clone(current()),format=node.dataset.format,code=$('#export-variant-code')?.value;
  const questionIds=[...document.querySelectorAll('#export-variants input:checked')].map(input=>input.value);
@@ -129,8 +134,14 @@ async function exportFile(node){
  c.modal('Đang xuất tệp',`<div class="busy"><span class="spinner"></span><span role="status">Đang tạo ${format.toUpperCase()} từ đề hiện tại…</span></div>`);
  const pendingExport=document.querySelector('#dialog .busy');
  try{
-  const result=await api('/api/save-export',{type:'exam',exam,format,teacher:node.dataset.teacher==='true',...(variant?{variant}:{})});
+  const result=await api('/api/save-export',batch
+   ?{type:'variant-pack',exam,format,questionIds}
+   :{type:'exam',exam,format,teacher:node.dataset.teacher==='true',...(variant?{variant}:{})});
   if(!pendingExport.isConnected||!$('#dialog').open){c.toast('Đã tạo tệp '+result.filename);return;}
+  if(batch){
+   c.modal('Bộ mã đề đã sẵn sàng',`<p>${Math.min(6,questionIds.length)} mã đề · ${format.toUpperCase()} · ${result.bytes.toLocaleString('vi-VN')} byte</p><a class="saved-export-link" href="${esc(result.url)}" download>Tải bộ mã đề (.zip)</a>${foot(btn('export','Quay lại phần xuất'))}`);
+   return;
+  }
   c.modal('Tệp đã lưu tại máy',`<div class="alert success">${esc(result.filename)}<br>${result.bytes.toLocaleString('vi-VN')} byte · Tệp ${format.toUpperCase()} thật</div><a class="saved-export-link" href="${esc(result.url)}" target="_blank" rel="noopener" ${format==='docx'?'download':''}>Mở / tải tệp vừa xuất</a>${note('Bản xuất: '+esc(exam.title)+(variant?' · Mã đề '+(101+variant.offset):'')+' · bản '+exam.revision)}${note('Word giữ công thức sửa được, bảng và định dạng. Hình học trong Word được nhúng thành ảnh; giữ bản JSON nếu cần sửa tọa độ.')} ${foot(btn('export','Xuất bản khác'))}`);
  }catch(error){
   if(!pendingExport.isConnected||!$('#dialog').open){c.toast(error.message);return;}
@@ -192,6 +203,7 @@ export async function handleMVPAction(action,node){flushEditor();if(await handle
  case 'apply-old-questions':{const p=prepared;if(p?.type!=='old-questions'||p.examId!==current().id||p.revision!==current().revision)throw Error('Đề đã thay đổi. Tách lại để xem bản mới.');if(node.dataset.mode==='new'){const old=current(),e=blank(old.subject,c.getState().prefs);Object.assign(e,{title:old.docs.find(d=>d.id===p.docId)?.name.replace(/\.[^.]+$/,'')||'Đề nhập từ tài liệu',grade:old.grade,school:old.school,minutes:old.minutes,docs:clone(old.docs.filter(d=>d.id===p.docId)),fullExam:true,chat:[],layout:{font:'Times New Roman',fontSize:15}});c.getState().exams.push(e);c.getState().current=e.id;c.setTab('outline');}c.change('Thêm câu tách từ đề cũ',e=>{for(const item of p.questions){const q={...item,id:uid(),v:1,topic:e.matrix[0]?.topic||'Đề cũ',level:0,answerKnown:false,explanation:'Chưa nhập hoặc suy luận đáp án. Giáo viên cần rà soát.',source:{docId:p.docId,page:p.page,location:'Trang '+p.page},check:null};e.questions.push(q);check(e,q);}});$('#dialog').close();return true;}
  case 'export':showExport();return true;
  case 'export-file':await exportFile(node);return true;
+ case 'export-pack':await exportFile(node,true);return true;
  case 'web-search':showSearch();return true;
  case 'read-web-result':await readResult(Number(node.dataset.index));return true;
  default:return false;
