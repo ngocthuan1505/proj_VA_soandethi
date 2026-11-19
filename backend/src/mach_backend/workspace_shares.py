@@ -7,10 +7,11 @@ import re
 import secrets
 import tempfile
 import time
+import unicodedata
 from pathlib import Path
 from uuid import UUID
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,6 +20,12 @@ from mach_backend.local_documents import export_file
 from mach_backend.share_snapshot import snapshot
 
 TOKEN = re.compile(r"[A-Za-z0-9_-]{43}")
+PAGE_SIZE = 20
+
+
+def search_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFD", value.casefold().replace("đ", "d"))
+    return " ".join("".join(c for c in normalized if not unicodedata.combining(c)).split())
 
 
 class ShareRequest(BaseModel):
@@ -27,6 +34,7 @@ class ShareRequest(BaseModel):
     baseRevision: int = Field(ge=1)
     answers: bool = False
     allowCopy: bool = False
+    community: bool = False
 
 
 class RevokeRequest(BaseModel):
@@ -52,6 +60,11 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
             answers INTEGER NOT NULL, allow_copy INTEGER NOT NULL,
             snapshot TEXT NOT NULL, html TEXT NOT NULL)""")
         db.execute("CREATE INDEX IF NOT EXISTS shares_owner ON shared_snapshots(owner,exam_id)")
+        db.execute("""CREATE TABLE IF NOT EXISTS community_listings(
+            token TEXT PRIMARY KEY, title TEXT NOT NULL, subject TEXT NOT NULL,
+            grade TEXT NOT NULL, question_count INTEGER NOT NULL,
+            search_title TEXT NOT NULL, search_subject TEXT NOT NULL
+        )""")
 
     def read(token):
         if not TOKEN.fullmatch(token):
@@ -68,6 +81,8 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
 
     def create_snapshot(body, request):
         user_id = owner(request)
+        if body.community and body.answers:
+            raise AIError("invalid_share", "Kho cộng đồng chỉ nhận bản học sinh.")
         _, exam = read_exam(request, str(body.examId))
         if exam.get("revision") != body.baseRevision:
             raise AIError("stale_snapshot", "Đề đã thay đổi. Mở lại Chia sẻ để chọn bản mới.")
@@ -102,11 +117,28 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
                     content,
                 ),
             )
+            if body.community:
+                title = str(selected.get("title") or "Đề thi")[:240]
+                subject = str(selected.get("subject") or "")[:80]
+                grade = str(selected.get("grade") or "")[:16]
+                db.execute(
+                    "INSERT INTO community_listings VALUES(?,?,?,?,?,?,?)",
+                    (
+                        token,
+                        title,
+                        subject,
+                        grade,
+                        len(selected["questions"]),
+                        search_text(title),
+                        search_text(subject),
+                    ),
+                )
         return {
             "token": token,
             "url": str(request.base_url) + "s/" + token,
             "revision": body.baseRevision,
             "created": created,
+            "community": body.community,
         }
 
     @app.post("/api/share")
@@ -119,8 +151,9 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
         user_id = owner(request)
         with connect() as db:
             rows = db.execute(
-                "SELECT token,revision,created,answers,allow_copy FROM shared_snapshots "
-                "WHERE owner=? AND exam_id=? AND revoked=0 ORDER BY created DESC",
+                "SELECT s.token,s.revision,s.created,s.answers,s.allow_copy,c.token IS NOT NULL "
+                "FROM shared_snapshots s LEFT JOIN community_listings c ON s.token=c.token "
+                "WHERE s.owner=? AND s.exam_id=? AND s.revoked=0 ORDER BY s.created DESC",
                 (user_id, str(examId)),
             ).fetchall()
         return {
@@ -132,10 +165,58 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
                     "created": r[2],
                     "answers": bool(r[3]),
                     "allowCopy": bool(r[4]),
+                    "community": bool(r[5]),
                 }
                 for r in rows
             ]
         }
+
+    @app.get("/api/community-exams")
+    def community_exams(
+        request: Request,
+        q: str = Query("", max_length=120),
+        subject: str = Query("", max_length=80),
+        grade: str = Query("", max_length=16),
+        page: int = Query(1, ge=1, le=10000),
+    ):
+        owner(request)
+        with connect() as db:
+            rows = db.execute(
+                "SELECT c.token,c.title,c.subject,c.grade,c.question_count,s.created,s.allow_copy "
+                "FROM community_listings c JOIN shared_snapshots s ON c.token=s.token "
+                "WHERE s.revoked=0 AND s.answers=0 "
+                "AND instr(c.search_title, ?) > 0 "
+                "AND (? = '' OR c.search_subject = ?) AND (? = '' OR c.grade = ?) "
+                "ORDER BY s.created DESC,c.token LIMIT ? OFFSET ?",
+                (
+                    search_text(q),
+                    subject.strip(),
+                    search_text(subject),
+                    grade.strip(),
+                    grade.strip(),
+                    PAGE_SIZE + 1,
+                    (page - 1) * PAGE_SIZE,
+                ),
+            ).fetchall()
+        return JSONResponse(
+            {
+                "exams": [
+                    {
+                        "token": token,
+                        "title": title,
+                        "subject": subject,
+                        "grade": grade,
+                        "questions": count,
+                        "created": created,
+                        "allowCopy": bool(copy),
+                    }
+                    for token, title, subject, grade, count, created, copy in rows[:PAGE_SIZE]
+                ],
+                "page": page,
+                "hasMore": len(rows) > PAGE_SIZE,
+            },
+            headers={"Cache-Control": "no-store"},
+        )
 
     @app.post("/api/share/revoke")
     def revoke(body: RevokeRequest, request: Request):

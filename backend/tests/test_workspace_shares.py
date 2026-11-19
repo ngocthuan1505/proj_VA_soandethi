@@ -240,6 +240,27 @@ def test_team_owner_guest_and_other_owner_permissions(tmp_path, exam):
         assert create(second, exam).status_code == 404
         assert second.post("/api/share/revoke", json={"token": token}).status_code == 404
         assert second.get("/api/share", params={"examId": exam["id"]}).json()["shares"] == []
+        assert second.get("/api/community-exams").json()["exams"] == []
+        assert guest.get("/api/community-exams").status_code == 401
+        assert create(first, exam, community=True, answers=True).status_code == 409
+        listed = create(first, exam, community=True, allowCopy=True).raise_for_status().json()
+        assert listed["community"]
+        public_token = listed["token"]
+        query = {"q": "de chia se", "subject": "vat li", "grade": "8"}
+        results = second.get("/api/community-exams", params=query).raise_for_status().json()
+        assert [item["token"] for item in results["exams"]] == [public_token]
+        assert not results["hasMore"]
+        assert (
+            second.get("/api/community-exams", params={**query, "grade": "9"}).json()["exams"] == []
+        )
+        assert second.get("/api/community-exams", params={**query, "page": 2}).json()["exams"] == []
+        public = second.get("/api/share/read/" + public_token).json()
+        assert public["allowCopy"] and "_KÍN" not in json.dumps(public, ensure_ascii=False)
+        assert public["exam"]["questions"][0]["answer"] is None
+        assert second.post("/api/share/revoke", json={"token": public_token}).status_code == 404
+        first.post("/api/share/revoke", json={"token": public_token}).raise_for_status()
+        assert second.get("/api/community-exams", params=query).json()["exams"] == []
+        assert second.get("/s/" + public_token).status_code == 404
         target = guest.get("/?copy=" + token, follow_redirects=False).headers["location"]
         assert target == "/login?copy=" + token
         first.post("/api/share/revoke", json={"token": token}).raise_for_status()
