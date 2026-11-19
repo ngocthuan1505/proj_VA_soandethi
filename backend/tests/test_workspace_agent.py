@@ -6,6 +6,8 @@ import pytest
 
 from mach_backend.ai_contract import AIError
 from mach_backend.matrix_agent import ContentReviews
+from mach_backend.mixed_questions import MixedDraftBatch, MixedDraftQuestion
+from mach_backend.poc_matrix import structured_tool_request
 from mach_backend.workspace_agent import local_model_call
 
 
@@ -76,6 +78,40 @@ def test_local_reviewer_receives_one_question_without_saved_answers():
         for i in range(2)
     ]
     assert len(calls) == 2 and body == before
+
+
+def test_local_mixed_schema_fixes_type_by_approved_slot():
+    kinds = ["mcq", "mcq", "truefalse", "short", "essay"]
+    schema = MixedDraftBatch.model_json_schema()
+    schema["properties"]["questions"]["items"] = {
+        k: v for k, v in MixedDraftQuestion.model_json_schema().items() if k != "$defs"
+    }
+    body = {
+        "messages": [
+            {"role": "system", "content": "Soạn bộ câu."},
+            {
+                "role": "user",
+                "content": json.dumps({"matrix": {"slots": [{"type": kind} for kind in kinds]}}),
+            },
+        ],
+        "tools": [{"function": {"name": "check_exam", "parameters": schema}}],
+    }
+    before = copy.deepcopy(body)
+
+    async def model(purpose, request):
+        wire = structured_tool_request(request)["format"]
+        assert "RubricStep" in wire["$defs"]
+        args = wire["oneOf"][0]["properties"]["arguments"]
+        items = [item["properties"] for item in args["properties"]["questions"]["items"]]
+        assert [i["options"]["minItems"] for i in items] == [4, 4, 4, 0, 0]
+        assert [i["options"]["maxItems"] for i in items] == [4, 4, 4, 0, 0]
+        assert items[0]["answer"]["enum"] == items[1]["answer"]["enum"] == list("0123")
+        assert len(items[2]["answer"]["enum"]) == 16 and "1010" in items[2]["answer"]["enum"]
+        assert items[3]["answer"]["minLength"] == 1
+        assert items[4]["answer"]["const"] == ""
+
+    asyncio.run(local_model_call(model, "agent", body))
+    assert body == before
 
 
 def test_split_reviewer_does_not_accept_wrong_ordinal():

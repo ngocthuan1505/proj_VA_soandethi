@@ -32,6 +32,32 @@ async def local_model_call(model, purpose, body):
         "MixedDraftQuestion" in tool.get("function", {}).get("parameters", {}).get("$defs", {})
         for tool in body.get("tools", [])
     ):
+        slots = json.loads(body["messages"][1]["content"])["matrix"]["slots"]
+        for tool in body["tools"]:
+            if tool["function"]["name"] != "check_exam":
+                continue
+            questions = tool["function"]["parameters"]["properties"]["questions"]
+            common = questions["items"]
+            answers = {
+                "mcq": {"enum": list("0123")},
+                "truefalse": {"enum": [f"{value:04b}" for value in range(16)]},
+                "short": {**common["properties"]["answer"], "minLength": 1},
+                "essay": {"const": ""},
+            }
+            questions["items"] = []
+            for slot in slots:
+                kind = slot["type"]
+                count = 4 if kind in ("mcq", "truefalse") else 0
+                properties = {
+                    **common["properties"],
+                    "options": {
+                        **common["properties"]["options"],
+                        "minItems": count,
+                        "maxItems": count,
+                    },
+                    "answer": {"type": "string", **answers[kind]},
+                }
+                questions["items"].append({**common, "properties": properties})
         return await model(purpose, body)
     if "MixedContentReview" in body.get("format", {}).get("$defs", {}):
         return await model(purpose, body)
