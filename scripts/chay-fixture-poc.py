@@ -115,7 +115,7 @@ class FixtureCase:
                             if data["request"].startswith("Viết lại hai đoạn"):
                                 revised = "Tính giá trị.\nNêu lý do.\nKiểm tra lại."
                             elif data["request"].startswith("Viết lại đoạn có công thức"):
-                                revised = "Đánh giá $x+1$.\nNêu cách làm."
+                                revised = "Đánh giá $x+2$ với $y+2$.\nNêu cách làm."
                             content = content.replace(scope["text"], revised, 1)
                     elif field == "rubric" and scope["index"] is not None:
                         content = [row.copy() for row in content]

@@ -46,6 +46,8 @@ question.richDoc = {
     {type: 'text', text: 'Chọn giá trị ', marks: [{type: 'bold'}]},
     {type: 'text', text: 'sau khi tính '},
     {type: 'mathInline', attrs: {id: uid(), latex: 'x+1', display: false}},
+    {type: 'text', text: ' và '},
+    {type: 'mathInline', attrs: {id: uid(), latex: 'y+1', display: false}},
     {type: 'text', text: '. Hãy tính kết quả.'},
   ]}, {type: 'paragraph', attrs: {id: uid()}, content: [
     {type: 'text', text: 'Trình bày mỗi bước.'},
@@ -242,11 +244,15 @@ try {
   await action('undo-ai').waitFor();
   const afterFormulaEdit = (await state()).questions[0];
   assert.equal(afterFormulaEdit.stem, original[0].stem.replace(
-    'sau khi tính $x+1$. Hãy tính kết quả.\nTrình bày mỗi bước.',
-    'Đánh giá $x+1$.\nNêu cách làm.',
+    'sau khi tính $x+1$ và $y+1$. Hãy tính kết quả.\nTrình bày mỗi bước.',
+    'Đánh giá $x+2$ với $y+2$.\nNêu cách làm.',
   ));
-  assert.deepEqual(afterFormulaEdit.richDoc.content[0].content.find(node => node.type === 'mathInline'),
-    beforeBlocks[0].content.find(node => node.type === 'mathInline'));
+  const beforeMath = beforeBlocks[0].content.filter(node => node.type === 'mathInline');
+  const afterMath = afterFormulaEdit.richDoc.content[0].content.filter(node => node.type === 'mathInline');
+  assert.deepEqual(afterMath, beforeMath.map((node, index) => ({
+    ...node,
+    attrs: {...node.attrs, latex: ['x+2', 'y+2'][index]},
+  })));
   assert.deepEqual(afterFormulaEdit.richDoc.content.at(-1), beforeBlocks.at(-1));
   await undo();
   assert.deepEqual((await state()).questions, original);

@@ -115,6 +115,7 @@ def replacement_lines(changed, marks, formulas: list[Leaf]):
         validate_math_markers(changed)
     except AIError:
         raise rich_error() from None
+    originals = [project(leaf.node, []) for leaf in formulas]
     lines = []
     count = 0
     for line in changed.split("\n"):
@@ -135,10 +136,12 @@ def replacement_lines(changed, marks, formulas: list[Leaf]):
             original: dict[str, JsonValue] = (
                 formulas[count].node if formulas else {"type": "mathInline", "attrs": {}}
             )
-            if formulas and project(original, []) == marker + latex + marker:
+            formula = marker + latex + marker
+            if formulas and originals[count] == formula:
                 nodes.append(original)
             else:
-                if len(formulas) > 1:
+                # Công thức cũ xuất hiện ở vị trí khác có thể đã đổi chỗ.
+                if formula in originals:
                     raise rich_error()
                 attrs = original.get("attrs")
                 if not isinstance(attrs, dict):

@@ -309,6 +309,36 @@ def test_mixed_editor_change_writes_editable_formula(old_latex):
     assert project(doc, []) == original
 
 
+def test_formula_ids_survive_multiple_updates_but_reordering_is_ambiguous():
+    first = {"type": "mathInline", "attrs": {"id": "first", "latex": "x+1"}}
+    second = {"type": "mathInline", "attrs": {"id": "second", "latex": "y+1", "display": True}}
+    doc = {
+        "type": "doc",
+        "content": [
+            {
+                "type": "paragraph",
+                "content": [first, {"type": "text", "text": " và "}, second],
+            }
+        ],
+    }
+    target = BlockTarget(
+        questionId=uuid4(),
+        questionVersion=1,
+        blockId=uuid4(),
+        field="explanation",
+        text=project(doc, []),
+    )
+    edited = update_rich(doc, target, "$x+2$ cùng $$y+2$$")
+    items = [node for node in edited["content"][0]["content"] if node["type"] == "mathInline"]
+    assert [node["attrs"] for node in items] == [
+        {"id": "first", "latex": "x+2", "display": False},
+        {"id": "second", "latex": "y+2", "display": True},
+    ]
+    with pytest.raises(AIError, match="giữ định dạng"):
+        update_rich(doc, target, "$$y+1$$ cùng $x+1$")
+    assert project(doc, []) == target.text
+
+
 def test_confirmation_keeps_repeated_text_in_its_selected_style_run(setup):
     app, client, exam, question, body, edits, _ = setup
     store = app.state.store
