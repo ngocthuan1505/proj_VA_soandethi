@@ -12,3 +12,4 @@
 .manual-diff,.read-formula{overflow-wrap:anywhere}
 .manual-diff del,.manual-diff ins,.read-formula{max-width:100%;overflow-x:auto}
 .read-formula .katex-display{max-width:100%;overflow-x:auto}
+#library-status:not(:empty){padding:14px 4px;color:#536862}

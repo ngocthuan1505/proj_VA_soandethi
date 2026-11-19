@@ -68,6 +68,11 @@ try {
  await library(second);
  await second.locator('#library-filter').fill('đại số');
  assert.equal(await second.locator('.wb-library-card:visible').count(),0);
+ const noResult=second.locator('#library-status[role="status"]');
+ assert.equal(await noResult.textContent(),'Không tìm thấy đề phù hợp.');
+ await second.locator('#library-filter').fill('  HÌNH HỌC  ');
+ assert.equal(await second.locator('.wb-library-card:visible').count(),1);
+ assert.equal(await noResult.textContent(),'');
  await second.keyboard.press('Escape');
  const logout=first.waitForResponse(r=>r.url()===base+'/api/account/logout');
  await first.locator('[data-action="logout"]:visible').click();
@@ -83,9 +88,32 @@ try {
  assert.deepEqual(after.value.exams.map(e=>e.id),savedA.value.exams.map(e=>e.id));
  assert(!after.value.exams.some(e=>e.title.includes('Kho B')));
 
+ const phone=await browser.newPage({viewport:{width:390,height:844}});
+ await login(phone,'restore-member@example.test');
+ const entry=phone.getByRole('button',{name:'Mở kho đề',exact:true});
+ for(let i=0;i<30 && !(await entry.evaluate(node=>node===document.activeElement));i++){
+  await phone.keyboard.press('Tab');
+ }
+ assert(await entry.evaluate(node=>node.matches(':focus-visible')));
+ await phone.keyboard.press('Enter');
+ const search=phone.getByRole('textbox',{name:'Tìm trong kho đề'});
+ await phone.keyboard.press('Tab');
+ assert(await search.evaluate(node=>node.matches(':focus-visible')));
+ await phone.keyboard.type('khong-co-de-nay');
+ assert.equal(await phone.locator('#library-status').textContent(),'Không tìm thấy đề phù hợp.');
+ const createEmpty=phone.getByRole('button',{name:'Tạo đề mới',exact:true}).last();
+ for(let i=0;i<5 && !(await createEmpty.evaluate(node=>node===document.activeElement));i++){
+  await phone.keyboard.press('Tab');
+ }
+ assert(await createEmpty.evaluate(node=>node.matches(':focus-visible')));
+ await phone.keyboard.press('Escape');
+ assert(await entry.evaluate(node=>node.matches(':focus-visible')));
+ await phone.close();
+
  await fs.writeFile(path.join(output,'result.json'),JSON.stringify({
   scenario:'IT-01',guestDenied:true,createRenameFindOpen:true,twoAccountsIsolated:true,
-  staleLogoutBlocked:true,staleWriteBlocked:true,reloadKeepsAccountB:true,fixture:true,
+  staleLogoutBlocked:true,staleWriteBlocked:true,reloadKeepsAccountB:true,
+  noResultsStatus:true,mobileLibraryKeyboard:true,fixture:true,
  },null,2));
 } finally {
  await browser.close();
