@@ -80,13 +80,42 @@ def _sample_exam() -> dict:
     }
 
 
-def _seed_exam(client: TestClient, exam: dict) -> None:
+def _shareable_plain_exam() -> dict:
+    return {
+        "id": str(uuid4()),
+        "title": "Đề kiểm tra giữa kì I — Toán 7",
+        "subject": "Toán",
+        "grade": "7",
+        "series": "Kết nối tri thức",
+        "chapter": "Số hữu tỉ",
+        "school": "THCS Mẫu Tích Hợp",
+        "revision": 1,
+        "chat": [{"role": "user", "text": "BÍ_MẬT_CHAT_KHÔNG_ĐƯỢC_CÔNG_BỐ"}],
+        "aiConfig": {"apiKey": "SECRET_TOKEN_KHÔNG_CÔNG_BỐ"},
+        "questions": [
+            {
+                "id": str(uuid4()),
+                "type": "mcq",
+                "level": 0,
+                "topic": "Số hữu tỉ",
+                "lesson": "Cộng trừ số hữu tỉ",
+                "stem": "Tổng của hai số 1 và 2 là bao nhiêu?",
+                "options": ["3", "4", "5", "6"],
+                "answer": 0,
+                "points": 0.5,
+                "explanation": "ĐÁP_ÁN_LỜI_GIẢI_TRẮC_NGHIỆM_RIÊNG",
+            }
+        ],
+    }
+
+
+def _seed_exam(client: TestClient, *exams: dict) -> None:
     res = client.put(
         "/api/kv",
         headers={"If-Match": "0"},
         json={
             "key": "state",
-            "value": {"version": 1, "current": exam["id"], "exams": [exam], "prefs": []},
+            "value": {"version": 1, "current": exams[0]["id"], "exams": list(exams), "prefs": []},
         },
     )
     assert res.status_code == 200, res.text
@@ -180,7 +209,8 @@ def test_unified_local_workspace_lesson_sources_community_shares_ocr_and_a4_expo
     assert cite_blocked.json()["code"] == "source_license_restricted"
 
     exam = _sample_exam()
-    _seed_exam(local_client, exam)
+    share_exam = _shareable_plain_exam()
+    _seed_exam(local_client, exam, share_exam)
 
     # Chặn nguồn restricted ngay tại POST /api/exams/{exam_id}/matrix/approve
     approve_blocked = local_client.post(
@@ -206,7 +236,7 @@ def test_unified_local_workspace_lesson_sources_community_shares_ocr_and_a4_expo
     denied = local_client.post(
         "/api/share",
         json={
-            "examId": exam["id"],
+            "examId": share_exam["id"],
             "baseRevision": 1,
             "answers": False,
             "allowCopy": True,
@@ -220,7 +250,7 @@ def test_unified_local_workspace_lesson_sources_community_shares_ocr_and_a4_expo
     pub = local_client.post(
         "/api/share",
         json={
-            "examId": exam["id"],
+            "examId": share_exam["id"],
             "baseRevision": 1,
             "answers": False,
             "allowCopy": True,
@@ -242,10 +272,10 @@ def test_unified_local_workspace_lesson_sources_community_shares_ocr_and_a4_expo
     cloned = local_client.post(f"/api/community-exams/{token}/clone")
     assert cloned.status_code == 201, cloned.text
     cloned_exam = cloned.json()["clonedExam"]
-    assert cloned_exam["id"] != exam["id"]
+    assert cloned_exam["id"] != share_exam["id"]
     assert cloned_exam["revision"] == 1
     assert cloned_exam["clonedFrom"]["token"] == token
-    assert cloned_exam["questions"][0]["id"] != exam["questions"][0]["id"]
+    assert cloned_exam["questions"][0]["id"] != share_exam["questions"][0]["id"]
     cloned_raw = str(cloned_exam)
     assert "BÍ_MẬT_CHAT_KHÔNG_ĐƯỢC_CÔNG_BỐ" not in cloned_raw
     assert "SECRET_TOKEN_KHÔNG_CÔNG_BỐ" not in cloned_raw
@@ -372,11 +402,12 @@ def test_unified_team_workspace_guest_csrf_owner_isolation_and_community_shares(
         assert member_client.get(f"/api/lesson-catalog/sources/{src_id}").status_code == 404
 
         # Kho cộng đồng dùng chung qua /api/share & /api/community-exams
-        _seed_exam(admin_client, exam)
+        share_exam = _shareable_plain_exam()
+        _seed_exam(admin_client, share_exam)
         pub = admin_client.post(
             "/api/share",
             json={
-                "examId": exam["id"],
+                "examId": share_exam["id"],
                 "baseRevision": 1,
                 "answers": False,
                 "allowCopy": True,
