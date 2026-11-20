@@ -5,6 +5,7 @@ import binascii
 import html
 import io
 import json
+import posixpath
 import re
 import shutil
 import subprocess
@@ -29,12 +30,18 @@ from mach_backend.word_export import (
     field_document,
     image_bytes,
     math_parts,
+    recipient_line,
     uses_table,
 )
 from mach_backend.word_math_read import paragraph_text
 
 MAX_DOCUMENT = 15 * 1024 * 1024
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+DRAWING = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+PRESENTATION = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
+OFFICE_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+PACKAGE_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+SLIDE_PART = re.compile(r"ppt/slides/slide\d+\.xml")
 
 
 class Page(TypedDict):
@@ -85,6 +92,39 @@ def pdf_pages(data):
         ) from None
 
 
+def pptx_slides(archive):
+    manifest = "ppt/presentation.xml"
+    if manifest not in archive.namelist():
+        # Một số gói cũ chỉ chứa phần văn bản các slide, không có thứ tự trình chiếu.
+        slides = [
+            (int(Path(name).stem.removeprefix("slide")), name)
+            for name in archive.namelist()
+            if SLIDE_PART.fullmatch(name)
+        ]
+        return sorted(slides)
+
+    relationships = "ppt/_rels/presentation.xml.rels"
+    if sum(archive.getinfo(name).file_size for name in (manifest, relationships)) > MAX_DOCUMENT:
+        raise ValueError
+    relation_xml = ET.fromstring(archive.read(relationships))
+    targets = {
+        item.attrib["Id"]: item.attrib["Target"]
+        for item in relation_xml.findall(PACKAGE_REL + "Relationship")
+        if item.get("TargetMode", "Internal") == "Internal"
+        and item.get("Type") == OFFICE_REL + "/slide"
+    }
+    presentation = ET.fromstring(archive.read(manifest))
+    slides = []
+    path = f"{PRESENTATION}sldIdLst/{PRESENTATION}sldId"
+    for position, slide in enumerate(presentation.findall(path), 1):
+        target = targets[slide.attrib[f"{{{OFFICE_REL}}}id"]]
+        name = posixpath.normpath(target.lstrip("/") if target.startswith("/") else "ppt/" + target)
+        if not SLIDE_PART.fullmatch(name):
+            raise ValueError
+        slides.append((position, name))
+    return slides
+
+
 def extract_text(name, data_url):
     if not isinstance(name, str) or not isinstance(data_url, str):
         raise AIError("invalid_document", "Tệp nguồn chưa hợp lệ.")
@@ -117,27 +157,24 @@ def extract_text(name, data_url):
             )
         elif ext in {".docx", ".pptx"}:
             with zipfile.ZipFile(io.BytesIO(data)) as archive:
-                members = [
-                    n
-                    for n in archive.namelist()
-                    if (ext == ".docx" and n == "word/document.xml")
-                    or (ext == ".pptx" and re.fullmatch(r"ppt/slides/slide\d+\.xml", n))
-                ]
-                if not members or sum(archive.getinfo(n).file_size for n in members) > MAX_DOCUMENT:
+                parts = pptx_slides(archive) if ext == ".pptx" else [(1, "word/document.xml")]
+                if (
+                    not parts
+                    or sum(archive.getinfo(name).file_size for _, name in parts) > MAX_DOCUMENT
+                ):
                     raise ValueError
-                if ext == ".pptx":
-                    members.sort(key=lambda n: int(Path(n).stem.removeprefix("slide")))
                 pages = [
                     {
-                        "number": int(Path(n).stem.removeprefix("slide")) if ext == ".pptx" else 1,
+                        "number": number,
                         "text": "\n".join(
-                            paragraph_text(p) if ext == ".docx" else "".join(p.itertext())
-                            for p in ET.fromstring(archive.read(n)).iter()
-                            if p.tag
-                            in {W + "p", "{http://schemas.openxmlformats.org/drawingml/2006/main}p"}
+                            paragraph_text(p)
+                            if ext == ".docx"
+                            else "".join(t.text or "" for t in p.iter(DRAWING + "t"))
+                            for p in ET.fromstring(archive.read(name)).iter()
+                            if p.tag in {W + "p", DRAWING + "p"}
                         ),
                     }
-                    for n in members
+                    for number, name in parts
                 ]
         else:
             raise AIError(
@@ -283,7 +320,7 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         f"<p>Môn {plain(exam.get('subject'))} · Lớp {plain(exam.get('grade'))}"
         f" · {plain(exam.get('minutes'))} phút</p>"
     )
-    body += f"<p>{inline_html(exam.get('instructions'))}</p>"
+    body += f"<p>{plain(recipient_line(teacher))}</p><p>{inline_html(exam.get('instructions'))}</p>"
     presenting = not teacher and rendered_math is not None and bool(exam["questions"])
     has_table = any(uses_table(q) for q in exam["questions"])
     has_passage = bool(exam.get("quote", {}).get("text"))

@@ -33,6 +33,12 @@ ALIGN = {
 }
 
 
+def recipient_line(teacher):
+    if teacher:
+        return "BẢN GIÁO VIÊN · ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM"
+    return "Họ và tên: ........................................ Lớp: .................."
+
+
 def math_parts(text):
     at = 0
     for match in MATH.finditer(text):
@@ -424,11 +430,7 @@ class WordWriter:
         self.doc.add_paragraph(
             f"Môn {e.get('subject', '')} · Lớp {e.get('grade', '')} · {e.get('minutes', '')} phút"
         ).alignment = WD_ALIGN_PARAGRAPH.CENTER
-        self.doc.add_paragraph(
-            "BẢN GIÁO VIÊN · ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM"
-            if self.teacher
-            else "Họ và tên: ........................................ Lớp: .................."
-        )
+        self.doc.add_paragraph(recipient_line(self.teacher))
         self.field(e.get("instructions", ""))
         if e.get("quote", {}).get("text"):
             self.field(e["quote"]["text"])

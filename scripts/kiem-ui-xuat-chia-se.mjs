@@ -68,7 +68,11 @@ try {
   await board.getByLabel('Chú thích hình').fill('Sơ đồ phác QA 731');
   await page.screenshot({path: path.join(out, 'bang-ve-phac.png')});
   await insertSketch.click();
-  await page.locator('.question-assets img[alt="Sơ đồ phác QA 731"]').waitFor();
+  const image=page.locator('.question-assets img[alt="Sơ đồ phác QA 731"]');
+  await image.waitFor();
+  await page.waitForFunction(()=>document.querySelector('.question-assets img[alt="Sơ đồ phác QA 731"]')?.naturalWidth>0);
+  const croppedSize=await image.evaluate(img=>({width:img.naturalWidth,height:img.naturalHeight}));
+  assert.deepEqual(croppedSize,{width:48,height:48},'Hình chỉ giữ nét đã vẽ và lề 16 pixel mỗi bên.');
   await page.waitForFunction(async ({url,id}) => {
     const {value} = await (await fetch(url + '?key=state')).json();
     return value.exams[0].questions.find(q => q.id === id).images?.[0].data.startsWith('data:image/png;');

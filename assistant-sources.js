@@ -8,5 +8,7 @@ export function selectedDocumentPages(exam, doc) {
 }
 
 export function sourcePageLabel(doc, pageNumber) {
+ if(doc.personalLesson&&pageNumber===1&&doc.sourceLocator)return doc.sourceLocator;
+ if(doc.kind==='slides')return 'Slide '+pageNumber;
  return doc.catalog ? 'Bài ' + pageNumber : 'Trang ' + pageNumber;
 }
