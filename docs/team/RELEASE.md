@@ -38,7 +38,7 @@
 - [ ] Kiểm xác thực Jupyter/network trước thử; repo Private không thay thế xác thực server.
 - [ ] Sao lưu và xác minh restore; giữ bản phát hành cũ, config/keys riêng.
 - [ ] Tải source đúng commit, kiểm release local/fixture trước; không chồng `.data`/`.runtime`.
-- [ ] Smoke model thật trên dữ liệu mẫu được phép, đúng model/task/timeout và hủy.
+- [ ] Chạy [kiểm nhanh Sinh, Sửa, Kiểm](../testing/KIEM_NHANH_AI.md) trên model và dữ liệu mẫu đã chốt. Kiểm hủy và ghi kết quả từng luồng.
 - [ ] Thuận quyết định mở web; kiểm HTTPS, login/ownership, exports và đóng lại được.
 - [ ] Nếu lỗi, dừng candidate, quay lại release trước; không xóa volume/DB để chữa nhanh.
 

@@ -1,0 +1,23 @@
+{
+  "questionId": "5907b3d3-6402-40ba-9b6e-5e0faf6d46a3",
+  "blockId": "d274a7ce-2c6c-4b06-aad6-5ca1a7e44293",
+  "text": "🔎 Giữ $x^2$. Câu cũ. Kết luận giữ nguyên.",
+  "selectionText": "Câu cũ.",
+  "cases": [
+    {
+      "id": "giu-ngoai-vung",
+      "content": "🔎 Giữ $x^2$. Viết lại lời giải. Kết luận giữ nguyên.",
+      "accepted": true
+    },
+    {
+      "id": "doi-tien-to",
+      "content": "Bỏ công thức. Viết lại lời giải. Kết luận giữ nguyên.",
+      "accepted": false
+    },
+    {
+      "id": "doi-hau-to",
+      "content": "🔎 Giữ $x^2$. Viết lại toàn bộ.",
+      "accepted": false
+    }
+  ]
+}

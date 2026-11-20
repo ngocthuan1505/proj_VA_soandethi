@@ -58,7 +58,7 @@ Sinh/Sửa/Kiểm có cấu hình riêng cho GreenNode, Ollama, API tương thí
 
 ## Chạy và kiểm tra
 
-Máy khác: Node.js 24+, Chrome/Edge → trong thư mục app: `npm ci`, `npm start`. Editor, KaTeX, MathLive và OCR assets có trong gói; không kèm dữ liệu, node_modules, runtime hoặc trọng số. MathLive 0.111.1 được vendored từ npm chính thức, giữ LICENSE.txt; chỉ tải module khi mở bộ nhập.
+Bản Python: [cách cài và chạy](HUONG_DAN_TEST_NHOM.md). Bản Node đối chiếu: Node.js 24+, Chrome/Edge, chạy `npm ci` và `npm run start:legacy`. Editor, KaTeX, MathLive và OCR assets có trong gói; không kèm dữ liệu, node_modules, runtime hoặc trọng số. MathLive 0.111.1 được vendored từ npm chính thức, giữ LICENSE.txt; chỉ tải module khi mở bộ nhập.
 
 - `npm test` — bộ kiểm tra Node.
 - `node tests/usability-browser.mjs` — 13 luồng trải nghiệm chat, cuộn, phím tắt, cài đặt, viewport và modal; AI fixture.

@@ -31,3 +31,23 @@ test('OCR chạy thật tại máy và tách câu, giữ cảnh báo chỗ chưa
 });
 test('AI adapter: contract kiểm thử giả lập, kiểm nguồn và không lộ đáp án cũ cho bộ giải',async()=>{const calls=[];const sources=[{docId:'d',page:1,location:'Trang 1',text:'Đô thị hóa làm gia tăng tỉ lệ dân thành thị.'}],matrix=[{topic:'Đô thị',targets:[1,0,0]}];const q={stem:'Đô thị hóa gắn với gì?',options:['Tăng dân thành thị','Giảm dân thành thị','Không đổi','Khác'],answer:0,explanation:'Theo tư liệu',topic:'Đô thị',level:0,source:{docId:'d',page:1,quote:'gia tăng tỉ lệ dân thành thị'}};const server=http.createServer(async(req,res)=>{let body='';for await(const c of req)body+=c;const data=JSON.parse(body||'{}');calls.push(data);const prompt=data.messages?.at(-1)?.content||'';const content=prompt.includes('Giải câu hỏi sau')?{answer:0,explanation:'Giải mới từ tư liệu',evidence:[q.source],uncertain:false,issues:[]}:prompt.includes('Chỉnh đúng phần')?{replacement:'Câu ngắn hơn?',options:q.options,answer:0,explanation:'Giải mới',reason:'Chỉ sửa vùng chọn'}:{questions:[q]};res.setHeader('Content-Type','application/json');res.end(JSON.stringify(req.url.includes('chat/completions')?{choices:[{message:{content:JSON.stringify(content)}}]}:{message:{content:JSON.stringify(content)}}));});await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;try{let cfg=mergeConfig(defaultConfig,{ollama:{url:`http://127.0.0.1:${port}`,model:'fixture-only'},api:{url:`http://127.0.0.1:${port}/v1`,model:'fixture-only',key:'test-key'},routes:{generate:'ollama',patch:'api',check:'api'}});assert.ok(!JSON.stringify(publicConfig(cfg)).includes('test-key'));assert.equal((await generate(cfg,{sources,matrix,subject:'Địa lí',grade:'10',prefs:[],consent:false})).questions.length,1);await patch(cfg,{question:q,selectedText:q.stem,request:'Rút gọn',sources});await solve(cfg,{question:{...q,explanation:'OLD_ANSWER_SECRET',answer:3},sources});const prompt=calls.at(-1).messages.at(-1).content;assert.ok(!prompt.includes('OLD_ANSWER_SECRET'));assert.ok(!prompt.includes('"answer":3'));assert.equal(calls.at(-1).model,'fixture-only');cfg=mergeConfig(cfg,{ollama:{url:'https://example.com'}});await assert.rejects(()=>generate(cfg,{sources,matrix,subject:'Địa lí',grade:'10',prefs:[],consent:false}),/xác nhận/);}finally{await new Promise(r=>server.close(r));}});
 test('Tìm web không gửi truy vấn khi chưa được cho phép hoặc chưa cấu hình',async()=>{await assert.rejects(()=>searchWeb(defaultConfig,'cụm từ thử',false),/đồng ý/);await assert.rejects(()=>searchWeb(defaultConfig,'cụm từ thử',true),/Chưa chọn/);});
+
+test('Sinh trắc nghiệm và tự luận giữ ma trận và nguồn như fixture Python', async () => {
+  const {readFile}=await import('node:fs/promises');
+  const {validateGenerated}=await import('../ai.mjs');
+  const fixture=JSON.parse(await readFile(new URL('./fixtures/ai-sinh-kiem.json',import.meta.url),'utf8'));
+  const sources=[{docId:fixture.sourceId,page:1,text:fixture.sourceText}];
+  for(const item of fixture.questions.filter(q=>['mcq','essay'].includes(q.type))){
+    const question={
+      ...item,points:item.pointsQ4/4,
+      rubric:item.rubric.map(step=>({text:step.text,points:step.pointsQ4/4})),
+      source:{docId:fixture.sourceId,page:1,quote:fixture.quote}
+    };
+    const matrix=[{topic:item.topic,targets:[0,1,2].map(level=>Number(level===item.level))}];
+    const [accepted]=validateGenerated({questions:[structuredClone(question)]},sources,matrix,item.type);
+    assert.equal(accepted.stem,item.stem);
+    assert.equal(accepted.source.quote,fixture.quote);
+    assert.throws(()=>validateGenerated({questions:[{...structuredClone(question),level:(item.level+1)%3}]},sources,matrix,item.type),/ma trận/);
+    assert.throws(()=>validateGenerated({questions:[{...structuredClone(question),source:{...question.source,quote:'Trích dẫn tự chế'}}]},sources,matrix,item.type),/đoạn trích/);
+  }
+});

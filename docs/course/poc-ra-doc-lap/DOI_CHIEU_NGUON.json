@@ -1,0 +1,46 @@
+{
+  "purpose": "Phiếu trống cho người rà độc lập. Chưa có kết quả chấm.",
+  "trialId": "b690f677-3592-4141-882e-043443823f2e",
+  "runName": "v5-structured-qwen-3b-01",
+  "responseFile": "call-04-response.json",
+  "responseSha256": "ec149e8dcda2bb36b5eb05707f735d0cb6824237d8be453d7245dd689fdba7ff",
+  "inputSha256": "8c8576d0c53e5def88100969a25ba7fdf8e81129bce0a2a50b63871e1a449694",
+  "model": "qwen2.5:3b",
+  "generationAttempt": 2,
+  "terminalStatus": "attempt_limit",
+  "saved": false,
+  "cards": [
+    {
+      "cardId": "R01",
+      "questionIndex": 0,
+      "questionSha256": "01471ca68109d48745540700ba8c75700e58fe7bdf90adce16496c6210c6cc6e",
+      "expectedTopic": "Chi tiết trong ngữ liệu",
+      "expectedLevel": 0,
+      "review": null
+    },
+    {
+      "cardId": "R02",
+      "questionIndex": 1,
+      "questionSha256": "3939533b2907d372c586ad948ff745fb93604d84203f331f61b922dd8870790d",
+      "expectedTopic": "Chi tiết trong ngữ liệu",
+      "expectedLevel": 1,
+      "review": null
+    },
+    {
+      "cardId": "R03",
+      "questionIndex": 2,
+      "questionSha256": "21fa277acf30a07e7ac28831d0df175845263570bf87a6a20a7af8c4c5aceaec",
+      "expectedTopic": "Ý nghĩa hành động",
+      "expectedLevel": 0,
+      "review": null
+    },
+    {
+      "cardId": "R04",
+      "questionIndex": 3,
+      "questionSha256": "54ea0d315bb104cfca3a4d03d65b451c9945d799a3160673667c75426186c556",
+      "expectedTopic": "Ý nghĩa hành động",
+      "expectedLevel": 1,
+      "review": null
+    }
+  ]
+}

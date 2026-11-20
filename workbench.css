@@ -5,3 +5,11 @@
 .ProseMirror:has(>p:only-child>.ProseMirror-trailingBreak:only-child){display:inline-block;min-width:140px;min-height:28px}
 .stem-editor{display:block}.ProseMirror{display:block;min-width:12px;min-height:28px}.ProseMirror p{display:block;margin:0}.question .q-label{float:left;margin-right:5px}.question-assets,.essay-answer{clear:both}
 .chat-context-mode{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 7px;color:#4a685c;font-size:11px}.chat-context-mode select{border:1px solid #d4e1da;background:#f6faf7;color:#2c5b45;border-radius:7px;padding:5px;font-size:11px;max-width:210px}.context-chip>span{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}.context-chip b{font-size:11px}.context-chip small{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.context-chip.context-stale{background:#fff5e4;border:1px solid #e1bf7e;color:#805723}.context-empty{font-size:11px;color:#62776b;line-height:1.6;margin:5px 0}.block-diffs article>b{display:block;margin-bottom:7px;color:#315c47}.block-diffs .diff{line-height:1.7;white-space:pre-wrap;word-break:break-word}
+
+.diff .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:4px 0}.diff p{margin:6px 0}.diff .diff-points{white-space:nowrap}
+
+.block-diffs .diff{font-size:16px;line-height:1.9}
+.manual-diff,.read-formula{overflow-wrap:anywhere}
+.manual-diff del,.manual-diff ins,.read-formula{max-width:100%;overflow-x:auto}
+.read-formula .katex-display{max-width:100%;overflow-x:auto}
+#library-status:not(:empty){padding:14px 4px;color:#536862}

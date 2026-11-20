@@ -11,3 +11,8 @@
 *.ttf binary
 *.otf binary
 *.wasm binary
+
+# Thư viện bên thứ ba và bundle do esbuild sinh
+assets/katex/** linguist-vendored
+assets/mathlive/** linguist-vendored
+assets/editor-engine.js linguist-generated

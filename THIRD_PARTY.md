@@ -19,3 +19,8 @@ Các gói npm giữ tệp LICENSE trong thư mục cài đặt. assets/katex/LIC
 - esbuild 0.25.12 (build): MIT, https://github.com/evanw/esbuild .
 - xml-js 1.6.11 (đọc OOXML/OMML): MIT, https://github.com/nashwaan/xml-js . Gói npm giữ LICENSE gốc.
 - MathLive 0.111.1: MIT, https://github.com/arnog/mathlive . Vendored từ gói npm chính thức; LICENSE.txt trong assets/mathlive/. Phông cục bộ của gói được giữ cùng thư viện. Chỉ tải module khi mở bộ nhập công thức.
+
+- python-docx 1.2.0: MIT, https://github.com/python-openxml/python-docx ; backend tạo DOCX rich/OMML bằng Python.
+- lxml 6.1.3: BSD-3-Clause, https://github.com/lxml/lxml ; dependency của python-docx.
+- Pillow 13.0.0: HPND, https://github.com/python-pillow/Pillow ; đọc/kiểm ảnh PNG/JPEG/WebP, bản phân phối giữ giấy phép codec liên quan.
+- Công thức Word dùng KaTeX/mhchem đã có qua Chrome/Edge headless local để tạo MathML; Python chuyển OMML và đóng gói. Không gọi Node API, không cần Word cài sẵn để xuất. Word chỉ dùng riêng trong QA tại máy này.

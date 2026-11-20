@@ -1,0 +1,19 @@
+[
+  {"id":"fraction","latex":"\\frac{1}{2}","accepted":true},
+  {"id":"nested-root","latex":"\\sqrt{\\frac{x+1}{2}}","accepted":true},
+  {"id":"escaped-braces","latex":"\\left\\{x\\mid x\\geq 0\\right\\}","accepted":true},
+  {"id":"system","latex":"\\begin{cases}x+y=5\\\\xy=6\\end{cases}","accepted":true},
+  {"id":"nested-environments","latex":"\\begin{aligned}A&=\\begin{pmatrix}1&2\\\\3&4\\end{pmatrix}\\end{aligned}","accepted":true},
+  {"id":"array","latex":"\\begin{array}{cc}1&2\\\\3&4\\end{array}","accepted":true},
+  {"id":"literal-brace","latex":"\\verb|{|+\\verb*|}|","accepted":true},
+  {"id":"missing-denominator-close","latex":"\\frac{1}{2","accepted":false},
+  {"id":"extra-group-close","latex":"x^{2}}","accepted":false},
+  {"id":"unclosed-root","latex":"\\sqrt{{x}","accepted":false},
+  {"id":"wrong-environment","latex":"\\begin{cases}x=1\\\\y=2\\end{matrix}","accepted":false},
+  {"id":"unclosed-environment","latex":"\\begin{cases}x=1","accepted":false},
+  {"id":"missing-environment-open","latex":"x=1\\end{cases}","accepted":false},
+  {"id":"crossed-group-environment","latex":"{\\begin{aligned}x=1}\\end{aligned}","accepted":false},
+  {"id":"incomplete-end","latex":"\\begin{cases}x=1\\end","accepted":false},
+  {"id":"incomplete-begin","latex":"\\begin x=1","accepted":false},
+  {"id":"incomplete-literal","latex":"\\verb|{","accepted":false}
+]

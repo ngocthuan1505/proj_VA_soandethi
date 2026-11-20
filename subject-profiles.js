@@ -29,3 +29,11 @@ export function makePlan(text,exam={},pending=null){
  const names={essay:'tự luận',mcq:'trắc nghiệm',truefalse:'đúng–sai',short:'trả lời ngắn'},summary=[...new Set(types)].map(t=>types.filter(v=>v===t).length+' '+names[t]).join(', ');
  return {kind:'plan',id:crypto.randomUUID(),subject,grade,period:period||'Tuyển sinh vào lớp 10',minutes,title:'Đề '+(period||'tuyển sinh vào lớp 10')+' — '+subject+' '+grade,slots,totalPoints:10,request:(pending?.request||'')+' '+text,message:'Mình đề xuất '+summary+', tổng 10 điểm, '+minutes+' phút. Bạn đồng ý để mình viết trực tiếp vào đề chứ?'};
 }
+
+export function examRequestDefaults(text,exam){
+ text=text.normalize('NFC');
+ const grade=text.match(/lớp\s*(1[0-2]|[1-9])(?!\d)/iu)?.[1]||exam.grade;
+ const subject=['Toán','Vật lí','Vật lý','Hóa học','Hoá học','Sinh học','Ngữ văn','Tiếng Anh','Lịch sử','Địa lí','Tin học'].find(name=>text.toLocaleLowerCase().includes(name.toLocaleLowerCase()))||exam.subject;
+ const types=/(?:chỉ|toàn bộ|100%)\s*(?:câu\s*)?tự luận/iu.test(text)?'essay':/(?:chỉ|toàn bộ|100%)\s*(?:câu\s*)?trắc nghiệm/iu.test(text)?'mcq':'';
+ return {grade,subject,term:/k[ìỳ]\s*(?:ii|2)(?!\w)/iu.test(text)?'cuối học kì II':/k[ìỳ]\s*(?:i|1)(?!\w)/iu.test(text)?'cuối học kì I':'cuối kì (chưa nêu học kì)',count:text.match(/(\d+)\s*(?:câu|bài)/iu)?.[1]||'',minutes:text.match(/(\d+)\s*phút/iu)?.[1]||'',types};
+}
