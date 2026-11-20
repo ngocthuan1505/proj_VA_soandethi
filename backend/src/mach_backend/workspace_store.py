@@ -11,6 +11,7 @@ from uuid import UUID
 
 from mach_backend.ai_contract import AIError, SourceFragment
 from mach_backend.ai_questions import GenerationPlan
+from mach_backend.ai_sources import workspace_page_sources
 from mach_backend.matrix_agent import sha256_json
 from mach_backend.patch_confirmation import (
     ConfirmationState,
@@ -104,15 +105,39 @@ class WorkspaceStore:
         value = self.get("matrix-source:" + str(exam_id), db)["value"] or []
         return tuple(SourceFragment.model_validate_json(json.dumps(s)) for s in value)
 
-    async def is_current(self, job) -> bool:
-        _, exam = self.exam(job.examId)
-        plan = self.plan(job.examId)
-        return (
-            exam["revision"] == job.baseRevision
-            and plan is not None
-            and plan.model_dump() == job.model_dump(include=set(GenerationPlan.model_fields))
-            and self.sources(job.examId) == job.sources
+    def current_sources(self, exam, db):
+        approved = self.sources(exam["id"], db)
+        keys = tuple(
+            (source.sourceId, source.locator)
+            for source in approved
+            if source.locator.kind == "page"
         )
+        if not keys:
+            return approved
+        actual = workspace_page_sources(exam, self.owner, keys, db)
+        pages = {(source.sourceId, source.locator): source for source in actual}
+        if any(
+            source.locator.kind == "page" and pages.get((source.sourceId, source.locator)) != source
+            for source in approved
+        ):
+            raise AIError("stale_snapshot", "Nguồn đã đổi. Hãy duyệt lại ma trận.")
+        return approved
+
+    async def is_current(self, job) -> bool:
+        with self.connect() as db:
+            db.execute("BEGIN")
+            _, exam = self.exam(job.examId, db)
+            plan = self.plan(job.examId, db)
+            try:
+                return (
+                    exam["revision"] == job.baseRevision
+                    and plan is not None
+                    and plan.model_dump()
+                    == job.model_dump(include=set(GenerationPlan.model_fields))
+                    and self.current_sources(exam, db) == job.sources
+                )
+            except AIError:
+                return False
 
     async def store_pending(self, pending) -> bool:
         if not isinstance(pending, PendingGeneration):
@@ -120,10 +145,13 @@ class WorkspaceStore:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             _, exam = self.exam(pending.job.examId, db)
-            if (
-                exam["revision"] != pending.job.baseRevision
-                or self.sources(pending.job.examId, db) != pending.job.sources
-            ):
+            try:
+                if (
+                    exam["revision"] != pending.job.baseRevision
+                    or self.current_sources(exam, db) != pending.job.sources
+                ):
+                    return False
+            except AIError:
                 return False
             db.execute(
                 "INSERT INTO matrix_pending(job_id,owner,payload) VALUES(?,?,?)",
@@ -292,7 +320,9 @@ class WorkspaceTransaction:
             self.owner,
             pending,
             exam,
-            self.store.sources(self.exam_id, self.db),
+            self.store.sources(self.exam_id, self.db)
+            if receipt
+            else self.store.current_sources(exam, self.db),
             receipt,
             self.store.plan(self.exam_id, self.db),
         )

@@ -119,11 +119,35 @@ try {
  assert.deepEqual(library.docs.find(d=>d.id===doc.id),updated.docs[0]);
  await page.reload();await page.waitForLoadState('networkidle');
  assert.deepEqual((await saved()).value.exams[0].assistantSourcePages,library.assistantSourcePages);
+ if(!await page.locator('[data-ux-action="attach"]').isVisible())await page.locator('[data-action="toggle-ai"]').first().click();
+ await page.locator('[data-ux-action="attach"]').click();
+ await page.locator('.ux-attach-menu [data-action="assistant-sources"]').click();
+ await dialog.getByRole('button',{name:'Học liệu theo bài',exact:true}).click();
+ const personal=dialog.locator('#personal-lesson-form');
+ await dialog.getByText('Thêm học liệu cá nhân',{exact:true}).click();
+ for(const [field,value] of Object.entries({
+  grade:'8',subject:'Ngữ văn',series:'Ngữ liệu lớp học',volume:'Tập 2',
+  chapter:'Đọc hiểu',lesson:'Thư viện',title:'Nhật ký đọc sách QA',
+  locator:'Mục 2',content_excerpt:'Mai và Nam chuẩn bị thẻ đọc cho thư viện lớp.',
+ }))await personal.locator('[name='+field+']').fill(value);
+ await personal.getByRole('checkbox').check();
+ await personal.getByRole('button',{name:'Lưu học liệu'}).click();
+ const privateCard=picker.locator('[data-lesson-collection]').filter({hasText:'Nhật ký đọc sách QA'});
+ await privateCard.getByRole('checkbox',{name:'Dùng học liệu này'}).check();
+ await privateCard.getByText('Xem học liệu',{exact:true}).click();
+ assert.match(await privateCard.locator('details[open]').innerText(),/chuẩn bị thẻ đọc/);
+ await page.screenshot({path:path.join(out,'kho-hoc-lieu-ca-nhan.png')});
+ await Promise.all([write(),picker.getByRole('button',{name:'Dùng bài đã chọn'}).click()]);
+ const withPrivate=(await saved()).value.exams[0];
+ const privateDoc=withPrivate.docs.find(d=>d.personalLesson);
+ assert.ok(privateDoc.version>0);
+ assert.deepEqual(withPrivate.assistantSourcePages[privateDoc.id],[1]);
+ assert.deepEqual(withPrivate.assistantSourcePages[algebra.id],[1,2,3]);
  await fs.writeFile(path.join(out,'result.json'),JSON.stringify({
   scenario:'IT-09',previewReadOnly:true,sourceIdPreserved:true,linkedPageOpened:true,
   chosenQuotePreserved:true,answerPreserved:true,relatedApprovalInvalidated:true,
   unrelatedQuestionUnchanged:true,sourcePageEdited:2,sourceVersion:2,mobileReload:true,fixture:true,
-  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true},
+  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true,personalSourceCreatedAndAttached:true},
  },null,2));
 } finally {
  await browser.close();

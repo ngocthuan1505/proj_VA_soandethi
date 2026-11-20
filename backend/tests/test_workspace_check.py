@@ -308,6 +308,58 @@ def test_bundled_lesson_is_resolved_by_id_version_and_selected_page(setup):
     assert source["text"] == "Bản sao đã bị thay thế."
 
 
+def test_personal_lesson_rechecks_owner_version_content_and_rights(setup):
+    app, client, path, body, _, calls, _ = setup
+    route = "/api/lesson-catalog/sources"
+    excerpt = "Mai mở cửa thư viện. Nội dung thuộc kho của giáo viên."
+    created = client.post(
+        route,
+        json={
+            "grade": 6,
+            "subject": "Ngữ văn",
+            "title": "Nguồn riêng",
+            "license_status": "teacher_owned",
+            "content_excerpt": excerpt,
+        },
+    )
+    assert created.status_code == 201, created.text
+    source = created.json()
+    state = app.state.store.get("state")["value"]
+    doc = {
+        "id": source["id"],
+        "version": source["updated_at"],
+        "personalLesson": True,
+        "pages": [{"number": 1, "text": "Nội dung bản sao bị đổi."}],
+    }
+    state["exams"][0]["docs"] = [doc]
+    app.state.store.put("state", state)
+    body["sources"][0].update(sourceId=doc["id"], sourceVersion=doc["version"])
+    ok = client.post(path, json=body)
+    assert ok.status_code == 200, ok.text
+    _, request = calls.pop()
+    [fragment] = json.loads(request["messages"][1]["content"])["sources"]
+    assert fragment["text"] == excerpt
+
+    assert (
+        client.patch(
+            route + "/" + doc["id"], json={"content_excerpt": excerpt + " Bản mới."}
+        ).status_code
+        == 200
+    )
+    assert client.post(path, json=body).status_code == 409
+    conflict = client.patch(
+        route + "/" + doc["id"],
+        json={"content_excerpt": excerpt},
+        headers={"If-Match": str(doc["version"])},
+    )
+    assert conflict.status_code == 409
+    with app.state.store.connect() as db:
+        db.execute("UPDATE curriculum_sources SET owner_id = ? WHERE id = ?", ("other", doc["id"]))
+    unknown = client.post(path, json=body)
+    assert unknown.status_code == 404
+    assert not calls
+
+
 def test_overlong_source_and_empty_page_have_actionable_errors(setup):
     app, client, path, body, _, calls, _ = setup
     state = app.state.store.get("state")["value"]

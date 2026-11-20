@@ -49,7 +49,8 @@ def install_workspace_check(app, store, provider, fixture_call, directory, *, ow
                 stem += "\nCông thức kèm câu: $" + formula["latex"] + "$"
             for table in question.get("tables", []):
                 stem += "\nBảng kèm câu:\n" + "\n".join(" | ".join(row) for row in table["rows"])
-            sources = workspace_page_sources(exam, owner, keys)
+            with store.connect() as db:
+                sources = workspace_page_sources(exam, owner, keys, db)
             try:
                 blind = BlindQuestion.model_validate_json(
                     json.dumps(

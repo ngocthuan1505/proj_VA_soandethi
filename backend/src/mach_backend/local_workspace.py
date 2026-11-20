@@ -753,7 +753,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                 selection = SourceSelection(consent=True, sources=request.sources)
                 keys = selected_source_keys(selection)
                 sources = read_selected_sources(
-                    owner_id, selection, workspace_page_sources(exam, owner_id, keys)
+                    owner_id, selection, workspace_page_sources(exam, owner_id, keys, db)
                 )
             elif request.sourceMode == "provided":
                 sources = (
@@ -788,8 +788,12 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         return owner_id
 
     async def read_generation(owner_id, exam_id, _keys):
-        _, exam = store.exam(exam_id)
-        return GenerationInputs(owner_id, exam, store.plan(exam_id), store.sources(exam_id))
+        with store.connect() as db:
+            db.execute("BEGIN")
+            _, exam = store.exam(exam_id, db)
+            return GenerationInputs(
+                owner_id, exam, store.plan(exam_id, db), store.current_sources(exam, db)
+            )
 
     async def no_patch(*_args):
         return None

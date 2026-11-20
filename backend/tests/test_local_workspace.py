@@ -97,6 +97,60 @@ def workspace(tmp_path):
         yield client, exam, provider
 
 
+def test_personal_lesson_cannot_be_submitted_after_its_rights_are_revoked(workspace):
+    client, exam, provider = workspace
+    route = "/api/lesson-catalog/sources"
+    record = client.post(
+        route,
+        json={
+            "grade": 8,
+            "subject": "Ngữ văn",
+            "title": "Nguồn tự soạn",
+            "license_status": "teacher_owned",
+            "content_excerpt": SOURCE,
+        },
+    )
+    assert record.status_code == 201, record.text
+    source = record.json()
+    attached = {
+        "id": source["id"],
+        "version": source["updated_at"],
+        "personalLesson": True,
+        "pages": [{"number": 1, "text": "BẢN SAO KHÔNG TIN CẬY"}],
+    }
+    exam["docs"].append(attached)
+    client.app.state.store.put("state", {"exams": [exam], "current": exam["id"]})
+    prefix = f"/api/exams/{exam['id']}"
+    approval = client.post(
+        prefix + "/matrix/approve",
+        json={
+            "baseRevision": 1,
+            "sourceName": "Nguồn tự soạn",
+            "sourceText": "",
+            "sources": [
+                {
+                    "sourceId": source["id"],
+                    "sourceVersion": source["updated_at"],
+                    "locator": {"kind": "page", "index": 1},
+                }
+            ],
+        },
+    )
+    assert approval.status_code == 200, approval.text
+    assert client.app.state.store.sources(exam["id"])[0].text == SOURCE
+    assert (
+        client.patch(route + "/" + source["id"], json={"license_status": "restricted"}).status_code
+        == 200
+    )
+    blocked = client.post(
+        prefix + "/proposals/generate",
+        json={**approval.json(), "consent": True, "requestId": str(uuid4())},
+    )
+    assert blocked.status_code == 403, blocked.text
+    assert blocked.json()["detail"]["code"] == "source_license_restricted"
+    assert provider.calls == 0
+
+
 def test_workspace_write_openapi_and_invalid_input_keep_saved_revision(workspace):
     client, _, _ = workspace
     path = "/api/kv"
