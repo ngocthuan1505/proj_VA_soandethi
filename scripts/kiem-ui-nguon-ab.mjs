@@ -246,6 +246,7 @@ try {
  await dialog.locator('[data-action="close"]').first().click();
 
  // Kiểm mẫu ma trận cá nhân tái sử dụng (POST / áp dụng ép matrixConfirmed=false / DELETE)
+ await page.locator('[data-menu="view"]:visible').first().click();
  await page.locator('[data-action="matrix"]:visible').first().click();
  const tplPanel=dialog.locator('#matrix-templates-panel');
  await tplPanel.locator('summary').click();
