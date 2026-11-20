@@ -295,19 +295,21 @@ try {
   await action('export').click();
   const extSection = dialog.locator('#export-extended-a4');
   await extSection.locator('summary').click();
-  const [rubricRes] = await Promise.all([
+  const [rubricDl, rubricRes] = await Promise.all([
+    page.waitForEvent('download'),
     page.waitForResponse(r => r.url().includes('/api/exports/answer-key-rubric') && r.request().method() === 'POST'),
     extSection.locator('[data-action="export-extended"][data-kind="answer-key-rubric"][data-format="html"]').click(),
   ]);
   assert.equal(rubricRes.status(), 200);
-  const rubricHtml = await rubricRes.text();
+  const rubricHtml = await fs.readFile(await rubricDl.path(), 'utf8');
   assert(rubricHtml.includes('@page') && rubricHtml.includes('LOI_GIAI_RIENG_731'));
-  const [specRes] = await Promise.all([
+  const [specDl, specRes] = await Promise.all([
+    page.waitForEvent('download'),
     page.waitForResponse(r => r.url().includes('/api/exports/matrix-specification') && r.request().method() === 'POST'),
     extSection.locator('[data-action="export-extended"][data-kind="matrix-specification"][data-format="html"]').click(),
   ]);
   assert.equal(specRes.status(), 200);
-  assert((await specRes.text()).includes('@page'));
+  assert((await fs.readFile(await specDl.path(), 'utf8')).includes('@page'));
 
   await page.keyboard.press('Escape');
   form = await openForm();
