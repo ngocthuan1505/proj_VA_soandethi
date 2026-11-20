@@ -2,6 +2,7 @@ import {richTextHTML,diffContentHTML} from './math-content.js';
 import {esc, LEVELS, QUESTION_TYPES} from './core.js';
 import * as db from './storage.js';
 import {selectedDocumentPages,sourcePageLabel} from './assistant-sources.js';
+import {citationContextHTML} from './citation-context.js';
 
 async function api(url, body, headers={}){
  const response=await fetch(url,{
@@ -130,22 +131,12 @@ export async function openMatrixSynthesis(c, options={}){
   if(m)$('matrix-metrics').textContent=`Lượt này: ${m.modelCalls||0}/${m.budget?.maxModelCalls||budget.maxModelCalls} lần gọi AI · ${Number(m.elapsedSeconds||0).toFixed(2)} giây · Sinh: ${m.generator?.model||'—'} · Kiểm: ${m.reviewer?.model||'—'}`;
  }
  function evidenceHTML(e){
-  const matches=ref=>ref.sourceId===e.sourceId&&ref.sourceVersion===e.sourceVersion&&ref.locator.kind===e.locator.kind&&ref.locator.index===e.locator.index;
-  const attached=e.locator.kind==='page'&&attachedPages.find(({doc,page})=>matches({
-   sourceId:doc.id,sourceVersion:doc.version||1,locator:{kind:'page',index:page.number},
-  }));
-  const pasted=e.locator.kind==='passage'&&approval?.sources?.some(matches);
-  const label=attached?attached.doc.name+' · '+sourcePageLabel(attached.doc,attached.page.number)
-   :pasted?($('matrix-source-name').value||'Ngữ liệu đã dán')+' · Đoạn '+e.locator.index
-   :'Nguồn của lượt sinh · '+(e.locator.kind==='page'?'Trang ':'Đoạn ')+e.locator.index;
-  const content=attached?attached.page.text:pasted?source:'';
-  const normalize=text=>text.trim().replace(/\s+/g,' ');
-  const canOpen=content&&normalize(content).includes(normalize(e.quote));
-  const start=content.indexOf(e.quote);
-  const context=start<0?esc(content):esc(content.slice(0,start))+'<mark>'+esc(e.quote)+'</mark>'+esc(content.slice(start+e.quote.length));
-  return '<blockquote>“'+esc(e.quote)+'”<br><small title="'+esc(e.sourceId)+'">'+esc(label)+' · Bản '+esc(e.sourceVersion)+'</small></blockquote>'
-   +(canOpen?'<details class="matrix-evidence-source"><summary>Mở ngữ cảnh · '+esc(label)+'</summary><blockquote>'+context+'</blockquote></details>'
-    :'<p class="hint">Không mở được ngữ cảnh của đúng phiên bản nguồn này.</p>');
+  const currentDocs=(c.exam()?.id===exam.id?c.exam().docs:exam.docs)||[];
+  return citationContextHTML(e,currentDocs,{
+   pastedText:source,
+   pastedName:$('matrix-source-name').value,
+   pastedRefs:approval?.sources,
+  });
  }
  function showProposal(){
   lastCandidate=job;

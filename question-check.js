@@ -2,6 +2,18 @@ import {esc,clone,touch,check,recordCheck,questionAnswer} from './core.js';
 import {flushEditor,reconcileEditorRich} from './editor.js';
 import {richTextHTML} from './math-content.js';
 import {documentPages,selectedDocumentPages,sourcePageLabel} from './assistant-sources.js';
+import {citationContextHTML,resolveCitationContext} from './citation-context.js';
+
+export function checkEvidenceHTML(evidenceList,docs=[]){
+ const items=Array.isArray(evidenceList)?evidenceList:[],docList=Array.isArray(docs)?docs:[];
+ return items.map(e=>{
+  const resolved=resolveCitationContext(e,docList);
+  const openButton=resolved.hasSourceDoc&&resolved.locator.kind==='page'
+   ?`<p><button type="button" data-action="source" data-doc="${esc(resolved.sourceId)}" data-page="${esc(resolved.locator.index)}">Mở nguồn để đối chiếu</button></p>`
+   :'';
+  return `<div class="question-check-citation">${citationContextHTML(e,docList)}${openButton}</div>`;
+ }).join('');
+}
 
 export const answerLabel=(type,answer)=>answer===null||answer===undefined?'Chưa kết luận':type==='mcq'?'ABCD'[answer]:type==='truefalse'?answer.map((v,i)=>`${i+1}. ${v?'Đúng':'Sai'}`).join(' · '):String(answer);
 export function selectedCheckSources(exam,q){
@@ -44,7 +56,7 @@ export async function openQuestionCheck(c,workspaceHeaders){
    const reviewRevision=c.exam().revision,before=clone({answer:questionAnswer(q),explanation:q.explanation});
    if(!busyMessage.isConnected||!document.querySelector('#dialog').open){c.toast('Đã lưu kết quả giải lại cho câu đã chọn. Mở Rà soát để xem.');return;}
    const canApply=!result.uncertain&&result.answer!==null&&q.type!=='essay';
-   c.modal('Kết quả giải lại',`<p role="status" class="alert ${problems.length?'':'success'}">${esc(problems.join(' ')||'Chưa thấy bất đồng trong lần kiểm này. Kết quả AI vẫn cần giáo viên xem lại.')}</p><p class="hint">${esc(method)} · Câu v${q.v}. Không đánh giá đầy đủ mức nhận thức hoặc mọi khía cạnh kiến thức.</p><div class="diff question-check-comparison ${result.uncertain?'uncertain':''}"><del><b>Đang lưu · ${esc(answerLabel(q.type,questionAnswer(q)))}</b><br>${richTextHTML(q.explanation||'Chưa có lời giải')}</del><ins><b>Giải lại · ${esc(answerLabel(q.type,result.answer))}</b><br>${richTextHTML(result.explanation)}</ins></div>${result.evidence.map(e=>`<blockquote>${esc(e.quote)}<br><small>Khớp chữ · trang ${e.locator.index} · nguồn v${e.sourceVersion}</small><br><button type="button" data-action="source" data-doc="${esc(e.sourceId)}" data-page="${e.locator.index}">Mở nguồn để đối chiếu</button></blockquote>`).join('')}${q.type==='essay'?'<p class="hint">Lời giải và barem tự luận giữ nguyên. Có thể nhờ chat sửa đồng bộ sau khi đối chiếu.</p>':''}<div class="modal-foot"><button type="button" data-action="close">Đóng</button>${canApply?'<button type="button" data-use-checked-answer>Dùng đáp án & lời giải này</button>':''}<button type="button" data-action="approve-question" data-id="${q.id}" data-version="${q.v}" class="primary">Tôi đã rà soát · duyệt câu hiện tại</button></div>`);
+   c.modal('Kết quả giải lại',`<p role="status" class="alert ${problems.length?'':'success'}">${esc(problems.join(' ')||'Chưa thấy bất đồng trong lần kiểm này. Kết quả AI vẫn cần giáo viên xem lại.')}</p><p class="hint">${esc(method)} · Câu v${q.v}. Không đánh giá đầy đủ mức nhận thức hoặc mọi khía cạnh kiến thức.</p><div class="diff question-check-comparison ${result.uncertain?'uncertain':''}"><del><b>Đang lưu · ${esc(answerLabel(q.type,questionAnswer(q)))}</b><br>${richTextHTML(q.explanation||'Chưa có lời giải')}</del><ins><b>Giải lại · ${esc(answerLabel(q.type,result.answer))}</b><br>${richTextHTML(result.explanation)}</ins></div>${checkEvidenceHTML(result.evidence,c.exam()?.docs||exam.docs||[])}${q.type==='essay'?'<p class="hint">Lời giải và barem tự luận giữ nguyên. Có thể nhờ chat sửa đồng bộ sau khi đối chiếu.</p>':''}<div class="modal-foot"><button type="button" data-action="close">Đóng</button>${canApply?'<button type="button" data-use-checked-answer>Dùng đáp án & lời giải này</button>':''}<button type="button" data-action="approve-question" data-id="${q.id}" data-version="${q.v}" class="primary">Tôi đã rà soát · duyệt câu hiện tại</button></div>`);
    document.querySelector('[data-use-checked-answer]')?.addEventListener('click',async event=>{
     const button=event.currentTarget;button.disabled=true;
     try{
