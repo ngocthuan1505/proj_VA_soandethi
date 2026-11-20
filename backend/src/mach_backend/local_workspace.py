@@ -38,6 +38,7 @@ from mach_backend.ai_sources import (
 from mach_backend.curriculum_sources import install_curriculum_sources
 from mach_backend.exam_planning import PlanRequest, propose_structure
 from mach_backend.exam_spec_export import install_extended_exports
+from mach_backend.export_preflight import install_export_preflight
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
 from mach_backend.generation_submission import GenerationInputs
 from mach_backend.lesson_catalog import lesson_catalog
@@ -956,6 +957,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
     install_matrix_templates(app, store.connect, owner_resolver=lambda _request: owner_id)
     install_question_parser(app)
     install_extended_exports(app, owner_resolver=lambda _request: owner_id)
+    install_export_preflight(app, owner_resolver=lambda _request: owner_id)
 
     if account_info is None:
         install_shares(

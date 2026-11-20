@@ -434,6 +434,11 @@ try {
   assert(seeded.ok(), await seeded.text());
   await page.reload();
   await action('export').click();
+  const preflightPanel = dialog.locator('#export-preflight-panel');
+  await preflightPanel.waitFor();
+  await page.waitForFunction(() => document.querySelector('#export-preflight-panel')?.dataset.preflightLoaded === 'true');
+  const preflightText = await preflightPanel.innerText();
+  assert.match(preflightText, /Dự kiến A4:/);
   await variants.locator('summary').click();
   for (const checkbox of await variants.locator('input[data-kind]').all()) await checkbox.check();
   await variants.getByLabel(/Trộn phương án/).check();
@@ -443,6 +448,16 @@ try {
   const optionLabels = await preview.locator('ol[type=A] li').allTextContents();
   assert.deepEqual(optionLabels, ['ba','bảy','mười','Cả hai phương án trên','ba','năm','một','hai']);
   await page.screenshot({path: path.join(out, 'xem-truoc-ma-102.png')});
+  const shufflePackLink = await waitForExportLink(
+    variants.getByRole('button', {name: 'Bộ HTML'}),
+    dialog.getByRole('link', {name: 'Tải bộ mã đề (.zip)'}),
+    {label: 'bo-ma-de-tron-pa.html.zip', timeout: 60000},
+  );
+  const shufflePackRes = await page.request.get(new URL(await shufflePackLink.getAttribute('href'), base).href);
+  assert(shufflePackRes.ok());
+  const shuffleZip = await JSZip.loadAsync(await shufflePackRes.body());
+  const shuffleKey = await shuffleZip.file('GIAO_VIEN/Doi_chieu_dap_an.html').async('string');
+  assert.match(shuffleKey, /PA gốc/);
   assert.deepEqual(errors, []);
   await fs.writeFile(path.join(out, 'browser-result.json'), JSON.stringify({
     scenario: 'IT-10', exports, closedShareFormCreatedNoLink: true,
@@ -459,6 +474,8 @@ try {
     communityPublishedCopiedAttachedAndRevoked: true,
     extendedExportsA4Triggered: true,
     communityClonedWithNewUuid: true,
+    exportPreflightVerified: true,
+    variantOptionMappingTableVerified: true,
   }, null, 2));
   console.log('IT-10: sáu bản xuất và luồng chia sẻ Chrome/FastAPI đạt.');
 } finally {
