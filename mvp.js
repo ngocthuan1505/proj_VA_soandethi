@@ -167,7 +167,7 @@ async function exportExtended(node){
  const response=await fetch('/api/exports/'+encodeURIComponent(kind),{
   method:'POST',
   headers:{...db.workspaceHeaders(),'Content-Type':'application/json'},
-  body:JSON.stringify({exam:clone(current()),audience:'teacher',teacher:true,format}),
+  body:JSON.stringify(kind==='answer-key-rubric'?{exam:clone(current()),audience:'teacher',teacher:true,format}:{exam:clone(current()),format}),
  });
  if(!response.ok){
   let message='Chưa xuất được bản tổng hợp.';
