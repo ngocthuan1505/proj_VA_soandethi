@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {Document, Packer, Paragraph} from 'docx';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {chromium} from 'playwright-core';
@@ -128,18 +130,54 @@ try {
  for(const [field,value] of Object.entries({
   grade:'8',subject:'Ngữ văn',series:'Ngữ liệu lớp học',volume:'Tập 2',
   chapter:'Đọc hiểu',lesson:'Thư viện',title:'Nhật ký đọc sách QA',
-  locator:'Mục 2',content_excerpt:'Mai và Nam chuẩn bị thẻ đọc cho thư viện lớp.',
+  content_excerpt:'Nội dung bản nháp cần giữ cho tới lúc áp dụng trang.',
  }))await personal.locator('[name='+field+']').fill(value);
+ const file=personal.getByLabel('Đọc tệp tại máy');
+ const textPreview=personal.getByLabel('Văn bản đã đọc');
+ const excerpt=personal.getByLabel('Nội dung học liệu');
+ const originalDraft=await excerpt.inputValue();
+ const openFile=async(name,mimeType,buffer)=>{
+  const read=page.waitForResponse(response=>response.url()===base+'/api/extract');
+  await file.setInputFiles({name,mimeType,buffer});
+  const response=await read;
+  assert(response.ok(),await response.text());
+  assert.equal(response.request().postDataJSON().consent,undefined);
+  await textPreview.waitFor();
+ };
+ await openFile('Giao-an.txt','text/plain',Buffer.from('Văn bản giáo án tự soạn QA.'));
+ assert.match(await textPreview.inputValue(),/giáo án tự soạn QA/);
+ assert.equal(await excerpt.inputValue(),originalDraft);
+ await openFile('Giao-an.docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  await Packer.toBuffer(new Document({sections:[{children:[new Paragraph('Mục tiêu giáo án Word QA.')]}]})));
+ assert.match(await textPreview.inputValue(),/giáo án Word QA/);
+ assert.equal(await excerpt.inputValue(),originalDraft);
+ const pdf=execFileSync(process.env.QA_PYTHON||'python',[
+  '-c','import sys;from test_source_documents import pdf;sys.stdout.buffer.write(pdf("First page outside scope","Card reading plan QA"))',
+ ]);
+ await openFile('Giao-an.pdf','application/pdf',pdf);
+ await personal.getByLabel('Trang hoặc slide').selectOption('2');
+ assert.match(await textPreview.inputValue(),/Card reading plan QA/);
+ await personal.getByRole('checkbox').check();
+ await personal.getByRole('button',{name:'Dùng phần đã đọc'}).click();
+ assert.equal(await excerpt.inputValue(),'Card reading plan QA');
+ assert.equal(await personal.getByLabel('Vị trí trích dẫn').inputValue(),'Trang 2');
+ assert.equal(await personal.getByRole('checkbox').isChecked(),false);
  await personal.getByRole('checkbox').check();
  await personal.getByRole('button',{name:'Lưu học liệu'}).click();
  const privateCard=picker.locator('[data-lesson-collection]').filter({hasText:'Nhật ký đọc sách QA'});
  await privateCard.getByRole('checkbox',{name:'Dùng học liệu này'}).check();
  await privateCard.getByText('Xem học liệu',{exact:true}).click();
- assert.match(await privateCard.locator('details[open]').innerText(),/chuẩn bị thẻ đọc/);
+ assert.match(await privateCard.locator('details[open]').innerText(),/Card reading plan QA/);
  await page.screenshot({path:path.join(out,'kho-hoc-lieu-ca-nhan.png')});
  await Promise.all([write(),picker.getByRole('button',{name:'Dùng bài đã chọn'}).click()]);
  const withPrivate=(await saved()).value.exams[0];
  const privateDoc=withPrivate.docs.find(d=>d.personalLesson);
+ const recordResponse=await page.request.get(base+'/api/lesson-catalog/sources/'+privateDoc.id);
+ assert(recordResponse.ok());
+ const record=await recordResponse.json();
+ assert.equal(record.source_origin,'Giao-an.pdf');
+ assert.equal(record.locator,'Trang 2');
+ assert.equal(record.content_excerpt,'Card reading plan QA');
  assert.ok(privateDoc.version>0);
  assert.deepEqual(withPrivate.assistantSourcePages[privateDoc.id],[1]);
  assert.deepEqual(withPrivate.assistantSourcePages[algebra.id],[1,2,3]);
@@ -147,7 +185,7 @@ try {
   scenario:'IT-09',previewReadOnly:true,sourceIdPreserved:true,linkedPageOpened:true,
   chosenQuotePreserved:true,answerPreserved:true,relatedApprovalInvalidated:true,
   unrelatedQuestionUnchanged:true,sourcePageEdited:2,sourceVersion:2,mobileReload:true,fixture:true,
-  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true,personalSourceCreatedAndAttached:true},
+  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true,personalSourceCreatedAndAttached:true,personalImportFormats:['TXT','DOCX','PDF'],selectedPdfPage:2,personalImportNoAiConsent:true},
  },null,2));
 } finally {
  await browser.close();

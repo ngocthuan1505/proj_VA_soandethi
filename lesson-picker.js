@@ -58,6 +58,12 @@ export async function openLessonPicker(context) {
  </div>
  <label>Tên học liệu<input name="title" maxlength="400" required></label>
  <label>Vị trí trích dẫn<input name="locator" maxlength="300" placeholder="Ví dụ: Mục 2, trang 3"></label>
+ <label>Đọc tệp tại máy<input type="file" data-lesson-file accept=".docx,.pdf,.txt,.md,.pptx"></label>
+ <div data-lesson-preview hidden>
+  <label>Trang hoặc slide<select data-lesson-page></select></label>
+  <label>Văn bản đã đọc<textarea rows="5" readonly data-lesson-extract></textarea></label>
+  <button type="button" data-lesson-use>Dùng phần đã đọc</button>
+ </div>
  <label>Nội dung học liệu<textarea name="content_excerpt" rows="5" maxlength="12000" required></textarea></label>
  <label class="consent"><input type="checkbox" name="usage"> Tôi có quyền dùng nội dung này cho trợ lý</label>
  <p role="status" data-personal-status></p>
@@ -67,8 +73,16 @@ export async function openLessonPicker(context) {
  <label>Kho<select name="library"><option value="">Tất cả</option><option value="sample">Học liệu mẫu</option><option value="personal">Kho cá nhân</option></select></label>${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,exam.subject)}${select('Bộ học liệu','book',[])}${select('Tập','volume',[])}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div class="modal-foot"><button type="button" data-action="assistant-sources">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`);
  const form=dialog.querySelector('#lesson-picker'),list=form.querySelector('[data-lesson-list]');
  const editor=dialog.querySelector('[data-personal-editor]'),personalForm=editor?.querySelector('form');
- let editing=null;
+ let editing=null, importSequence=0, imported=null, sourceOrigin='';
+ const fileInput=personalForm?.querySelector('[data-lesson-file]');
+ const preview=personalForm?.querySelector('[data-lesson-preview]');
+ const pageSelect=preview?.querySelector('select'),previewText=preview?.querySelector('textarea');
+ const importStatus=personalForm?.querySelector('[data-personal-status]');
  function editPersonal(record){
+  importSequence++;
+  imported=null;
+  preview.hidden=true;
+  sourceOrigin=record?.source_origin||'';
   editing=record;
   personalForm.reset();
   if(record){
@@ -80,14 +94,66 @@ export async function openLessonPicker(context) {
   editor.querySelector('summary').textContent=record?'Sửa học liệu cá nhân':'Thêm học liệu cá nhân';
   personalForm.querySelector('[data-personal-status]').textContent='';
  }
+ fileInput?.addEventListener('change',async()=>{
+  const turn=++importSequence, file=fileInput.files[0];
+  imported=null;
+  preview.hidden=true;
+  if(!file)return;
+  const current=()=>turn===importSequence&&personalForm.isConnected&&dialog.open&&context.exam().id===examId;
+  importStatus.textContent='Đang đọc tệp tại máy…';
+  try{
+   if(!/\.(docx|pdf|txt|md|pptx)$/i.test(file.name))throw Error('Chọn tệp Word, PDF, TXT, Markdown hoặc PowerPoint.');
+   if(file.size>15*1024*1024)throw Error('Tệp lớn hơn 15 MB.');
+   const data=await new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(Error('Chưa đọc được tệp đã chọn.'));
+    reader.readAsDataURL(file);
+   });
+   if(!current())return;
+   const response=await fetch('/api/extract',{
+    method:'POST',headers:{...headers,'Content-Type':'application/json'},
+    body:JSON.stringify({name:file.name,data}),
+   });
+   const result=await response.json();
+   if(!current())return;
+   if(result.code==='document_ai_consent')throw Error('Tệp chưa có lớp chữ. Dùng bản có chữ hoặc dán đoạn đã đối chiếu.');
+   if(!response.ok)throw Error(result.error||'Chưa đọc được nội dung tệp.');
+   const pages=result.pages.filter(page=>page.text.trim());
+   if(!pages.length)throw Error('Tệp chưa có nội dung chữ.');
+   const unit=/\.pptx$/i.test(file.name)?'Slide':'Trang';
+   imported={name:file.name,pages,unit};
+   pageSelect.replaceChildren(...pages.map(page=>new Option(unit+' '+page.number,page.number)));
+   previewText.value=pages[0].text;
+   preview.hidden=false;
+   importStatus.textContent='Chọn trang hoặc bôi đen đoạn cần đưa vào học liệu.';
+  }catch(error){if(current())importStatus.textContent=error.message;}
+ });
+ pageSelect?.addEventListener('change',()=>{
+  previewText.value=imported.pages.find(page=>page.number===Number(pageSelect.value)).text;
+ });
+ preview?.querySelector('[data-lesson-use]').addEventListener('click',()=>{
+  const {selectionStart,selectionEnd,value}=previewText;
+  const excerpt=(selectionStart<selectionEnd?value.slice(selectionStart,selectionEnd):value).trim();
+  const fields=personalForm.elements;
+  if(!excerpt){importStatus.textContent='Chọn phần nội dung có chữ.';return;}
+  if(excerpt.length>fields.content_excerpt.maxLength){importStatus.textContent='Đoạn vượt 12.000 ký tự. Chọn phần ngắn hơn.';return;}
+  fields.content_excerpt.value=excerpt;
+  fields.locator.value=imported.unit+' '+pageSelect.value;
+  if(!fields.title.value.trim())fields.title.value=imported.name.replace(/\.[^.]+$/,'').slice(0,400);
+  sourceOrigin=imported.name.slice(0,500);
+  fields.usage.checked=false;
+  fields.content_excerpt.focus();
+  importStatus.textContent='Đã chèn văn bản. Kiểm đoạn trích và xác nhận quyền trước khi lưu.';
+ });
  personalForm?.addEventListener('submit',async event=>{
   event.preventDefault();
   event.stopPropagation();
-  const button=personalForm.querySelector('button');
+  const button=personalForm.querySelector('[type=submit]');
   if(button.disabled)return;
   const status=personalForm.querySelector('[data-personal-status]');
   const {usage,...fields}=Object.fromEntries(new FormData(personalForm));
-  const payload={...fields,grade:Number(fields.grade),license_status:usage?(editing&&usable(editing)?editing.license_status:'allowed'):'pending_review'};
+  const payload={...fields,source_origin:sourceOrigin,grade:Number(fields.grade),license_status:usage?(editing&&usable(editing)?editing.license_status:'allowed'):'pending_review'};
   if(!payload.content_excerpt.trim()){status.textContent='Nhập nội dung trước khi lưu.';return;}
   button.disabled=true;
   try{
