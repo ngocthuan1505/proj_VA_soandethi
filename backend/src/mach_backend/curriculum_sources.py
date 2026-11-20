@@ -371,6 +371,22 @@ def _row_to_record(row: Any) -> CurriculumSourceRecord:
     return CurriculumSourceRecord.model_validate(dict(zip(_COLUMNS, row, strict=True)))
 
 
+def read_usable_curriculum_source(db: sqlite3.Connection, owner_id: str, source_id: str):
+    row = db.execute(
+        _SELECT_SQL + " WHERE id = ? AND owner_id = ?", (source_id, owner_id)
+    ).fetchone()
+    if row is None:
+        raise _source_not_found()
+    record = _row_to_record(row)
+    if record.license_status not in CITABLE_LICENSE_STATUSES:
+        raise CurriculumSourceError(
+            "source_license_restricted",
+            "Học liệu cá nhân chưa có quyền dùng cho AI.",
+            http_status=403,
+        )
+    return record
+
+
 def _register_error_handlers(app: FastAPI) -> None:
     if CurriculumSourceError not in app.exception_handlers:
 
@@ -581,8 +597,14 @@ def install_curriculum_sources(
     ) -> CurriculumSourceRecord:
         owner_id = current_owner(request)
         updates = body.model_dump(exclude_unset=True)
+        expected = request.headers.get("If-Match")
         with connect() as db:
+            db.execute("BEGIN IMMEDIATE")
             existing = _row_to_record(load_owned_source(db, source_id, owner_id))
+            if expected is not None and expected != str(existing.updated_at):
+                raise CurriculumSourceError(
+                    "stale_snapshot", "Học liệu đã đổi. Mở lại kho trước khi lưu.", http_status=409
+                )
             merged = existing.model_dump()
             merged.update(updates)
             digest = compute_source_sha256(merged)

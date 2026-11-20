@@ -160,7 +160,7 @@ def submission_error(error: AIError) -> HTTPException:
     match error.code:
         case "exam_not_found" | "source_not_found":
             code = 404
-        case "consent_required":
+        case "consent_required" | "source_license_restricted":
             code = 403
         case "stale_snapshot" | "exam_read_only" | "job_conflict" | "plan_not_approved":
             code = 409

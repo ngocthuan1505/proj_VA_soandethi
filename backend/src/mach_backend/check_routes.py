@@ -126,7 +126,7 @@ def build_check_router(
             ) from None
         except AIError as error:
             match error.code:
-                case "consent_required":
+                case "consent_required" | "source_license_restricted":
                     code = 403
                 case "question_not_found" | "source_not_found":
                     code = 404

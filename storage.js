@@ -115,6 +115,18 @@ export function put(key,value){
 }
 export async function allFiles(ids){const ctx=active,files={};for(const id of ids){sameIdentity(ctx);const value=await get('file:'+id);sameIdentity(ctx);if(value)files[id]=value;}return files;}
 
+export async function allPersonalLessons(){
+ const ctx=active;
+ const response=await fetch('/api/lesson-catalog/sources',{headers:workspaceHeaders(ctx)}).catch(()=>null);
+ sameIdentity(ctx);
+ if(!response||response.status===404)return null;
+ if(!response.ok)throw Error('Chưa đọc được kho học liệu cá nhân để sao lưu.');
+ const {sources}=await response.json();
+ sameIdentity(ctx);
+ if(!Array.isArray(sources))throw Error('Kho học liệu cá nhân trả dữ liệu không hợp lệ.');
+ return sources.map(({owner_id,...source})=>source);
+}
+
 export async function previewRestore(backup){
  const ctx=active;await ctx.remote;await ctx.disk;sameIdentity(ctx);
  if(ctx.pending.size)throw Error('Còn bản nháp chưa đồng bộ. Tải bản sao hiện tại và xử lý đồng bộ trước khi khôi phục.');

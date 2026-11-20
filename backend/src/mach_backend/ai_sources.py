@@ -13,6 +13,7 @@ from mach_backend.ai_contract import (
     SourceFragment,
     validate_locator,
 )
+from mach_backend.curriculum_sources import read_usable_curriculum_source
 from mach_backend.lesson_catalog import lesson_catalog
 
 type WireUUID = Annotated[UUID, Field(strict=False)]
@@ -66,7 +67,7 @@ def read_selected_sources(
     return tuple(selected)
 
 
-def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...]):
+def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...], db):
     """Resolve selected pages from the current exam snapshot."""
     chosen = {
         (str(source_id), locator.index) for source_id, locator in keys if locator.kind == "page"
@@ -97,7 +98,13 @@ def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...]):
             and doc_version > 1
             and any(page.get("method") == "manual" for page in saved_pages)
         )
-        if edited_copy or collection is None:
+        if doc.get("personalLesson") is True:
+            record = read_usable_curriculum_source(db, owner_id, doc_id)
+            version = record.updated_at
+            if doc_version != version:
+                raise AIError("stale_snapshot", "Học liệu cá nhân đã đổi. Hãy chọn lại bài.")
+            pages = [{"number": 1, "text": record.content_excerpt}]
+        elif edited_copy or collection is None:
             if not edited_copy and doc.get("catalog") is True:
                 raise AIError("source_not_found", "Học liệu đã chọn không còn trong thư viện.")
             pages = saved_pages or [{"number": 1, "text": doc.get("text", "")}]
