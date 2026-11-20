@@ -215,14 +215,21 @@ try {
  assert.equal(record.source_origin,'Giao-an-doi-thu-tu.pptx');
  assert.equal(record.locator,'Slide 3');
  assert.equal(record.content_excerpt,selectedExcerpt);
+ assert.equal(privateDoc.sourceLocator,'Slide 3');
  assert.ok(privateDoc.version>0);
  assert.deepEqual(withPrivate.assistantSourcePages[privateDoc.id],[1]);
  assert.deepEqual(withPrivate.assistantSourcePages[algebra.id],[1,2,3]);
+ await page.locator('[data-ux-action="attach"]').click();
+ await page.locator('.ux-attach-menu [data-action="assistant-sources"]').click();
+ const attachedSource=dialog.locator('[data-source-group]').filter({hasText:'Nhật ký đọc sách QA'});
+ await attachedSource.getByText('Xem và chọn từng trang',{exact:true}).click();
+ assert.match(await attachedSource.getByText(/Slide 3/).innerText(),/Slide 3/);
+ assert.equal(await attachedSource.getByText(/Trang 1/).count(),0);
  await fs.writeFile(path.join(out,'result.json'),JSON.stringify({
   scenario:'IT-09',previewReadOnly:true,sourceIdPreserved:true,linkedPageOpened:true,
   chosenQuotePreserved:true,answerPreserved:true,relatedApprovalInvalidated:true,
   unrelatedQuestionUnchanged:true,sourcePageEdited:2,sourceVersion:2,mobileReload:true,fixture:true,
-  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true,personalSourceCreatedAndAttached:true,personalImportFormats:['TXT','DOCX','PDF','PPTX'],previewedPdfPage:2,selectedReorderedSlide:3,selectedExcerptOnly:true,personalImportNoAiConsent:true},
+  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true,personalSourceCreatedAndAttached:true,personalImportFormats:['TXT','DOCX','PDF','PPTX'],previewedPdfPage:2,selectedReorderedSlide:3,selectedExcerptOnly:true,originalLocationShownAfterAttach:true,personalImportNoAiConsent:true},
  },null,2));
 } finally {
  await browser.close();

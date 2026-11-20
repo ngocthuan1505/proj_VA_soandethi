@@ -1,12 +1,12 @@
 import {esc,clone,touch,check,recordCheck,questionAnswer} from './core.js';
 import {flushEditor,reconcileEditorRich} from './editor.js';
 import {richTextHTML} from './math-content.js';
-import {documentPages,selectedDocumentPages} from './assistant-sources.js';
+import {documentPages,selectedDocumentPages,sourcePageLabel} from './assistant-sources.js';
 
 export const answerLabel=(type,answer)=>answer===null||answer===undefined?'Chưa kết luận':type==='mcq'?'ABCD'[answer]:type==='truefalse'?answer.map((v,i)=>`${i+1}. ${v?'Đúng':'Sai'}`).join(' · '):String(answer);
 export function selectedCheckSources(exam,q){
  const chosen=new Set(exam.assistantSources||[]);if(q.source?.docId)chosen.add(q.source.docId);
- return exam.docs.filter(d=>chosen.has(d.id)).flatMap(d=>(q.source?.docId===d.id?documentPages(d).filter(p=>p.number===q.source.page||selectedDocumentPages(exam,d).includes(p)):selectedDocumentPages(exam,d)).filter(p=>p.text?.trim()).map(p=>({sourceId:d.id,sourceVersion:d.version||1,locator:{kind:'page',index:p.number},label:`${d.name} · trang ${p.number}`,length:p.text.length})));
+ return exam.docs.filter(d=>chosen.has(d.id)).flatMap(d=>(q.source?.docId===d.id?documentPages(d).filter(p=>p.number===q.source.page||selectedDocumentPages(exam,d).includes(p)):selectedDocumentPages(exam,d)).filter(p=>p.text?.trim()).map(p=>({sourceId:d.id,sourceVersion:d.version||1,locator:{kind:'page',index:p.number},label:`${d.name} · ${sourcePageLabel(d,p.number)}`,length:p.text.length})));
 }
 const errorMessage=result=>result.error||result.detail?.message||(typeof result.detail==='string'?result.detail:'Chưa kiểm được câu. Hãy mở lại và thử lại.');
 export async function openQuestionCheck(c,workspaceHeaders){

@@ -36,7 +36,7 @@ export async function openLessonPicker(context) {
   if(collection.record&&(!usable(collection.record)||!collection.record.content_excerpt.trim())){
    if(choices.get(collection.id).size)changed.add(collection.id);
    choices.get(collection.id).clear();
-  }else if(saved&&!editedDocs.has(saved.id)&&exam.assistantSources?.includes(saved.id)&&saved.version!==collection.version){
+  }else if(saved&&!editedDocs.has(saved.id)&&exam.assistantSources?.includes(saved.id)&&(saved.version!==collection.version||Boolean(collection.record)&&saved.sourceLocator!==collection.record.locator)){
    const available=new Set(collection.lessons.map(lesson=>lesson.number));
    choices.set(collection.id,new Set([...choices.get(collection.id)].filter(number=>available.has(number))));
    changed.add(collection.id);
@@ -287,7 +287,7 @@ export async function openLessonPicker(context) {
      if(!usable(record)||!record.content_excerpt.trim())continue;
      const source={id:record.id,name:record.title,kind:'text',version:record.updated_at,
       pages:[{number:1,text:record.content_excerpt,title:record.lesson||record.title}],
-      text:record.content_excerpt,personalLesson:true,licenseStatus:record.license_status};
+      text:record.content_excerpt,personalLesson:true,sourceLocator:record.locator,licenseStatus:record.license_status};
      if(saved)Object.assign(saved,source);
      else current.docs.push(source);
     }else if(!saved||(!editedCopy(saved)&&saved.version!==collection.version)){
