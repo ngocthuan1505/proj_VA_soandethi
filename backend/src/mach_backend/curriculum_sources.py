@@ -436,7 +436,7 @@ def install_curriculum_sources(
     owner_resolver: OwnerResolver | None = None,
     clock: Callable[[], float] = time.time,
 ) -> None:
-    """Cài đặt router `/api/curriculum/sources` và khởi tạo bảng SQLite `curriculum_sources`."""
+    """Cài đặt router `/api/lesson-catalog/sources` và khởi tạo bảng SQLite `curriculum_sources`."""
     connect, is_memory = _build_connector(connect_or_db_path)
     if owner_resolver is None:
         resolve_owner: OwnerResolver = _default_owner

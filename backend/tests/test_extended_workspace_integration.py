@@ -110,9 +110,10 @@ def _shareable_plain_exam() -> dict:
 
 
 def _seed_exam(client: TestClient, *exams: dict) -> None:
+    current_rev = client.get("/api/kv", params={"key": "state"}).json()["revision"]
     res = client.put(
         "/api/kv",
-        headers={"If-Match": "0"},
+        headers={"If-Match": str(current_rev)},
         json={
             "key": "state",
             "value": {"version": 1, "current": exams[0]["id"], "exams": list(exams), "prefs": []},
@@ -447,3 +448,257 @@ def test_unified_team_workspace_guest_csrf_owner_isolation_and_community_shares(
         )
         assert spec_res.status_code == 200
         assert "@page" in spec_res.text
+
+
+def _seed_single_mcq_with_personal_lesson(
+    client: TestClient,
+    source_id: str,
+    version: int,
+    *,
+    pages: list[dict],
+) -> tuple[dict, str]:
+    exam_id = str(uuid4())
+    q_id = str(uuid4())
+    exam = {
+        "id": exam_id,
+        "title": "Đề kiểm tra học liệu cá nhân",
+        "subject": "Sinh học",
+        "grade": "10",
+        "revision": 1,
+        "matrixConfirmed": True,
+        "matrix": [{"topic": "Tế bào", "type": "mcq", "targets": [1, 0, 0, 0]}],
+        "docs": [
+            {
+                "id": source_id,
+                "name": "Nguồn cá nhân",
+                "kind": "text",
+                "version": version,
+                "personalLesson": True,
+                "licenseStatus": "allowed",
+                "pages": pages,
+            }
+        ],
+        "questions": [
+            {
+                "id": q_id,
+                "v": 1,
+                "type": "mcq",
+                "level": 0,
+                "topic": "Tế bào",
+                "stem": "Thành phần nào là nguồn năng lượng chính của tế bào?",
+                "options": ["ATP", "ADN", "Xenlulozơ", "Tinh bột"],
+                "answer": 0,
+                "points": 1.0,
+            }
+        ],
+    }
+    _seed_exam(client, exam)
+    return exam, q_id
+
+
+def test_personal_lesson_authoritative_resolution_and_cross_owner_isolation(tmp_path):
+    # 1. Local workspace: server-authoritative restricted/version/text cho schema personalLesson
+    app = create_app(tmp_path)
+    with TestClient(app, headers=LOCAL_ORIGIN) as client:
+        allowed = client.post(
+            "/api/lesson-catalog/sources",
+            json={
+                "grade": 10,
+                "subject": "Sinh học",
+                "series": "Kết nối tri thức",
+                "volume": "Tập 1",
+                "chapter": "Chương 1",
+                "lesson": "Bài 1",
+                "title": "Năng lượng tế bào",
+                "licenseStatus": "teacher_owned",
+                "locator": "Trang 15",
+                "contentExcerpt": "ATP là đồng tiền năng lượng chuẩn từ SQLite.",
+            },
+        )
+        assert allowed.status_code == 201, allowed.text
+        allowed_data = allowed.json()
+
+        restricted = client.post(
+            "/api/lesson-catalog/sources",
+            json={
+                "grade": 10,
+                "subject": "Sinh học",
+                "title": "Tài liệu bị hạn chế",
+                "licenseStatus": "restricted",
+                "contentExcerpt": "Không được phép gửi cho AI.",
+            },
+        )
+        assert restricted.status_code == 201, restricted.text
+        restricted_data = restricted.json()
+
+        stamp = app.state.provider.connection_stamp
+
+        # 1a. Client giả mạo licenseStatus="allowed" trên nguồn restricted -> chặn 403
+        exam_tampered, q_tampered = _seed_single_mcq_with_personal_lesson(
+            client,
+            restricted_data["id"],
+            restricted_data["updated_at"],
+            pages=[{"number": 1, "text": "Client giả mạo nội dung được phép dùng."}],
+        )
+        approve_tampered = client.post(
+            f"/api/exams/{exam_tampered['id']}/matrix/approve",
+            json={
+                "baseRevision": 1,
+                "sourceText": "",
+                "sourceName": "Tài liệu bị hạn chế",
+                "sourceMode": "provided",
+                "sources": [
+                    {
+                        "sourceId": restricted_data["id"],
+                        "sourceVersion": restricted_data["updated_at"],
+                        "locator": {"kind": "page", "index": 1},
+                    }
+                ],
+            },
+        )
+        assert approve_tampered.status_code == 403, approve_tampered.text
+        assert approve_tampered.json()["code"] == "source_license_restricted"
+
+        check_tampered = client.post(
+            f"/api/exams/{exam_tampered['id']}/questions/{q_tampered}/check",
+            headers={"X-PoC-Config": stamp},
+            json={
+                "baseRevision": 1,
+                "questionVersion": 1,
+                "consent": True,
+                "sources": [
+                    {
+                        "sourceId": restricted_data["id"],
+                        "sourceVersion": restricted_data["updated_at"],
+                        "locator": {"kind": "page", "index": 1},
+                    }
+                ],
+            },
+        )
+        assert check_tampered.status_code == 403, check_tampered.text
+        assert check_tampered.json()["detail"]["code"] == "source_license_restricted"
+
+        # 1b. Nguồn teacher_owned -> lấy content_excerpt chuẩn từ SQLite dù client sửa pages[0].text
+        exam_ok, q_ok = _seed_single_mcq_with_personal_lesson(
+            client,
+            allowed_data["id"],
+            allowed_data["updated_at"],
+            pages=[{"number": 1, "text": "VAN_BAN_CLIENT_GIA_MAO"}],
+        )
+        approve_ok = client.post(
+            f"/api/exams/{exam_ok['id']}/matrix/approve",
+            json={
+                "baseRevision": 1,
+                "sourceText": "",
+                "sourceName": "Năng lượng tế bào",
+                "sourceMode": "provided",
+                "sources": [
+                    {
+                        "sourceId": allowed_data["id"],
+                        "sourceVersion": allowed_data["updated_at"],
+                        "locator": {"kind": "page", "index": 1},
+                    }
+                ],
+            },
+        )
+        assert approve_ok.status_code == 200, approve_ok.text
+        stored_sources = app.state.store.get("matrix-source:" + exam_ok["id"])["value"]
+        assert stored_sources[0]["text"] == "ATP là đồng tiền năng lượng chuẩn từ SQLite."
+        assert "VAN_BAN_CLIENT_GIA_MAO" not in stored_sources[0]["text"]
+
+        # 1c. PATCH đổi nội dung (tăng updated_at) -> đính kèm version cũ bị chặn 409 stale_snapshot
+        patched = client.patch(
+            f"/api/lesson-catalog/sources/{allowed_data['id']}",
+            headers={"If-Match": str(allowed_data["updated_at"])},
+            json={"contentExcerpt": "Nội dung đã cập nhật mới trên server SQLite."},
+        )
+        assert patched.status_code == 200, patched.text
+        assert patched.json()["updated_at"] > allowed_data["updated_at"]
+
+        approve_stale = client.post(
+            f"/api/exams/{exam_ok['id']}/matrix/approve",
+            json={
+                "baseRevision": 1,
+                "sourceText": "",
+                "sourceName": "Năng lượng tế bào",
+                "sourceMode": "provided",
+                "sources": [
+                    {
+                        "sourceId": allowed_data["id"],
+                        "sourceVersion": allowed_data["updated_at"],
+                        "locator": {"kind": "page", "index": 1},
+                    }
+                ],
+            },
+        )
+        assert approve_stale.status_code == 409, approve_stale.text
+        assert approve_stale.json()["code"] == "stale_snapshot"
+
+        check_stale = client.post(
+            f"/api/exams/{exam_ok['id']}/questions/{q_ok}/check",
+            headers={"X-PoC-Config": stamp},
+            json={
+                "baseRevision": 1,
+                "questionVersion": 1,
+                "consent": True,
+                "sources": [
+                    {
+                        "sourceId": allowed_data["id"],
+                        "sourceVersion": allowed_data["updated_at"],
+                        "locator": {"kind": "page", "index": 1},
+                    }
+                ],
+            },
+        )
+        assert check_stale.status_code == 409, check_stale.text
+        assert check_stale.json()["detail"]["code"] == "stale_snapshot"
+
+    # 2. Team workspace: member gắn chéo sourceId của admin -> chặn 404 source_not_found
+    team_app = create_team_app(tmp_path / "team-isolation")
+    accounts = team_app.state.accounts
+    admin = accounts.create(
+        "admin-iso@example.test", TEAM_PASSWORD, "Admin", accounts.invite(bootstrap=True)
+    )
+    member = accounts.create(
+        "member-iso@example.test",
+        TEAM_PASSWORD,
+        "Member",
+        accounts.invite(email="member-iso@example.test"),
+    )
+    with _login(team_app, admin["email"]) as admin_c, _login(team_app, member["email"]) as member_c:
+        admin_src = admin_c.post(
+            "/api/lesson-catalog/sources",
+            json={
+                "grade": 10,
+                "subject": "Sinh học",
+                "title": "Nguồn mật của Admin",
+                "licenseStatus": "teacher_owned",
+                "contentExcerpt": "Nội dung chỉ Admin sở hữu.",
+            },
+        )
+        assert admin_src.status_code == 201, admin_src.text
+        admin_src_data = admin_src.json()
+        member_exam, _ = _seed_single_mcq_with_personal_lesson(
+            member_c,
+            admin_src_data["id"],
+            admin_src_data["updated_at"],
+            pages=[{"number": 1, "text": "Member gắn chéo source ID của Admin"}],
+        )
+        cross = member_c.post(
+            f"/api/exams/{member_exam['id']}/matrix/approve",
+            json={
+                "baseRevision": 1,
+                "sourceText": "",
+                "sourceName": "Chéo quyền",
+                "sourceMode": "provided",
+                "sources": [
+                    {
+                        "sourceId": admin_src_data["id"],
+                        "sourceVersion": admin_src_data["updated_at"],
+                        "locator": {"kind": "page", "index": 1},
+                    }
+                ],
+            },
+        )
+        assert cross.status_code == 404, cross.text
+        assert cross.json()["code"] == "source_not_found"
