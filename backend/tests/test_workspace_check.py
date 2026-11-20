@@ -9,6 +9,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from mach_backend.lesson_catalog import lesson_catalog
 from mach_backend.local_workspace import create_app
 
 
@@ -261,6 +262,50 @@ def test_ambiguous_or_conflicting_option_verdicts_cannot_claim_agreement(setup, 
     assert r.status_code == 200, r.text
     assert r.json()["uncertain"] and r.json()["answer"] is None
     assert r.json()["comparison"] == "needs_review"
+
+
+def test_bundled_lesson_is_resolved_by_id_version_and_selected_page(setup):
+    app, client, path, body, _, calls, _ = setup
+    collection = next(c for c in lesson_catalog() if len(c["lessons"]) > 1)
+    lesson = collection["lessons"][1]
+    state = app.state.store.get("state")["value"]
+    document = {
+        "id": collection["id"],
+        "version": collection["version"],
+        "pages": [{"number": lesson["number"], "text": "Bản sao đã bị thay thế."}],
+    }
+    state["exams"][0]["docs"] = [document]
+    app.state.store.put("state", state)
+    body["sources"][0].update(
+        sourceId=document["id"],
+        sourceVersion=document["version"],
+        locator={"kind": "page", "index": lesson["number"]},
+    )
+    ok = client.post(path, json=body)
+    assert ok.status_code == 200, ok.text
+    _, request = calls.pop()
+    [source] = json.loads(request["messages"][1]["content"])["sources"]
+    assert source["text"] == (
+        f"Bài {lesson['number']}. {lesson['title']}\n{lesson['text']}\n"
+        f"Mục tiêu: {lesson['outcome']}"
+    )
+
+    document["version"] += 1
+    app.state.store.put("state", state)
+    body["sources"][0]["sourceVersion"] = document["version"]
+    stale = client.post(path, json=body)
+    assert stale.status_code == 409
+    assert stale.json()["detail"]["code"] == "stale_snapshot"
+    assert not calls
+
+    document["catalog"] = True
+    document["pages"][0]["method"] = "manual"
+    app.state.store.put("state", state)
+    edited = client.post(path, json=body)
+    assert edited.status_code == 200, edited.text
+    _, request = calls.pop()
+    [source] = json.loads(request["messages"][1]["content"])["sources"]
+    assert source["text"] == "Bản sao đã bị thay thế."
 
 
 def test_overlong_source_and_empty_page_have_actionable_errors(setup):

@@ -540,6 +540,12 @@ async def inspect_candidate(
                 detail = {"ordinal": review.ordinal, "code": code, "reason": review.reason}
                 if code in {"option_verdicts_failed", "answer_verdict_disagreement"}:
                     detail["optionVerdicts"] = review.optionVerdicts
+                if code == "option_verdicts_failed" and question.type == "mcq":
+                    detail["reason"] = (
+                        f"Lượt rà ghi {verdicts.count('correct')} phương án đúng và "
+                        f"{verdicts.count('unknown')} phương án chưa rõ. "
+                        "Cần đúng một phương án có căn cứ."
+                    )
                 if code == "semantic_duplicate":
                     detail["duplicateWith"] = review.duplicateWith
                 if code == "answer_disagreement":
