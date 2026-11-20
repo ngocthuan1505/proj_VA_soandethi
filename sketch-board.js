@@ -131,7 +131,20 @@ export function openSketchBoard(context) {
    return;
   }
   paint(false);
-  const data=canvas.toDataURL('image/png'),caption=form.elements.caption.value.trim()||'Hình vẽ phác';
+  const cropped=document.createElement('canvas'), margin=16;
+  let left=canvas.width,top=canvas.height,right=0,bottom=0;
+  for(const {points} of strokes)for(const {x,y} of points){
+   left=Math.min(left,x);top=Math.min(top,y);
+   right=Math.max(right,x);bottom=Math.max(bottom,y);
+  }
+  left=Math.max(0,Math.floor(left-margin));
+  top=Math.max(0,Math.floor(top-margin));
+  right=Math.min(canvas.width,Math.ceil(right+margin));
+  bottom=Math.min(canvas.height,Math.ceil(bottom+margin));
+  cropped.width=right-left;
+  cropped.height=bottom-top;
+  cropped.getContext('2d').drawImage(canvas,left,top,cropped.width,cropped.height,0,0,cropped.width,cropped.height);
+  const data=cropped.toDataURL('image/png'),caption=form.elements.caption.value.trim()||'Hình vẽ phác';
   context.change('Chèn hình vẽ phác vào câu',()=>{
    (question.images??=[]).push({id:uid(),data,caption});
    touch(question);
