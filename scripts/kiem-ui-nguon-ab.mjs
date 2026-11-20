@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {Document, Packer, Paragraph} from 'docx';
+import JSZip from 'jszip';
+import PptxGenJS from 'pptxgenjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {chromium} from 'playwright-core';
@@ -157,17 +159,52 @@ try {
  await openFile('Giao-an.pdf','application/pdf',pdf);
  await personal.getByLabel('Trang hoặc slide').selectOption('2');
  assert.match(await textPreview.inputValue(),/Card reading plan QA/);
+ assert.equal(await excerpt.inputValue(),originalDraft);
+ const deck=new PptxGenJS();
+ deck.layout='LAYOUT_WIDE';
+ deck.addSlide().addText('Chi tiết ngoài đoạn chọn. Học liệu trích từ slide QA.',{
+  x:1,y:1,w:10,h:1,margin:0,isTextBox:true,fontSize:24,
+ });
+ deck.addSlide().addText('Slide mở đầu sau khi đổi thứ tự.',{
+  x:1,y:1,w:10,h:1,margin:0,isTextBox:true,fontSize:24,
+ });
+ deck.addSlide();
+ const zip=await JSZip.loadAsync(await deck.write({outputType:'nodebuffer'}));
+ const manifest='ppt/presentation.xml';
+ const manifestXml=await zip.file(manifest).async('string');
+ const reordered=manifestXml.replace(/(<p:sldIdLst>)(.*?)(<\/p:sldIdLst>)/s,(_,start,items,end)=>{
+  const parts=items.match(/<p:sldId\b[^>]*\/>/g);
+  assert.equal(parts?.length,3);
+  return start+parts[1]+parts[2]+parts[0]+end;
+ });
+ assert.notEqual(reordered,manifestXml);
+ zip.file(manifest,reordered);
+ const slides=await zip.generateAsync({type:'nodebuffer'});
+ await fs.writeFile(path.join(out,'Giao-an-doi-thu-tu.pptx'),slides);
+ await openFile('Giao-an-doi-thu-tu.pptx','application/vnd.openxmlformats-officedocument.presentationml.presentation',slides);
+ const slideSelect=personal.getByLabel('Trang hoặc slide');
+ assert.deepEqual(await slideSelect.locator('option').allTextContents(),['Slide 1','Slide 3']);
+ assert.match(await textPreview.inputValue(),/Slide mở đầu sau khi đổi thứ tự/);
+ await slideSelect.selectOption('3');
+ const selectedExcerpt='Học liệu trích từ slide QA.';
+ await textPreview.evaluate((node,text)=>{
+  const start=node.value.indexOf(text);
+  if(start<0)throw Error('Không thấy đoạn trích trên slide đã chọn.');
+  node.focus();
+  node.setSelectionRange(start,start+text.length);
+ },selectedExcerpt);
+ await page.screenshot({path:path.join(out,'chon-trich-doan-slide.png')});
  await personal.getByRole('checkbox').check();
  await personal.getByRole('button',{name:'Dùng phần đã đọc'}).click();
- assert.equal(await excerpt.inputValue(),'Card reading plan QA');
- assert.equal(await personal.getByLabel('Vị trí trích dẫn').inputValue(),'Trang 2');
+ assert.equal(await excerpt.inputValue(),selectedExcerpt);
+ assert.equal(await personal.getByLabel('Vị trí trích dẫn').inputValue(),'Slide 3');
  assert.equal(await personal.getByRole('checkbox').isChecked(),false);
  await personal.getByRole('checkbox').check();
  await personal.getByRole('button',{name:'Lưu học liệu'}).click();
  const privateCard=picker.locator('[data-lesson-collection]').filter({hasText:'Nhật ký đọc sách QA'});
  await privateCard.getByRole('checkbox',{name:'Dùng học liệu này'}).check();
  await privateCard.getByText('Xem học liệu',{exact:true}).click();
- assert.match(await privateCard.locator('details[open]').innerText(),/Card reading plan QA/);
+ assert.match(await privateCard.locator('details[open]').innerText(),/Học liệu trích từ slide QA/);
  await page.screenshot({path:path.join(out,'kho-hoc-lieu-ca-nhan.png')});
  await Promise.all([write(),picker.getByRole('button',{name:'Dùng bài đã chọn'}).click()]);
  const withPrivate=(await saved()).value.exams[0];
@@ -175,9 +212,9 @@ try {
  const recordResponse=await page.request.get(base+'/api/lesson-catalog/sources/'+privateDoc.id);
  assert(recordResponse.ok());
  const record=await recordResponse.json();
- assert.equal(record.source_origin,'Giao-an.pdf');
- assert.equal(record.locator,'Trang 2');
- assert.equal(record.content_excerpt,'Card reading plan QA');
+ assert.equal(record.source_origin,'Giao-an-doi-thu-tu.pptx');
+ assert.equal(record.locator,'Slide 3');
+ assert.equal(record.content_excerpt,selectedExcerpt);
  assert.ok(privateDoc.version>0);
  assert.deepEqual(withPrivate.assistantSourcePages[privateDoc.id],[1]);
  assert.deepEqual(withPrivate.assistantSourcePages[algebra.id],[1,2,3]);
@@ -185,7 +222,7 @@ try {
   scenario:'IT-09',previewReadOnly:true,sourceIdPreserved:true,linkedPageOpened:true,
   chosenQuotePreserved:true,answerPreserved:true,relatedApprovalInvalidated:true,
   unrelatedQuestionUnchanged:true,sourcePageEdited:2,sourceVersion:2,mobileReload:true,fixture:true,
-  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true,personalSourceCreatedAndAttached:true,personalImportFormats:['TXT','DOCX','PDF'],selectedPdfPage:2,personalImportNoAiConsent:true},
+  lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true,personalSourceCreatedAndAttached:true,personalImportFormats:['TXT','DOCX','PDF','PPTX'],previewedPdfPage:2,selectedReorderedSlide:3,selectedExcerptOnly:true,personalImportNoAiConsent:true},
  },null,2));
 } finally {
  await browser.close();
