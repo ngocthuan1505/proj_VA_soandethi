@@ -9,11 +9,18 @@ import re
 import zipfile
 from pathlib import Path
 from typing import Never
+from uuid import UUID
 
 from fastapi import HTTPException, Request
 from PIL import Image
+from pydantic import ValidationError
 
 from mach_backend.ai_contract import AIError
+from mach_backend.curriculum_sources import (
+    CITABLE_LICENSE_STATUSES,
+    CurriculumSourceCreate,
+    compute_source_sha256,
+)
 from mach_backend.local_documents import pdf_pages
 from mach_backend.matrix_import import MIME
 
@@ -118,6 +125,73 @@ def check_file(key, value, referenced_types):
     return f"data:{mime};base64,{encoded}" if generic else value
 
 
+def curriculum_records(backup):
+    raw = backup.get("curriculumSources", [])
+    if not isinstance(raw, list) or len(raw) > 10000:
+        invalid("Kho học liệu trong bản sao không hợp lệ.")
+    records = {}
+    for item in raw:
+        try:
+            source_id = str(UUID(item["id"]))
+            created_at, updated_at = item["created_at"], item["updated_at"]
+            if (
+                source_id != item["id"]
+                or source_id in records
+                or type(created_at) is not int
+                or type(updated_at) is not int
+                or not 0 < created_at <= updated_at <= 2**53 - 1
+            ):
+                raise ValueError
+            payload = CurriculumSourceCreate.model_validate(
+                {key: item[key] for key in CurriculumSourceCreate.model_fields}
+            ).model_dump()
+            if compute_source_sha256(payload) != item["sha256"]:
+                raise ValueError
+        except (KeyError, TypeError, AttributeError, ValidationError, ValueError):
+            invalid("Có học liệu sai mã, phiên bản hoặc nội dung trong bản sao.")
+        records[source_id] = (payload, created_at, updated_at, item["sha256"])
+    return records
+
+
+def insert_curriculum_records(db, owner, records, *, dry_run=False):
+    for source_id, (payload, created_at, updated_at, digest) in records.items():
+        restored = dict(payload)
+        if restored["license_status"] in CITABLE_LICENSE_STATUSES:
+            restored["license_status"] = "pending_review"
+        restored_digest = compute_source_sha256(restored)
+        existing = db.execute(
+            "SELECT owner_id, sha256, updated_at FROM curriculum_sources WHERE id = ?",
+            (source_id,),
+        ).fetchone()
+        if existing:
+            if existing[0] != owner or existing[1] not in {digest, restored_digest}:
+                invalid("Học liệu trùng mã với bản khác trong kho đích. Chưa thay dữ liệu.")
+            if existing[2] != updated_at:
+                invalid("Học liệu đã có phiên bản khác trong kho đích. Chưa thay dữ liệu.")
+        elif not dry_run:
+            db.execute(
+                """
+                INSERT INTO curriculum_sources (
+                    id, owner_id, grade, subject, series, volume, chapter, lesson, title,
+                    license_status, license_note, source_origin, locator, content_excerpt,
+                    sha256, created_at, updated_at
+                ) VALUES (
+                    :id, :owner_id, :grade, :subject, :series, :volume, :chapter, :lesson, :title,
+                    :license_status, :license_note, :source_origin, :locator, :content_excerpt,
+                    :sha256, :created_at, :updated_at
+                )
+                """,
+                {
+                    **restored,
+                    "id": source_id,
+                    "owner_id": owner,
+                    "sha256": restored_digest,
+                    "created_at": created_at,
+                    "updated_at": updated_at,
+                },
+            )
+
+
 def validate_backup(backup):
     if (
         not isinstance(backup, dict)
@@ -215,16 +289,19 @@ def validate_backup(backup):
         invalid(
             f"Bản sao thiếu {len(missing)} tệp gốc (kể cả lịch sử/hoàn tác). Chưa thay dữ liệu."
         )
-    return state, {
-        key: check_file(key, value, references.get(key, set())) for key, value in files.items()
-    }
+    return (
+        state,
+        {key: check_file(key, value, references.get(key, set())) for key, value in files.items()},
+        curriculum_records(backup),
+    )
 
 
 def restore(store, backup, base_revision):
-    state, files = validate_backup(backup)
+    state, files, records = validate_backup(backup)
     with store.connect() as db:
         db.execute("BEGIN IMMEDIATE")
         revision = store.put("state", state, base_revision, db)
+        insert_curriculum_records(db, store.owner, records)
         for key, value in files.items():
             store.put("file:" + key, value, db=db)
         # Snapshot phục hồi không được nhận kết quả AI đang chờ của kho trước.
@@ -255,9 +332,14 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
 
     @app.post("/api/workspace/restore/preview")
     async def preview(request: Request):
-        state, files = validate_backup(await payload(request))
+        state, files, records = validate_backup(await payload(request))
+        with store.connect() as db:
+            db.execute("BEGIN")
+            insert_curriculum_records(db, store.owner, records, dry_run=True)
+            revision = store.get("state", db)["revision"]
         return {
-            "revision": store.get("state")["revision"],
+            "revision": revision,
+            **({"curriculumSources": len(records)} if records else {}),
             "exams": len(state["exams"]),
             "files": len(files),
             "prefs": len(state["prefs"]),

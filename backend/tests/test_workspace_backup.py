@@ -6,8 +6,11 @@ import json
 from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
 from PIL import Image
 from test_local_workspace import workspace  # noqa: F401
+
+from mach_backend.local_workspace import create_app
 
 
 def backup_fixture():
@@ -60,6 +63,78 @@ def backup_fixture():
             "image-history": "data:image/png;base64," + base64.b64encode(image.getvalue()).decode()
         },
     }
+
+
+def test_personal_curriculum_moves_atomically_and_rechecks_rights(tmp_path):
+    route = "/api/lesson-catalog/sources"
+    headers = {"Origin": "http://testserver"}
+    with (
+        TestClient(create_app(tmp_path / "export"), headers=headers) as origin,
+        TestClient(
+            create_app(tmp_path / "import", account_info={"user": {"id": "destination"}}),
+            headers=headers,
+        ) as target,
+    ):
+        created = origin.post(
+            route,
+            json={
+                "grade": 9,
+                "subject": "Toán",
+                "title": "Học liệu tự soạn",
+                "license_status": "teacher_owned",
+                "content_excerpt": "Ví dụ tự soạn, chỉ dùng cho thử nghiệm.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        saved = created.json()
+        uid = saved["id"]
+        snapshot = backup_fixture()
+        exam = snapshot["state"]["exams"][0]
+        exam["docs"] = [
+            {
+                "id": uid,
+                "version": saved["updated_at"],
+                "personalLesson": True,
+                "pages": [{"number": 1, "text": saved["content_excerpt"]}],
+            }
+        ]
+        snapshot["curriculumSources"] = [saved]
+        preview_path, restore_path = "/api/workspace/restore/preview", "/api/workspace/restore"
+        preview = target.post(preview_path, json=snapshot)
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["curriculumSources"] == 1
+        assert target.get(route + "/" + uid).status_code == 404
+        applied = target.post(restore_path, json=snapshot, headers={"If-Match": "0"})
+        assert applied.status_code == 200, applied.text
+        assert target.get("/api/kv?key=state").json()["value"] == snapshot["state"]
+        imported = target.get(route + "/" + uid).json()
+        assert imported["owner_id"] == "destination"
+        assert imported["content_excerpt"] == saved["content_excerpt"]
+        assert imported["updated_at"] == saved["updated_at"]
+        assert imported["license_status"] == "pending_review"
+        assert target.get(route + "/" + uid + "/citation").status_code == 403
+        assert target.post(preview_path, json=snapshot).status_code == 200
+
+        poisoned = {**saved, "id": str(uuid4()), "sha256": "0" * 64}
+        snapshot["curriculumSources"].append(poisoned)
+        before = target.get("/api/kv?key=state").json()
+        rejected = target.post(restore_path, json=snapshot, headers={"If-Match": "1"})
+        assert rejected.status_code == 409, rejected.text
+        assert target.get("/api/kv?key=state").json() == before
+        assert target.get(route + "/" + poisoned["id"]).status_code == 404
+
+        snapshot["curriculumSources"].pop()
+        assert (
+            target.patch(
+                route + "/" + uid, json={"content_excerpt": "Đã chỉnh trên thiết bị đích."}
+            ).status_code
+            == 200
+        )
+        assert target.post(preview_path, json=snapshot).status_code == 409
+        rejected = target.post(restore_path, json=snapshot, headers={"If-Match": "1"})
+        assert rejected.status_code == 409
+        assert target.get("/api/kv?key=state").json() == before
+        assert target.get(route + "/" + uid).json()["content_excerpt"].startswith("Đã chỉnh")
 
 
 def test_restore_legacy_generic_mime_uses_referenced_filename(workspace):  # noqa: F811

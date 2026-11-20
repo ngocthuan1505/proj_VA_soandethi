@@ -24,12 +24,23 @@ try{
  await page.locator('#team-login [name=password]').fill('mat-khau-qa-18-11');
  await page.locator('#team-login button[type=submit]').click();await page.waitForURL(base+'/');await page.waitForLoadState('networkidle');
  assert((await(await page.request.get(base+'/api/status')).json()).fixture);
+ const sourceRoute=base+'/api/lesson-catalog/sources';
+ const qaSource=await page.request.post(sourceRoute,{headers:{Origin:base},data:{
+  grade:9,subject:'Toán',title:'Học liệu riêng QA',license_status:'teacher_owned',
+  content_excerpt:'Bài toán về chu vi hình chữ nhật do nhóm tự soạn.',
+ }});
+ assert(qaSource.ok(),await qaSource.text());
+ const lesson=await qaSource.json();
  // Lấy bản sao bằng đúng nút giao diện, gồm trạng thái rich/ID mà editor đang dùng.
  await page.getByRole('button',{name:'Mở kho đề',exact:true}).click();
  const downloadEvent=page.waitForEvent('download');await page.locator('[data-action="backup"]:visible').click();
  const download=await downloadEvent;await download.saveAs(path.join(out,'backup-qa.json'));
  const bytes=await fs.readFile(path.join(out,'backup-qa.json')),backup=JSON.parse(bytes);
  const [fileId]=Object.keys(backup.files);
+ const [exportedLesson]=backup.curriculumSources;
+ assert.equal(exportedLesson.id,lesson.id);
+ assert.equal(exportedLesson.content_excerpt,lesson.content_excerpt);
+ assert(!Object.hasOwn(exportedLesson,'owner_id'));
  assert(fileId,'Fixture cần một tệp được tham chiếu trong bản sao.');
  await page.keyboard.press('Escape');
  await page.getByRole('button',{name:'Tạo đề mới',exact:true}).click();
@@ -56,13 +67,17 @@ try{
  page.off('request',track);
  results.push({case:'Đóng xem trước khi nút xác nhận đang xử lý: không gửi yêu cầu thay kho',passed:true});
  await fileMenu();await choose(bytes);await page.locator('[data-action="confirm-backup"]').waitFor();
+ await page.getByText(/Có 1 học liệu cá nhân/).waitFor();
  await page.screenshot({path:path.join(out,'desktop-preview.png')});
  await Promise.all([page.waitForEvent('load'),page.locator('[data-action="confirm-backup"]').click()]);await page.waitForLoadState('networkidle');
  const restored=await state();assert.deepEqual(restored.value.exams,backup.state.exams);assert.equal(restored.value.current,backup.state.current);
  const restoredFile=await context.request.get(base+'/api/kv?key='+encodeURIComponent('file:'+fileId));
  assert(restoredFile.ok(),await restoredFile.text());
  assert.equal((await restoredFile.json()).value,backup.files[fileId]);
- results.push({case:'Desktop: tải bản sao → tạo đề → xem trước → xác nhận → reload giữ toàn bộ đề/ID/lịch sử',passed:true});
+ const restoredLesson=await page.request.get(sourceRoute+'/'+lesson.id);
+ assert(restoredLesson.ok(),await restoredLesson.text());
+ assert.equal((await restoredLesson.json()).license_status,'teacher_owned');
+ results.push({case:'Desktop: tải bản sao → tạo đề → xem trước → xác nhận → reload giữ đề, lịch sử, tệp và học liệu của cùng kho',passed:true});
  // Ghi từ tab/API khác sau preview, rồi xác nhận trên tab cũ phải bị từ chối.
  await fileMenu();await choose(bytes);await page.locator('[data-action="confirm-backup"]').waitFor();
  const remote=await state();remote.value.exams[0].title+=' · thay đổi từ tab khác';
