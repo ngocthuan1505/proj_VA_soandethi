@@ -10,9 +10,11 @@ await fs.mkdir(out,{recursive:true});
 const browser=await chromium.launch({executablePath:process.env.BROWSER_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
 try {
  const page=await browser.newPage({viewport:{width:1366,height:830}});
- page.setDefaultTimeout(10000);
+ page.setDefaultTimeout(30000);
  await page.goto(base);
- await page.waitForLoadState('networkidle');
+ // Đợi bàn soạn dựng xong câu hỏi trước khi chờ initMVP tự lưu ID khối.
+ await page.locator('.paper .question').first().waitFor({timeout:30000});
+ await page.locator('#chat-input').waitFor({timeout:30000});
  const saved=async()=>{
   const response=await page.request.get(base+'/api/kv?key=state');
   assert(response.ok());
@@ -26,8 +28,13 @@ try {
   if(!response.ok)return false;
   const {value}=await response.json();
   const current=value?.exams?.find(e=>e.id===value.current);
-  return current?.questions.every(q=>q.blockIds?.stem);
- },undefined,{polling:150});
+  return Boolean(current?.questions?.length&&current.questions.every(q=>q.blockIds?.stem));
+ },undefined,{polling:150,timeout:30000});
+ await page.waitForFunction(
+  ()=>/^Đã lưu/.test(document.querySelector('[data-save-status]')?.textContent||''),
+  undefined,
+  {timeout:30000},
+ );
  const initial=getContent(await saved());
  const requests=[];
  page.on('request',r=>{if(r.url()===base+'/api/ai/exam-plan')requests.push(r.postDataJSON());});

@@ -434,11 +434,20 @@ try {
     await putState(initialState);
     const editPage = await browser.newPage();
     editPage.on('pageerror', error => errors.push(error.message));
+    const initialSaved = editPage.waitForResponse(response =>
+      response.url() === base + '/api/kv' && response.request().method() === 'PUT' && response.ok()
+    );
     await editPage.goto(base);
     const stem = editPage.locator('.stem-editor .tiptap').first();
     const undoButton = editPage.locator('[data-action="undo"]').first();
-    const teacherButton = editPage.locator('[data-action="view-teacher"]').first();
+    const teacherButton = editPage.locator('.view-tab[data-action="view-teacher"]').first();
+    const studentButton = editPage.locator('.view-tab[data-action="view-student"]').first();
     await stem.waitFor();
+    // Chờ initMVP hoàn tất lưu khởi tạo để tránh khớp nhầm PUT /api/kv khởi động.
+    await initialSaved;
+    await editPage.waitForFunction(() =>
+      /^Đã lưu/.test(document.querySelector('[data-save-status]')?.textContent || '')
+    );
     const initial = multiSubjectExam.questions[0].stem;
     async function serverStem() {
       const state = await getState();
@@ -449,29 +458,65 @@ try {
         if (response.url() !== base + '/api/kv' || response.request().method() !== 'PUT'
           || !response.ok()) return false;
         const body = response.request().postDataJSON();
-        const exam = body.value?.exams?.find(exam => exam.id === multiSubjectExam.id);
+        const exam = body?.key === 'state'
+          ? body.value?.exams?.find(exam => exam.id === multiSubjectExam.id)
+          : null;
         return Boolean(exam && matches(exam.questions[0].stem));
       });
     }
+    async function focusStem() {
+      await stem.waitFor();
+      await editPage.evaluate(() =>
+        document.fonts.ready.then(() => new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        ))
+      );
+      await stem.focus();
+      await stem.press('Home');
+      await editPage.waitForFunction(() => {
+        const el = document.querySelector('.stem-editor .tiptap');
+        const sel = getSelection();
+        return Boolean(
+          el && document.activeElement === el && el.classList.contains('ProseMirror-focused')
+          && sel?.rangeCount && el.contains(sel.anchorNode)
+        );
+      });
+    }
 
-    await stem.press('Home');
+    await focusStem();
     await editPage.keyboard.insertText('Sửa nhanh. ');
+    await editPage.waitForFunction(() =>
+      (document.querySelector('.stem-editor .tiptap')?.textContent || '').includes('Sửa nhanh. ')
+    );
     assert(await undoButton.isEnabled(), 'Toolbar undo must accept unflushed typing');
-    await Promise.all([savedStem(text => text === initial),undoButton.evaluate(button => button.click())]);
+    const undoSaved = savedStem(text => text === initial);
+    await undoButton.evaluate(button => button.click());
+    await undoSaved;
     assert.equal(await serverStem(), initial);
 
-    await stem.press('Home');
+    await focusStem();
+    const viewSaved = savedStem(text => text.includes('Bản xem. '));
     await editPage.keyboard.insertText('Bản xem. ');
-    await Promise.all([savedStem(text => text.includes('Bản xem. ')),teacherButton.evaluate(button => button.click())]);
+    await editPage.waitForFunction(() =>
+      (document.querySelector('.stem-editor .tiptap')?.textContent || '').includes('Bản xem. ')
+    );
+    await teacherButton.evaluate(button => button.click());
+    await viewSaved;
+    await editPage.locator('.view-tab[data-action="view-teacher"].active').first().waitFor();
     assert((await serverStem()).includes('Bản xem. '), 'Switching views must commit pending typing');
 
-    await stem.press('Home');
+    await focusStem();
     const cdp = await editPage.context().newCDPSession(editPage);
     await cdp.send('Input.imeSetComposition', { text: 'tiếng', selectionStart: 5, selectionEnd: 5 });
-    await editPage.locator('[data-action="view-student"]').first().evaluate(button => button.click());
+    await editPage.waitForFunction(() =>
+      (document.querySelector('.stem-editor .tiptap')?.textContent || '').includes('tiếng')
+    );
+    await studentButton.evaluate(button => button.click());
     assert((await stem.textContent()).includes('tiếng'), 'View action must keep active composition');
     assert(!(await serverStem()).includes('tiếng'), 'Composition should stay local until commit');
-    await Promise.all([savedStem(text => text.includes('tiếng ')),cdp.send('Input.insertText', { text: 'tiếng ' })]);
+    const imeSaved = savedStem(text => text.includes('tiếng '));
+    await cdp.send('Input.insertText', { text: 'tiếng ' });
+    await imeSaved;
     assert((await serverStem()).includes('tiếng '), 'Committed Vietnamese text should persist');
     await editPage.close();
     editorTiming = { undoBeforeDebounce: true, viewKeepsDraft: true, chromiumCompositionPersists: true };

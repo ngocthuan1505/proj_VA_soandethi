@@ -106,13 +106,44 @@ try {
   await phone.locator('#dialog').getByRole('button', {name: 'Đóng', exact: true}).click();
   await phone.close();
 
+  const closeDialog = async () => {
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({state: 'hidden'});
+  };
+  const waitForExportLink = async (trigger, link, {label, timeout}) => {
+    let lastResponse = null;
+    const onResponse = r => {
+      if (r.url() === base + '/api/save-export' && r.request().method() === 'POST') {
+        lastResponse = r;
+      }
+    };
+    page.on('response', onResponse);
+    try {
+      const errorAlert = dialog.locator('.alert[role="alert"]');
+      const genericError = dialog.locator('h2', {hasText: 'Chưa thực hiện được'});
+      await trigger.click();
+      await link.or(errorAlert).or(genericError).first().waitFor({state: 'visible', timeout});
+      if (await errorAlert.isVisible() || await genericError.isVisible()) {
+        const alertText = (await dialog.locator('.alert').first().textContent().catch(() => ''))?.trim();
+        const statusInfo = lastResponse ? ` (HTTP ${lastResponse.status()})` : '';
+        throw new Error(`Xuất ${label} thất bại${statusInfo}: ${alertText || 'hộp thoại báo lỗi không rõ nguyên nhân'}`);
+      }
+      assert(await link.isVisible(), `Thiếu liên kết tải sau khi xuất ${label}`);
+      return link;
+    } finally {
+      page.off('response', onResponse);
+    }
+  };
+
   const exports = [];
   for (const teacher of [false, true]) {
     for (const format of ['docx', 'pdf', 'html']) {
       await action('export').click();
-      await dialog.locator(`[data-action="export-file"][data-teacher="${teacher}"][data-format="${format}"]`).click();
-      const link = dialog.locator('.saved-export-link');
-      await link.waitFor({timeout: 60000});
+      const trigger = dialog.locator(`[data-action="export-file"][data-teacher="${teacher}"][data-format="${format}"]`);
+      const link = await waitForExportLink(trigger, dialog.locator('.saved-export-link'), {
+        label: `${teacher ? 'giao-vien' : 'hoc-sinh'}.${format}`,
+        timeout: format === 'pdf' ? 120000 : 90000,
+      });
       const url = new URL(await link.getAttribute('href'), base).href;
       const response = await page.request.get(url);
       assert(response.ok());
@@ -172,7 +203,7 @@ try {
         }
         await opened.close();
       }
-      await page.keyboard.press('Escape');
+      await closeDialog();
     }
   }
 
@@ -264,18 +295,23 @@ try {
   await preview.getByRole('heading', {name: /Mã đề 102/}).waitFor();
   assert.match(await preview.locator('section > ol > li').first().innerText(), /Tính diện tích.*Câu gốc 2/);
   assert.doesNotMatch(await preview.innerText(), /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/);
-  await dialog.locator('[data-action="export-file"][data-teacher="false"][data-format="html"]').click();
-  await dialog.locator('.saved-export-link').waitFor({timeout: 60000});
-  const variantURL = new URL(await dialog.locator('.saved-export-link').getAttribute('href'), base);
+  const variantLink = await waitForExportLink(
+    dialog.locator('[data-action="export-file"][data-teacher="false"][data-format="html"]'),
+    dialog.locator('.saved-export-link'),
+    {label: 'ma-de-102.html', timeout: 90000},
+  );
+  const variantURL = new URL(await variantLink.getAttribute('href'), base);
   const variantHtml = await (await page.request.get(variantURL.href)).text();
   assert.match(variantHtml, /Mã đề 102/);
   assert(variantHtml.indexOf('Tính diện tích') < variantHtml.indexOf('Rút gọn phân số'));
   assert.doesNotMatch(variantHtml, /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/);
-  await page.keyboard.press('Escape');
+  await closeDialog();
   await action('export').click();
-  await variants.getByRole('button', {name: 'Bộ PDF'}).click();
-  const packLink = dialog.getByRole('link', {name: 'Tải bộ mã đề (.zip)'});
-  await packLink.waitFor({timeout: 90000});
+  const packLink = await waitForExportLink(
+    variants.getByRole('button', {name: 'Bộ PDF'}),
+    dialog.getByRole('link', {name: 'Tải bộ mã đề (.zip)'}),
+    {label: 'bo-ma-de.pdf.zip', timeout: 180000},
+  );
   const packResponse = await page.request.get(new URL(await packLink.getAttribute('href'), base).href);
   assert(packResponse.ok());
   const pack = await packResponse.body();
