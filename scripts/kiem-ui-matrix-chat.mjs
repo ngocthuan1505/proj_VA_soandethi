@@ -83,6 +83,13 @@ try{
  await page.unroute(auditRoute);
  assert.equal(await page.locator('.matrix-document-preview [data-matrix-question]').count(),2);
  assert.equal((await state()).questions.length,0);
+ const citation=page.locator('.matrix-document-preview .matrix-evidence-source').first();
+ const citationToggle=citation.getByText('Mở ngữ cảnh · Nguồn fixture tự viết · Trang 2');
+ assert.equal(await citation.getAttribute('open'),null);
+ await citationToggle.press('Enter');
+ assert.equal(await citation.locator('blockquote').innerText(),source);
+ assert(await citation.locator('mark').isVisible());
+ assert.doesNotMatch(await citation.innerText(),/ngoài phạm vi/);
  await page.locator('#matrix-result-details').evaluate(n=>n.open=true);await page.locator('#matrix-progress').evaluate(n=>n.open=true);assert((await page.locator('#matrix-trace').innerText()).includes('Trợ lý gọi công cụ'));
  await page.screenshot({path:path.join(out,'01-de-xuat-tren-trang.png')});
  await page.locator('#matrix-reviewer').fill('QA fixture · không phải giáo viên');
@@ -92,6 +99,8 @@ try{
  await review.locator('button[type=submit]').click();await page.waitForFunction(()=>document.querySelector('#matrix-confirm-save').disabled);
  await page.reload();await page.waitForLoadState('networkidle');await page.locator('.matrix-document-preview').waitFor();
  assert(await page.locator('#matrix-confirm-save').isDisabled());
+ await citationToggle.click();
+ assert.equal(await citation.locator('blockquote').innerText(),source);
  await page.locator('[data-matrix-review="0"]').locator('xpath=..').locator('summary').click();
  await page.locator('[data-matrix-review="0"] [name=observed]').selectOption('0');
  await page.locator('[data-matrix-review="0"] [name=contentOk]').check();
@@ -132,7 +141,11 @@ try{
  await page.locator('[data-action="toggle-ai"]').first().click();
  await page.locator('#matrix-request-settings').evaluate(n=>n.open=true);await page.locator('#matrix-inputs').evaluate(n=>n.open=true);
  await page.locator('#matrix-source-name').fill('Đổi nhãn nguồn trước khi bỏ');
+ const discardResponse=page.waitForResponse(response=>
+  response.url().startsWith(base+'/api/exams/'+exam.id+'/proposals/')
+   &&response.url().endsWith('/discard')&&response.request().method()==='POST');
  await page.locator('#matrix-dismiss').click();
+ assert((await discardResponse).ok());
  assert.equal((await state()).revision,mobileRevision);
  assert((await api('/api/exams/'+exam.id+'/proposals/latest')).discarded);
  assert.deepEqual(errors,[]);assert.equal(chats,0);assert.deepEqual(legacyJobRequests,[]);

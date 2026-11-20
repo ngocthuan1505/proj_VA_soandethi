@@ -129,6 +129,24 @@ export async function openMatrixSynthesis(c, options={}){
   const m=report.summary;
   if(m)$('matrix-metrics').textContent=`Lượt này: ${m.modelCalls||0}/${m.budget?.maxModelCalls||budget.maxModelCalls} lần gọi AI · ${Number(m.elapsedSeconds||0).toFixed(2)} giây · Sinh: ${m.generator?.model||'—'} · Kiểm: ${m.reviewer?.model||'—'}`;
  }
+ function evidenceHTML(e){
+  const matches=ref=>ref.sourceId===e.sourceId&&ref.sourceVersion===e.sourceVersion&&ref.locator.kind===e.locator.kind&&ref.locator.index===e.locator.index;
+  const attached=e.locator.kind==='page'&&attachedPages.find(({doc,page})=>matches({
+   sourceId:doc.id,sourceVersion:doc.version||1,locator:{kind:'page',index:page.number},
+  }));
+  const pasted=e.locator.kind==='passage'&&approval?.sources?.some(matches);
+  const label=attached?attached.doc.name+' · '+sourcePageLabel(attached.doc,attached.page.number)
+   :pasted?($('matrix-source-name').value||'Ngữ liệu đã dán')+' · Đoạn '+e.locator.index
+   :'Nguồn của lượt sinh · '+(e.locator.kind==='page'?'Trang ':'Đoạn ')+e.locator.index;
+  const content=attached?attached.page.text:pasted?source:'';
+  const normalize=text=>text.trim().replace(/\s+/g,' ');
+  const canOpen=content&&normalize(content).includes(normalize(e.quote));
+  const start=content.indexOf(e.quote);
+  const context=start<0?esc(content):esc(content.slice(0,start))+'<mark>'+esc(e.quote)+'</mark>'+esc(content.slice(start+e.quote.length));
+  return '<blockquote>“'+esc(e.quote)+'”<br><small title="'+esc(e.sourceId)+'">'+esc(label)+' · Bản '+esc(e.sourceVersion)+'</small></blockquote>'
+   +(canOpen?'<details class="matrix-evidence-source"><summary>Mở ngữ cảnh · '+esc(label)+'</summary><blockquote>'+context+'</blockquote></details>'
+    :'<p class="hint">Không mở được ngữ cảnh của đúng phiên bản nguồn này.</p>');
+ }
  function showProposal(){
   lastCandidate=job;
   $('matrix-reviewer-field').hidden=false;
@@ -139,7 +157,7 @@ export async function openMatrixSynthesis(c, options={}){
    <p>${richTextHTML(q.stem)}</p><ol type="A">${q.options.map(x=>'<li>'+richTextHTML(x)+'</li>').join('')}</ol>
    <p>Đáp án AI đề xuất: <b>${q.type==='essay'?'Tự luận':diffContentHTML(q.type==='mcq'?'answer':q.type==='truefalse'?'truthValues':'answerText',q.answer)}</b>. ${richTextHTML(q.explanation)}</p>
    ${q.rubric?.length?'<div class="matrix-rubric"><b>Hướng dẫn chấm</b>'+diffContentHTML('rubric',q.rubric.map(r=>({...r,points:r.pointsQ4/4})))+'</div>':''}
-   ${q.evidence.map(e=>'<blockquote>“'+esc(e.quote)+'”<br><small title="'+esc(e.sourceId)+'">'+esc(currentDocs.find(d=>d.id===e.sourceId)?.name||$('matrix-source-name').value||'Nguồn đã chọn')+' · bản '+e.sourceVersion+(e.locator.kind==='page'?' · trang ':' · đoạn ')+e.locator.index+'</small></blockquote>').join('')}
+   ${q.evidence.map(evidenceHTML).join('')}
    <details><summary>Góp ý câu này nếu còn vấn đề</summary><form data-matrix-review="${i}"><label>Người rà<input name="reviewer" required maxlength="120" value="${esc($('matrix-reviewer').value)}" placeholder="Tên người ghi nhận xét…"></label><label>Mức thực tế theo người rà<select name="observed" required><option value="">Chọn sau khi đọc câu</option>${LEVELS.map((l,n)=>'<option value="'+n+'">'+l+'</option>').join('')}<option value="-1">Chưa đủ căn cứ</option></select></label><label>Lý do (học sinh cần làm gì; đáp án/căn cứ có vấn đề gì?)<input name="reason" required minlength="4" maxlength="600"></label><label><input type="checkbox" name="contentOk" style="width:auto"> Đã đối chiếu và thấy đáp án, giải thích, căn cứ phù hợp</label><button type="submit">Ghi nhận đánh giá</button><output></output></form></details></section>`).join('');
   for(const form of $('matrix-preview').querySelectorAll('[data-matrix-review]')){const previous=reviews[form.dataset.matrixReview];if(previous){form.elements.reviewer.value=previous.reviewer||'';form.elements.observed.value=String(previous.observed);form.elements.reason.value=previous.reason;form.elements.contentOk.checked=previous.contentOk;form.querySelector('output').textContent='Đã có nhận xét của '+previous.reviewer;}}
   for(const form of $('matrix-preview').querySelectorAll('[data-matrix-review]'))form.onsubmit=guard(async()=>{
