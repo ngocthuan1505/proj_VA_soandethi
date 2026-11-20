@@ -23,6 +23,7 @@ from mach_backend.curriculum_sources import (
 )
 from mach_backend.local_documents import pdf_pages
 from mach_backend.matrix_import import MIME
+from mach_backend.matrix_templates import validate_and_restore_matrix_templates
 
 MAX_BACKUP = 150 * 1024 * 1024
 MAX_FILE = 15 * 1024 * 1024
@@ -296,12 +297,26 @@ def validate_backup(backup):
     )
 
 
+def apply_matrix_template_records(db, owner, backup, *, dry_run=False):
+    raw = backup.get("matrixTemplates")
+    if raw is None:
+        return 0
+    try:
+        return validate_and_restore_matrix_templates(db, owner, raw, dry_run=dry_run)
+    except (ValidationError, ValueError, TypeError) as exc:
+        message = str(exc)
+        if "trong bản sao" in message or "kho đích" in message:
+            invalid(message)
+        invalid("Mẫu ma trận trong bản sao không hợp lệ.")
+
+
 def restore(store, backup, base_revision):
     state, files, records = validate_backup(backup)
     with store.connect() as db:
         db.execute("BEGIN IMMEDIATE")
         revision = store.put("state", state, base_revision, db)
         insert_curriculum_records(db, store.owner, records)
+        apply_matrix_template_records(db, store.owner, backup, dry_run=False)
         for key, value in files.items():
             store.put("file:" + key, value, db=db)
         # Snapshot phục hồi không được nhận kết quả AI đang chờ của kho trước.
@@ -332,14 +347,17 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
 
     @app.post("/api/workspace/restore/preview")
     async def preview(request: Request):
-        state, files, records = validate_backup(await payload(request))
+        backup = await payload(request)
+        state, files, records = validate_backup(backup)
         with store.connect() as db:
             db.execute("BEGIN")
             insert_curriculum_records(db, store.owner, records, dry_run=True)
+            template_count = apply_matrix_template_records(db, store.owner, backup, dry_run=True)
             revision = store.get("state", db)["revision"]
         return {
             "revision": revision,
             **({"curriculumSources": len(records)} if records else {}),
+            **({"matrixTemplates": template_count} if template_count else {}),
             "exams": len(state["exams"]),
             "files": len(files),
             "prefs": len(state["prefs"]),

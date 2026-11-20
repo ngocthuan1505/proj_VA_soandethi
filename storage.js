@@ -127,6 +127,18 @@ export async function allPersonalLessons(){
  return sources.map(({owner_id,...source})=>source);
 }
 
+export async function allMatrixTemplates(){
+ const ctx=active;
+ const response=await fetch('/api/matrix-templates',{headers:workspaceHeaders(ctx)}).catch(()=>null);
+ sameIdentity(ctx);
+ if(!response||response.status===404)return null;
+ if(!response.ok)throw Error('Chưa đọc được mẫu ma trận cá nhân để sao lưu.');
+ const {templates}=await response.json();
+ sameIdentity(ctx);
+ if(!Array.isArray(templates))throw Error('Mẫu ma trận cá nhân trả dữ liệu không hợp lệ.');
+ return templates.map(({owner_id,...tpl})=>tpl);
+}
+
 export async function previewRestore(backup){
  const ctx=active;await ctx.remote;await ctx.disk;sameIdentity(ctx);
  if(ctx.pending.size)throw Error('Còn bản nháp chưa đồng bộ. Tải bản sao hiện tại và xử lý đồng bộ trước khi khôi phục.');

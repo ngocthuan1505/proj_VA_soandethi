@@ -48,6 +48,7 @@ from mach_backend.local_documents import (
     preview_exam_variant,
 )
 from mach_backend.matrix_import import matrix_slots, read_matrix
+from mach_backend.matrix_templates import install_matrix_templates
 from mach_backend.patch_confirmation import PendingGeneration, confirm_patch
 from mach_backend.patch_jobs import PatchJobRunner
 from mach_backend.patch_routes import build_generation_router, build_patch_job_router
@@ -57,6 +58,7 @@ from mach_backend.poc_policy import CallBudget, report_from_trace
 from mach_backend.poc_review import review_pack
 from mach_backend.poc_scoped_patch import install_scoped_patch
 from mach_backend.poc_trace import inspect_run
+from mach_backend.question_parser import install_question_parser
 from mach_backend.source_ocr import read_source
 from mach_backend.workspace_agent import AgentGeneration
 from mach_backend.workspace_backup import BACKUP_PATHS, MAX_BACKUP, install_backup
@@ -951,6 +953,8 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         return store.discard(owner_id, exam_id, job_id)
 
     install_curriculum_sources(app, store.connect, owner_resolver=lambda _request: owner_id)
+    install_matrix_templates(app, store.connect, owner_resolver=lambda _request: owner_id)
+    install_question_parser(app)
     install_extended_exports(app, owner_resolver=lambda _request: owner_id)
 
     if account_info is None:

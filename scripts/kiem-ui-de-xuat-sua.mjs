@@ -145,6 +145,8 @@ try {
     await send('Sửa phần đang chọn');
     await proposal.waitFor();
     await action('show-block-diff').click();
+    await dialog.locator('.diff-impact-summary').waitFor();
+    await dialog.locator('.diff-side-by-side').waitFor();
     await dialog.locator('ins').getByText(/kết quả \(đã sửa\)/).waitFor();
   };
 
@@ -308,6 +310,7 @@ try {
   await fs.mkdir(output, {recursive: true});
   await fs.writeFile(path.join(output, 'result.json'), JSON.stringify({
     scenario: 'IT-06', fixture: true, askPreservedQuestions: true, diffPreservedQuestions: true,
+    sideBySideDiffVerified: true,
     discardPreservedQuestions: true, repeatedConfirmAppliedOnce: true, richTextPreserved: true,
     undoRestoredQuestions: true, selectedRubricStepOnly: true, staleWriteRejected: true,
     conflictDisplayed: true, pythonConfirmations: confirmations, multilineConfirmedByPython: true,

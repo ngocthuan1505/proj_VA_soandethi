@@ -225,10 +225,52 @@ try {
  await attachedSource.getByText('Xem và chọn từng trang',{exact:true}).click();
  assert.match(await attachedSource.getByText(/Slide 3/).innerText(),/Slide 3/);
  assert.equal(await attachedSource.getByText(/Trang 1/).count(),0);
+ await dialog.locator('[data-action="close"]').first().click();
+
+ // Kiểm xem trước tách câu /api/parse-questions báo lỗi từng câu/trang trên Python FastAPI
+ await page.locator('[data-action="import-doc"]:visible').first().click();
+ const pasteForm=dialog.locator('#mvp-paste');
+ await pasteForm.locator('[name="name"]').fill('Đề cũ thử chẩn đoán');
+ await pasteForm.locator('[name="text"]').fill('Câu 1: (0,3 điểm) Tìm $x biết [không rõ].\nA. 1\nB. 2\nBài 1: Giải phương trình $2x=4$.');
+ await pasteForm.locator('[type="submit"]').click();
+ const parseReq=page.waitForResponse(r=>r.url()===base+'/api/parse-questions'&&r.request().method()==='POST');
+ await dialog.locator('[data-action="parse-old"]').click();
+ const parseRes=await parseReq;
+ assert.equal(parseRes.status(),200);
+ await dialog.locator('#parse-issues').waitFor();
+ const parseIssuesText=await dialog.locator('#parse-issues').innerText();
+ assert.match(parseIssuesText,/Trang 1/);
+ assert.match(parseIssuesText,/0,25/);
+ assert.match(parseIssuesText,/LaTeX/);
+ assert.match(parseIssuesText,/phương án/);
+ await dialog.locator('[data-action="close"]').first().click();
+
+ // Kiểm mẫu ma trận cá nhân tái sử dụng (POST / áp dụng ép matrixConfirmed=false / DELETE)
+ await page.locator('[data-action="matrix"]:visible').first().click();
+ const tplPanel=dialog.locator('#matrix-templates-panel');
+ await tplPanel.locator('summary').click();
+ await dialog.locator('#matrix-template-name').fill('Mẫu IT-09 tái sử dụng');
+ const createTplRes=page.waitForResponse(r=>r.url()===base+'/api/matrix-templates'&&r.request().method()==='POST');
+ await dialog.locator('#matrix-template-save').click();
+ assert.equal((await createTplRes).status(),201);
+ const applyTplBtn=tplPanel.locator('[data-apply-template]').first();
+ await applyTplBtn.waitFor();
+ await Promise.all([write(),applyTplBtn.click()]);
+ assert.equal(await dialog.locator('#matrix-confirm').isChecked(),false);
+ await dialog.locator('#matrix-templates-panel summary').click();
+ const delTplBtn=dialog.locator('#matrix-templates-panel [data-delete-template]').first();
+ await delTplBtn.waitFor();
+ const delTplRes=page.waitForResponse(r=>r.url().startsWith(base+'/api/matrix-templates/')&&r.request().method()==='DELETE');
+ await delTplBtn.click();
+ assert.equal((await delTplRes).status(),200);
+ await delTplBtn.waitFor({state:'detached'});
+ assert.deepEqual(errors,[]);
+
  await fs.writeFile(path.join(out,'result.json'),JSON.stringify({
   scenario:'IT-09',previewReadOnly:true,sourceIdPreserved:true,linkedPageOpened:true,
   chosenQuotePreserved:true,answerPreserved:true,relatedApprovalInvalidated:true,
   unrelatedQuestionUnchanged:true,sourcePageEdited:2,sourceVersion:2,mobileReload:true,fixture:true,
+  parseQuestionsDiagnosticsVerified:true,matrixTemplatesLifecycleVerified:true,
   lessonPicker:{chapter:3,individual:1,accentInsensitiveSearch:true,selectionPersisted:true,wholeVolumeWithActiveSearch:true,personalSourceCreatedAndAttached:true,personalImportFormats:['TXT','DOCX','PDF','PPTX'],previewedPdfPage:2,selectedReorderedSlide:3,selectedExcerptOnly:true,originalLocationShownAfterAttach:true,personalImportNoAiConsent:true},
  },null,2));
 } finally {

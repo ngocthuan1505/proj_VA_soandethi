@@ -63,7 +63,15 @@ async function confirmOnServer(result){
  }catch(error){c.toast('Chưa đồng bộ đề xuất sửa. '+friendlyClientMessage(error));}
  finally{busy=false;stage='';refreshWorkbench();}
 }
-function showDiff(){const result=currentProposal();const current=blocksOf(c.exam());c.modal('Xem thay đổi trước khi áp dụng',`<div class="block-diffs">${result.edits.map(edit=>{const old=current.find(b=>b.id===edit.blockId);return `<article><b>Bài ${c.exam().questions.findIndex(q=>q.id===edit.questionId)+1} · ${esc({stem:'Đề bài',explanation:'Lời giải',rubric:'Thang điểm',figure:'Hình vẽ',options:'Phương án',answer:'Đáp án trắc nghiệm',answerText:'Đáp án ngắn',truthValues:'Đáp án đúng–sai'}[edit.field]||'Nội dung')}</b><div class="diff"><del>${diffContentHTML(edit.field,old?.content)}</del><ins>${diffContentHTML(edit.field,edit.content)}</ins></div></article>`;}).join('')}</div><div class="modal-foot">${b('discard-block-patch','Bỏ đề xuất')}${b('apply-block-patch','Áp dụng cùng một lần','class="primary"')}</div>`);}
+function showDiff(){
+ const result=currentProposal(),e=c.exam(),current=blocksOf(e);
+ const fieldNames={stem:'Đề bài',data:'Dữ kiện',explanation:'Lời giải',rubric:'Thang điểm',figure:'Hình vẽ',options:'Phương án',answer:'Đáp án trắc nghiệm',answerText:'Đáp án ngắn',truthValues:'Đáp án đúng–sai'};
+ const touchedIds=new Set(result.edits.map(edit=>edit.questionId).filter(Boolean));
+ const affectedLabels=[...new Set(result.edits.map(edit=>fieldNames[edit.field]||'Nội dung'))];
+ const untouched=Math.max(0,e.questions.length-touchedIds.size);
+ const summaryHTML=`<div class="diff-impact-summary" role="status"><b>Sửa ${touchedIds.size||result.edits.length} câu · Giữ nguyên ${untouched} câu còn lại</b><div class="diff-impact-pills">${affectedLabels.map(label=>`<span class="pill">${esc(label)}</span>`).join('')}</div></div>`;
+ c.modal('Xem thay đổi trước khi áp dụng',`${summaryHTML}<div class="block-diffs">${result.edits.map(edit=>{const old=current.find(b=>b.id===edit.blockId);return `<article><b>Bài ${e.questions.findIndex(q=>q.id===edit.questionId)+1} · ${esc(fieldNames[edit.field]||'Nội dung')}</b><div class="diff diff-side-by-side"><div class="diff-col"><span class="diff-col-label">Bản gốc hiện tại</span><del>${diffContentHTML(edit.field,old?.content)}</del></div><div class="diff-col"><span class="diff-col-label">Đề xuất thay đổi</span><ins>${diffContentHTML(edit.field,edit.content)}</ins></div></div></article>`;}).join('')}</div><div class="modal-foot">${b('discard-block-patch','Bỏ đề xuất')}${b('apply-block-patch','Áp dụng cùng một lần','class="primary"')}</div>`);
+}
 function filterLibrary(query){
  const cards=document.querySelectorAll('.wb-library-card');
  const search=query.trim().toLocaleLowerCase('vi-VN');
