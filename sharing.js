@@ -19,15 +19,18 @@ export async function openSharing(c,api,{localPoC=false,sharedSnapshots=false}={
   '<p><b>'+esc(exam.title)+'</b> · Bản '+exam.revision+' · '+exam.questions.length+' câu</p>'+
   '<label class="source-choice"><input name="answers" type="checkbox"> Kèm đáp án, lời giải và barem</label>'+
   '<label class="source-choice"><input name="allowCopy" type="checkbox" checked> Cho phép tạo bản sao để chỉnh sửa</label>'+
-  (sharedSnapshots?'<label class="source-choice"><input name="community" type="checkbox"> Công bố bản học sinh trong kho cộng đồng</label><p class="hint">Người dùng cùng bản app có thể tìm và mở đề công bố. Chỉ công bố tài liệu được phép chia sẻ.</p>':'')+
+  (sharedSnapshots?'<label class="source-choice"><input name="community" type="checkbox"> Công bố bản học sinh trong kho cộng đồng</label><p class="hint">Người dùng cùng bản app có thể tìm và mở đề công bố. Chỉ công bố tài liệu được phép chia sẻ.</p><div data-community-fields hidden><label class="source-choice"><input name="consentPublic" type="checkbox"> Đồng ý công bố công khai trên kho cộng đồng (chỉ bản học sinh)</label><div class="grid2"><label>Bộ sách (tùy chọn)<input name="series" maxlength="150" value="'+esc(exam.series||'')+'"></label><label>Chương (tùy chọn)<input name="chapter" maxlength="200" value="'+esc(exam.chapter||'')+'"></label></div></div>':'')+
   '<div class="modal-foot"><button class="primary" type="submit">Tạo liên kết chỉ xem</button></div></form>'+
   (sharedSnapshots?'<button type="button" data-action="community-exams">Mở kho đề cộng đồng</button>':'')+
   (result.shares.length?'<section class="shared-links"><h3>Liên kết đang mở</h3><p class="hint">Thu hồi ngăn truy cập tiếp; không xóa nội dung người khác đã xem hoặc tải.</p>'+result.shares.map(linkRow).join('')+'</section>':''));
  const form=document.querySelector('#share-form');
+ const communityFields=form.querySelector('[data-community-fields]');
  form.elements.community?.addEventListener('change',()=>{
   const publish=form.elements.community.checked;
   form.elements.answers.disabled=publish;
   if(publish)form.elements.answers.checked=false;
+  if(communityFields)communityFields.hidden=!publish;
+  if(form.elements.consentPublic)form.elements.consentPublic.checked=publish;
   form.querySelector('[type=submit]').textContent=publish?'Công bố bản học sinh':'Tạo liên kết chỉ xem';
  });
 }
@@ -40,7 +43,10 @@ export async function createSharing(c,api,form){
  try{
   await c.persist();
   if(!form.isConnected||!document.querySelector('#dialog').open)return;
-  const result=await api('/api/share',{examId:form.dataset.exam,baseRevision:Number(form.dataset.revision),answers:data.has('answers'),allowCopy:data.has('allowCopy'),...(data.has('community')?{community:true}:{})});
+  const community=data.has('community');
+  const series=String(data.get('series')||'').trim();
+  const chapter=String(data.get('chapter')||'').trim();
+  const result=await api('/api/share',{examId:form.dataset.exam,baseRevision:Number(form.dataset.revision),answers:data.has('answers'),allowCopy:data.has('allowCopy'),...(community?{community:true,consentPublic:data.has('consentPublic'),...(series?{series}:{}),...(chapter?{chapter}:{})}:{})});
   if(!form.isConnected||!document.querySelector('#dialog').open){
    c.toast('Đã tạo liên kết. Mở Chia sẻ để lấy hoặc thu hồi.');return;
   }
@@ -56,7 +62,7 @@ export async function createSharing(c,api,form){
 }
 
 export async function openCommunity(c,api){
- c.modal('Kho đề cộng đồng',`<form id="community-filter"><label>Tìm tên đề<input name="q" type="search" maxlength="120"></label><div class="grid2"><label>Môn<input name="subject" maxlength="80" placeholder="Ví dụ: Toán"></label><label>Lớp<select name="grade"><option value="">Tất cả</option>${Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join('')}</select></label></div><button type="submit">Tìm đề</button><p data-community-status role="status"></p><div data-community-results></div><div class="row"><button type="button" data-community-page="prev">Trang trước</button><button type="button" data-community-page="next">Trang sau</button></div></form>`);
+ c.modal('Kho đề cộng đồng',`<form id="community-filter"><label>Tìm tên đề<input name="q" type="search" maxlength="120"></label><div class="grid2"><label>Môn<input name="subject" maxlength="80" placeholder="Ví dụ: Toán"></label><label>Lớp<select name="grade"><option value="">Tất cả</option>${Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join('')}</select></label><label>Bộ sách<input name="series" maxlength="150" placeholder="Kết nối tri thức"></label><label>Chương<input name="chapter" maxlength="200"></label></div><button type="submit">Tìm đề</button><p data-community-status role="status"></p><div data-community-results></div><div class="row"><button type="button" data-community-page="prev">Trang trước</button><button type="button" data-community-page="next">Trang sau</button></div></form>`);
  const form=document.querySelector('#community-filter'),results=form.querySelector('[data-community-results]');
  const status=form.querySelector('[data-community-status]');
  const prev=form.querySelector('[data-community-page=prev]'),next=form.querySelector('[data-community-page=next]');
@@ -74,7 +80,8 @@ export async function openCommunity(c,api){
    status.textContent=data.exams.length?`Trang ${page} · ${data.exams.length} đề`:'Chưa có đề phù hợp.';
    results.innerHTML=data.exams.map(item=>{
     const token=encodeURIComponent(item.token);
-    return `<article class="small-card"><h3>${esc(item.title)}</h3><p>${esc(item.subject)} · Lớp ${esc(item.grade)} · ${item.questions} câu</p><div class="row"><a href="/s/${token}" target="_blank" rel="noopener noreferrer">Xem đề</a>${item.allowCopy?`<a href="/?copy=${token}">Sao về kho của tôi</a><button type="button" data-action="community-source" data-token="${token}">Dùng làm nguồn</button>`:''}</div></article>`;
+    const meta=[item.subject,item.grade?'Lớp '+item.grade:'',item.series,item.chapter,item.questions+' câu'].filter(Boolean).join(' · ');
+    return `<article class="small-card"><h3>${esc(item.title)}</h3><p>${esc(meta)}</p><div class="row"><a href="/s/${token}" target="_blank" rel="noopener noreferrer">Xem đề</a>${item.allowCopy?`<button type="button" data-action="community-clone" data-token="${token}">Sao bản độc lập (UUID mới)</button><a href="/?copy=${token}">Sao về kho của tôi</a><button type="button" data-action="community-source" data-token="${token}">Dùng làm nguồn</button>`:''}</div></article>`;
    }).join('');
    prev.disabled=page===1;next.disabled=!data.hasMore;
   }catch(error){
@@ -87,6 +94,19 @@ export async function openCommunity(c,api){
  });
  prev.onclick=()=>load(page-1);next.onclick=()=>load(page+1);
  await load(1);
+}
+
+export async function cloneCommunityExam(c,api,button){
+ const token=button.dataset.token;
+ const result=await api('/api/community-exams/'+encodeURIComponent(token)+'/clone',{});
+ const cloned=result?.clonedExam;
+ if(!cloned?.id)throw Error('Không tạo được bản sao độc lập.');
+ c.getState().exams.push(cloned);
+ c.getState().current=cloned.id;
+ document.querySelector('#dialog')?.close();
+ await c.persist();
+ c.render();
+ c.toast('Đã tạo bản sao độc lập với UUID mới.');
 }
 
 export async function attachCommunitySource(c,api,button){

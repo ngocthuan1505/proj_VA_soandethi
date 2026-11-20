@@ -103,7 +103,7 @@ async function runOCR(docId){const d=current().docs.find(d=>d.id===docId);if(sta
 function showExtract(){const docs=current().docs.filter(d=>['image','pdf'].includes(d.kind));c.modal('Rút trích đề thi',`${note('Nhận dạng tại máy bằng dữ liệu tiếng Việt/Anh. Văn bản và vị trí chưa chắc được giữ để thầy cô đối chiếu; ký hiệu Toán cần kiểm tra lại.')}<div class="small-card">${docs.length?docs.map(d=>`<div class="row space"><span>${esc(d.name)}</span>${btn('open-source','Mở & rút trích','',`data-doc="${d.id}"`)}</div>`).join(''):note('Chưa có ảnh hoặc PDF trong đề này.')}</div>${foot(btn('import-doc','Thêm ảnh / PDF gốc','primary'))}`);}
 async function parseOld(id){const d=current().docs.find(d=>d.id===id),text=pagesOf(d).find(p=>p.number===activeSourcePage)?.text||d.text;const result=await api('/api/parse-questions',{text,images:pagesOf(d).find(p=>p.number===activeSourcePage)?.images||[]});if(!result.questions.length)throw Error('Chưa tìm thấy câu đánh số “Câu 1.” hoặc “Bài 1.”. Có thể sửa bản nhập rồi thử lại.');prepared={type:'old-questions',docId:id,page:activeSourcePage,questions:result.questions,examId:current().id,revision:current().revision};c.modal('Xem câu tách từ đề cũ',`${note('Đây là tách cấu trúc bằng quy tắc, chưa suy luận đáp án. Thầy cô cần điền đáp án và rà soát ký hiệu trước khi duyệt.')}<div class="generated-preview">${result.questions.map((q,i)=>`<div class="small-card"><b>${q.type==='essay'?'Bài':'Câu'} ${i+1}${q.points?' ('+q.points+' điểm)':''}. ${q.stem.includes('$')?katexFragment(q.stem):esc(q.stem)}</b>${(q.images||[]).map(im=>`<img class="import-image-preview" src="${esc(im.data)}" alt="${esc(im.caption)}">`).join('')}<p>${q.options.map((o,j)=>String.fromCharCode(65+j)+'. '+esc(o||'[chưa đọc được]')).join('<br>')}</p>${q.incomplete?'<span class="pill warn">Cần bổ sung phương án</span>':''}</div>`).join('')}</div>${foot(btn('apply-old-questions','Thêm vào đề hiện tại')+btn('apply-old-questions','Mở thành đề mới','primary','data-mode="new"'))}`);}
 let exportVariantSelection;
-function showExport(){const e=current();c.modal('Xuất đề',`${note('Xuất Word, PDF hoặc HTML. Bản Word giữ công thức có thể chỉnh sửa; hình học được nhúng dưới dạng ảnh.')}${status?.matrixPython&&e.questions.length>=2?`<details id="export-variants"><summary>Tạo mã đề</summary><fieldset><legend>Câu được đổi thứ tự</legend><p>Chọn ít nhất hai câu độc lập, cùng dạng. Thứ tự phương án và đáp án từng câu được giữ.</p>${e.questions.map((q,i)=>`<label class="consent"><input type="checkbox" value="${esc(q.id)}" data-kind="${esc(q.type||'mcq')}"> Câu ${i+1} · ${esc((q.stem||'').slice(0,90))}</label>`).join('')}</fieldset><label for="export-variant-code">Bản xuất</label><select id="export-variant-code"></select><p data-variant-status role="status"></p></details>`:''}<div class="grid2">${[false,true].map(t=>`<div class="choice-card"><h3>${t?'Bản giáo viên':'Bản học sinh'}</h3><p>${t?'Có đáp án, giải thích, nguồn và trạng thái rà soát.':'Không chứa đáp án, giải thích hoặc hội thoại.'}</p><div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-file',format==='docx'?'Word (.docx)':format==='pdf'?'PDF':'HTML',format==='docx'?'primary':'',`data-teacher="${t}" data-format="${format}"`)).join('')}</div></div>`).join('')}</div><div class="alert">${e.questions.filter(q=>!isApproved(q)).length} câu chưa được giáo viên duyệt.</div>${foot(btn('backup-local','Sao lưu toàn bộ đề (.json)'))}`);
+function showExport(){const e=current();c.modal('Xuất đề',`${note('Xuất Word, PDF hoặc HTML. Bản Word giữ công thức có thể chỉnh sửa; hình học được nhúng dưới dạng ảnh.')}${status?.matrixPython&&e.questions.length>=2?`<details id="export-variants"><summary>Tạo mã đề</summary><fieldset><legend>Câu được đổi thứ tự</legend><p>Chọn ít nhất hai câu độc lập, cùng dạng. Thứ tự phương án và đáp án từng câu được giữ.</p>${e.questions.map((q,i)=>`<label class="consent"><input type="checkbox" value="${esc(q.id)}" data-kind="${esc(q.type||'mcq')}"> Câu ${i+1} · ${esc((q.stem||'').slice(0,90))}</label>`).join('')}</fieldset><label for="export-variant-code">Bản xuất</label><select id="export-variant-code"></select><p data-variant-status role="status"></p></details>`:''}<div class="grid2">${[false,true].map(t=>`<div class="choice-card"><h3>${t?'Bản giáo viên':'Bản học sinh'}</h3><p>${t?'Có đáp án, giải thích, nguồn và trạng thái rà soát.':'Không chứa đáp án, giải thích hoặc hội thoại.'}</p><div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-file',format==='docx'?'Word (.docx)':format==='pdf'?'PDF':'HTML',format==='docx'?'primary':'',`data-teacher="${t}" data-format="${format}"`)).join('')}</div></div>`).join('')}</div><details id="export-extended-a4"><summary>Đáp án/Barem &amp; Ma trận/Đặc tả (A4 · DOCX)</summary><div class="export-formats">${btn('export-extended','Đáp án &amp; Barem (HTML A4)','','data-kind="answer-key-rubric" data-format="html"')}${btn('export-extended','Đáp án &amp; Barem (Word)','','data-kind="answer-key-rubric" data-format="docx"')}${btn('export-extended','Ma trận &amp; Đặc tả (HTML A4)','','data-kind="matrix-specification" data-format="html"')}${btn('export-extended','Ma trận &amp; Đặc tả (Word)','','data-kind="matrix-specification" data-format="docx"')}</div></details><div class="alert">${e.questions.filter(q=>!isApproved(q)).length} câu chưa được giáo viên duyệt.</div>${foot(btn('backup-local','Sao lưu toàn bộ đề (.json)'))}`);
  const variants=$('#export-variants');
  if(!variants)return;
  const guide=variants.querySelector('fieldset p');
@@ -160,6 +160,27 @@ async function previewVariant(node){
  }catch(error){
   if(pending.isConnected)pending.textContent=error.message;
  }
+}
+async function exportExtended(node){
+ if(!flushEditor())throw Error('Gõ xong chữ đang nhập rồi thử lại.');
+ const kind=node.dataset.kind,format=node.dataset.format;
+ const response=await fetch('/api/exports/'+encodeURIComponent(kind),{
+  method:'POST',
+  headers:{...db.workspaceHeaders(),'Content-Type':'application/json'},
+  body:JSON.stringify({exam:clone(current()),audience:'teacher',teacher:true,format}),
+ });
+ if(!response.ok){
+  let message='Chưa xuất được bản tổng hợp.';
+  try{const err=await response.json();message=err.detail?.message||err.error||message;}catch{}
+  throw Error(message);
+ }
+ const blob=await response.blob();
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement('a');
+ link.href=url;
+ link.download=`${kind==='answer-key-rubric'?'Dap_an_barem':'Ma_tran_dac_ta'}.${format}`;
+ document.body.append(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
 async function exportFile(node,batch=false){
  if(!flushEditor())throw Error('Gõ xong chữ đang nhập rồi thử lại.');
@@ -239,6 +260,7 @@ export async function handleMVPAction(action,node){flushEditor();if(await handle
  case 'apply-old-questions':{const p=prepared;if(p?.type!=='old-questions'||p.examId!==current().id||p.revision!==current().revision)throw Error('Đề đã thay đổi. Tách lại để xem bản mới.');if(node.dataset.mode==='new'){const old=current(),e=blank(old.subject,c.getState().prefs);Object.assign(e,{title:old.docs.find(d=>d.id===p.docId)?.name.replace(/\.[^.]+$/,'')||'Đề nhập từ tài liệu',grade:old.grade,school:old.school,minutes:old.minutes,docs:clone(old.docs.filter(d=>d.id===p.docId)),fullExam:true,chat:[],layout:{font:'Times New Roman',fontSize:15}});c.getState().exams.push(e);c.getState().current=e.id;c.setTab('outline');}c.change('Thêm câu tách từ đề cũ',e=>{for(const item of p.questions){const q={...item,id:uid(),v:1,topic:e.matrix[0]?.topic||'Đề cũ',level:0,answerKnown:false,explanation:'Chưa nhập hoặc suy luận đáp án. Giáo viên cần rà soát.',source:{docId:p.docId,page:p.page,location:'Trang '+p.page},check:null};e.questions.push(q);check(e,q);}});$('#dialog').close();return true;}
  case 'export':showExport();return true;
  case 'export-file':await exportFile(node);return true;
+ case 'export-extended':await exportExtended(node);return true;
  case 'export-pack':await exportFile(node,true);return true;
  case 'preview-variant':await previewVariant(node);return true;
  case 'web-search':showSearch();return true;
