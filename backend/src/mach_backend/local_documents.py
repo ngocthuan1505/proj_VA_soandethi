@@ -29,6 +29,7 @@ from mach_backend.word_export import (
     field_document,
     image_bytes,
     math_parts,
+    recipient_line,
     uses_table,
 )
 from mach_backend.word_math_read import paragraph_text
@@ -283,7 +284,7 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         f"<p>Môn {plain(exam.get('subject'))} · Lớp {plain(exam.get('grade'))}"
         f" · {plain(exam.get('minutes'))} phút</p>"
     )
-    body += f"<p>{inline_html(exam.get('instructions'))}</p>"
+    body += f"<p>{plain(recipient_line(teacher))}</p><p>{inline_html(exam.get('instructions'))}</p>"
     presenting = not teacher and rendered_math is not None and bool(exam["questions"])
     has_table = any(uses_table(q) for q in exam["questions"])
     has_passage = bool(exam.get("quote", {}).get("text"))

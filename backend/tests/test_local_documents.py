@@ -41,6 +41,8 @@ def test_student_export_hides_teacher_data_and_escapes_html(exam):
     assert "Mai báo với cô Loan." not in student
     teacher = exam_html(exam, True, "http://localhost")
     assert "Đáp án B." in teacher and "Chỉ dành cho giáo viên" in teacher
+    assert "Họ và tên:" in student and "Họ và tên:" not in teacher
+    assert "BẢN GIÁO VIÊN" in teacher and "BẢN GIÁO VIÊN" not in student
 
 
 def test_export_includes_image_and_refuses_to_silently_drop_geometry(exam):
