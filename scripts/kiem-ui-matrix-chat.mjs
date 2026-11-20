@@ -132,7 +132,11 @@ try{
  await page.locator('[data-action="toggle-ai"]').first().click();
  await page.locator('#matrix-request-settings').evaluate(n=>n.open=true);await page.locator('#matrix-inputs').evaluate(n=>n.open=true);
  await page.locator('#matrix-source-name').fill('Đổi nhãn nguồn trước khi bỏ');
+ const discardResponse=page.waitForResponse(response=>
+  response.url().startsWith(base+'/api/exams/'+exam.id+'/proposals/')
+   &&response.url().endsWith('/discard')&&response.request().method()==='POST');
  await page.locator('#matrix-dismiss').click();
+ assert((await discardResponse).ok());
  assert.equal((await state()).revision,mobileRevision);
  assert((await api('/api/exams/'+exam.id+'/proposals/latest')).discarded);
  assert.deepEqual(errors,[]);assert.equal(chats,0);assert.deepEqual(legacyJobRequests,[]);
