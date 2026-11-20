@@ -137,6 +137,58 @@ def test_pptx_preserves_slide_numbers_and_natural_order(tmp_path):
     ]
 
 
+def test_pptx_preserves_presentation_order_when_slide_files_differ(tmp_path):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(
+            "ppt/presentation.xml",
+            '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            "<p:sldIdLst>"
+            '<p:sldId id="258" r:id="rId3"/>'
+            '<p:sldId id="256" r:id="rId1"/>'
+            '<p:sldId id="257" r:id="rId2"/>'
+            "</p:sldIdLst></p:presentation>",
+        )
+        archive.writestr(
+            "ppt/_rels/presentation.xml.rels",
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" '
+            'Target="slides/slide1.xml"/>'
+            '<Relationship Id="rId2" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" '
+            'Target="slides/slide2.xml"/>'
+            '<Relationship Id="rId3" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" '
+            'Target="slides/slide3.xml"/>'
+            "</Relationships>",
+        )
+        for number in (1, 2, 3):
+            archive.writestr(
+                f"ppt/slides/slide{number}.xml",
+                '<p xmlns="http://schemas.openxmlformats.org/drawingml/2006/main">'
+                f"<r><t>Nội dung slide {number}</t></r></p>",
+            )
+    encoded = base64.b64encode(buffer.getvalue()).decode()
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        response = client.post(
+            "/api/extract",
+            json={
+                "name": "reordered.pptx",
+                "data": "data:application/octet-stream;base64," + encoded,
+            },
+        )
+        response.raise_for_status()
+        assert response.json()["sentToAI"] is False
+        pages = response.json()["pages"]
+    assert [(p["number"], p["text"]) for p in pages] == [
+        (1, "Nội dung slide 3"),
+        (2, "Nội dung slide 1"),
+        (3, "Nội dung slide 2"),
+    ]
+
+
 @pytest.mark.parametrize(
     "name,data", [("anh.png", b"abc"), ("de.docx", b"not a zip"), ("x.txt", b"\xff")]
 )

@@ -137,7 +137,7 @@ def run_case(script, mode, output):
                     stdout=browser_log,
                     stderr=subprocess.STDOUT,
                     check=True,
-                    timeout=180,
+                    timeout=300 if Path(script).name == "kiem-ui-xuat-chia-se.mjs" else 180,
                 )
         finally:
             if server and server.poll() is None:

@@ -292,12 +292,33 @@ try {
   assert.deepEqual(persisted.value.exams[0].questions.map(q => q.id), exam.questions.map(q => q.id));
 
   await page.keyboard.press('Escape');
+  await action('export').click();
+  const extSection = dialog.locator('#export-extended-a4');
+  await extSection.locator('summary').click();
+  const [rubricRes] = await Promise.all([
+    page.waitForResponse(r => r.url().includes('/api/exports/answer-key-rubric') && r.request().method() === 'POST'),
+    extSection.locator('[data-action="export-extended"][data-kind="answer-key-rubric"][data-format="html"]').click(),
+  ]);
+  assert.equal(rubricRes.status(), 200);
+  const rubricHtml = await rubricRes.text();
+  assert(rubricHtml.includes('@page') && rubricHtml.includes('LOI_GIAI_RIENG_731'));
+  const [specRes] = await Promise.all([
+    page.waitForResponse(r => r.url().includes('/api/exports/matrix-specification') && r.request().method() === 'POST'),
+    extSection.locator('[data-action="export-extended"][data-kind="matrix-specification"][data-format="html"]').click(),
+  ]);
+  assert.equal(specRes.status(), 200);
+  assert((await specRes.text()).includes('@page'));
+
+  await page.keyboard.press('Escape');
   form = await openForm();
   await form.locator('[name=answers]').check();
   await form.locator('[name=allowCopy]').check();
   await form.locator('[name=community]').check();
   assert(await form.locator('[name=answers]').isDisabled());
   assert.equal(await form.locator('[name=answers]').isChecked(), false);
+  assert.equal(await form.locator('[name=consentPublic]').isChecked(), true);
+  await form.locator('[name=series]').fill('Kết nối tri thức');
+  await form.locator('[name=chapter]').fill('Chương 1');
   await form.getByRole('button', {name: 'Công bố bản học sinh'}).click();
   await urlField.waitFor();
   const publicationUrl = new URL(await urlField.inputValue(), base);
@@ -306,6 +327,8 @@ try {
   const filter = dialog.locator('#community-filter');
   await filter.getByLabel('Tìm tên đề').fill('de thu xuat');
   await filter.getByLabel('Môn').fill('toan');
+  await filter.getByLabel('Bộ sách').fill('ket noi');
+  await filter.getByLabel('Chương').fill('chuong 1');
   const searched = page.waitForResponse(r => r.url().includes('/api/community-exams?') &&
     new URL(r.url()).searchParams.get('q') === 'de thu xuat');
   await filter.getByRole('button', {name: 'Tìm đề'}).click();
@@ -329,6 +352,26 @@ try {
   }, {url: kv, originalId: exam.id});
   const [publication] = await list();
   assert(publication.community && !publication.answers);
+  await action('share').click();
+  await dialog.getByRole('button', {name: 'Mở kho đề cộng đồng'}).click();
+  const cloneFilter = dialog.locator('#community-filter');
+  await cloneFilter.getByLabel('Tìm tên đề').fill('de thu xuat');
+  await cloneFilter.getByRole('button', {name: 'Tìm đề'}).click();
+  const cloneListing = cloneFilter.getByRole('article').filter({hasText: exam.title});
+  await cloneListing.waitFor();
+  const [clonedRes] = await Promise.all([
+    page.waitForResponse(r => r.url().includes(`/api/community-exams/${publication.token}/clone`) && r.request().method() === 'POST'),
+    cloneListing.locator('[data-action="community-clone"]').click(),
+  ]);
+  assert.equal(clonedRes.status(), 201);
+  await page.waitForFunction(async ({url, originalId, token}) => {
+    const {value} = await (await fetch(url + '?key=state')).json();
+    return value.exams.some(e => e.id === value.current && e.id !== originalId && e.clonedFrom?.token === token);
+  }, {url: kv, originalId: exam.id, token: publication.token});
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  const afterCloneReload = await (await page.request.get(kv + '?key=state')).json();
+  assert(afterCloneReload.value.exams.some(e => e.id !== exam.id && e.clonedFrom?.token === publication.token));
   assert((await page.request.post(base + '/api/share/revoke', {
     headers: {Origin: base}, data: {token: publication.token},
   })).ok());
@@ -376,6 +419,8 @@ try {
     variantPreviewMatchesOutput: true,
     browserShufflesIndependentOptionsOnly: true,
     communityPublishedCopiedAttachedAndRevoked: true,
+    extendedExportsA4Triggered: true,
+    communityClonedWithNewUuid: true,
   }, null, 2));
   console.log('IT-10: sáu bản xuất và luồng chia sẻ Chrome/FastAPI đạt.');
 } finally {
