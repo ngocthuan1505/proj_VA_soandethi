@@ -543,6 +543,263 @@ _POSITION_DEPENDENT = re.compile(
     r"phương án (?:trên|dưới|[a-d]\b)|(?:chọn|đáp án)\s*\(?[a-d]\b|all of|none of|both)",
 )
 _QUESTION_REFERENCE = re.compile(r"\b(?:câu|bài)\s*(?:số\s*)?(\d+)\b", re.IGNORECASE)
+_OPTION_LABELS = ("A", "B", "C", "D")
+
+
+def _normalize_block_token(value):
+    if isinstance(value, str):
+        cleaned = value.strip()
+        return cleaned or None
+    if type(value) is int:
+        return str(value)
+    if value is None:
+        return None
+    raise AIError("invalid_variant", "Mã nhóm ngữ liệu chưa hợp lệ.", http_status=400)
+
+
+def _block_identity(question):
+    if not isinstance(question, dict):
+        return None
+    passage_id = _normalize_block_token(question.get("passageId"))
+    group_id = _normalize_block_token(question.get("groupId"))
+    if passage_id is None and group_id is None:
+        return None
+    return (passage_id, group_id)
+
+
+def _block_display_label(block_key, title=None):
+    passage_id, group_id = block_key
+    if passage_id is not None and group_id is not None and str(passage_id) != str(group_id):
+        base = f"Ngữ liệu {passage_id} · Nhóm {group_id}"
+    elif passage_id is not None:
+        base = f"Ngữ liệu {passage_id}"
+    else:
+        base = f"Nhóm {group_id}"
+    if isinstance(title, str) and title.strip():
+        return f"{base} ({title.strip()})"
+    return base
+
+
+def _answer_code(question):
+    if not isinstance(question, dict):
+        return None
+    ans = saved_answer(question)
+    if ans is None:
+        return None
+    return saved_answer_label(question)
+
+
+def describe_variant_option_mapping(original_question, variant_question):
+    """Tính ánh xạ phương án MCQ giữa câu gốc và câu sau hoán vị mà không sửa dữ liệu câu."""
+    original_answer = _answer_code(original_question)
+    variant_answer = _answer_code(variant_question)
+    if (
+        not isinstance(original_question, dict)
+        or not isinstance(variant_question, dict)
+        or original_question.get("type", "mcq") != "mcq"
+        or variant_question.get("type", "mcq") != "mcq"
+    ):
+        return {
+            "optionsShuffled": False,
+            "optionMapping": {},
+            "originalAnswer": original_answer,
+            "variantAnswer": variant_answer,
+        }
+    original_options = original_question.get("options")
+    variant_options = variant_question.get("options")
+    if (
+        not isinstance(original_options, list)
+        or not isinstance(variant_options, list)
+        or len(original_options) != 4
+        or len(variant_options) != 4
+        or any(not isinstance(opt, str) or not opt.strip() for opt in original_options)
+        or any(not isinstance(opt, str) or not opt.strip() for opt in variant_options)
+        or len(set(original_options)) != 4
+        or set(original_options) != set(variant_options)
+    ):
+        return {
+            "optionsShuffled": False,
+            "optionMapping": {},
+            "originalAnswer": original_answer,
+            "variantAnswer": variant_answer,
+        }
+    option_mapping = {
+        _OPTION_LABELS[old_idx]: _OPTION_LABELS[variant_options.index(opt)]
+        for old_idx, opt in enumerate(original_options)
+    }
+    return {
+        "optionsShuffled": original_options != variant_options,
+        "optionMapping": option_mapping,
+        "originalAnswer": original_answer,
+        "variantAnswer": variant_answer,
+    }
+
+
+def _summarize_passage_groups(original_questions, variant_questions):
+    original_order = []
+    original_numbers_by_key = {}
+    titles_by_key = {}
+    for idx, q in enumerate(original_questions, 1):
+        key = _block_identity(q)
+        if key is None:
+            continue
+        if key not in original_numbers_by_key:
+            original_order.append(key)
+            original_numbers_by_key[key] = []
+        original_numbers_by_key[key].append(idx)
+        title = q.get("passageTitle")
+        if key not in titles_by_key and isinstance(title, str) and title.strip():
+            titles_by_key[key] = title.strip()
+
+    variant_numbers_by_key = {}
+    for idx, q in enumerate(variant_questions, 1):
+        key = _block_identity(q)
+        if key is not None:
+            variant_numbers_by_key.setdefault(key, []).append(idx)
+
+    groups = []
+    for key in original_order:
+        v_nums = variant_numbers_by_key.get(key, [])
+        contiguous = bool(v_nums) and v_nums == list(range(v_nums[0], v_nums[-1] + 1))
+        groups.append(
+            {
+                "passageId": key[0],
+                "groupId": key[1],
+                "label": _block_display_label(key, titles_by_key.get(key)),
+                "originalNumbers": original_numbers_by_key[key],
+                "questionNumbers": v_nums,
+                "contiguous": contiguous,
+            }
+        )
+    return groups
+
+
+def _plan_variant_units(questions, ids):
+    selected = set(ids)
+    positions = [i for i, q in enumerate(questions) if q.get("id") in selected]
+    if len(positions) != len(ids) or {questions[i]["id"] for i in positions} != selected:
+        raise AIError(
+            "invalid_variant",
+            "Danh sách câu đã thay đổi. Chọn lại câu cần trộn.",
+            http_status=400,
+        )
+    selected_numbers = {str(i + 1) for i in positions}
+    if any(
+        selected_numbers.intersection(_QUESTION_REFERENCE.findall(text))
+        for question in questions
+        for text in (
+            question.get("stem"),
+            *(question["options"] if isinstance(question.get("options"), list) else []),
+            question.get("explanation"),
+        )
+        if isinstance(text, str)
+    ):
+        raise AIError(
+            "invalid_variant",
+            "Có câu được nhắc theo số trong đề. Hãy bỏ chọn câu đó.",
+            http_status=400,
+        )
+    first = questions[positions[0]]
+    span_indices = list(range(positions[0], positions[-1] + 1))
+    if any(
+        questions[i].get("type", "mcq") != first.get("type", "mcq")
+        or uses_table(questions[i]) != uses_table(first)
+        or questions[i].get("sectionId") != first.get("sectionId")
+        for i in span_indices
+    ):
+        raise AIError(
+            "invalid_variant",
+            "Chọn câu trong cùng phần, cùng dạng và cùng ngữ liệu bảng.",
+            http_status=400,
+        )
+    span_keys = [_block_identity(questions[i]) for i in span_indices]
+    unique_span_keys = set(span_keys)
+    if len(unique_span_keys) == 1:
+        single_key = next(iter(unique_span_keys))
+        return {
+            "mode": "intra_block" if single_key is not None else "standalone",
+            "positions": positions,
+            "units": [[i] for i in positions],
+            "block_key": single_key,
+            "contiguous_span": positions == span_indices,
+        }
+
+    # Khi chọn qua nhiều khối: mỗi khối ngữ liệu/nhóm phải đầy đủ 100% và đứng liên tiếp.
+    pos_set = set(positions)
+    if any(i not in pos_set and _block_identity(questions[i]) is not None for i in span_indices):
+        raise AIError(
+            "invalid_variant",
+            "Chọn câu trong cùng phần, cùng dạng và cùng ngữ liệu bảng.",
+            http_status=400,
+        )
+    all_key_positions = {}
+    for idx, question in enumerate(questions):
+        key = _block_identity(question)
+        if key is not None:
+            all_key_positions.setdefault(key, []).append(idx)
+
+    selected_keys = {_block_identity(questions[i]) for i in positions}
+    for key in selected_keys:
+        if key is None:
+            continue
+        full_indices = all_key_positions[key]
+        if full_indices != list(range(full_indices[0], full_indices[-1] + 1)):
+            raise AIError(
+                "invalid_variant",
+                "Nhóm ngữ liệu trong đề không liên tiếp; không thể hoán vị nguyên khối.",
+                http_status=400,
+            )
+        if not set(full_indices).issubset(pos_set):
+            raise AIError(
+                "invalid_variant",
+                "Không thể chọn một phần dở dang của nhóm ngữ liệu để trộn với câu ngoài nhóm.",
+                http_status=400,
+            )
+
+    has_standalone = None in selected_keys
+    has_bare_group = any(
+        key is not None and key[0] is None and key[1] is not None for key in selected_keys
+    )
+    if has_standalone and has_bare_group:
+        raise AIError(
+            "invalid_variant",
+            "Chọn câu trong cùng phần, cùng dạng và cùng ngữ liệu bảng.",
+            http_status=400,
+        )
+
+    units = []
+    idx = 0
+    while idx < len(positions):
+        pos = positions[idx]
+        key = _block_identity(questions[pos])
+        if key is None:
+            units.append([pos])
+            idx += 1
+        else:
+            full_indices = all_key_positions[key]
+            units.append(list(full_indices))
+            idx += len(full_indices)
+
+    if len(units) < 2:
+        raise AIError(
+            "invalid_variant",
+            "Chọn ít nhất hai câu hoặc hai khối ngữ liệu độc lập để tạo mã đề.",
+            http_status=400,
+        )
+    contiguous_span = positions == span_indices
+    if not contiguous_span and len({len(unit) for unit in units}) != 1:
+        raise AIError(
+            "invalid_variant",
+            "Chọn các khối ngữ liệu liền nhau khi kích thước các khối khác nhau.",
+            http_status=400,
+        )
+    return {
+        "mode": "multi_block",
+        "positions": positions,
+        "units": units,
+        "block_key": None,
+        "contiguous_span": contiguous_span,
+    }
 
 
 def shuffle_variant_question(question, offset):
@@ -581,45 +838,91 @@ def exam_variant(exam, variant):
         or any(not isinstance(value, str) or not value for value in ids)
         or len(set(ids)) != len(ids)
         or type(offset) is not int
-        or not 0 <= offset < min(6, len(ids))
+        or offset < 0
         or type(shuffle) is not bool
         or any(not isinstance(q, dict) for q in questions)
     ):
-        raise AIError("invalid_variant", "Chọn ít nhất hai câu và một mã đề hợp lệ.")
-    selected = set(ids)
-    positions = [i for i, q in enumerate(questions) if q.get("id") in selected]
-    if len(positions) != len(ids) or {questions[i]["id"] for i in positions} != selected:
-        raise AIError("invalid_variant", "Danh sách câu đã thay đổi. Chọn lại câu cần trộn.")
-    selected_numbers = {str(i + 1) for i in positions}
-    if any(
-        selected_numbers.intersection(_QUESTION_REFERENCE.findall(text))
-        for question in questions
-        for text in (
-            question.get("stem"),
-            *(question["options"] if isinstance(question.get("options"), list) else []),
-            question.get("explanation"),
-        )
-        if isinstance(text, str)
-    ):
-        raise AIError("invalid_variant", "Có câu được nhắc theo số trong đề. Hãy bỏ chọn câu đó.")
-    group = [questions[i] for i in positions]
-    first = group[0]
-    if any(
-        q.get("type", "mcq") != first.get("type", "mcq")
-        or uses_table(q) != uses_table(first)
-        or q.get("sectionId") != first.get("sectionId")
-        or q.get("groupId") != first.get("groupId")
-        or q.get("passageId") != first.get("passageId")
-        for q in questions[positions[0] : positions[-1] + 1]
-    ):
         raise AIError(
-            "invalid_variant",
-            "Chọn câu trong cùng phần, cùng dạng và cùng ngữ liệu bảng.",
+            "invalid_variant", "Chọn ít nhất hai câu và một mã đề hợp lệ.", http_status=400
         )
+    plan = _plan_variant_units(questions, ids)
+    units = plan["units"]
+    if not 0 <= offset < min(6, len(units)):
+        raise AIError(
+            "invalid_variant", "Chọn ít nhất hai câu và một mã đề hợp lệ.", http_status=400
+        )
+
     reordered = questions.copy()
-    for index, question in zip(positions, group[offset:] + group[:offset], strict=True):
-        candidate = shuffle_variant_question(question, offset) if shuffle else question
-        reordered[index] = {**candidate, "pageBreak": questions[index].get("pageBreak", False)}
+    mode = plan["mode"]
+    positions = plan["positions"]
+    if mode in ("standalone", "intra_block"):
+        group = [questions[i] for i in positions]
+        for index, question in zip(positions, group[offset:] + group[:offset], strict=True):
+            candidate = shuffle_variant_question(question, offset) if shuffle else question
+            reordered[index] = {
+                **candidate,
+                "pageBreak": questions[index].get("pageBreak", False),
+            }
+        if mode == "intra_block":
+            block_key = plan["block_key"]
+            block_indices = [i for i, q in enumerate(questions) if _block_identity(q) == block_key]
+            head_idx = block_indices[0]
+            if head_idx in set(positions):
+                orig_head = questions[head_idx]
+                orig_head_id = orig_head.get("id")
+                moved_idx = next(
+                    (idx for idx in positions if reordered[idx].get("id") == orig_head_id),
+                    head_idx,
+                )
+                if moved_idx != head_idx:
+                    for header_field in ("passageTitle", "passageText"):
+                        header_value = orig_head.get(header_field)
+                        if not (isinstance(header_value, str) and header_value.strip()):
+                            continue
+                        all_have_field = all(
+                            isinstance(questions[i].get(header_field), str)
+                            and bool(questions[i][header_field].strip())
+                            for i in block_indices
+                        )
+                        if not all_have_field:
+                            if not (
+                                isinstance(reordered[head_idx].get(header_field), str)
+                                and reordered[head_idx][header_field].strip()
+                            ):
+                                reordered[head_idx] = {
+                                    **reordered[head_idx],
+                                    header_field: header_value,
+                                }
+                            moved_copy = dict(reordered[moved_idx])
+                            moved_copy.pop(header_field, None)
+                            reordered[moved_idx] = moved_copy
+    else:
+        rotated_units = units[offset:] + units[:offset]
+        if plan["contiguous_span"]:
+            cursor = positions[0]
+            for unit_pos, src_unit in enumerate(rotated_units):
+                orig_start_break = questions[units[unit_pos][0]].get("pageBreak", False)
+                for local_idx, src_idx in enumerate(src_unit):
+                    question = questions[src_idx]
+                    candidate = shuffle_variant_question(question, offset) if shuffle else question
+                    page_break = (
+                        orig_start_break if local_idx == 0 else candidate.get("pageBreak", False)
+                    )
+                    reordered[cursor] = {**candidate, "pageBreak": page_break}
+                    cursor += 1
+        else:
+            for dest_unit, src_unit in zip(units, rotated_units, strict=True):
+                orig_start_break = questions[dest_unit[0]].get("pageBreak", False)
+                for local_idx, (dest_idx, src_idx) in enumerate(
+                    zip(dest_unit, src_unit, strict=True)
+                ):
+                    question = questions[src_idx]
+                    candidate = shuffle_variant_question(question, offset) if shuffle else question
+                    page_break = (
+                        orig_start_break if local_idx == 0 else candidate.get("pageBreak", False)
+                    )
+                    reordered[dest_idx] = {**candidate, "pageBreak": page_break}
+
     code = str(101 + offset)
     return {
         **exam,
@@ -633,21 +936,50 @@ def preview_exam_variant(payload):
     if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
         raise AIError("invalid_exam", "Đề cần danh sách câu để xem trước.")
     variant = exam_variant(exam, payload.get("variant"))
-    original = {
-        q["id"]: i + 1 for i, q in enumerate(exam["questions"]) if isinstance(q.get("id"), str)
+    raw_variant = payload.get("variant")
+    selected_ids = set(
+        raw_variant["questionIds"]
+        if isinstance(raw_variant, dict) and isinstance(raw_variant.get("questionIds"), list)
+        else []
+    )
+    original_by_id = {
+        q["id"]: (i + 1, q)
+        for i, q in enumerate(exam["questions"])
+        if isinstance(q.get("id"), str) and q["id"] in selected_ids
     }
-    return {
-        "title": variant["title"],
-        "questions": [
+    questions_out = []
+    question_mappings = []
+    for i, q in enumerate(variant["questions"]):
+        qid = q.get("id")
+        if isinstance(qid, str) and qid in original_by_id:
+            orig_num, orig_q = original_by_id[qid]
+        else:
+            orig_num, orig_q = i + 1, exam["questions"][i]
+        mapping = describe_variant_option_mapping(orig_q, q)
+        questions_out.append(
             {
-                "originalNumber": original.get(q.get("id"), i + 1)
-                if isinstance(q.get("id"), str)
-                else i + 1,
+                "originalNumber": orig_num,
                 "stem": q.get("stem", ""),
                 "options": q.get("options", []),
             }
-            for i, q in enumerate(variant["questions"])
-        ],
+        )
+        question_mappings.append(
+            {
+                "questionNumber": i + 1,
+                "originalNumber": orig_num,
+                "passageId": q.get("passageId"),
+                "groupId": q.get("groupId"),
+                "optionsShuffled": mapping["optionsShuffled"],
+                "optionMapping": mapping["optionMapping"],
+                "originalAnswer": mapping["originalAnswer"],
+                "variantAnswer": mapping["variantAnswer"],
+            }
+        )
+    return {
+        "title": variant["title"],
+        "questions": questions_out,
+        "questionMappings": question_mappings,
+        "passageGroups": _summarize_passage_groups(exam["questions"], variant["questions"]),
     }
 
 
@@ -659,44 +991,115 @@ def export_variant_pack(payload, directory, origin):
         raise AIError("invalid_exam", "Đề cần danh sách câu để xuất.")
     if format_ not in ("docx", "pdf", "html"):
         raise AIError("unsupported_export", "Chọn Word, PDF hoặc HTML để xuất bộ mã.")
-    settings = {"questionIds": ids, "shuffleOptions": payload.get("shuffleOptions", False)}
+    shuffle_options = payload.get("shuffleOptions", False)
+    settings = {"questionIds": ids, "shuffleOptions": shuffle_options}
     first = exam_variant(exam, {**settings, "offset": 0})
+    plan = _plan_variant_units(exam["questions"], ids)
+    variant_count = min(6, len(plan["units"]))
     variants = [
         first,
-        *[
-            exam_variant(exam, {**settings, "offset": offset})
-            for offset in range(1, min(6, len(ids)))
-        ],
+        *[exam_variant(exam, {**settings, "offset": offset}) for offset in range(1, variant_count)],
     ]
     headings = "".join(f"<th scope='col'>Mã {101 + i}</th>" for i in range(len(variants)))
-    original_numbers = {
-        question["id"]: i + 1
+    selected_ids = set(ids)
+    original_by_id = {
+        question["id"]: (i + 1, question)
         for i, question in enumerate(exam["questions"])
-        if question.get("id") in ids
+        if isinstance(question.get("id"), str) and question["id"] in selected_ids
     }
+    block_titles = {}
+    for q in exam["questions"]:
+        key = _block_identity(q)
+        title = q.get("passageTitle")
+        if key is not None and key not in block_titles and isinstance(title, str) and title.strip():
+            block_titles[key] = title.strip()
+    has_passages = any(_block_identity(q) is not None for q in exam["questions"])
     rows = []
     for i in range(len(exam["questions"])):
         answers = []
         for variant in variants:
             question = variant["questions"][i]
-            source = original_numbers.get(question.get("id"), i + 1)
+            qid = question.get("id")
+            if isinstance(qid, str) and qid in original_by_id:
+                source, orig_q = original_by_id[qid]
+            else:
+                source, orig_q = i + 1, exam["questions"][i]
             answer = (
                 "Xem hướng dẫn chấm"
                 if question.get("type") == "essay"
                 else saved_answer_label(question)
             )
-            answers.append(f"<td>{html.escape(answer)} <small>(gốc: {source})</small></td>")
+            cell = f"{html.escape(answer)} <small>(gốc: {source})</small>"
+            if shuffle_options:
+                mapping = describe_variant_option_mapping(orig_q, question)
+                if mapping["optionsShuffled"]:
+                    pairs = ", ".join(
+                        f"{old}→{new}" for old, new in mapping["optionMapping"].items()
+                    )
+                    if mapping["originalAnswer"] and mapping["variantAnswer"]:
+                        map_text = (
+                            f"PA gốc {mapping['originalAnswer']} → "
+                            f"{mapping['variantAnswer']} ({pairs})"
+                        )
+                    else:
+                        map_text = f"PA gốc {pairs}"
+                    cell += f'<br><small class="option-mapping">{html.escape(map_text)}</small>'
+            block_key = _block_identity(question)
+            if block_key is not None:
+                block_label = _block_display_label(block_key, block_titles.get(block_key))
+                cell += f'<br><small class="passage-tag">{html.escape(block_label)}</small>'
+            answers.append(f"<td>{cell}</td>")
         rows.append(f"<tr><th scope='row'>{i + 1}</th>{''.join(answers)}</tr>")
+
+    passage_summary_html = ""
+    if has_passages:
+        summaries_per_variant = [
+            _summarize_passage_groups(exam["questions"], variant["questions"])
+            for variant in variants
+        ]
+        summary_items = []
+        for group_idx, base_group in enumerate(summaries_per_variant[0]):
+            parts = []
+            all_contiguous = True
+            for v_idx, groups in enumerate(summaries_per_variant):
+                item = groups[group_idx]
+                nums = item["questionNumbers"]
+                span_label = (
+                    f"Câu {nums[0]}–{nums[-1]}"
+                    if len(nums) > 1
+                    else (f"Câu {nums[0]}" if nums else "—")
+                )
+                status = "liên tục" if item["contiguous"] else "bị tách"
+                if not item["contiguous"]:
+                    all_contiguous = False
+                parts.append(f"Mã {101 + v_idx}: {span_label} ({status})")
+            verdict = (
+                "Giữ nguyên liên tục qua tất cả các mã đề."
+                if all_contiguous
+                else "Cần kiểm tra thứ tự khối ngữ liệu."
+            )
+            summary_items.append(
+                f"<li><strong>{html.escape(base_group['label'])}</strong>: "
+                f"{html.escape(' · '.join(parts))} — {html.escape(verdict)}</li>"
+            )
+        passage_summary_html = (
+            '<section class="passage-summary">'
+            "<h2>Tóm tắt bảo toàn khối ngữ liệu</h2>"
+            f"<ul>{''.join(summary_items)}</ul>"
+            "</section>"
+        )
+
     title = html.escape(str(exam.get("title") or "Đề thi"))
     answer_key = (
         '<!doctype html><html lang="vi"><meta charset="utf-8">'
         "<title>Đối chiếu đáp án · Bản giáo viên</title>"
         "<style>@page{size:A4;margin:18mm}body{font:16px system-ui}"
-        "table{border-collapse:collapse}th,td{border:1px solid;padding:8px}</style>"
+        "table{border-collapse:collapse}th,td{border:1px solid;padding:8px}"
+        ".option-mapping,.passage-tag{color:#444;display:inline-block}</style>"
         f"<h1>Đối chiếu đáp án · Bản giáo viên</h1><p>{title}</p>"
         "<p>Số trong ngoặc chỉ câu tương ứng trên đề gốc; dùng số này để tra hướng dẫn chấm.</p>"
         f'<table><thead><tr><th scope="col">Câu</th>{headings}</tr></thead>'
-        f"<tbody>{''.join(rows)}</tbody></table></html>"
+        f"<tbody>{''.join(rows)}</tbody></table>{passage_summary_html}</html>"
     )
     directory.mkdir(parents=True, exist_ok=True)
     name = "De_thi_" + str(uuid4()) + ".zip"
