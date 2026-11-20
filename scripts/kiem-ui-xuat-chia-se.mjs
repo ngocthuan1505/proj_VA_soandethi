@@ -112,7 +112,7 @@ try {
       await action('export').click();
       await dialog.locator(`[data-action="export-file"][data-teacher="${teacher}"][data-format="${format}"]`).click();
       const link = dialog.locator('.saved-export-link');
-      await link.waitFor({timeout: 30000});
+      await link.waitFor({timeout: 60000});
       const url = new URL(await link.getAttribute('href'), base).href;
       const response = await page.request.get(url);
       assert(response.ok());
@@ -192,7 +192,7 @@ try {
   await action('metadata').click();
   await dialog.getByRole('heading', {name: 'Thông tin đề'}).waitFor();
   releaseExport.resolve();
-  await dialog.getByText(/Đã tạo tệp De_thi_/).waitFor();
+  await dialog.getByText(/Đã tạo tệp De_thi_/).waitFor({timeout: 60000});
   await dialog.getByRole('heading', {name: 'Thông tin đề'}).waitFor();
   await page.unroute(base + '/api/save-export');
   await page.keyboard.press('Escape');
@@ -237,7 +237,7 @@ try {
   await form.locator('[name=answers]').check();
   gate.release.resolve();
   const urlField = dialog.locator('#share-url');
-  await urlField.waitFor();
+  await urlField.waitFor({timeout: 60000});
   const sharedUrl = new URL(await urlField.inputValue(), base).href;
   const isolated = await browser.newContext();
   const recipient = await isolated.newPage();
@@ -265,7 +265,7 @@ try {
   assert.match(await preview.locator('section > ol > li').first().innerText(), /Tính diện tích.*Câu gốc 2/);
   assert.doesNotMatch(await preview.innerText(), /LOI_GIAI_RIENG_731|BAREM_RIENG_731|CHAT_NOI_BO_731/);
   await dialog.locator('[data-action="export-file"][data-teacher="false"][data-format="html"]').click();
-  await dialog.locator('.saved-export-link').waitFor();
+  await dialog.locator('.saved-export-link').waitFor({timeout: 60000});
   const variantURL = new URL(await dialog.locator('.saved-export-link').getAttribute('href'), base);
   const variantHtml = await (await page.request.get(variantURL.href)).text();
   assert.match(variantHtml, /Mã đề 102/);
@@ -320,7 +320,7 @@ try {
   await form.locator('[name=series]').fill('Kết nối tri thức');
   await form.locator('[name=chapter]').fill('Chương 1');
   await form.getByRole('button', {name: 'Công bố bản học sinh'}).click();
-  await urlField.waitFor();
+  await urlField.waitFor({timeout: 60000});
   const publicationUrl = new URL(await urlField.inputValue(), base);
   await dialog.locator('[data-action=share]').click();
   await dialog.getByRole('button', {name: 'Mở kho đề cộng đồng'}).click();

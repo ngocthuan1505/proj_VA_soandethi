@@ -154,7 +154,7 @@ try {
  assert.match(await textPreview.inputValue(),/giáo án Word QA/);
  assert.equal(await excerpt.inputValue(),originalDraft);
  const pdf=execFileSync(process.env.QA_PYTHON||'python',[
-  '-c','import sys;from test_source_documents import pdf;sys.stdout.buffer.write(pdf("First page outside scope","Card reading plan QA"))',
+  '-c','import sys;sys.path.insert(0,"backend/tests");from test_source_documents import pdf;sys.stdout.buffer.write(pdf("First page outside scope","Card reading plan QA"))',
  ]);
  await openFile('Giao-an.pdf','application/pdf',pdf);
  await personal.getByLabel('Trang hoặc slide').selectOption('2');
