@@ -248,7 +248,7 @@ async function importFile(file){if(file.size>15*1024*1024)throw Error('Tệp l�
 const commitBeforeAction=new Set(['ai-check','approve-question','apply-block-patch','show-block-diff','undo','redo','view-student','view-teacher','export','export-html','print','save-local','backup','backup-local']);
 async function handleAction(a,n){
  if(commitBeforeAction.has(a)&&!flushEditor()){toast('Gõ xong chữ đang nhập rồi thử lại.');return;}
- if(await handleStudioAction(a,n))return;if(a!=='menu')closeFloating();if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
+ if(await handleStudioAction(a,n))return;if(a!=='menu'&&!n?.closest?.('.floating-panel:not(.document-menu),.inline-math-panel,.composer-shell'))closeFloating();if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
  case 'close':dialog.close();break;
  case 'new':showNew();break;
  case 'create-sample':createExam(n.dataset.subject,true);break;
