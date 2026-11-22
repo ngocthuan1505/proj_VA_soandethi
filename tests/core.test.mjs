@@ -102,6 +102,11 @@ test('Đọc đáp án đúng trường, không nhầm đáp án ngắn/đúng-s
 
 
 import {validateMatrixRows} from '../core.js';
+import {
+ summarizeReverseMatrixReport,
+ rowFlagForReverseReport,
+ reverseMatrixWarningBannerHTML,
+} from '../reference.js';
 test('Ma trận bốn mức giữ điểm khác nhau theo mức và vẫn đọc ma trận ba mức cũ',()=>{
  const rows=[{topic:'A',type:'essay',targets:[4,5,2,2],pointsByLevelQ4:[2,4,3,3]}];
  assert.equal(validateMatrixRows(rows),rows);
@@ -130,4 +135,48 @@ test('Lát B2: validateMatrixRows hỗ trợ bước 0.10/0.20/0.40 và 2 nhánh
   {topic:'Bài THUD',type:'essay',targets:[0,2,0,0],pointsQ4:4,choiceGroup:'THUD'},
  ];
  assert.equal(validateMatrixRows(rows),rows);
+});
+
+test('Cảnh báo reverse_matrix P2 tổng hợp lệch điểm, missingPointsOrdinals, needsReview và thoát XSS',()=>{
+ assert.equal(summarizeReverseMatrixReport(null).hasIssues,false);
+ assert.equal(reverseMatrixWarningBannerHTML({warnings:[],pointConflicts:[],slots:[],matrix:[]}),'');
+
+ const report={
+  reviewRequired:true,
+  warnings:['Có câu chưa xác định điểm <script>alert(1)</script>'],
+  missingPointsOrdinals:[4],
+  pointConflicts:[
+   {topic:'Hàm số',type:'essay',choiceGroup:'Nhánh A',distinctPoints:[1,1.5],action:'requires_manual_decision'},
+  ],
+  slots:[
+   {ordinal:1,topic:'Đại số',type:'mcq',needsReview:false,pointConflict:false},
+   {ordinal:2,topic:'Hàm số',type:'essay',choiceGroup:'Nhánh A',needsReview:true,pointConflict:true},
+   {ordinal:3,topic:'Hình học',type:'mcq',needsReview:true,pointConflict:false},
+  ],
+  matrix:[
+   {topic:'Đại số',type:'mcq',targets:[2,0,0,0]},
+   {topic:'Hàm số (1,50đ)',type:'essay',choiceGroup:'Nhánh A',targets:[0,1,0,0]},
+   {topic:'Hình học',type:'mcq',targets:[1,0,0,0]},
+  ],
+ };
+ const sum=summarizeReverseMatrixReport(report);
+ assert.equal(sum.hasIssues,true);
+ assert.deepEqual(sum.conflictOrdinals,[2]);
+ assert.deepEqual(sum.flaggedOrdinals,[2,3,4]);
+
+ assert.equal(rowFlagForReverseReport(report,report.matrix[0]),null);
+ const f1=rowFlagForReverseReport(report,report.matrix[1]);
+ assert.equal(f1.pointConflict,true);
+ assert.equal(f1.label,'Lệch điểm');
+ const f2=rowFlagForReverseReport(report,report.matrix[2]);
+ assert.equal(f2.pointConflict,false);
+ assert.equal(f2.label,'Cần rà');
+
+ const html=reverseMatrixWarningBannerHTML(report);
+ assert.ok(html.includes('id="matrix-reverse-warnings"'));
+ assert.ok(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+ assert.ok(!html.includes('<script>alert(1)</script>'));
+ assert.ok(html.includes('Vượt giới hạn dòng — cần chốt tay'));
+ assert.ok(html.includes('Câu 2 · lệch điểm'));
+ assert.ok(html.includes('Câu 4'));
 });

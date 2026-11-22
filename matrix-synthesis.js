@@ -50,6 +50,7 @@ export async function openMatrixSynthesis(c, options={}){
  ${pendingPages.length?`<p id="matrix-source-warning" class="hint">Trang chưa đọc hoặc chưa đối chiếu: ${esc(pendingPages.slice(0,6).join('; '))}${pendingPages.length>6?' và '+(pendingPages.length-6)+' trang nữa':''}. Rà lại phần văn bản trước khi sinh.</p>`:''}
  <label><input type="checkbox" id="matrix-consent" style="width:auto"> Cho phép gửi yêu cầu và tài liệu đã chọn tới ${esc(destination)} để sinh và tự kiểm đề.</label></details>
  <div class="toolbar-row"><button type="button" id="matrix-start" class="primary">${inline?"Bắt đầu soạn":"Duyệt yêu cầu và sinh"}</button><button type="button" id="matrix-stop" disabled>Dừng tác vụ</button><button type="button" id="matrix-download" disabled>Tải log</button><button type="button" id="matrix-review-pack" disabled>Phiếu rà độc lập</button></div>
+ <ol id="matrix-live-steps" class="matrix-live-steps" aria-live="polite" hidden></ol>
  <p id="matrix-status" role="status">Chưa chạy. Bản đề hiện có ${exam.questions.length} câu.</p><button type="button" id="matrix-poll-retry" hidden>Tải lại trạng thái</button><p id="matrix-metrics" class="hint"></p>
  <label id="matrix-reviewer-field" hidden>Người rà (không bắt buộc)<input id="matrix-reviewer" maxlength="120" placeholder="Ghi đúng người rà nếu muốn lưu góp ý từng câu"></label>
  <details id="matrix-progress"><summary>Nhật ký tự kiểm và sửa</summary><div id="matrix-trace" aria-live="polite"></div></details><div id="matrix-audit" class="hint"></div><div id="matrix-checks"></div><div id="matrix-preview"></div>
@@ -82,14 +83,33 @@ export async function openMatrixSynthesis(c, options={}){
  }
  const sameExam=()=>c.exam().id===exam.id&&c.exam().revision===baseRevision;
  const setStatus=text=>{$('matrix-status').textContent=text;};
- let preparing=false;
+ let preparing=false,lastTrace=[];
+ function renderLiveSteps(trace=lastTrace){
+  const el=$('matrix-live-steps');if(!el)return;
+  lastTrace=Array.isArray(trace)?trace:[];
+  const steps=['Chuẩn bị ma trận & nguồn','Sinh bộ câu hỏi','Tự kiểm & giải độc lập','Chờ giáo viên duyệt'];
+  const activeRun=preparing||job?.status==='running';
+  const complete=job?.status==='complete';
+  const failed=!!job&&!activeRun&&!complete;
+  const hidden=inline?(dialog.dataset.phase==='setup'&&!preparing):(!activeRun&&!complete&&!failed);
+  el.hidden=hidden;if(hidden)return;
+  let active=0;
+  if(complete)active=3;
+  else if(lastTrace.some(t=>['structure_check','blind_content_check','level_recheck','candidate_check','generation_result'].includes(t.event)))active=2;
+  else if(lastTrace.some(t=>['run_start','model_start','model_call_start','tool_call'].includes(t.event))||job?.status==='running')active=1;
+  el.innerHTML=steps.map((label,idx)=>{
+   const cls=idx<active||(complete&&idx<3)?'is-done':idx===active?(failed?'is-error':complete?'is-done':'is-active'):'';
+   return `<li class="matrix-step ${cls}"><span class="matrix-step-num">${idx+1}</span><span>${esc(label)}</span></li>`;
+  }).join('');
+ }
  function syncPhase(){
-  if(!inline)return;
+  if(!inline){renderLiveSteps();return;}
   const phase=job?.status==='running'||preparing?'running':job?.status==='complete'&&!job.saved&&lastCandidate?.jobId===job.jobId&&$('matrix-poll-retry').hidden?'review':job?'error':'setup';
   const changed=dialog.dataset.phase!==phase;dialog.dataset.phase=phase;
   if(changed){$('matrix-request-settings').open=phase==='setup';$('matrix-result-details').open=false;$('matrix-progress').open=false;}
   $('matrix-result-details').hidden=phase==='setup';$('matrix-status').hidden=phase==='setup'&&!$('matrix-status').dataset.error;
   $('matrix-retry').hidden=phase!=='error'||!$('matrix-poll-retry').hidden;
+  renderLiveSteps();
   options.phase?.({phase,cancellable:!$('matrix-stop').disabled,decisions:dialog.querySelector('.matrix-decisions')||options.find?.('matrix-confirm-save')?.parentElement,stop:()=>{$('matrix-stop').click();}});
  }
  const guard=fn=>async event=>{event?.preventDefault();event?.stopPropagation();try{await fn();}catch(error){preparing=false;$('matrix-status').dataset.error='true';setStatus(error.message);$('matrix-start').disabled=job?.status==='running';syncPhase();}};
@@ -168,6 +188,7 @@ export async function openMatrixSynthesis(c, options={}){
   try{while(!closed){
    const savedReviews=job.reviews;job=await api(base()+'/status');if(savedReviews)job.reviews=savedReviews;
    const trace=await api(base()+'/trace');
+   renderLiveSteps(trace);
    const latestCheck=trace.findLast(t=>t.event==='generation_result');if(latestCheck)showChecks(latestCheck);
    $('matrix-trace').innerHTML=trace.map(t=>t.event?'<p>'+esc({run_start:'Trợ lý bắt đầu',provider_model_switch:'Hết quota: chuyển từ '+(t.fromModel||'')+' sang '+(t.toModel||''),provider_key_switch:'Đổi sang key dự phòng (ẩn khóa)',provider_retry:'Thử lại sau lỗi dịch vụ tạm thời',model_start:'Đang gọi '+(t.model||''),model_end:(t.ok?'Đã nhận kết quả từ ':'Lượt gọi chưa đạt: ')+(t.model||''),model_call_start:({agent:'AI đang soạn hoặc sửa bộ câu',repair_stem:'AI đang đặt lại thân câu',level_recheck:'AI đang rà riêng câu có mức mâu thuẫn',blind_content_check:'AI đang giải lại và rà mức',explanation_check:'AI đang đối chiếu lời giải'}[t.purpose]||'Đang gọi AI'),model_call_end:'AI đã trả kết quả lượt xử lý',tool_call:'Trợ lý gọi công cụ '+(t.tool||''),structure_check:'Kiểm cấu trúc',blind_content_check:'Giải lại, rà mức và căn cứ',level_recheck:'Đã rà riêng mức của câu '+(t.ordinal+1),candidate_check:'Tổng hợp kiểm nội dung',generation_result:'Kết quả lần nộp '+t.generationAttempt+(t.reusedFromAttempt?' · Trùng lần '+t.reusedFromAttempt+', chờ sửa bộ câu':''),run_end:'Kết thúc: '+t.status}[t.event]||t.event)+(typeof t.ok==='boolean'?' · '+(t.ok?'Qua bộ kiểm':'Còn vấn đề'):'')+(t.errors?.length?' · '+esc(t.errors.map(errorText).join(' · ')):'')+(t.seconds!==undefined?' · '+Number(t.seconds).toFixed(2)+' giây':'')+'</p>':'<p>Câu '+t.question+' · lượt '+t.attempt+' · '+esc(t.status)+(t.message?' · '+esc(t.message):'')+'</p>').join('');
    const last=trace.at(-1);if(job.status==='running'&&last)setStatus('Đang '+({model_call_start:({agent:'soạn hoặc sửa bộ câu',repair_stem:'đặt lại thân câu',level_recheck:'rà riêng câu có mức mâu thuẫn',blind_content_check:'giải độc lập và rà mức',explanation_check:'đối chiếu lời giải'}[last.purpose]||'gọi model'),model_call_end:'đã nhận kết quả lượt AI',generation_result:last.reusedFromAttempt?'chờ AI sửa bộ câu bị nộp trùng':'xử lý kết quả lần nộp '+last.generationAttempt}[last.event]||'kiểm tra và chờ kết quả AI')+'…');
