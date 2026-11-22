@@ -629,7 +629,9 @@ header.top {
 }
 
 .question:hover .q-actions,
+.question:focus-within .q-actions,
 .question.selected .q-actions {
+  display: flex;
   opacity: 1;
 }
 
