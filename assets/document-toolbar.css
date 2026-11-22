@@ -1,0 +1,124 @@
+/* Toolbar spans the workspace; the outline and canvas start on their own row. */
+.mach.toolbar-reference{--mach-canvas:#f7f6f3}
+.mach.toolbar-reference .header-title{min-width:0;flex:none;max-width:min(48vw,680px);border-radius:10px;padding:3px 6px!important}
+.mach.toolbar-reference .document-title-line{gap:12px}
+.mach.toolbar-reference .document-title-line>.saved{flex-shrink:0}
+.mach.toolbar-reference .document-page{border-radius:9px}
+.mach.toolbar-reference .sidebar,.mach.toolbar-reference .assistant{border-radius:21px}
+.mach.toolbar-reference .document-toolbar button,.mach.toolbar-reference .document-toolbar select{border-radius:10px}
+.mach.toolbar-reference .workspace .document-toolbar button{border-radius:10px}
+.composer-shell.compact-composer-shell{width:min(720px,calc(100vw - 32px))!important;border-radius:22px!important}
+.compact-composer-shell .composer-form{display:flex;flex-direction:column}
+.compact-composer-shell .composer-heading{padding:17px 22px 10px}
+.compact-composer-shell .composer-heading h2{font-size:18px}
+.compact-composer-shell .composer-columns{display:block;min-height:0;overflow-y:auto}
+.compact-composer-shell .composer-work{padding:12px 22px;max-height:65dvh;overflow:auto}
+.compact-composer-shell .composer-mobile-tabs,.compact-composer-shell .composer-local-note,.compact-composer-shell .composer-preview-label,.compact-composer-shell .catalog-tip,.compact-composer-shell .catalog-card-meta{display:none!important}
+.compact-composer-shell .composer-work-top h3{font-size:14px;font-weight:500}
+.compact-formula-modes{display:flex;gap:5px;padding:0 22px 8px;border-bottom:1px solid #edf0ed}
+.compact-formula-modes button{border:0;border-radius:10px;background:#f2f4f1;padding:6px 15px;font-size:13px}
+.compact-formula-modes button[aria-pressed=true]{background:#e2efe8;color:#206751}
+.compact-formula-picks{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0 10px}
+.compact-formula-picks button,.compact-composer-shell .visual-symbols button{font-size:12px;border-radius:9px;min-height:29px;padding:4px 9px}
+.compact-composer-shell .visual-symbols{gap:5px;margin:8px 0}
+.compact-composer-shell #visual-math-input{min-height:65px;border-radius:13px}
+.compact-composer-shell #inline-math-preview{min-height:50px;margin:8px 0;padding:12px;border-radius:13px}
+.compact-composer-shell .math-editor-foot{padding:12px 22px;gap:7px}
+.compact-composer-shell .math-editor-foot button{border-radius:11px;min-height:36px;padding:7px 13px}
+.compact-formula-library{margin:12px 0 4px;border-top:1px solid #e6ebe6;padding-top:9px;font-size:12px;color:#5a7365}
+.compact-formula-library>summary{cursor:pointer}
+.compact-formula-library .catalog-filters{margin-top:10px;padding:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.compact-formula-library .composer-library{max-height:230px;overflow:auto;border:0;padding:8px}
+.compact-composer-shell .builder-fields{padding:10px;border-radius:12px}
+.mach.toolbar-reference .document-body-editor{font:inherit;min-height:var(--page-content-height);cursor:text;outline:none}
+.mach.toolbar-reference .document-body-editor>.ProseMirror{min-height:var(--page-content-height)}
+.mach.toolbar-reference .paper.blank-document{background:transparent;visibility:visible;opacity:1}
+.mach.toolbar-reference .blank-document .document-page{display:block;background:#fff}
+.mach.toolbar-reference .blank-document .document-body-editor{display:block}
+.mach.toolbar-reference .workspace{grid-template-rows:64px minmax(0,1fr)}
+.mach.toolbar-reference .workspace>.editing-bar{grid-column:1/-1;grid-row:1;position:relative!important;padding:7px 12px!important;overflow-x:auto;overflow-y:hidden;min-width:0;z-index:6;scrollbar-width:thin}
+.mach.toolbar-reference .workspace>.sidebar{grid-row:2;margin:12px 8px 16px 16px}
+.mach.toolbar-reference .workspace>.assistant{grid-row:2;margin-top:12px!important}
+.mach.toolbar-reference .workspace>.main{grid-row:2;grid-template-rows:29px minmax(0,1fr) 30px}
+.mach.toolbar-reference .main>.document-bar{grid-row:1}
+.mach.toolbar-reference .main>.paper-scroll{grid-row:2}
+.mach.toolbar-reference .main>.main-footer{grid-row:3}
+.mach.toolbar-reference .document-toolbar{min-width:max-content;width:100%;height:49px;padding:0 14px;gap:3px;background:#efefed;border:0;border-radius:28px;box-shadow:none;display:flex;align-items:center}
+.mach.toolbar-reference .document-toolbar button{min-width:30px;height:34px;padding:5px 7px;font-size:17px;color:#373a37;gap:4px;border:0;border-radius:6px;background:transparent;flex-shrink:0}
+.mach.toolbar-reference .document-toolbar button:hover{background:#e1e4e1}
+.mach.toolbar-reference .document-toolbar button.is-active{background:#dce8e4;color:#12675d}
+.document-toolbar button svg,.document-toolbar-popup svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mach.toolbar-reference .document-toolbar select{height:34px;background:transparent;min-width:0;font:13px 'Segoe UI',Arial,sans-serif;color:#373a37;padding:3px 6px;flex-shrink:0;border:0}
+.document-toolbar #zoom{width:78px}.document-toolbar #doc-font{width:160px}
+.mach.toolbar-reference .document-toolbar #doc-fontsize{width:44px;height:38px;border-radius:20px;text-align:center;font-size:13px;background:#fafafa;border:1px solid #bdc9d6;padding:3px;appearance:textfield}
+.document-toolbar #doc-fontsize::-webkit-inner-spin-button{appearance:none}
+.mach.toolbar-reference .document-toolbar .toolbar-styles{font-size:13px;min-width:155px;justify-content:space-between}
+.document-toolbar .toolbar-divider{margin:0 7px;height:23px;background:#daddda;flex-shrink:0}
+.mach.toolbar-reference .document-toolbar .toolbar-chevron{width:16px;height:16px;flex-shrink:0;color:#3b5145;stroke-width:1.7}
+.mach.toolbar-reference .document-toolbar select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b5145' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-size:16px 16px;background-position:right 6px center;padding-right:28px}
+.document-toolbar .toolbar-color{--swatch:#000;position:relative}
+.document-toolbar .toolbar-color:after{content:'';position:absolute;bottom:1px;left:5px;width:23px;height:3px;background:var(--swatch);border-radius:2px}
+.document-toolbar .toolbar-highlight{--swatch:#ffff00}
+.toolbar-view-tabs{display:flex;align-items:center;border-left:1px solid #daddda;padding-left:6px;gap:2px;flex-shrink:0}
+.mach.toolbar-reference .document-toolbar .view-tab{font-size:11px}
+.document-toolbar-popup{position:fixed;z-index:55;width:248px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 24px);overflow-y:auto;background:#fff;color:#343834;border:1px solid #e4e6e1;border-radius:12px;padding:10px;box-shadow:0 12px 35px #172a352b;font:14px/1.5 'Segoe UI',Arial,sans-serif}
+.document-toolbar-popup h3{font:600 14px/1.5 'Segoe UI',Arial,sans-serif;margin:5px 5px 13px}
+.document-toolbar-popup>button{display:flex;width:100%;justify-content:flex-start;border:0;border-radius:6px;padding:8px 12px;background:white;font:inherit;gap:10px}
+.document-toolbar-popup>button:hover{background:#f0f2ee}
+.document-toolbar-popup.style-menu{width:310px;padding:5px 0}
+.style-menu>button{min-height:58px;border-radius:0;padding:12px 16px;border-bottom:1px solid #eee}
+.style-menu .style-title{font-size:30px;font-weight:700}.style-menu .style-subtitle{font-size:23px;font-style:italic;color:#777}.style-menu .style-h1{font-size:23px;font-weight:700}.style-menu .style-h2{font-size:20px;font-weight:700}.style-menu .style-h3{font-size:18px;font-weight:700}.style-menu .style-h4,.style-menu .style-h5,.style-menu .style-h6{font-weight:700}.style-check{width:17px;flex-shrink:0}.style-chevron{margin-left:auto;color:#888}
+.toolbar-color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:3px 5px 12px}
+.toolbar-color-grid button{height:27px;min-width:0;border:1px solid #ddd;border-radius:4px;padding:0}
+.toolbar-color-grid button:hover{outline:2px solid #639e8a;outline-offset:2px}
+.toolbar-custom-color{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:6px;margin:4px 0 12px}.toolbar-custom-color input{width:40px;padding:0;height:30px}
+.document-toolbar-popup.paragraph-menu{width:420px;padding:18px}
+.toolbar-paragraph-form header,.toolbar-paragraph-form footer{display:flex;align-items:center;justify-content:space-between;gap:12px}.toolbar-paragraph-form header button{border:0;background:transparent;font-size:21px}.toolbar-paragraph-form footer{justify-content:flex-end;margin-top:15px}
+.toolbar-paragraph-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.toolbar-paragraph-grid label{margin:0;font-size:12px;color:#555}.toolbar-paragraph-grid input{height:38px;margin-top:5px;font-size:14px;width:100%;padding:5px 8px}.toolbar-background{display:flex;align-items:center;gap:8px;margin-top:17px}.toolbar-background input[type=checkbox]{width:auto}.toolbar-background input[type=color]{width:38px;padding:0;margin-left:auto;height:28px}
+@media(max-width:1100px){.mach.toolbar-reference .sidebar.open{top:164px}.mach.toolbar-reference .document-toolbar{padding:0 8px}.mach.toolbar-reference .workspace>.editing-bar{padding:6px!important}}
+@media(max-width:650px){.mach.toolbar-reference .workspace{grid-template-rows:58px minmax(0,1fr)}.mach.toolbar-reference .workspace>.sidebar.open{top:142px}.toolbar-paragraph-grid{gap:9px}.document-toolbar-popup.paragraph-menu{padding:12px}}
+@media print{.workspace>.editing-bar,.document-toolbar-popup{display:none!important}}
+
+/* Chữ giao diện rõ hơn; cỡ chữ trong đề vẫn theo lựa chọn của người soạn. */
+.mach.toolbar-reference .header-title{font-size:22px;font-weight:600;color:#193b32}
+.mach.toolbar-reference .menubar .menu-button{font-size:15px;font-weight:500;color:#40574e;min-height:32px;padding:4px 10px}
+.mach.toolbar-reference .saved{font-size:12px;color:#526c60}
+.mach.toolbar-reference .header-actions button{font-size:14px;font-weight:600}
+.mach.toolbar-reference .sidebar-title{font-size:17px;font-weight:650;color:#25493b}
+.mach.toolbar-reference .design-doc-meta span{font-size:12px;color:#436756;padding:5px 7px}
+.mach.toolbar-reference .tabs button{font-size:14px;font-weight:600}
+.mach.toolbar-reference .outline-item .outline-title{font-size:14px;line-height:1.65;color:#405f50}
+.mach.toolbar-reference .outline-section{font-size:12px;font-weight:650;color:#4c6558}
+.mach.toolbar-reference .outline-empty{font-size:14px;line-height:1.8;color:#687c6f}
+.mach.toolbar-reference .subject-insert,.mach.toolbar-reference .add-question{font-size:14px}
+.mach.toolbar-reference .main-footer{font-size:11px;color:#526c60}
+.mach.toolbar-reference .document-toolbar select,.mach.toolbar-reference .document-toolbar input,.mach.toolbar-reference .toolbar-style-label{font-size:14px;color:#354d41}
+.mach.toolbar-reference .document-toolbar .view-tab{font-size:13px}
+.mach.toolbar-reference .chat-polished .assistant-title{font-size:16px;font-weight:650;color:#254b39}
+.mach.toolbar-reference .chat-polished .assistant-title small{font-size:12px;color:#617b6c}
+.mach.toolbar-reference .chat-polished .assistant-welcome .chat-eyebrow{font-size:11px;color:#5b7966}
+.mach.toolbar-reference .chat-polished .assistant-welcome{flex:1 0 auto}
+.mach.toolbar-reference .chat-polished .assistant-welcome>p:not(.chat-eyebrow){font-size:14px;color:#5d7868}
+.mach.toolbar-reference .chat-context-pill{font-size:12px;color:#52735d}
+.mach.toolbar-reference .chat-suggestion-copy b{font-size:14px;font-weight:550;color:#355740}
+.mach.toolbar-reference .chat-suggestion-copy small{font-size:11px;color:#6b826d}
+.mach.toolbar-reference .chat-polished .assistant-message{font-size:14px;color:#334d3e}
+.mach.toolbar-reference .chat-source-tools b{font-size:11px;color:#566e52}
+.mach.toolbar-reference .chat-source-tools>div>span{font-size:10px;color:#6c7f62}
+.mach.toolbar-reference .chat-source-tools button{font-size:11px;padding:6px;white-space:normal;color:#4f6e47}
+.mach.toolbar-reference .chat-polished #chat-input{font-size:14px;color:#2d4c3b}
+.mach.toolbar-reference .chat-polished #chat-input::placeholder{color:#6c8271}
+.mach.toolbar-reference .chat-polished .chat-foot{font-size:11px;color:#6d7e66}
+.mach.toolbar-reference .effort-toggle{font-size:12px;color:#506b58}
+.mach.toolbar-reference .studio-page-status,.mach.toolbar-reference .studio-word-count,.mach.toolbar-reference .footer-count,.mach.toolbar-reference .selection-hint{font-size:11px;color:#526c60}
+.mach.toolbar-reference .document-bar,.mach.toolbar-reference .page-navigation{font-size:11px;color:#526c60}
+.mach.toolbar-reference .outline-panel-toggle{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:30px;height:30px;min-width:30px;padding:4px;border:0;border-radius:10px;background:#f1f4f0;color:#66796b;cursor:pointer}
+.mach.toolbar-reference .outline-panel-toggle:hover{background:#e2ece3;color:#2c6651}
+.mach.toolbar-reference .workspace.outline-collapsed>.sidebar{display:none!important}
+.outline-panel-toggle svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.outline-panel-toggle[aria-expanded=false] .outline-chevron{transform:rotate(180deg);transform-origin:13px 12px}
+.mach.toolbar-reference .outline-reopen{position:absolute;left:8px;top:0;z-index:4;background:#eef2ec}
+.mach.toolbar-reference .outline-reopen[hidden],.mach.toolbar-reference .focus-mode .outline-reopen{display:none!important}
+.document-menu .menu-item{font-size:15px;color:#304e40;min-height:38px}
+.document-menu .menu-item kbd{font-size:11px;color:#69796d}
+@media(max-width:760px){.mach.toolbar-reference .header-title{font-size:19px}.mach.toolbar-reference .menubar .menu-button{font-size:13px;padding:4px 7px}}

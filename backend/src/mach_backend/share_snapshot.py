@@ -7,6 +7,7 @@ import re
 
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import saved_answer
+from mach_backend.paragraph_format import page_break_before, paragraph_layout
 from mach_backend.word_export import field_document, image_bytes, uses_table
 
 
@@ -34,6 +35,10 @@ def rich_copy(node, *, depth=0, budget=None):
     attrs = node.get("attrs")
     if attrs:
         result["attrs"] = fields(attrs, "textAlign level start colspan rowspan latex display")
+        if page_break_before(attrs):
+            result["attrs"]["pageBreakBefore"] = True
+        if node.get("type") in {"paragraph", "heading"}:
+            result["attrs"].update(paragraph_layout(attrs))
         if "colwidth" in attrs and attrs["colwidth"] is not None:
             widths = attrs["colwidth"]
             if (
@@ -64,11 +69,13 @@ def rich_copy(node, *, depth=0, budget=None):
                     "unsupported_document", "Kiểu định dạng chưa chia sẻ được: " + str(kind)
                 )
             names = {
-                "textStyle": "color fontFamily fontSize",
+                "textStyle": "color fontFamily fontSize script",
                 "highlight": "color",
                 "link": "href",
             }.get(kind, "")
             attrs = fields(mark.get("attrs") or {}, names)
+            if "script" in attrs and attrs["script"] not in {"super", "sub"}:
+                raise AIError("invalid_document", "Chỉ số chữ chưa hợp lệ.")
             if "color" in attrs and (
                 not isinstance(attrs["color"], str)
                 or not re.fullmatch(r"#[0-9a-fA-F]{6}", attrs["color"])
@@ -121,6 +128,11 @@ def figure_copy(spec):
 def snapshot(exam, answers):
     try:
         result = fields(exam, "id revision title school subject grade minutes instructions updated")
+        if exam.get("bodyText") or exam.get("bodyTextDoc"):
+            result["bodyText"] = str(exam.get("bodyText", ""))
+            result["bodyTextDoc"] = rich_copy(
+                field_document(exam.get("bodyText", ""), exam.get("bodyTextDoc"))
+            )
         result.update(
             layout=fields(exam.get("layout") or {}, "font fontSize"),
             quote={"text": exam.get("quote", {}).get("text", ""), "chosen": None, "versions": []},

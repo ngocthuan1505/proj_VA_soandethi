@@ -21,6 +21,7 @@ from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import saved_answer_label
 from mach_backend.export_assets import render_assets
 from mach_backend.math_word import omml
+from mach_backend.paragraph_format import page_break_before, paragraph_layout
 from mach_backend.rich_patch import project
 
 MATH = re.compile(r"\$\$(.+?)\$\$|(?<!\\)\$([^$\n]+?)(?<!\\)\$|\\\[(.+?)\\\]|\\\((.+?)\\\)", re.S)
@@ -80,6 +81,7 @@ def field_document(text, doc=None, runs=None):
 
 
 def field_inputs(exam, teacher):
+    yield exam.get("bodyText", ""), exam.get("bodyTextDoc"), None
     yield from ((exam.get(k, ""), None, None) for k in ("title", "school", "instructions"))
     yield exam.get("quote", {}).get("text", ""), None, None
     for q in exam["questions"]:
@@ -238,6 +240,10 @@ class WordWriter:
                 if t in {"bold", "italic", "underline", "strike"}:
                     setattr(run.font, t, True)
                 elif t == "textStyle":
+                    if attrs.get("script") == "super":
+                        run.font.superscript = True
+                    elif attrs.get("script") == "sub":
+                        run.font.subscript = True
                     if re.fullmatch(r"#[0-9a-fA-F]{6}", attrs.get("color", "")):
                         run.font.color.rgb = RGBColor.from_string(attrs["color"][1:])
                     if attrs.get("fontFamily") in FONTS:
@@ -296,15 +302,48 @@ class WordWriter:
         first = True
         for node in nodes:
             kind, attrs = node["type"], node.get("attrs", {})
+            if page_break_before(attrs) and kind not in {"paragraph", "heading"}:
+                container.add_paragraph().paragraph_format.page_break_before = True
             if kind in {"paragraph", "heading"}:
                 p = (
                     container.add_paragraph(
-                        style="Heading " + str(min(3, max(1, int(attrs.get("level", 2)))))
+                        style="Heading " + str(min(6, max(1, int(attrs.get("level", 2)))))
                     )
                     if kind == "heading"
                     else container.add_paragraph()
                 )
                 p.alignment = ALIGN.get(attrs.get("textAlign"), WD_ALIGN_PARAGRAPH.LEFT)
+                layout = paragraph_layout(attrs)
+                if layout.get("pageBreakBefore"):
+                    p.paragraph_format.page_break_before = True
+                for name, prop in (("spaceBefore", "space_before"), ("spaceAfter", "space_after")):
+                    if name in layout:
+                        setattr(p.paragraph_format, prop, Pt(layout[name] * 0.75))
+                for name, prop in (
+                    ("firstIndent", "first_line_indent"),
+                    ("leftIndent", "left_indent"),
+                    ("rightIndent", "right_indent"),
+                ):
+                    if name in layout:
+                        setattr(p.paragraph_format, prop, Mm(layout[name] * 10))
+                if "lineHeight" in layout:
+                    p.paragraph_format.line_spacing = layout["lineHeight"]
+                if layout.get("borderWidth", 0) > 0:
+                    borders = OxmlElement("w:pBdr")
+                    for edge in ("top", "left", "bottom", "right"):
+                        border = OxmlElement("w:" + edge)
+                        for key, value in {
+                            "val": "single",
+                            "sz": str(round(layout["borderWidth"] * 6)),
+                            "color": layout.get("borderColor", "#000000")[1:],
+                        }.items():
+                            border.set(qn("w:" + key), value)
+                        borders.append(border)
+                    p._p.get_or_add_pPr().append(borders)
+                if layout.get("paragraphBackground"):
+                    shade = OxmlElement("w:shd")
+                    shade.set(qn("w:fill"), layout["paragraphBackground"][1:])
+                    p._p.get_or_add_pPr().append(shade)
                 if indent:
                     p.paragraph_format.left_indent = Mm(7 * indent)
                 if first and prefix:
@@ -423,6 +462,11 @@ class WordWriter:
 
     def write(self):
         e = self.exam
+        if not e["questions"] and (e.get("bodyText") or e.get("bodyTextDoc")):
+            self.field(e.get("bodyText", ""), e.get("bodyTextDoc"))
+            output = io.BytesIO()
+            self.doc.save(output)
+            return output.getvalue()
         self.doc.add_paragraph(str(e.get("school", ""))).alignment = WD_ALIGN_PARAGRAPH.CENTER
         self.doc.add_paragraph(
             str(e.get("title", "Đề thi")), style="Title"
@@ -432,6 +476,8 @@ class WordWriter:
         ).alignment = WD_ALIGN_PARAGRAPH.CENTER
         self.doc.add_paragraph(recipient_line(self.teacher))
         self.field(e.get("instructions", ""))
+        if e.get("bodyText") or e.get("bodyTextDoc"):
+            self.field(e.get("bodyText", ""), e.get("bodyTextDoc"))
         if e.get("quote", {}).get("text"):
             self.field(e["quote"]["text"])
         if any(uses_table(q) for q in e["questions"]):

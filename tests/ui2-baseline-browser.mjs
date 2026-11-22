@@ -440,8 +440,10 @@ try {
     await editPage.goto(base);
     const stem = editPage.locator('.stem-editor .tiptap').first();
     const undoButton = editPage.locator('[data-action="undo"]').first();
-    const teacherButton = editPage.locator('.view-tab[data-action="view-teacher"]').first();
-    const studentButton = editPage.locator('.view-tab[data-action="view-student"]').first();
+    async function switchView(action) {
+      await editPage.locator('.menubar [data-menu="view"]').click();
+      await editPage.locator('.document-menu [data-action="' + action + '"]').click();
+    }
     await stem.waitFor();
     // Chờ initMVP hoàn tất lưu khởi tạo để tránh khớp nhầm PUT /api/kv khởi động.
     await initialSaved;
@@ -500,7 +502,7 @@ try {
     await editPage.waitForFunction(() =>
       (document.querySelector('.stem-editor .tiptap')?.textContent || '').includes('Bản xem. ')
     );
-    await teacherButton.evaluate(button => button.click());
+    await switchView('view-teacher');
     await viewSaved;
     await editPage.locator('.view-tab[data-action="view-teacher"].active').first().waitFor();
     assert((await serverStem()).includes('Bản xem. '), 'Switching views must commit pending typing');
@@ -511,7 +513,7 @@ try {
     await editPage.waitForFunction(() =>
       (document.querySelector('.stem-editor .tiptap')?.textContent || '').includes('tiếng')
     );
-    await studentButton.evaluate(button => button.click());
+    await switchView('view-student');
     assert((await stem.textContent()).includes('tiếng'), 'View action must keep active composition');
     assert(!(await serverStem()).includes('tiếng'), 'Composition should stay local until commit');
     const imeSaved = savedStem(text => text.includes('tiếng '));

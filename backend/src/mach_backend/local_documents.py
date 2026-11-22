@@ -23,6 +23,7 @@ from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import saved_answer, saved_answer_label
 from mach_backend.export_assets import render_assets
 from mach_backend.matrix_import import validate_raster
+from mach_backend.paragraph_format import page_break_before, paragraph_css
 from mach_backend.presentation import PRESENTATION_CONTROLS, PRESENTATION_CSS, PRESENTATION_SCRIPT
 from mach_backend.word_export import (
     export_docx,
@@ -216,6 +217,13 @@ def inline_html(text):
 def rich(node, depth=0):
     if not isinstance(node, dict) or depth > 64:
         return ""
+    if page_break_before(node.get("attrs", {})):
+        clean = {**node, "attrs": {**node["attrs"], "pageBreakBefore": False}}
+        return (
+            '<div style="break-before:page;page-break-before:always">'
+            + rich(clean, depth + 1)
+            + "</div>"
+        )
     kind = node.get("type")
     if kind == "text":
         text = inline_html(node.get("text"))
@@ -237,6 +245,8 @@ def rich(node, depth=0):
                     styles.append("font-family:" + attrs["fontFamily"])
                 if re.fullmatch(r"\d{1,2}(?:\.\d)?(?:px|pt)", str(attrs.get("fontSize", ""))):
                     styles.append("font-size:" + attrs["fontSize"])
+                if attrs.get("script") in {"super", "sub"}:
+                    styles.append("vertical-align:" + attrs["script"] + ";font-size:0.75em")
                 text = (
                     '<span style="'
                     + html.escape(";".join(styles), quote=True)
@@ -280,14 +290,17 @@ def rich(node, depth=0):
         raise AIError("unsupported_document", "Cấu trúc chưa xuất được: " + str(kind))
     if kind == "heading":
         level = attrs.get("level", 2)
-        if type(level) is not int or not 1 <= level <= 3:
+        if type(level) is not int or not 1 <= level <= 6:
             raise AIError("invalid_document", "Cấp tiêu đề chưa hợp lệ.")
         tag = "h" + str(level)
-    style = (
-        (' style="text-align:' + attrs["textAlign"] + '"')
-        if attrs.get("textAlign") in {"left", "center", "right", "justify"}
-        else ""
-    )
+    styles = []
+    if attrs.get("textAlign") in {"left", "center", "right", "justify"}:
+        styles.append("text-align:" + attrs["textAlign"])
+    if kind in {"paragraph", "heading"}:
+        styles.append(paragraph_css(attrs))
+        if not children:
+            children = "<br>"
+    style = ' style="' + html.escape(";".join(styles), quote=True) + '"' if any(styles) else ""
     spans = ""
     if kind == "orderedList":
         start = attrs.get("start", 1)
@@ -321,6 +334,9 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         f" · {plain(exam.get('minutes'))} phút</p>"
     )
     body += f"<p>{plain(recipient_line(teacher))}</p><p>{inline_html(exam.get('instructions'))}</p>"
+    if exam.get("bodyText") or exam.get("bodyTextDoc"):
+        draft = field(exam.get("bodyText", ""), exam.get("bodyTextDoc"))
+        body = body + draft if exam["questions"] else draft
     presenting = not teacher and rendered_math is not None and bool(exam["questions"])
     has_table = any(uses_table(q) for q in exam["questions"])
     has_passage = bool(exam.get("quote", {}).get("text"))
