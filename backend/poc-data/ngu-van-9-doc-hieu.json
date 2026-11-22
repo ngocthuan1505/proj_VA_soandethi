@@ -1,0 +1,58 @@
+{
+  "jobId": "cbe4ecfa-f8d6-5367-b7d3-b7f1e26d06f8",
+  "examId": "a56cef50-e94d-57c7-83d0-3784669f93c5",
+  "baseRevision": 1,
+  "ownerId": "poc-local",
+  "subject": "Ngữ văn",
+  "grade": "9",
+  "requireEvidence": true,
+  "instructions": "Ngữ liệu tự viết để thử đọc hiểu nhiều đoạn và đối chiếu dẫn chứng, chưa được giáo viên duyệt. Không gán tên tác giả hoặc sách giáo khoa thật.",
+  "sources": [
+    {
+      "sourceId": "c1421051-0432-5904-9f54-0b00918a225f",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {
+        "kind": "passage",
+        "index": 1
+      },
+      "text": "S1. Chập tối, gió mùa thổi ràn rạt qua hàng phi lao quanh trạm khí tượng ven đồi. Ngoài sân, thùng đo mưa đặt cách hàng rào tre mười bước chân cứ rung lên bần bật. Minh nhìn qua ô cửa kính mờ hơi nước, băn khoăn tự hỏi có nên ra sân đọc vạch đo đúng giờ mười chín giờ hay chờ ngớt gió. Ông Hòa, người trực trạm hai mươi năm, lặng lẽ thắp chiếc đèn dầu có chụp kính chắn gió rồi đặt cuốn sổ tay bìa vải nâu lên bàn gỗ. Ông bảo: 'Số liệu thời tiết giống như nhịp tim của bầu trời; bỏ sót một giờ là chuỗi quan trắc cả tháng mất đi độ tin cậy.' Hai chú cháu khoác áo mưa đi ra sân, nương theo ánh đèn để đọc đúng mức nước đến từng phần mười mi-li-mét."
+    },
+    {
+      "sourceId": "7d6d2144-0a2d-59fb-a767-828ce5243536",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {
+        "kind": "passage",
+        "index": 2
+      },
+      "text": "S2. Trong nhịp sống số hóa, mỗi người có thể tiếp nhận hàng trăm tin tức chỉ trong vài phút. Tự kiểm chứng thông tin là thói quen đối chiếu nguồn gốc, kiểm tra số liệu ban đầu và phân biệt rõ giữa dữ kiện quan sát được với suy đoán chủ quan. Rèn luyện tinh thần kiểm chứng không làm chậm bước tiến của tri thức mà tạo nền tảng vững chắc để mỗi kết luận đưa ra đều minh bạch và đáng tin cậy."
+    }
+  ],
+  "slots": [
+    {
+      "type": "mcq",
+      "topic": "Đọc hiểu chi tiết ngữ liệu",
+      "level": 0,
+      "pointsQ4": 5
+    },
+    {
+      "type": "mcq",
+      "topic": "Biện pháp tu từ và từ ngữ",
+      "level": 1,
+      "pointsQ4": 5
+    },
+    {
+      "type": "short",
+      "topic": "Thông điệp từ văn bản",
+      "level": 1,
+      "pointsQ4": 10
+    },
+    {
+      "type": "essay",
+      "topic": "Nghị luận ngắn từ ngữ liệu",
+      "level": 2,
+      "pointsQ4": 20
+    }
+  ]
+}

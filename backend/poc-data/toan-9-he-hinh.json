@@ -1,0 +1,58 @@
+{
+  "jobId": "8af40179-e5cd-54bd-bfa5-d3d3128336cf",
+  "examId": "cd8f3c64-b6a1-5967-a565-8f93471b87a8",
+  "baseRevision": 1,
+  "ownerId": "poc-local",
+  "subject": "Toán",
+  "grade": "9",
+  "requireEvidence": true,
+  "instructions": "Ngữ liệu tự biên soạn của nhóm, chưa được giáo viên duyệt. S1/S2 là mã đoạn minh họa, không phải trang SGK. Dùng công thức LaTeX trong $...$ hoặc $$...$$; nêu đủ điều kiện, kiểm tra lại nghiệm khi giải hệ phương trình và không tự vẽ SVG.",
+  "sources": [
+    {
+      "sourceId": "c35ef1f9-4d6d-52ac-a492-cc1e98ac65bd",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {
+        "kind": "passage",
+        "index": 1
+      },
+      "text": "S1. Hai đội xe nhỏ và lớn vận chuyển vật tư học tập theo định mức: mỗi xe nhỏ chở 15 thùng, mỗi xe lớn chở 20 thùng. Tổng số xe điều động là 22 chiếc và tổng số thùng hàng là 380 thùng. Gọi x là số xe nhỏ, y là số xe lớn (x, y nguyên dương), ta có hệ phương trình $$\\begin{cases} x + y = 22 \\\\ 15x + 20y = 380 \\end{cases}$$ cho nghiệm duy nhất x = 12 và y = 10."
+    },
+    {
+      "sourceId": "0016d05b-728d-52da-b15d-74afbc1234ab",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {
+        "kind": "passage",
+        "index": 2
+      },
+      "text": "S2. Cho tam giác nhọn ABC (AB < AC) nội tiếp đường tròn tâm O. Các đường cao AD, BE, CF đồng quy tại trực tâm H; kẻ đường kính AK và gọi M là trung điểm BC. Vì góc BEC và góc BFC đều bằng 90 độ nên bốn điểm B, C, E, F cùng thuộc đường tròn đường kính BC. Tam giác ABD đồng dạng tam giác AKC dẫn tới hệ thức $AB \\cdot AC = AD \\cdot AK$, đồng thời tứ giác BHCK là hình bình hành nên H, M, K thẳng hàng và $AH = 2OM$."
+    }
+  ],
+  "slots": [
+    {
+      "type": "mcq",
+      "topic": "Hệ phương trình",
+      "level": 0,
+      "pointsQ4": 5
+    },
+    {
+      "type": "short",
+      "topic": "Bài toán thực tế có bảng số liệu",
+      "level": 1,
+      "pointsQ4": 10
+    },
+    {
+      "type": "essay",
+      "topic": "Hệ phương trình",
+      "level": 1,
+      "pointsQ4": 10
+    },
+    {
+      "type": "essay",
+      "topic": "Hình học phẳng",
+      "level": 2,
+      "pointsQ4": 15
+    }
+  ]
+}
