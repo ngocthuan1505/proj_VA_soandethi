@@ -8,7 +8,7 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 import httpx
@@ -36,7 +36,7 @@ from mach_backend.ai_sources import (
     workspace_page_sources,
 )
 from mach_backend.curriculum_sources import install_curriculum_sources
-from mach_backend.exam_planning import PlanRequest, propose_structure
+from mach_backend.exam_planning import PlanRequest, propose_structure, reverse_matrix
 from mach_backend.exam_spec_export import install_extended_exports
 from mach_backend.export_preflight import install_export_preflight
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel
@@ -786,6 +786,28 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                     for source in sources
                 ],
             }
+
+    class ReverseMatrixBody(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        exam: dict[str, Any] | None = None
+        baseRevision: int | None = None
+
+    @app.post("/api/exams/{exam_id}/reverse-matrix")
+    def reverse_matrix_endpoint(
+        exam_id: UUID, body: ReverseMatrixBody | None = None
+    ) -> dict[str, Any]:
+        with store.connect() as db:
+            _, stored = store.exam(exam_id, db)
+        payload = body or ReverseMatrixBody()
+        if payload.baseRevision is not None and stored["revision"] != payload.baseRevision:
+            raise AIError("stale_snapshot", "Đề đã đổi. Mở lại bảng ma trận để lập ngược.")
+        target = stored
+        if payload.exam is not None:
+            exam_id_str = str(payload.exam.get("id") or exam_id).strip()
+            if exam_id_str != str(exam_id):
+                raise HTTPException(400, "Mã đề không khớp đường dẫn.")
+            target = payload.exam
+        return reverse_matrix(target)
 
     async def owner():
         return owner_id

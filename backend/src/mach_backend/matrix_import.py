@@ -9,6 +9,7 @@ import json
 import re
 import unicodedata
 import zipfile
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated
 from xml.etree import ElementTree as ET
@@ -41,6 +42,15 @@ class MatrixRow(ContractModel):
         ]
         | None
     ) = None
+    points: Annotated[float, Field(gt=0, le=10)] | None = None
+    pointsByLevel: (
+        Annotated[
+            tuple[Annotated[float, Field(gt=0, le=10)] | None, ...],
+            Field(min_length=4, max_length=4),
+        ]
+        | None
+    ) = None
+    choiceGroup: Annotated[str, Field(min_length=1, max_length=80)] | None = None
     topic: Annotated[str, Field(min_length=1, max_length=160)]
     targets: Annotated[
         tuple[Annotated[int, Field(ge=0, le=MAX_MATRIX_QUESTIONS)], ...],
@@ -53,6 +63,77 @@ class ImportedMatrix(ContractModel):
     notes: Annotated[str, Field(max_length=2000)]
 
 
+def _row_cell_p100(row: MatrixRow, level: int) -> int | None:
+    if row.pointsByLevelQ4 is not None:
+        val = row.pointsByLevelQ4[level]
+        return val * 25 if val is not None else None
+    if row.pointsByLevel is not None:
+        val_f = row.pointsByLevel[level]
+        return round(val_f * 100) if val_f is not None else None
+    if row.pointsQ4 is not None:
+        return row.pointsQ4 * 25
+    if row.points is not None:
+        return round(row.points * 100)
+    return None
+
+
+def _validate_decimal_budget(matrix: tuple[MatrixRow, ...]) -> int:
+    common_q = 0
+    track_q: dict[str, int] = {}
+    common_fixed = 0
+    common_auto = 0
+    track_fixed: dict[str, int] = {}
+    track_auto: dict[str, int] = {}
+
+    for r in matrix:
+        set_modes = sum(
+            x is not None for x in (r.pointsQ4, r.pointsByLevelQ4, r.points, r.pointsByLevel)
+        )
+        if set_modes > 1:
+            raise AIError(
+                "invalid_plan", "Chỉ chọn một cách ghi điểm (chung hoặc theo mức) trên mỗi dòng."
+            )
+        grp = (r.choiceGroup or "").strip().casefold()
+        for level, n in enumerate(r.targets):
+            p100 = _row_cell_p100(r, level)
+            if p100 is not None and not 5 <= p100 <= 1000:
+                raise AIError("invalid_plan", "Điểm mỗi câu phải từ 0,05 đến 10 điểm.")
+            if grp:
+                track_q[grp] = track_q.get(grp, 0) + n
+                if p100 is None:
+                    track_auto[grp] = track_auto.get(grp, 0) + n
+                else:
+                    track_fixed[grp] = track_fixed.get(grp, 0) + n * p100
+            else:
+                common_q += n
+                if p100 is None:
+                    common_auto += n
+                else:
+                    common_fixed += n * p100
+
+    active_total = common_q + (max(track_q.values()) if track_q else 0)
+    if not 1 <= active_total <= MAX_MATRIX_QUESTIONS:
+        raise AIError("invalid_plan", "Nhận tổng hiệu lực 1–30 câu theo ba hoặc bốn mức.")
+
+    if not track_q:
+        rem = 1000 - common_fixed
+        if (common_auto and rem < common_auto * 5) or (not common_auto and rem != 0):
+            raise AIError("invalid_plan", "Tổng điểm cần đúng 10,00 điểm.")
+        return active_total
+
+    all_tracks = set(track_q)
+    for grp in all_tracks:
+        used = common_fixed + track_fixed.get(grp, 0)
+        auto = common_auto + track_auto.get(grp, 0)
+        rem = 1000 - used
+        if (auto and rem < auto * 5) or (not auto and rem != 0):
+            raise AIError(
+                "invalid_plan",
+                f"Tổng điểm phần chung + nhánh '{grp}' phải đúng 10,00 điểm.",
+            )
+    return active_total
+
+
 def checked_matrix(value):
     try:
         result = ImportedMatrix.model_validate_json(json.dumps(value, ensure_ascii=False))
@@ -61,22 +142,36 @@ def checked_matrix(value):
             "invalid_matrix", "Chưa đọc được số câu nguyên theo ba hoặc bốn mức. Kiểm lại tệp/bảng."
         ) from None
     topics = [r.topic.strip() for r in result.matrix]
-    keys = [(r.topic.strip().casefold(), r.type) for r in result.matrix]
-    total = sum(sum(r.targets) for r in result.matrix)
-    if (
-        any(not t for t in topics)
-        or len(set(keys)) != len(keys)
-        or not 1 <= total <= MAX_MATRIX_QUESTIONS
-    ):
+    keys = [
+        (r.topic.strip().casefold(), r.type, (r.choiceGroup or "").strip().casefold())
+        for r in result.matrix
+    ]
+    uses_extended = any(
+        r.points is not None or r.pointsByLevel is not None or r.choiceGroup is not None
+        for r in result.matrix
+    )
+    if any(not t for t in topics) or len(set(keys)) != len(keys):
         raise AIError(
             "invalid_matrix",
-            "Chủ đề và loại câu phải riêng biệt; nhận tổng 1–30 câu theo ba hoặc bốn mức.",
+            "Chủ đề, loại câu và nhánh chọn phải riêng biệt; nhận 1–30 câu.",
         )
     data = result.model_dump(mode="json", exclude_unset=True)
-    try:
-        matrix_slots(data["matrix"])
-    except AIError as error:
-        raise AIError("invalid_matrix", str(error)) from None
+    if uses_extended:
+        try:
+            total = _validate_decimal_budget(result.matrix)
+        except AIError as error:
+            raise AIError("invalid_matrix", str(error)) from None
+    else:
+        total = sum(sum(r.targets) for r in result.matrix)
+        if not 1 <= total <= MAX_MATRIX_QUESTIONS:
+            raise AIError(
+                "invalid_matrix",
+                "Chủ đề và loại câu phải riêng biệt; nhận tổng 1–30 câu theo ba hoặc bốn mức.",
+            )
+        try:
+            matrix_slots(data["matrix"])
+        except AIError as error:
+            raise AIError("invalid_matrix", str(error)) from None
     for row, topic in zip(data["matrix"], topics, strict=True):
         row["topic"] = topic
     return {**data, "count": total, "requiresConfirmation": True}
@@ -171,6 +266,14 @@ def parse_table(rows):
         points_col = next(
             (i for i, c in enumerate(labels) if c in {"diem/cau", "diem moi cau"}), None
         )
+        choice_col = next(
+            (
+                i
+                for i, c in enumerate(labels)
+                if c in {"nhom chon", "dinh huong", "choicegroup", "nhom"}
+            ),
+            None,
+        )
         if points_col is None and any("diem" in label for label in labels):
             return None
         result: list[dict] = []
@@ -217,9 +320,22 @@ def parse_table(rows):
                     return None
                 value = cells[points_col].strip().replace(",", ".")
                 if value:
-                    if not re.fullmatch(r"\d+(?:\.\d{1,2})?", value) or float(value) * 4 % 1:
+                    if not re.fullmatch(r"\d+(?:\.\d{1,2})?", value):
                         return None
-                    entry["pointsQ4"] = int(float(value) * 4)
+                    try:
+                        dec = Decimal(value)
+                    except InvalidOperation:
+                        return None
+                    if not Decimal("0.05") <= dec <= Decimal("10"):
+                        return None
+                    if dec * Decimal("4") == (dec * Decimal("4")).to_integral_value():
+                        entry["pointsQ4"] = int(dec * Decimal("4"))
+                    else:
+                        entry["points"] = float(dec)
+            if choice_col is not None and len(cells) > choice_col:
+                grp_val = cells[choice_col].strip()
+                if grp_val:
+                    entry["choiceGroup"] = grp_val
             result.append(entry)
         if result:
             return checked_matrix(
@@ -230,6 +346,23 @@ def parse_table(rows):
                 }
             )
     return None
+
+
+def _is_spec_only_table(rows: list[list[str]] | None, text: str = "") -> bool:
+    """Phát hiện tệp chỉ có bảng đặc tả (chưa có bảng ma trận số câu)."""
+    if not rows:
+        return False
+    norm_cells = [normalized(c) for row in rows for c in row if c.strip()]
+    joined = normalized(text) + " " + " ".join(norm_cells)
+    spec_signals = (
+        "yeu cau can dat",
+        "bang dac ta",
+        "muc do danh gia",
+        "chi bao",
+        "pham vi nang luc",
+        "dac ta de",
+    )
+    return any(sig in joined for sig in spec_signals)
 
 
 def validate_raster(data: bytes, extension: str):
@@ -385,6 +518,12 @@ async def read_matrix(request, call):
         result = parse_table(rows)
     if result:
         return {**result, "method": "python_table", "sentToAI": False}
+    if not result and _is_spec_only_table(rows, text):
+        raise AIError(
+            "spec_only_matrix",
+            "Chỉ phát hiện bảng đặc tả (chưa có bảng ma trận số câu/điểm để dựng đề). "
+            "Hãy tải tệp có bảng ma trận hoặc nhập trực tiếp số câu.",
+        )
     if request.get("consent") is not True:
         raise AIError(
             "matrix_ai_consent",

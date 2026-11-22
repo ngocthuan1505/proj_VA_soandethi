@@ -314,3 +314,82 @@ def test_generation_preview_confirm_preserves_custom_instructions(
                 for label in ("nhiều lựa chọn", "đúng/sai", "trả lời ngắn", "tự luận")
             )
         assert len(saved["docs"]) == int(with_source)
+
+
+def test_reverse_matrix_endpoint_preserves_mixed_types_points_and_unique_choice_slots(tmp_path):
+    exam_id = str(uuid4())
+    exam = {
+        "id": exam_id,
+        "revision": 2,
+        "title": "Đề Tin học 2 định hướng",
+        "subject": "Tin học",
+        "grade": "12",
+        "minutes": 50,
+        "docs": [],
+        "chat": [],
+        "history": [],
+        "undo": [],
+        "redo": [],
+        "matrix": [],
+        "appliedPrefs": [],
+        "quote": {"text": "", "versions": []},
+        "questions": [
+            {"id": str(uuid4()), "v": 1, "type": "mcq", "topic": "Mạng", "level": 0, "points": 0.2},
+            {
+                "id": str(uuid4()),
+                "v": 1,
+                "type": "truefalse",
+                "topic": "CSDL",
+                "level": 1,
+                "points": 1.6,
+            },
+            {
+                "id": str(uuid4()),
+                "v": 1,
+                "type": "short",
+                "topic": "SQL",
+                "level": 2,
+                "points": 0.2,
+            },
+            {
+                "id": str(uuid4()),
+                "v": 1,
+                "type": "essay",
+                "topic": "Thuật toán",
+                "level": 2,
+                "points": 2.0,
+                "choiceGroup": "KHMT",
+            },
+            {
+                "id": str(uuid4()),
+                "v": 1,
+                "type": "essay",
+                "topic": "Ứng dụng",
+                "level": 2,
+                "points": 2.0,
+                "choiceGroup": "THUD",
+            },
+            {"id": str(uuid4()), "v": 1, "type": "mcq", "topic": "", "level": 0, "points": None},
+        ],
+    }
+    state = {"exams": [exam], "prefs": [], "current": exam_id}
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        client.put("/api/kv", json={"key": "state", "value": state}).raise_for_status()
+        stale = client.post(f"/api/exams/{exam_id}/reverse-matrix", json={"baseRevision": 1})
+        assert stale.status_code == 409
+        res = client.post(f"/api/exams/{exam_id}/reverse-matrix", json={"baseRevision": 2})
+        assert res.status_code == 200, res.text
+        data = res.json()
+        assert data["sentToAI"] is False
+        slot_ids = [s["slotId"] for s in data["slots"]]
+        assert len(set(slot_ids)) == len(slot_ids) == 6
+        assert [s["type"] for s in data["slots"][:5]] == [
+            "mcq",
+            "truefalse",
+            "short",
+            "essay",
+            "essay",
+        ]
+        assert data["missingPointsOrdinals"] == [6]
+        assert data["totalPoints"] == pytest.approx(4.0)
+        assert any("chưa có điểm" in w for w in data["warnings"])

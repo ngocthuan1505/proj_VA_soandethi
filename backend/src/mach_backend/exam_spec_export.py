@@ -13,6 +13,7 @@ from typing import Any, Literal, NoReturn
 from xml.etree import ElementTree as ET
 
 from docx import Document
+from docx.enum.section import WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
@@ -1176,6 +1177,26 @@ def _extract_competency(question: dict[str, Any], topic: str, lesson: str, level
     return f"Đạt yêu cầu mức {level_name} đối với nội dung {target}"
 
 
+def _allocate_percentages(weights: list[int]) -> list[float]:
+    """Phân bổ phần trăm (bội 0.01%) theo largest-remainder sao cho tổng đúng 100.00%."""
+    total_w = sum(max(0, w) for w in weights)
+    if total_w <= 0:
+        return [0.0] * len(weights)
+    floors: list[int] = []
+    remainders: list[tuple[int, int]] = []
+    for idx, raw_w in enumerate(weights):
+        w = max(0, raw_w)
+        exact = w * 10000
+        floors.append(exact // total_w)
+        if w > 0:
+            remainders.append((exact % total_w, -idx))
+    remainders.sort(reverse=True)
+    needed = 10000 - sum(floors)
+    for _, neg_idx in remainders[:needed]:
+        floors[-neg_idx] += 1
+    return [round(fp / 100.0, 2) for fp in floors]
+
+
 def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
     """Lập bảng Ma trận & Đặc tả cả đề theo chủ đề/bài học, 4 mức nhận thức và tỷ lệ %."""
     exam_obj, questions = _validate_exam_base(exam)
@@ -1318,6 +1339,48 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
         for q_type in ("mcq", "truefalse", "short", "essay")
         if type_counts[q_type] > 0
     }
+
+    for row, pct in zip(
+        rows,
+        _allocate_percentages(
+            [
+                g["total_points_q4"] if total_q4 > 0 else g["total_questions"]
+                for g in groups.values()
+            ]
+        ),
+        strict=True,
+    ):
+        row["percentage"] = pct
+    for row, pct in zip(
+        specification_rows,
+        _allocate_percentages(
+            [r["points_q4"] if total_q4 > 0 else r["count"] for r in specification_rows]
+        ),
+        strict=True,
+    ):
+        row["percentage"] = pct
+    for name, pct in zip(
+        LEVEL_NAMES,
+        _allocate_percentages(
+            [
+                level_q4[idx] if total_q4 > 0 else level_counts[idx]
+                for idx in range(len(LEVEL_NAMES))
+            ]
+        ),
+        strict=True,
+    ):
+        by_level[name]["percentage"] = pct
+    active_types: list[QuestionType] = [
+        q_t for q_t in ("mcq", "truefalse", "short", "essay") if type_counts[q_t] > 0
+    ]
+    for qt, pct in zip(
+        active_types,
+        _allocate_percentages(
+            [type_q4[q_t] if total_q4 > 0 else type_counts[q_t] for q_t in active_types]
+        ),
+        strict=True,
+    ):
+        by_type[qt]["percentage"] = pct
 
     return {
         "title": str(exam_obj.get("title") or "Đề kiểm tra").strip(),
@@ -1484,7 +1547,9 @@ def export_student_exam_html(exam: dict[str, Any]) -> str:
     return _html_shell(f"Đề kiểm tra — {header_data['title']}", sheet)
 
 
-def export_matrix_specification_html(exam: dict[str, Any]) -> str:
+def export_matrix_specification_html(
+    exam: dict[str, Any], *, orientation: Literal["portrait", "landscape"] = "portrait"
+) -> str:
     """Xuất HTML in A4 cho Bảng Ma trận & Bảng Đặc tả cả đề (chống rách bảng, escape XSS)."""
     data = build_matrix_and_specification(exam)
 
@@ -1599,20 +1664,28 @@ def export_matrix_specification_html(exam: dict[str, Any]) -> str:
         + "</table>"
         + "</section>"
     )
-    return _html_shell(f"Ma trận & Đặc tả — {data['title']}", matrix_sheet + spec_sheet)
+    html_out = _html_shell(f"Ma trận & Đặc tả — {data['title']}", matrix_sheet + spec_sheet)
+    if orientation == "landscape":
+        html_out = html_out.replace("</style>", "@page{size:A4 landscape;}</style>", 1)
+    return html_out
 
 
 class _DocxSpecBuilder:
     """Tạo tệp DOCX khổ A4 giữ công thức m:oMath qua mach_backend.math_word.omml."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, orientation: Literal["portrait", "landscape"] = "portrait") -> None:
         self.doc = Document()
         zoom = self.doc.settings.element.find(qn("w:zoom"))
         if zoom is not None:
             zoom.set(qn("w:percent"), "100")
         section = self.doc.sections[0]
-        section.page_width = Mm(210)
-        section.page_height = Mm(297)
+        if orientation == "landscape":
+            section.orientation = WD_ORIENT.LANDSCAPE
+            section.page_width = Mm(297)
+            section.page_height = Mm(210)
+        else:
+            section.page_width = Mm(210)
+            section.page_height = Mm(297)
         section.top_margin = Mm(18)
         section.right_margin = Mm(18)
         section.bottom_margin = Mm(20)
@@ -1800,10 +1873,13 @@ def export_answer_key_rubric_docx(exam: dict[str, Any], *, teacher: bool = True)
     return builder.to_bytes()
 
 
-def export_matrix_specification_docx(exam: dict[str, Any]) -> bytes:
+def export_matrix_specification_docx(
+    exam: dict[str, Any], *, orientation: Literal["portrait", "landscape"] = "portrait"
+) -> bytes:
     """Xuất DOCX chuẩn OOXML (w:tbl + m:oMath) cho Bảng Ma trận & Bảng Đặc tả cả đề."""
     data = build_matrix_and_specification(exam)
-    builder = _DocxSpecBuilder()
+    builder = _DocxSpecBuilder(orientation=orientation)
+    is_landscape = orientation == "landscape"
     if data["school"]:
         builder.add_rich_paragraph(data["school"], bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     builder.add_rich_paragraph(
@@ -1862,7 +1938,11 @@ def export_matrix_specification_docx(exam: dict[str, Any]) -> bytes:
             "Tỷ lệ %",
         ],
         matrix_rows,
-        [10, 32, 24, 17, 17, 17, 17, 12, 14, 12],
+        (
+            [12, 52, 35, 25, 25, 25, 25, 18, 22, 20]
+            if is_landscape
+            else [10, 32, 24, 17, 17, 17, 17, 12, 14, 12]
+        ),
         footer_rows=[
             [
                 "Tổng",
@@ -1904,7 +1984,7 @@ def export_matrix_specification_docx(exam: dict[str, Any]) -> bytes:
             "Tỷ lệ %",
         ],
         spec_rows,
-        [10, 28, 18, 22, 48, 18, 14, 14],
+        [12, 42, 26, 30, 81, 26, 21, 21] if is_landscape else [10, 28, 18, 22, 48, 18, 14, 14],
         footer_rows=[
             [
                 "Tổng",
@@ -1964,6 +2044,7 @@ class MatrixSpecificationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     exam: dict[str, Any]
     format: Literal["html", "docx"] | None = None
+    orientation: Literal["portrait", "landscape"] = "portrait"
 
 
 def _raise_http_for_ai_error(err: AIError) -> NoReturn:
@@ -2074,7 +2155,7 @@ def install_extended_exports(
         fmt = _resolve_export_format(body.format, format)
         try:
             if fmt == "html":
-                content = export_matrix_specification_html(body.exam)
+                content = export_matrix_specification_html(body.exam, orientation=body.orientation)
                 return HTMLResponse(
                     content,
                     headers={
@@ -2082,7 +2163,7 @@ def install_extended_exports(
                         "X-Content-Type-Options": "nosniff",
                     },
                 )
-            binary = export_matrix_specification_docx(body.exam)
+            binary = export_matrix_specification_docx(body.exam, orientation=body.orientation)
             return Response(
                 content=binary,
                 media_type=(

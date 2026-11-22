@@ -119,3 +119,15 @@ test('Ma trận30câu và nhiều loại giữ đúng cơ cấu, chặn thiếu/
  assert.equal(validateMatrixRows(rows),rows);
  for(const bad of [[{topic:'A',targets:[29,1,1]}],[{topic:'A',type:'unknown',targets:[1,0,0]}],[{topic:'A',targets:[1,0,0],pointsQ4:39}],[{topic:'A',targets:[2,0,0],pointsQ4:20},{topic:'B',targets:[1,0,0]}]])assert.throws(()=>validateMatrixRows(bad));
 });
+test('Lát B2: validateMatrixRows hỗ trợ bước 0.10/0.20/0.40 và 2 nhánh choiceGroup tổng 10 điểm',()=>{
+ const rows=[
+  {topic:'Chung',type:'mcq',targets:[10,0,0,0],points:0.2},
+  {topic:'Tự luận chung',type:'essay',targets:[0,5,0,0],points:0.4},
+  {topic:'Vận dụng chung',type:'essay',targets:[0,0,2,0],points:1.5},
+  {topic:'Riêng KHMT',type:'mcq',targets:[10,0,0,0],points:0.1,choiceGroup:'KHMT'},
+  {topic:'Bài KHMT',type:'essay',targets:[0,2,0,0],pointsQ4:4,choiceGroup:'KHMT'},
+  {topic:'Riêng THUD',type:'mcq',targets:[10,0,0,0],points:0.1,choiceGroup:'THUD'},
+  {topic:'Bài THUD',type:'essay',targets:[0,2,0,0],pointsQ4:4,choiceGroup:'THUD'},
+ ];
+ assert.equal(validateMatrixRows(rows),rows);
+});

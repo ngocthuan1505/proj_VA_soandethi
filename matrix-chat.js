@@ -10,13 +10,25 @@ export const matrixChatRunning=c=>flows.get(c.exam().id)?.phase==='running';
 export const isMatrixRequest=text=>!/^(?:giải thích|hướng dẫn|tại sao|cách)\b/iu.test(text)&&/(?:soạn|tạo|sinh|gen|làm)\b/iu.test(text.normalize('NFC'))&&/ma\s*trận/iu.test(text);
 
 export function matrixRowsFromForm(form){
- const rows=[...form.querySelectorAll('[data-chat-matrix-row]')].map(row=>({
-  topic:row.querySelector('[name=topic]').value.trim(),
-  type:row.querySelector('[name=type]')?.value||'mcq',
-  ...(row.querySelector('[name=points]')?.value?{pointsQ4:Number(row.querySelector('[name=points]').value)*4}:{}),
-  targets:[...row.querySelectorAll('[name=target]')].map(n=>Number(n.value)),
-  ...(row.querySelector('[name=level-points]')?{pointsByLevelQ4:[...row.querySelectorAll('[name=level-points]')].map(n=>n.value?Number(n.value)*4:null)}:{}),
- }));
+ const ptFields=val=>{
+  if(val==='')return {};
+  const n=Number(val);
+  return Number.isInteger(Math.round(n*100)/25)?{pointsQ4:Math.round(n*4)}:{points:Math.round(n*100)/100};
+ };
+ const rows=[...form.querySelectorAll('[data-chat-matrix-row]')].map(row=>{
+  const lvlInputs=[...row.querySelectorAll('[name=level-points]')];
+  const grp=row.querySelector('[name=choiceGroup]')?.value?.trim();
+  const lvlVals=lvlInputs.map(n=>n.value===''?null:Number(n.value));
+  const useDecLvl=lvlInputs.length&&lvlVals.some(v=>v!=null&&!Number.isInteger(Math.round(v*100)/25));
+  return {
+   topic:row.querySelector('[name=topic]').value.trim(),
+   type:row.querySelector('[name=type]')?.value||'mcq',
+   ...(grp?{choiceGroup:grp}:{}),
+   ...(!lvlInputs.length?ptFields(row.querySelector('[name=points]')?.value||''):{}),
+   targets:[...row.querySelectorAll('[name=target]')].map(n=>Number(n.value)),
+   ...(lvlInputs.length?(useDecLvl?{pointsByLevel:lvlVals.map(v=>v==null?null:Math.round(v*100)/100)}:{pointsByLevelQ4:lvlVals.map(v=>v==null?null:Math.round(v*4))}):{}),
+  };
+ });
  validateMatrixRows(rows);
  return rows;
 }
@@ -62,13 +74,32 @@ function matrixForm(c,flow){
  flow.controller=null;flow.phase='plan';flow.dock?.remove();flow.dock=null;
  const exam=c.getState().exams.find(e=>e.id===flow.examId);
  const rows=flow.rows||(exam.matrix?.length?exam.matrix:[{topic:'',targets:[2,1,1,0]}]);
- const rowHTML=row=>`<fieldset data-chat-matrix-row><label>Chủ đề<input name="topic" maxlength="160" required value="${esc(row.topic)}"></label><label>Loại câu<select name="type">${Object.entries(QUESTION_TYPES).map(([key,label])=>`<option value="${key}" ${(row.type||'mcq')===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Điểm mỗi câu<input name="points" type="number" min="0.25" max="10" step="0.25" placeholder="Tự chia phần điểm còn lại" value="${row.pointsQ4==null?'':row.pointsQ4/4}" ${row.pointsByLevelQ4?'disabled':''}></label><div class="matrix-chat-counts">${LEVELS.map((level,i)=>`<label>${level}<input name="target" type="number" min="0" max="30" required value="${row.targets[i]||0}">${row.pointsByLevelQ4?`<span>Điểm/câu</span><input name="level-points" aria-label="Điểm mỗi câu ${level}" type="number" min="0.25" max="10" step="0.25" value="${row.pointsByLevelQ4[i]==null?'':row.pointsByLevelQ4[i]/4}">`:''}</label>`).join('')}</div><button type="button" data-remove-row aria-label="Bỏ chủ đề này">Bỏ chủ đề</button></fieldset>`;
- flow.root.innerHTML=`<h3>${flow.autoPreview?'Xem lại cơ cấu đề':'Soạn theo ma trận'}</h3><p>${flow.autoPreview?'Kiểm tra bản tóm tắt rồi xác nhận. Chỉ mở phần chỉnh chi tiết khi cần đổi.':'Tải file hoặc tự điền cơ cấu bên dưới. Chưa sinh câu hỏi.'}</p><form class="matrix-chat-plan"><div data-rows>${rows.map(rowHTML).join('')}</div><button type="button" data-add-row>＋ Thêm chủ đề</button><p class="matrix-chat-error" role="alert"></p><div class="matrix-chat-actions"><button type="submit" class="primary">${flow.autoPreview&&!flow.fromFile?'Dùng gợi ý này':'Dùng ma trận này'}</button><button type="button" data-close-plan>Để sau</button></div></form>`;
+ const rowHTML=row=>{
+  const ptVal=row.pointsQ4!=null?row.pointsQ4/4:(row.points??'');
+  const lvlPts=row.pointsByLevelQ4||row.pointsByLevel;
+  const lvlScale=row.pointsByLevelQ4?4:1;
+  return `<fieldset data-chat-matrix-row><label>Chủ đề${row.choiceGroup?` <span class="pill">${esc(row.choiceGroup)}</span><input type="hidden" name="choiceGroup" value="${esc(row.choiceGroup)}">`:''}<input name="topic" maxlength="160" required value="${esc(row.topic)}"></label><label>Loại câu<select name="type">${Object.entries(QUESTION_TYPES).map(([key,label])=>`<option value="${key}" ${(row.type||'mcq')===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Điểm mỗi câu<input name="points" type="number" min="0.05" max="10" step="0.05" placeholder="Tự chia phần điểm còn lại" value="${ptVal}" ${lvlPts?'disabled':''}></label><div class="matrix-chat-counts">${LEVELS.map((level,i)=>`<label>${level}<input name="target" type="number" min="0" max="30" required value="${row.targets[i]||0}">${lvlPts?`<span>Điểm/câu</span><input name="level-points" aria-label="Điểm mỗi câu ${level}" type="number" min="0.05" max="10" step="0.05" value="${lvlPts[i]==null?'':lvlPts[i]/lvlScale}">`:''}</label>`).join('')}</div><button type="button" data-remove-row aria-label="Bỏ chủ đề này">Bỏ chủ đề</button></fieldset>`;
+ };
+ flow.root.innerHTML=`<h3>${flow.autoPreview?'Xem lại cơ cấu đề':'Soạn theo ma trận'}</h3><p>${flow.autoPreview?'Kiểm tra bản tóm tắt rồi xác nhận. Chỉ mở phần chỉnh chi tiết khi cần đổi.':'Tải file, lập ngược từ đề đang mở hoặc tự điền cơ cấu bên dưới. Chưa sinh câu hỏi.'}</p><div class="matrix-reverse-bar"><button type="button" data-reverse-matrix ${exam.questions?.length?'':'disabled'}>Lập ma trận ngược từ đề đang mở</button><p class="hint" data-reverse-status role="status"></p></div><form class="matrix-chat-plan"><div data-rows>${rows.map(rowHTML).join('')}</div><button type="button" data-add-row>＋ Thêm chủ đề</button><p class="matrix-chat-error" role="alert"></p><div class="matrix-chat-actions"><button type="submit" class="primary">${flow.autoPreview&&!flow.fromFile?'Dùng gợi ý này':'Dùng ma trận này'}</button><button type="button" data-close-plan>Để sau</button></div></form>`;
  const form=flow.root.querySelector('form');
+ const revBtn=flow.root.querySelector('[data-reverse-matrix]'),revStatus=flow.root.querySelector('[data-reverse-status]');
+ revBtn.onclick=async()=>{
+  if(!flushEditor())return;
+  revBtn.disabled=true;revStatus.textContent='Đang đọc cấu trúc câu hỏi tại máy…';
+  try{
+   const currentExam=c.getState().exams.find(e=>e.id===flow.examId);
+   const resp=await fetch(`/api/exams/${encodeURIComponent(flow.examId)}/reverse-matrix`,{method:'POST',headers:{'Content-Type':'application/json',...workspaceHeaders()},body:JSON.stringify({exam:currentExam,baseRevision:currentExam.revision})});
+   const res=await resp.json();if(!resp.ok)throw Error(res.error||res.detail?.message||'Chưa lập được ma trận ngược.');
+   if(c.exam().id!==flow.examId||!form.isConnected)return;
+   flow.rows=res.matrix;flow.notes=(res.warnings?.join(' · ')||'Đã lập ma trận ngược tại máy từ đề đang mở.');flow.fromFile=false;flow.autoPreview=true;matrixForm(c,flow);
+   const st=flow.root.querySelector('[data-reverse-status]');
+   if(st)st.textContent=`Đã đọc ${res.totalQuestions} câu (${res.countedQuestions} câu hiệu lực · ${res.totalPoints.toFixed(2).replace('.',',')} điểm).`+(res.warnings?.length?' '+res.warnings[0]:'');
+  }catch(err){revStatus.textContent=err.message;}finally{if(revBtn.isConnected)revBtn.disabled=false;}
+ };
  if(flow.autoPreview){
-  const summary=document.createElement('div');summary.className='matrix-plan-overview';summary.innerHTML=`<h4>Cơ cấu đề xuất · ${rows.reduce((n,r)=>n+r.targets.reduce((a,b)=>a+b,0),0)} câu/ý · 10 điểm</h4><p>${esc(flow.notes||'Xem lại chủ đề, mức và điểm trước khi dùng.')}</p><div class="matrix-overview-scroll"><table><thead><tr><th>Chủ đề / dạng câu</th>${LEVELS.map((x,i)=>`<th title="${x}" aria-label="${x}">${['NB','TH','VD','VDC'][i]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.topic)}<small>${esc(QUESTION_TYPES[r.type||'mcq'])}</small></td>${LEVELS.map((_,i)=>{
-   const pointsQ4=r.pointsByLevelQ4?r.pointsByLevelQ4[i]:r.pointsQ4;
-   return `<td>${r.targets[i]||0}${r.targets[i]&&pointsQ4?`<small>${String(pointsQ4/4).replace('.',',')}đ</small>`:''}</td>`;
+  const summary=document.createElement('div');summary.className='matrix-plan-overview';summary.innerHTML=`<h4>Cơ cấu đề xuất · ${rows.reduce((n,r)=>n+r.targets.reduce((a,b)=>a+b,0),0)} câu/ý · 10 điểm</h4><p>${esc(flow.notes||'Xem lại chủ đề, mức và điểm trước khi dùng.')}</p><div class="matrix-overview-scroll"><table><thead><tr><th>Chủ đề / dạng câu</th>${LEVELS.map((x,i)=>`<th title="${x}" aria-label="${x}">${['NB','TH','VD','VDC'][i]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.topic)}${r.choiceGroup?` <small>[${esc(r.choiceGroup)}]</small>`:''}<small>${esc(QUESTION_TYPES[r.type||'mcq'])}</small></td>${LEVELS.map((_,i)=>{
+   const pts=r.pointsByLevelQ4?r.pointsByLevelQ4[i]/4:r.pointsByLevel?r.pointsByLevel[i]:r.pointsQ4!=null?r.pointsQ4/4:r.points;
+   return `<td>${r.targets[i]||0}${r.targets[i]&&pts?`<small>${String(pts).replace('.',',')}đ</small>`:''}</td>`;
   }).join('')}</tr>`).join('')}</tbody></table></div><p class="hint">NB: Nhận biết · TH: Thông hiểu · VD: Vận dụng · VDC: Vận dụng cao. Điểm ghi dưới số câu là điểm mỗi câu.</p>`;
   const mix=document.createElement('p');mix.className='matrix-plan-types';mix.textContent=Object.entries(QUESTION_TYPES).map(([key,label])=>{const n=rows.filter(r=>(r.type||'mcq')===key).reduce((sum,r)=>sum+r.targets.reduce((a,b)=>a+b,0),0);return n?n+' '+label.toLocaleLowerCase():'';}).filter(Boolean).join(' · ');summary.querySelector('h4').after(mix);if(!flow.fromFile){const detail=document.createElement('details');detail.className='matrix-auto-distribution';detail.innerHTML='<summary>Xem phân bố chủ đề và mức độ</summary>';detail.append(summary.querySelector('.matrix-overview-scroll'),summary.querySelector('.hint'));summary.append(detail);}form.prepend(summary);const advanced=document.createElement('details');advanced.className='matrix-plan-advanced';advanced.innerHTML='<summary>Chỉnh từng chủ đề, số câu và điểm</summary>';advanced.append(form.querySelector('[data-rows]'),form.querySelector('[data-add-row]'));summary.after(advanced);
  }

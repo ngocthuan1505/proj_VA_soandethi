@@ -1,8 +1,10 @@
 """Đề xuất cơ cấu từ yêu cầu; chưa xác nhận hoặc sinh câu hỏi."""
 
 import json
+import math
 import re
-from typing import Annotated
+from decimal import Decimal, InvalidOperation
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -137,4 +139,180 @@ async def propose_structure(request, call):
             "minutes": request.minutes is None,
             "types": types is None,
         },
+    }
+
+
+def _parse_question_points_dec(question: dict[str, Any]) -> Decimal | None:
+    raw_pts = question.get("points")
+    if raw_pts is not None and not isinstance(raw_pts, bool):
+        if isinstance(raw_pts, float) and not math.isfinite(raw_pts):
+            return None
+        try:
+            dec = Decimal(str(raw_pts).strip().replace(",", "."))
+            if dec.is_finite() and dec > 0:
+                return dec.quantize(Decimal("0.01"))
+        except (InvalidOperation, ValueError):
+            return None
+    raw_q4 = question.get("pointsQ4")
+    if type(raw_q4) is int and raw_q4 > 0:
+        return (Decimal(raw_q4) / Decimal("4")).quantize(Decimal("0.01"))
+    return None
+
+
+def _infer_question_type(question: dict[str, Any]) -> tuple[QuestionType, bool]:
+    raw_type = str(question.get("type") or "").strip().lower()
+    if raw_type in {"mcq", "truefalse", "short", "essay"}:
+        return raw_type, False  # type: ignore[return-value]
+    if question.get("truthValues") is not None:
+        return "truefalse", True
+    if isinstance(question.get("options"), list) and len(question["options"]) >= 2:
+        return "mcq", True
+    if question.get("rubric"):
+        return "essay", True
+    return "short", True
+
+
+def reverse_matrix(exam: dict[str, Any]) -> dict[str, Any]:
+    """Lập ma trận ngược xác định tại máy từ danh sách câu hỏi, không gọi AI."""
+    if not isinstance(exam, dict):
+        raise AIError("invalid_exam", "Dữ liệu đề không hợp lệ.")
+    questions = exam.get("questions")
+    if not isinstance(questions, list) or not 1 <= len(questions) <= 60:
+        raise AIError("invalid_exam", "Đề cần có 1–60 câu hỏi để lập ma trận ngược.")
+
+    slots: list[dict[str, Any]] = []
+    group_meta: dict[tuple[str, str, str], tuple[str, QuestionType, str]] = {}
+    group_targets: dict[tuple[str, str, str], list[int]] = {}
+    group_points: dict[tuple[str, str, str], list[Decimal | None]] = {}
+    group_level_points: dict[tuple[str, str, str], list[list[Decimal | None]]] = {}
+    missing_points: list[int] = []
+    common_total = Decimal("0")
+    track_totals: dict[str, Decimal] = {}
+    track_counts: dict[str, int] = {}
+    common_count = 0
+
+    for idx, raw_q in enumerate(questions, 1):
+        if not isinstance(raw_q, dict):
+            raise AIError("invalid_exam", f"Câu {idx} không hợp lệ.")
+        q_type, inferred_type = _infer_question_type(raw_q)
+        raw_topic = str(raw_q.get("topic") or raw_q.get("chapter") or "").strip()
+        missing_topic = not raw_topic
+        topic = raw_topic or "Chủ đề chung"
+        raw_level = raw_q.get("level")
+        invalid_level = type(raw_level) is not int or not 0 <= raw_level <= 3
+        level = 1 if invalid_level else int(raw_level)
+        pts_dec = _parse_question_points_dec(raw_q)
+        choice_group = str(raw_q.get("choiceGroup") or raw_q.get("track") or "").strip()
+
+        if pts_dec is None:
+            missing_points.append(idx)
+        elif choice_group:
+            track_totals[choice_group] = track_totals.get(choice_group, Decimal("0")) + pts_dec
+        else:
+            common_total += pts_dec
+        if choice_group:
+            track_counts[choice_group] = track_counts.get(choice_group, 0) + 1
+        else:
+            common_count += 1
+
+        needs_review = bool(pts_dec is None or missing_topic or invalid_level or inferred_type)
+        confidence = round(
+            1.0
+            - (0.45 if pts_dec is None else 0.0)
+            - (0.15 if missing_topic else 0.0)
+            - (0.15 if invalid_level else 0.0)
+            - (0.15 if inferred_type else 0.0),
+            2,
+        )
+        raw_qid = re.sub(r"[^A-Za-z0-9_-]", "", str(raw_q.get("id") or ""))[:12]
+        slot_id = f"{q_type}:{choice_group or 'chung'}:q{idx}" + (f":{raw_qid}" if raw_qid else "")
+        pts_val = float(pts_dec) if pts_dec is not None else None
+        slots.append(
+            {
+                "slotId": slot_id,
+                "ordinal": idx,
+                "questionId": raw_q.get("id"),
+                "type": q_type,
+                "topic": topic,
+                "level": level,
+                "points": pts_val,
+                "choiceGroup": choice_group or None,
+                "confidence": max(0.1, confidence),
+                "needsReview": needs_review,
+            }
+        )
+
+        grp_key = (topic.casefold(), q_type, choice_group.casefold())
+        if grp_key not in group_meta:
+            group_meta[grp_key] = (topic, q_type, choice_group)
+            group_targets[grp_key] = [0, 0, 0, 0]
+            group_points[grp_key] = []
+            group_level_points[grp_key] = [[], [], [], []]
+        group_targets[grp_key][level] += 1
+        group_points[grp_key].append(pts_dec)
+        group_level_points[grp_key][level].append(pts_dec)
+
+    matrix_rows: list[dict[str, Any]] = []
+    for grp_key, (grp_topic, grp_type, grp_choice) in group_meta.items():
+        targets = group_targets[grp_key]
+        raw_pts = group_points[grp_key]
+        lvl_lists = group_level_points[grp_key]
+        row: dict[str, Any] = {
+            "topic": grp_topic,
+            "type": grp_type,
+            "targets": targets,
+            **({"choiceGroup": grp_choice} if grp_choice else {}),
+        }
+        pts_list = [p for p in raw_pts if p is not None]
+        if pts_list and len(pts_list) == sum(targets) and len(set(pts_list)) == 1:
+            uniform = pts_list[0]
+            q4 = uniform * Decimal("4")
+            if q4 == q4.to_integral_value() and 1 <= int(q4) <= 40:
+                row["pointsQ4"] = int(q4)
+            else:
+                row["points"] = float(uniform)
+        elif pts_list and all(
+            not lst or (len(set(lst)) == 1 and None not in lst) for lst in lvl_lists
+        ):
+            per_level_dec = [lst[0] if lst else None for lst in lvl_lists]
+            if all(
+                p is None or (p * Decimal("4") == (p * Decimal("4")).to_integral_value())
+                for p in per_level_dec
+            ):
+                row["pointsByLevelQ4"] = [
+                    int(p * Decimal("4")) if p is not None else None for p in per_level_dec
+                ]
+            else:
+                row["pointsByLevel"] = [float(p) if p is not None else None for p in per_level_dec]
+        elif pts_list:
+            avg = (sum(pts_list) / Decimal(len(pts_list))).quantize(Decimal("0.01"))
+            row["points"] = float(avg)
+        matrix_rows.append(row)
+
+    active_points = common_total + (max(track_totals.values()) if track_totals else Decimal("0"))
+    counted_questions = common_count + (max(track_counts.values()) if track_counts else 0)
+    warnings: list[str] = []
+    if missing_points:
+        joined_idx = ", ".join(map(str, missing_points))
+        warnings.append(f"Câu {joined_idx} chưa có điểm hợp lệ; cần bổ sung trước khi xác nhận.")
+    if len(set(track_totals.values())) > 1:
+        summary = ", ".join(f"{k}: {float(v):.2f}đ" for k, v in track_totals.items())
+        warnings.append(f"Các nhánh tự chọn đang lệch tổng điểm ({summary}).")
+    if active_points != Decimal("10"):
+        warnings.append(
+            f"Tổng điểm hiện tại là {float(active_points):.2f}/10,00 điểm (cần kiểm tra lại)."
+        )
+    if any(s["needsReview"] for s in slots):
+        warnings.append("Có câu thiếu chủ đề, mức nhận thức hoặc điểm cần giáo viên rà soát.")
+
+    return {
+        "matrix": matrix_rows,
+        "slots": slots,
+        "totalQuestions": len(questions),
+        "countedQuestions": counted_questions,
+        "totalPoints": float(active_points.quantize(Decimal("0.01"))),
+        "missingPointsOrdinals": missing_points,
+        "warnings": warnings,
+        "sentToAI": False,
+        "method": "python_reverse_matrix",
     }

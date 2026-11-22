@@ -245,3 +245,44 @@ def test_local_mixed_matrix_keeps_types_and_points_without_ai(monkeypatch, ext):
     assert result["count"] == 4 and not result["sentToAI"]
     assert [r["type"] for r in result["matrix"]] == ["mcq", "truefalse", "short", "essay"]
     assert [r["pointsQ4"] for r in result["matrix"]] == [10] * 4
+
+
+def test_spec_only_table_raises_before_ai_and_020_choice_group_parses_locally():
+    async def forbidden(*_):
+        pytest.fail("Không được gửi AI khi chỉ có bảng đặc tả hoặc ma trận rõ tại máy")
+
+    spec_csv = (
+        "Chủ đề;Yêu cầu cần đạt;Nhận biết;Thông hiểu;Vận dụng\n"
+        "Hàm số;Nêu được khái niệm;Nêu định nghĩa;Vẽ được đồ thị;Giải bài tập\n"
+    )
+    with pytest.raises(AIError) as exc:
+        asyncio.run(
+            read_matrix(
+                {"name": "dac-ta.csv", "data": encoded(spec_csv.encode()), "consent": False},
+                forbidden,
+            )
+        )
+    assert exc.value.code == "spec_only_matrix"
+
+    dual_csv = (
+        "Chủ đề;Loại câu;Điểm/câu;Nhóm chọn;Nhận biết;Thông hiểu;Vận dụng\n"
+        "Chung;Trắc nghiệm;0,20;;10;0;0\n"
+        "Phần riêng;Tự luận;0,40;;0;5;0\n"
+        "Tổng hợp;Tự luận;1,50;;0;0;2\n"
+        "Chuyên đề;Trắc nghiệm;0,10;KHMT;10;0;0\n"
+        "Chuyên đề;Tự luận;1,00;KHMT;0;2;0\n"
+        "Chuyên đề;Trắc nghiệm;0,10;THUD;10;0;0\n"
+        "Chuyên đề;Tự luận;1,00;THUD;0;2;0\n"
+    )
+    res = asyncio.run(
+        read_matrix(
+            {"name": "hai-nhanh.csv", "data": encoded(dual_csv.encode()), "consent": False},
+            forbidden,
+        )
+    )
+    assert not res["sentToAI"]
+    # Phần chung (10*0.2 + 5*0.4 + 2*1.5 = 7.0đ) + mỗi nhánh (10*0.1 + 2*1.0 = 3.0đ) = 10.0đ
+    assert res["count"] == 29
+    assert len(res["matrix"]) == 7
+    assert any(r.get("points") == 0.2 for r in res["matrix"])
+    assert any(r.get("choiceGroup") == "KHMT" for r in res["matrix"])

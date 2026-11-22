@@ -499,3 +499,37 @@ def test_fastapi_routes_enforce_validation_teacher_gate_and_owner_resolver(sampl
         )
         assert mat_docx.status_code == 200
         assert len(Document(io.BytesIO(mat_docx.content)).tables) == 2
+
+        # Khổ A4 ngang (landscape) cho Ma trận & Đặc tả
+        mat_land = client.post(
+            "/api/exports/matrix-specification",
+            headers=headers,
+            json={"exam": sample_exam, "format": "docx", "orientation": "landscape"},
+        )
+        assert mat_land.status_code == 200
+        land_doc = Document(io.BytesIO(mat_land.content))
+        sec = land_doc.sections[0]
+        assert sec.page_width.mm == pytest.approx(297, abs=0.5)
+        assert sec.page_height.mm == pytest.approx(210, abs=0.5)
+        mat_land_html = client.post(
+            "/api/exports/matrix-specification",
+            headers=headers,
+            json={"exam": sample_exam, "format": "html", "orientation": "landscape"},
+        )
+        assert mat_land_html.status_code == 200
+        assert "size:A4 landscape;" in mat_land_html.text
+
+
+def test_matrix_percentages_always_sum_to_exact_100_via_largest_remainder():
+    exam = {
+        "title": "Đề 3 chủ đề đồng đều",
+        "questions": [
+            {"id": f"q{i}", "type": "mcq", "topic": f"Chủ đề {i}", "level": i % 3, "points": 1.0}
+            for i in range(1, 4)
+        ],
+    }
+    data = build_matrix_and_specification(exam)
+    assert round(sum(r["percentage"] for r in data["rows"]), 2) == 100.0
+    assert round(sum(r["percentage"] for r in data["specification_rows"]), 2) == 100.0
+    assert round(sum(v["percentage"] for v in data["by_level"].values()), 2) == 100.0
+    assert round(sum(v["percentage"] for v in data["by_type"].values()), 2) == 100.0

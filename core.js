@@ -4,17 +4,56 @@ export const LEVELS=['Nhận biết','Thông hiểu','Vận dụng','Vận dụn
 export const QUESTION_TYPES={mcq:'Nhiều lựa chọn',truefalse:'Đúng–sai',short:'Trả lời ngắn',essay:'Tự luận'};
 export function validateMatrixRows(rows){
  if(!Array.isArray(rows)||!rows.length||rows.length>30)throw Error('Ma trận cần1–30dòng.');
- const keys=new Set();let count=0,fixed=0,automatic=0;
- for(const row of rows){
-  const type=row.type||'mcq',topic=row.topic?.trim(),key=topic?.toLocaleLowerCase()+'|'+type;
-  if(!topic||!QUESTION_TYPES[type]||keys.has(key)||!Array.isArray(row.targets)||![3,4].includes(row.targets.length)||row.targets.some(n=>!Number.isInteger(n)||n<0||n>30))throw Error('Chủ đề/loại câu cần riêng biệt, các mức có số câu nguyên0..30.');
-  keys.add(key);const total=row.targets.reduce((n,x)=>n+x,0);count+=total;
-  const perLevel=row.pointsByLevelQ4;
-  if(perLevel&&(!Array.isArray(perLevel)||perLevel.length!==4||row.pointsQ4!=null))throw Error('Chọn điểm chung hoặc điểm theo mức.');
-  row.targets.forEach((n,i)=>{const points=perLevel?perLevel[i]:row.pointsQ4;if(points==null)automatic+=n;else{if(!Number.isInteger(points)||points<1||points>40)throw Error('Điểm mỗi câu theo bước0,25, từ0,25đến10.');fixed+=n*points;}});
+ const usesExtended=rows.some(r=>r?.points!=null||r?.pointsByLevel!=null||r?.choiceGroup);
+ if(!usesExtended){
+  const keys=new Set();let count=0,fixed=0,automatic=0;
+  for(const row of rows){
+   const type=row.type||'mcq',topic=row.topic?.trim(),key=topic?.toLocaleLowerCase()+'|'+type;
+   if(!topic||!QUESTION_TYPES[type]||keys.has(key)||!Array.isArray(row.targets)||![3,4].includes(row.targets.length)||row.targets.some(n=>!Number.isInteger(n)||n<0||n>30))throw Error('Chủ đề/loại câu cần riêng biệt, các mức có số câu nguyên0..30.');
+   keys.add(key);const total=row.targets.reduce((n,x)=>n+x,0);count+=total;
+   const perLevel=row.pointsByLevelQ4;
+   if(perLevel&&(!Array.isArray(perLevel)||perLevel.length!==4||row.pointsQ4!=null))throw Error('Chọn điểm chung hoặc điểm theo mức.');
+   row.targets.forEach((n,i)=>{const points=perLevel?perLevel[i]:row.pointsQ4;if(points==null)automatic+=n;else{if(!Number.isInteger(points)||points<1||points>40)throw Error('Điểm mỗi câu theo bước0,25, từ0,25đến10.');fixed+=n*points;}});
+  }
+  if(count<1||count>30)throw Error('Nhận tổng1–30câu.');
+  if((automatic&&40-fixed<automatic)||(!automatic&&fixed!==40))throw Error('Tổng điểm cần đúng10; mỗi câu ít nhất0,25.');
+  return rows;
  }
- if(count<1||count>30)throw Error('Nhận tổng1–30câu.');
- if((automatic&&40-fixed<automatic)||(!automatic&&fixed!==40))throw Error('Tổng điểm cần đúng10; mỗi câu ít nhất0,25.');
+ const keys=new Set();let commonQ=0,commonFixed=0,commonAuto=0;
+ const trackQ=new Map(),trackFixed=new Map(),trackAuto=new Map();
+ for(const row of rows){
+  const type=row.type||'mcq',topic=row.topic?.trim(),grp=(row.choiceGroup||'').trim();
+  const key=topic?.toLocaleLowerCase()+'|'+type+'|'+grp.toLocaleLowerCase();
+  if(!topic||!QUESTION_TYPES[type]||keys.has(key)||!Array.isArray(row.targets)||![3,4].includes(row.targets.length)||row.targets.some(n=>!Number.isInteger(n)||n<0||n>30))throw Error('Chủ đề/loại câu/nhóm chọn cần riêng biệt, số câu nguyên 0..30.');
+  keys.add(key);
+  const perLevelQ4=row.pointsByLevelQ4,perLevelDec=row.pointsByLevel;
+  if([row.pointsQ4!=null,perLevelQ4!=null,row.points!=null,perLevelDec!=null].filter(Boolean).length>1)throw Error('Chỉ chọn một cách ghi điểm trên mỗi dòng.');
+  row.targets.forEach((n,i)=>{
+   let p100=null;
+   if(perLevelQ4)p100=perLevelQ4[i]==null?null:perLevelQ4[i]*25;
+   else if(perLevelDec)p100=perLevelDec[i]==null?null:Math.round(Number(perLevelDec[i])*100);
+   else if(row.pointsQ4!=null)p100=row.pointsQ4*25;
+   else if(row.points!=null)p100=Math.round(Number(row.points)*100);
+   if(p100!=null&&(!Number.isFinite(p100)||p100<5||p100>1000))throw Error('Điểm mỗi câu từ 0,05 đến 10.');
+   if(grp){
+    trackQ.set(grp,(trackQ.get(grp)||0)+n);
+    if(p100==null)trackAuto.set(grp,(trackAuto.get(grp)||0)+n);
+    else trackFixed.set(grp,(trackFixed.get(grp)||0)+n*p100);
+   }else{
+    commonQ+=n;
+    if(p100==null)commonAuto+=n;else commonFixed+=n*p100;
+   }
+  });
+ }
+ const activeCount=commonQ+(trackQ.size?Math.max(...trackQ.values()):0);
+ if(activeCount<1||activeCount>30)throw Error('Nhận tổng hiệu lực 1–30 câu.');
+ const tracks=trackQ.size?[...trackQ.keys()]:[''];
+ for(const grp of tracks){
+  const fixed=commonFixed+(grp?trackFixed.get(grp)||0:0);
+  const auto=commonAuto+(grp?trackAuto.get(grp)||0:0);
+  const rem=1000-fixed;
+  if((auto&&rem<auto*5)||(!auto&&rem!==0))throw Error('Tổng điểm hiệu lực phải đúng 10,00 điểm.');
+ }
  return rows;
 }
 export const separateMarking=e=>!!e.fullExam&&e.questions.every(q=>q.type==='essay');
