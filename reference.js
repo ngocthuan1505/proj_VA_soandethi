@@ -2,6 +2,7 @@ import {separateMarking,approveQuestion,isApproved,QUESTION_TYPES,clone} from '.
 import {documentPages,selectedDocumentPages,sourcePageLabel} from './assistant-sources.js';
 import {documentPlain,renderRichDocument} from './rich-document.js';
 import {composerHTML,mountComposer,cleanupComposer,handleComposerAction,submitComposerText,refreshComposerPreview} from './composer.js';
+import {richTextHTML} from './math-content.js';
 import {esc,uid,touch,check,mathSample} from './core.js';
 import katex from './assets/katex/katex.mjs';
 import {captureDOMSelection,flushEditor,updateInlineMath,insertInlineMath,currentEditorKey,insertRichContent} from './editor.js';
@@ -442,7 +443,14 @@ export async function handleReferenceAction(action,node){if(handleComposerAction
  case 'reset-chat':c.modal('Xóa lịch sử trò chuyện?',`<p>Đề thi và các tài liệu vẫn được lưu. Có thể hoàn tác từ menu Chỉnh sửa.</p><div class="modal-foot">${b('close','Hủy')}${b('confirm-reset-chat','Xóa hội thoại','class="danger"')}</div>`);return true;
  case 'confirm-reset-chat':c.change('Xóa lịch sử trợ lý',e=>e.chat=[]);$('#dialog').close();return true;
  case 'effort-menu':showDropdown(node,`<div class="effort-heading">Mức trình bày <b id="effort-current">${effortNames[c.exam().aiEffort??1]}</b></div><p>Điều chỉnh độ chi tiết của hướng dẫn gửi cho AI.</p><input id="effort-range" type="range" min="0" max="2" step="1" value="${c.exam().aiEffort??1}" aria-label="Mức trình bày của AI"><div class="effort-labels"><span>Ngắn gọn</span><span>Kỹ hơn</span></div>`,'effort-panel');return true;
- case 'detach-source':{const id=node.dataset.doc;c.change('Gỡ nguồn khỏi trợ lý',e=>{e.assistantSources=(e.assistantSources||[]).filter(x=>x!==id);if(e.assistantSourcePages)delete e.assistantSourcePages[id];});return true;}
+ case 'detach-source':{
+  const id=node.dataset.doc;
+  const detachBtns=typeof document!=='undefined'?[...document.querySelectorAll('.assistant-sources .source-detach')]:[];
+  const idx=Math.max(0,detachBtns.indexOf(node));
+  c.change('Gỡ nguồn khỏi trợ lý',e=>{e.assistantSources=(e.assistantSources||[]).filter(x=>x!==id);if(e.assistantSourcePages)delete e.assistantSourcePages[id];});
+  pickDetachFocusTarget(idx)?.focus?.();
+  return true;
+ }
  case 'lesson-sources':await (await import('./lesson-picker.js')).openLessonPicker(c);return true;
   case 'assistant-sources':{
    const e=c.exam(),allExams=(c.getState?.().exams||[]).filter(x=>x.id!==e.id);
@@ -477,6 +485,19 @@ export function essaySample(prefs=[]){const e=mathSample(prefs),doc=e.docs[0];e.
 
 export function refreshReferenceScope(context){c=context;const box=$('.compose-box');if(!box)return;box.querySelector('.selection-chip')?.remove();const scope=c.currentScope();if(scope){const chip=document.createElement('div');chip.className='selection-chip';chip.title=scope.text;chip.innerHTML=b('scope-details',`↳ Câu ${c.exam().questions.findIndex(q=>q.id===scope.id)+1} · ${esc(scope.text.slice(0,64))}`);box.prepend(chip);}}
 
+const isVisibleFocusable=el=>Boolean(el&&!el.hidden&&!el.disabled&&(!el.closest||!el.closest('[hidden]'))&&(typeof el.getClientRects!=='function'||el.getClientRects().length>0||typeof document==='undefined'));
+/** Chọn phần tử nhận focus kế tiếp hợp lệ sau khi gỡ nguồn khỏi Trợ lý AI. */
+export function pickDetachFocusTarget(prevIndex=0,doc=typeof document!=='undefined'?document:null){
+ if(!doc)return null;
+ const detachBtns=[...doc.querySelectorAll('.assistant-sources .source-detach')].filter(isVisibleFocusable);
+ if(detachBtns.length)return detachBtns[Math.min(Math.max(0,prevIndex),detachBtns.length-1)];
+ for(const sel of ['.assistant-sources .add-source','[data-action="add-source"]','[data-ux-action="attach"]','[data-action="lesson-sources"]','#chat-input','#prompt']){
+  const found=[...doc.querySelectorAll(sel)].find(isVisibleFocusable);
+  if(found)return found;
+ }
+ return null;
+}
+
 const SAFE_CELL_IMAGE_RE=/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i;
 export function tableCellHTML(cell){
  if(cell&&typeof cell==='object'){
@@ -488,10 +509,10 @@ export function tableCellHTML(cell){
    return cap||esc('[Ảnh chưa hợp lệ]');
   }
   if(cell.type==='doc')return renderRichDocument(cell);
-  if(cell.text!=null)return esc(String(cell.text));
+  if(cell.text!=null)return richTextHTML(String(cell.text));
   return '';
  }
- return esc(cell??'');
+ return richTextHTML(String(cell??''));
 }
 export function questionTablesHTML(q,actionBtn=b){
  return (q.tables||[]).map(t=>`<div class="asset-tools">${actionBtn('edit-table','Sửa bảng','tiny-btn',`data-id="${q.id}" data-table="${t.id}"`)}</div><table class="inserted-table">${(t.rows||[]).map(row=>`<tr>${row.map(cell=>`<td>${tableCellHTML(cell)}</td>`).join('')}</tr>`).join('')}</table>`).join('');

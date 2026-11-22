@@ -18,6 +18,7 @@ import {
  inferAssistantContextState,
  buildContextualAssistantSuggestions,
  contextualSuggestionsHTML,
+ pickDetachFocusTarget,
 } from '../reference.js';
 import {approveQuestion,isApproved,check,clone,exportHTML,commit,undo,blank} from '../core.js';
 import {validateGenerated} from '../ai.mjs';
@@ -171,4 +172,25 @@ test('Gợi ý Trợ lý AI đổi linh hoạt theo đủ 5 trạng thái ngữ 
 
  eReview.questions.forEach(q=>approveQuestion(q));
  assert.equal(inferAssistantContextState(eReview).mode,'ready');
+});
+
+test('BUG-6: tableCellHTML render công thức KaTeX trong ô chuỗi và {text}, vẫn thoát XSS an toàn',()=>{
+ const mathHtml=tableCellHTML('$a^2+b^2=c^2$');
+ assert.ok(mathHtml.includes('class="katex"'),mathHtml);
+ assert.ok(!mathHtml.includes('$a^2+b^2=c^2$'));
+ const objHtml=tableCellHTML({text:'Giá trị $\\frac{1}{2}$ <script>alert(1)</script>'});
+ assert.ok(objHtml.includes('class="katex"'));
+ assert.ok(objHtml.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+ assert.ok(!objHtml.includes('<script>'));
+});
+
+test('BUG-5: pickDetachFocusTarget giữ focus hợp lý sau khi gỡ nguồn, bỏ qua vùng hidden',()=>{
+ const btn2={id:'detach-2',hidden:false,disabled:false};
+ const hiddenAdd={id:'hidden-add',hidden:true,closest:()=>({hidden:true})};
+ const attachBtn={id:'attach-btn',hidden:false,disabled:false,closest:()=>null};
+ const mockDocRemain={querySelectorAll:sel=>sel==='.assistant-sources .source-detach'?[btn2]:[]};
+ assert.equal(pickDetachFocusTarget(0,mockDocRemain),btn2);
+
+ const mockDocEmpty={querySelectorAll:sel=>sel==='.assistant-sources .add-source'?[hiddenAdd]:sel==='[data-ux-action="attach"]'?[attachBtn]:[]};
+ assert.equal(pickDetachFocusTarget(0,mockDocEmpty),attachBtn);
 });

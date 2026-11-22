@@ -290,6 +290,7 @@ async function handleAction(a,n){
    if(confirmBox)confirmBox.checked=false;
    updateMatrixSummary(mForm);
    toast(res.warnings?.length?'Đã lập ma trận từ đề · có cảnh báo cần rà lại ở bảng trên.':'Đã lập ma trận ngược từ '+res.totalQuestions+' câu của đề.');
+   if(host&&host.innerHTML.trim())host.scrollIntoView?.({block:'nearest',behavior:'smooth'});
   }finally{if(n.isConnected)n.disabled=false;}
   break;
  }

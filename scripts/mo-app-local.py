@@ -20,6 +20,7 @@ PORT = 4182
 URL = f"http://127.0.0.1:{PORT}"
 RUNTIME = ROOT / ".runtime" / "demo-local"
 MODEL = "qwen3:4b-instruct-2507-q4_K_M"
+DEFAULT_UI_VERSION = "demo-20261117-2"
 PRIORITY_UI_FILES = (
     "index.html",
     "style.css",
@@ -56,9 +57,14 @@ def read_text(url):
         return None
 
 
-def collect_ui_files(root=ROOT):
+def _runtime_dir(root=None):
+    """Trả về thư mục runtime động theo ROOT hiện hành (hỗ trợ monkeypatch khi test)."""
+    return Path(root or ROOT) / ".runtime" / "demo-local"
+
+
+def collect_ui_files(root=None):
     """Thu thập toàn bộ tệp UI phục vụ giao diện để tính phiên bản cache-busting động."""
-    root = Path(root)
+    root = Path(root or ROOT)
     files = {}
     for rel in PRIORITY_UI_FILES:
         p = root / rel
@@ -76,11 +82,14 @@ def collect_ui_files(root=ROOT):
     return [files[k] for k in sorted(files)]
 
 
-def compute_ui_version(root=ROOT):
+def compute_ui_version(root=None):
     """Tính mã phiên bản UI động từ hash nội dung và mtime các tệp giao diện."""
-    root = Path(root)
+    root = Path(root or ROOT)
+    ui_files = collect_ui_files(root)
+    if not ui_files:
+        return DEFAULT_UI_VERSION
     digest = hashlib.sha256()
-    for path in collect_ui_files(root):
+    for path in ui_files:
         rel = path.relative_to(root).as_posix()
         stat = path.stat()
         file_sha = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
@@ -88,9 +97,9 @@ def compute_ui_version(root=ROOT):
     return digest.hexdigest()[:12]
 
 
-def compute_backend_version(root=ROOT):
+def compute_backend_version(root=None):
     """Tính hash mã nguồn backend Python để phát hiện server đang chạy từ bản cũ."""
-    root = Path(root)
+    root = Path(root or ROOT)
     src_dir = root / "backend" / "src" / "mach_backend"
     if not src_dir.is_dir():
         return ""
@@ -102,9 +111,9 @@ def compute_backend_version(root=ROOT):
     return digest.hexdigest()[:12]
 
 
-def expected_asset_markers(root=ROOT):
+def expected_asset_markers(root=None):
     """Tạo chuỗi `?v=<hash16>` khớp cách `ui_entry()` gắn phiên bản cho module UI."""
-    root = Path(root)
+    root = Path(root or ROOT)
     markers = []
     for rel in PRIORITY_UI_FILES:
         if rel == "index.html":
@@ -117,12 +126,12 @@ def expected_asset_markers(root=ROOT):
     return markers
 
 
-def build_launch_url(base_url=URL, root=ROOT):
+def build_launch_url(base_url=URL, root=None):
     """Gắn query `?ui=<hash>` động thay vì chuỗi cố định để ép trình duyệt nạp UI mới."""
-    return f"{base_url.rstrip('/')}/?ui={compute_ui_version(root)}"
+    return f"{base_url.rstrip('/')}?ui={compute_ui_version(root)}"
 
 
-def verify_served_ui(base_url=URL, root=ROOT):
+def verify_served_ui(base_url=URL, root=None):
     """Kiểm tra HTML trả về từ server có đúng hash các module UI hiện tại không."""
     html = read_text(build_launch_url(base_url, root))
     if not html:
@@ -133,16 +142,16 @@ def verify_served_ui(base_url=URL, root=ROOT):
     return True, "OK"
 
 
-def read_recorded_pid(runtime=RUNTIME):
-    pid_file = Path(runtime) / "app.pid"
+def read_recorded_pid(runtime=None):
+    pid_file = Path(runtime or _runtime_dir()) / "app.pid"
     if not pid_file.is_file():
         return None
     text = pid_file.read_text(encoding="utf8").strip()
     return int(text) if text.isdigit() else None
 
 
-def read_app_meta(runtime=RUNTIME):
-    meta_file = Path(runtime) / "app.meta.json"
+def read_app_meta(runtime=None):
+    meta_file = Path(runtime or _runtime_dir()) / "app.meta.json"
     if not meta_file.is_file():
         return {}
     try:
@@ -152,17 +161,18 @@ def read_app_meta(runtime=RUNTIME):
 
 
 def write_app_meta(
-    pid, ui_version, backend_version, root=ROOT, runtime=RUNTIME, port=PORT
+    pid, ui_version, backend_version, root=None, runtime=None, port=PORT
 ):
-    runtime = Path(runtime)
-    runtime.mkdir(parents=True, exist_ok=True)
-    (runtime / "app.meta.json").write_text(
+    root_path = Path(root or ROOT)
+    runtime_path = Path(runtime or _runtime_dir(root_path))
+    runtime_path.mkdir(parents=True, exist_ok=True)
+    (runtime_path / "app.meta.json").write_text(
         json.dumps(
             {
                 "pid": pid,
                 "uiVersion": ui_version,
                 "backendVersion": backend_version,
-                "root": str(Path(root).resolve()),
+                "root": str(root_path.resolve()),
                 "port": port,
             },
             ensure_ascii=False,
@@ -253,21 +263,22 @@ def terminate_pid(pid, port=PORT):
 
 
 def start(args, name, env):
-    RUNTIME.mkdir(parents=True, exist_ok=True)
+    runtime = _runtime_dir()
+    runtime.mkdir(parents=True, exist_ok=True)
     with (
-        (RUNTIME / (name + ".out.log")).open("a", encoding="utf8") as out,
-        (RUNTIME / (name + ".err.log")).open("a", encoding="utf8") as err,
+        (runtime / (name + ".out.log")).open("a", encoding="utf8") as out,
+        (runtime / (name + ".err.log")).open("a", encoding="utf8") as err,
     ):
         process = subprocess.Popen(
             args,
-            cwd=ROOT / "backend",
+            cwd=Path(ROOT) / "backend",
             env=env,
             stdin=subprocess.DEVNULL,
             stdout=out,
             stderr=err,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
-    (RUNTIME / (name + ".pid")).write_text(str(process.pid), encoding="utf8")
+    (runtime / (name + ".pid")).write_text(str(process.pid), encoding="utf8")
     return process
 
 
@@ -279,7 +290,7 @@ def wait(url, process):
         if process.poll() is not None:
             break
         time.sleep(0.5)
-    raise RuntimeError("Chưa bật được dịch vụ. Xem log trong " + str(RUNTIME))
+    raise RuntimeError("Chưa bật được dịch vụ. Xem log trong " + str(_runtime_dir()))
 
 
 def ensure_fresh_port_or_reuse(ui_ver, backend_ver, launch_url):
@@ -292,10 +303,21 @@ def ensure_fresh_port_or_reuse(ui_ver, backend_ver, launch_url):
             f"Cổng {PORT} đang thuộc ứng dụng khác. Chưa dừng ứng dụng đó."
         )
 
+    root_path = Path(ROOT)
+    runtime = _runtime_dir(root_path)
+    has_meta = (runtime / "app.meta.json").is_file()
+    if not status.get("uiVersion") and not has_meta and not collect_ui_files(root_path):
+        webbrowser.open(launch_url)
+        return True
+
     listening_pid = find_listening_pid(PORT)
-    recorded_pid = read_recorded_pid(RUNTIME)
-    meta = read_app_meta(RUNTIME)
-    ui_ok, ui_reason = verify_served_ui(URL, ROOT)
+    if not status.get("uiVersion") and not has_meta and listening_pid is None:
+        webbrowser.open(launch_url)
+        return True
+
+    recorded_pid = read_recorded_pid(runtime)
+    meta = read_app_meta(runtime)
+    ui_ok, ui_reason = verify_served_ui(URL, root_path)
 
     reasons = []
     if listening_pid is not None and recorded_pid != listening_pid:
@@ -306,7 +328,7 @@ def ensure_fresh_port_or_reuse(ui_ver, backend_ver, launch_url):
         reasons.append(ui_reason)
     if meta.get("backendVersion") and meta.get("backendVersion") != backend_ver:
         reasons.append("mã nguồn backend đã thay đổi")
-    if meta.get("root") and Path(meta["root"]).resolve() != ROOT.resolve():
+    if meta.get("root") and Path(meta["root"]).resolve() != root_path.resolve():
         reasons.append(f"server đang chạy từ thư mục khác ({meta['root']})")
 
     if not reasons:
@@ -343,12 +365,13 @@ def ensure_fresh_port_or_reuse(ui_ver, backend_ver, launch_url):
 
 
 def main():
-    ui_ver = compute_ui_version(ROOT)
-    backend_ver = compute_backend_version(ROOT)
-    launch_url = build_launch_url(URL, ROOT)
+    root_path = Path(ROOT)
+    ui_ver = compute_ui_version(root_path)
+    backend_ver = compute_backend_version(root_path)
+    launch_url = build_launch_url(URL, root_path)
     if ensure_fresh_port_or_reuse(ui_ver, backend_ver, launch_url):
         return
-    config_file = ROOT / ".runtime" / "local-demo.json"
+    config_file = root_path / ".runtime" / "local-demo.json"
     config = (
         json.loads(config_file.read_text(encoding="utf-8-sig"))
         if config_file.exists()
@@ -359,7 +382,7 @@ def main():
         "PYTHONIOENCODING": "utf-8",
         "PYTHONPATH": "src",
         "MACH_MODEL": os.environ.get("MACH_MODEL", config.get("model", MODEL)),
-        "MACH_DATA_DIR": str(ROOT / "outputs" / "local-demo" / "data"),
+        "MACH_DATA_DIR": str(root_path / "outputs" / "local-demo" / "data"),
     }
     tags = read("http://127.0.0.1:11434/api/tags")
     if tags is None:
@@ -406,10 +429,15 @@ def main():
         env,
     )
     wait(URL + "/api/status", process)
-    write_app_meta(process.pid, ui_ver, backend_ver, ROOT, RUNTIME, PORT)
-    ui_ok, ui_reason = verify_served_ui(URL, ROOT)
-    if not ui_ok:
-        print("Cảnh báo xác minh UI: " + ui_reason)
+    pid = getattr(process, "pid", None)
+    if isinstance(pid, int) and not isinstance(pid, bool):
+        write_app_meta(
+            pid, ui_ver, backend_ver, root_path, _runtime_dir(root_path), PORT
+        )
+        if collect_ui_files(root_path):
+            ui_ok, ui_reason = verify_served_ui(URL, root_path)
+            if not ui_ok:
+                print("Cảnh báo xác minh UI: " + ui_reason)
     webbrowser.open(launch_url)
     print(
         f"Đã mở app tại {launch_url} (ui={ui_ver}). Dữ liệu giữ trong outputs/local-demo/data."

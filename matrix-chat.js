@@ -138,6 +138,7 @@ function matrixForm(c,flow){
    flow.notes=(res.warnings?.join(' · ')||'Đã lập ma trận ngược tại máy từ đề đang mở.');flow.fromFile=false;flow.autoPreview=true;matrixForm(c,flow);
    const st=flow.root.querySelector('[data-reverse-status]');
    if(st)st.textContent=`Đã đọc ${res.totalQuestions} câu (${res.countedQuestions} câu hiệu lực · ${res.totalPoints.toFixed(2).replace('.',',')} điểm).`+(res.warnings?.length?' Có mục cần rà lại ở cảnh báo bên dưới.':'');
+   flow.root.querySelector('#matrix-reverse-warnings')?.scrollIntoView?.({block:'nearest'});
   }catch(err){revStatus.textContent=err.message;}finally{if(revBtn.isConnected)revBtn.disabled=false;}
  };
  if(flow.autoPreview){
