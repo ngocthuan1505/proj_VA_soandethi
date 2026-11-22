@@ -430,3 +430,44 @@ def test_community_consent_filters_clone_and_revoke_audit(tmp_path, exam):
         assert kept.status_code == 200
         assert kept.json()["clonedExam"]["id"] == cloned_exam["id"]
         assert len(cloner_client.get("/api/community-exams/clones").json()["clones"]) == 1
+
+
+def test_community_search_content_scope_matches_unaccented_stem_without_leaking_answers(
+    tmp_path, exam
+):
+    exam["questions"][0]["stem"] = "Tính tổng hai phân số khác mẫu trong đoạn văn."
+    exam["questions"][0].pop("richDoc", None)
+    app = create_team_app(tmp_path)
+    accounts = app.state.accounts
+    author = accounts.create(
+        "tacgia@example.com", PASSWORD, "Tác giả", accounts.invite(bootstrap=True)
+    )
+    reader = accounts.create("docgia@example.com", PASSWORD, "Đọc giả", accounts.invite())
+    with (
+        TestClient(app, headers=ORIGIN) as author_c,
+        TestClient(app, headers=ORIGIN) as reader_c,
+    ):
+        for client, acc in ((author_c, author), (reader_c, reader)):
+            client.post(
+                "/api/account/login", json={"email": acc["email"], "password": PASSWORD}
+            ).raise_for_status()
+        seed(author_c, exam)
+        pub = (
+            create(author_c, exam, community=True, allowCopy=True, consentPublic=True)
+            .raise_for_status()
+            .json()
+        )
+        # scope=title không thấy từ khóa nằm trong thân câu hỏi
+        by_title = reader_c.get(
+            "/api/community-exams", params={"q": "phan so khac mau", "scope": "title"}
+        ).json()
+        assert by_title["exams"] == []
+        # scope=content chuẩn hóa NFD không dấu tìm đúng thân câu, không khớp đáp án bí mật
+        by_content = reader_c.get(
+            "/api/community-exams", params={"q": "phan so khac mau", "scope": "content"}
+        ).json()
+        assert [item["token"] for item in by_content["exams"]] == [pub["token"]]
+        secret = reader_c.get(
+            "/api/community-exams", params={"q": "_KÍN", "scope": "content"}
+        ).json()
+        assert secret["exams"] == []

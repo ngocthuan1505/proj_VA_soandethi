@@ -62,18 +62,20 @@ export async function createSharing(c,api,form){
 }
 
 export async function openCommunity(c,api){
- c.modal('Kho đề cộng đồng',`<form id="community-filter"><label>Tìm tên đề<input name="q" type="search" maxlength="120"></label><div class="grid2"><label>Môn<input name="subject" maxlength="80" placeholder="Ví dụ: Toán"></label><label>Lớp<select name="grade"><option value="">Tất cả</option>${Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join('')}</select></label><label>Bộ sách<input name="series" maxlength="150" placeholder="Kết nối tri thức"></label><label>Chương<input name="chapter" maxlength="200"></label></div><button type="submit">Tìm đề</button><p data-community-status role="status"></p><div data-community-results></div><div class="row"><button type="button" data-community-page="prev">Trang trước</button><button type="button" data-community-page="next">Trang sau</button></div></form>`);
+ c.modal('Kho đề cộng đồng',`<form id="community-filter"><label>Tìm kiếm (không dấu · tiêu đề & thân câu)<input name="q" type="search" maxlength="120" placeholder="Ví dụ: giua hoc ki, phan so..."></label><label class="source-choice"><input name="scope" type="checkbox" value="content" checked> Tìm cả trong nội dung câu hỏi & phương án</label><div class="grid2"><label>Môn<input name="subject" maxlength="80" placeholder="Ví dụ: Toán"></label><label>Lớp<select name="grade"><option value="">Tất cả</option>${Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join('')}</select></label><label>Bộ sách<input name="series" maxlength="150" placeholder="Kết nối tri thức"></label><label>Chương<input name="chapter" maxlength="200"></label></div><button type="submit">Tìm đề</button><p data-community-status role="status"></p><div data-community-results></div><div class="row"><button type="button" data-community-page="prev">Trang trước</button><button type="button" data-community-page="next">Trang sau</button></div></form>`);
  const form=document.querySelector('#community-filter'),results=form.querySelector('[data-community-results]');
  const status=form.querySelector('[data-community-status]');
  const prev=form.querySelector('[data-community-page=prev]'),next=form.querySelector('[data-community-page=next]');
- let page=1, request=0, filters=new URLSearchParams();
+ let page=1, request=0, filters=new URLSearchParams(new FormData(form));
  async function load(number){
   const sequence=++request;
   prev.disabled=next.disabled=true;
   status.textContent='Đang tìm đề…';
   results.textContent='';
   try{
-   const query=new URLSearchParams(filters);query.set('page',String(number));
+   const query=new URLSearchParams(filters);
+   if(!query.get('scope'))query.set('scope','title');
+   query.set('page',String(number));
    const data=await api('/api/community-exams?'+query);
    if(sequence!==request||!form.isConnected)return;
    page=data.page;

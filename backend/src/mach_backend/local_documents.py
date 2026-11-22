@@ -125,11 +125,57 @@ def pptx_slides(archive):
     return slides
 
 
+def _extract_zip_warnings(ext: str, slide_roots: list[tuple[int, ET.Element, str]]) -> list[dict]:
+    warnings: list[dict] = []
+    if ext == ".docx":
+        ole_count = sum(
+            1
+            for _, root, _ in slide_roots
+            for obj in root.iter(W + "object")
+            if any(
+                "Equation" in str(el.attrib) or el.tag.endswith("OLEObject") for el in obj.iter()
+            )
+        )
+        if ole_count:
+            warnings.append(
+                {
+                    "code": "mathtype_ole_formulas",
+                    "count": ole_count,
+                    "message": (
+                        f"Phát hiện {ole_count} công thức MathType OLE (Equation.DSMT4) dạng đối "
+                        "tượng nhúng nên chữ đọc trực tiếp có thể thiếu; "
+                        "hãy kiểm tra hoặc dùng OCR ảnh."
+                    ),
+                }
+            )
+    elif ext == ".pptx":
+        image_only_slides = [
+            number
+            for number, root, text in slide_roots
+            if not text.strip()
+            and any(el.tag in {PRESENTATION + "pic", DRAWING + "blip"} for el in root.iter())
+        ]
+        if image_only_slides:
+            warnings.append(
+                {
+                    "code": "image_only_slides",
+                    "slides": image_only_slides,
+                    "message": (
+                        "Slide chỉ có ảnh, không đọc được chữ trực tiếp: "
+                        + ", ".join(str(number) for number in image_only_slides)
+                        + ". Hãy đối chiếu bản gốc hoặc đọc bằng OCR."
+                    ),
+                }
+            )
+    return warnings
+
+
 def extract_text(name, data_url):
     if not isinstance(name, str) or not isinstance(data_url, str):
         raise AIError("invalid_document", "Tệp nguồn chưa hợp lệ.")
     if len(data_url) > MAX_DOCUMENT * 4 // 3 + 200:
         raise AIError("invalid_document", "Tệp nguồn vượt15MB.")
+    warnings: list[dict] = []
     try:
         header, encoded = data_url.split(",", 1)
         if not header.startswith("data:") or not header.endswith(";base64"):
@@ -163,19 +209,22 @@ def extract_text(name, data_url):
                     or sum(archive.getinfo(name).file_size for _, name in parts) > MAX_DOCUMENT
                 ):
                     raise ValueError
-                pages = [
-                    {
-                        "number": number,
-                        "text": "\n".join(
-                            paragraph_text(p)
-                            if ext == ".docx"
-                            else "".join(t.text or "" for t in p.iter(DRAWING + "t"))
-                            for p in ET.fromstring(archive.read(name)).iter()
-                            if p.tag in {W + "p", DRAWING + "p"}
-                        ),
-                    }
-                    for number, name in parts
+                parsed_parts = [
+                    (number, ET.fromstring(archive.read(part_name))) for number, part_name in parts
                 ]
+                pages = []
+                slide_roots: list[tuple[int, ET.Element, str]] = []
+                for number, root in parsed_parts:
+                    text = "\n".join(
+                        paragraph_text(p)
+                        if ext == ".docx"
+                        else "".join(t.text or "" for t in p.iter(DRAWING + "t"))
+                        for p in root.iter()
+                        if p.tag in {W + "p", DRAWING + "p"}
+                    )
+                    pages.append({"number": number, "text": text})
+                    slide_roots.append((number, root, text))
+                warnings = _extract_zip_warnings(ext, slide_roots)
         else:
             raise AIError(
                 "unsupported_document",
@@ -188,6 +237,8 @@ def extract_text(name, data_url):
             "invalid_document", "Không đọc được tệp hoặc tệp vượt giới hạn 15 MB."
         ) from None
     if not any(page["text"].strip() for page in pages):
+        if warnings:
+            raise AIError("empty_document", warnings[0]["message"])
         raise AIError("empty_document", "Không tìm thấy chữ trong tệp. Hãy dán nội dung nguồn.")
     if sum(len(page["text"]) for page in pages) > 200000:
         raise AIError("document_limit", "Văn bản vượt200.000ký tự. Hãy tách phần cần dùng.")
@@ -195,6 +246,7 @@ def extract_text(name, data_url):
         "pages": pages,
         "method": "pypdf_local_text" if ext == ".pdf" else "python_local_text",
         "sentToAI": False,
+        "warnings": warnings,
     }
 
 

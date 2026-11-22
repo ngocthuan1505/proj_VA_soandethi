@@ -10,6 +10,7 @@ import time
 import unicodedata
 from copy import deepcopy
 from pathlib import Path
+from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -27,6 +28,19 @@ PAGE_SIZE = 20
 def search_text(value: str) -> str:
     normalized = unicodedata.normalize("NFD", value.casefold().replace("đ", "d"))
     return " ".join("".join(c for c in normalized if not unicodedata.combining(c)).split())
+
+
+def _snapshot_search_blob(snapshot_json: str) -> str:
+    try:
+        exam = json.loads(snapshot_json)
+    except ValueError:
+        return ""
+    parts = [str(exam.get("title") or ""), str((exam.get("quote") or {}).get("text") or "")]
+    for question in exam.get("questions") or []:
+        if isinstance(question, dict):
+            parts.append(str(question.get("stem") or ""))
+            parts.extend(str(opt or "") for opt in (question.get("options") or []))
+    return search_text(" ".join(parts))
 
 
 class ShareRequest(BaseModel):
@@ -216,34 +230,66 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
         grade: str = Query("", max_length=16),
         series: str = Query("", max_length=150),
         chapter: str = Query("", max_length=200),
+        scope: Literal["title", "content"] = Query("title"),
         page: int = Query(1, ge=1, le=10000),
     ):
         owner(request)
+        needle = search_text(q)
+        offset = (page - 1) * PAGE_SIZE
         with connect() as db:
-            rows = db.execute(
-                "SELECT c.token,c.title,c.subject,c.grade,c.question_count,"
-                "s.created,s.allow_copy,c.series,c.chapter "
-                "FROM community_listings c JOIN shared_snapshots s ON c.token=s.token "
-                "WHERE s.revoked=0 AND s.answers=0 "
-                "AND instr(c.search_title, ?) > 0 "
-                "AND (? = '' OR c.search_subject = ?) AND (? = '' OR c.grade = ?) "
-                "AND (? = '' OR instr(c.search_series, ?) > 0) "
-                "AND (? = '' OR instr(c.search_chapter, ?) > 0) "
-                "ORDER BY s.created DESC,c.token LIMIT ? OFFSET ?",
-                (
-                    search_text(q),
-                    subject.strip(),
-                    search_text(subject),
-                    grade.strip(),
-                    grade.strip(),
-                    series.strip(),
-                    search_text(series),
-                    chapter.strip(),
-                    search_text(chapter),
-                    PAGE_SIZE + 1,
-                    (page - 1) * PAGE_SIZE,
-                ),
-            ).fetchall()
+            if scope == "content" and needle:
+                # Bản công khai đã strip answers=0 ở snapshot(), tìm thân đề vẫn giữ 0 rò đáp án.
+                candidates = db.execute(
+                    "SELECT c.token,c.title,c.subject,c.grade,c.question_count,"
+                    "s.created,s.allow_copy,c.series,c.chapter,c.search_title,s.snapshot "
+                    "FROM community_listings c JOIN shared_snapshots s ON c.token=s.token "
+                    "WHERE s.revoked=0 AND s.answers=0 "
+                    "AND (? = '' OR c.search_subject = ?) AND (? = '' OR c.grade = ?) "
+                    "AND (? = '' OR instr(c.search_series, ?) > 0) "
+                    "AND (? = '' OR instr(c.search_chapter, ?) > 0) "
+                    "ORDER BY s.created DESC,c.token",
+                    (
+                        subject.strip(),
+                        search_text(subject),
+                        grade.strip(),
+                        grade.strip(),
+                        series.strip(),
+                        search_text(series),
+                        chapter.strip(),
+                        search_text(chapter),
+                    ),
+                ).fetchall()
+                matched = [
+                    r[:9]
+                    for r in candidates
+                    if needle in r[9] or needle in _snapshot_search_blob(r[10])
+                ]
+                rows = matched[offset : offset + PAGE_SIZE + 1]
+            else:
+                rows = db.execute(
+                    "SELECT c.token,c.title,c.subject,c.grade,c.question_count,"
+                    "s.created,s.allow_copy,c.series,c.chapter "
+                    "FROM community_listings c JOIN shared_snapshots s ON c.token=s.token "
+                    "WHERE s.revoked=0 AND s.answers=0 "
+                    "AND instr(c.search_title, ?) > 0 "
+                    "AND (? = '' OR c.search_subject = ?) AND (? = '' OR c.grade = ?) "
+                    "AND (? = '' OR instr(c.search_series, ?) > 0) "
+                    "AND (? = '' OR instr(c.search_chapter, ?) > 0) "
+                    "ORDER BY s.created DESC,c.token LIMIT ? OFFSET ?",
+                    (
+                        needle,
+                        subject.strip(),
+                        search_text(subject),
+                        grade.strip(),
+                        grade.strip(),
+                        series.strip(),
+                        search_text(series),
+                        chapter.strip(),
+                        search_text(chapter),
+                        PAGE_SIZE + 1,
+                        offset,
+                    ),
+                ).fetchall()
         return JSONResponse(
             {
                 "exams": [

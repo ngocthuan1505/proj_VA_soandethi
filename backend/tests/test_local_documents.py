@@ -456,3 +456,41 @@ def test_chat_uses_selected_gemini_and_never_falls_back_to_ollama(tmp_path, monk
         assert response.status_code == 200 and "giả lập Gemini" in response.json()["message"]
         assert calls == ["chat"]
         assert client.get("/api/kv?key=state").json()["value"] is None
+
+
+def test_extract_warns_on_docx_mathtype_ole_and_pptx_image_only_slides():
+    docx_buf = io.BytesIO()
+    with zipfile.ZipFile(docx_buf, "w") as z:
+        z.writestr(
+            "word/document.xml",
+            '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+            'xmlns:o="urn:schemas-microsoft-com:office:office"><w:body>'
+            "<w:p><w:r><w:t>Câu 1. Giải phương trình:</w:t></w:r>"
+            '<w:r><w:object><o:OLEObject ProgID="Equation.DSMT4"/></w:object></w:r></w:p>'
+            "</w:body></w:document>",
+        )
+    docx_b64 = base64.b64encode(docx_buf.getvalue()).decode()
+    docx_res = extract_text("ole.docx", "data:application/octet-stream;base64," + docx_b64)
+    assert docx_res["sentToAI"] is False
+    assert docx_res["warnings"][0]["code"] == "mathtype_ole_formulas"
+    assert docx_res["warnings"][0]["count"] == 1
+
+    pptx_buf = io.BytesIO()
+    with zipfile.ZipFile(pptx_buf, "w") as z:
+        z.writestr(
+            "ppt/slides/slide1.xml",
+            '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+            'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+            "<p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>Bài 1. Phân số</a:t></a:r></a:p>"
+            "</p:txBody></p:sp></p:spTree></p:cSld></p:sld>",
+        )
+        z.writestr(
+            "ppt/slides/slide2.xml",
+            '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+            'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+            "<p:cSld><p:spTree><p:pic/></p:spTree></p:cSld></p:sld>",
+        )
+    pptx_b64 = base64.b64encode(pptx_buf.getvalue()).decode()
+    pptx_res = extract_text("slides.pptx", "data:application/octet-stream;base64," + pptx_b64)
+    assert pptx_res["warnings"][0]["code"] == "image_only_slides"
+    assert pptx_res["warnings"][0]["slides"] == [2]
