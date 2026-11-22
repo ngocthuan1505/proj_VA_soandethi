@@ -111,7 +111,10 @@ def generation_format(job: GenerateJob) -> dict:
             **question,
             "properties": {
                 **question["properties"],
-                **{key: {"const": value} for key, value in slot.model_dump().items()},
+                **{
+                    key: {"const": value}
+                    for key, value in slot.model_dump(exclude_none=True).items()
+                },
                 "answer": answer_formats[slot.type],
                 "evidence": {
                     **question["properties"]["evidence"],
@@ -127,10 +130,17 @@ def generation_format(job: GenerateJob) -> dict:
                             "items": {
                                 "type": "object",
                                 "additionalProperties": False,
-                                "required": ["text", "pointsQ4"],
+                                "required": [
+                                    "text",
+                                    "pointsQ4" if slot.pointsQ4 is not None else "points",
+                                ],
                                 "properties": {
                                     "text": {"const": "Chọn đúng phương án."},
-                                    "pointsQ4": {"const": slot.pointsQ4},
+                                    **(
+                                        {"pointsQ4": {"const": slot.pointsQ4}}
+                                        if slot.pointsQ4 is not None
+                                        else {"points": {"const": slot.points}}
+                                    ),
                                 },
                             },
                         }

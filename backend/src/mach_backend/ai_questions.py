@@ -1,9 +1,9 @@
 """Kiểu dữ liệu và kiểm tra câu hỏi sinh mới hoặc giải lại."""
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_serializer, model_validator
 
 from mach_backend.ai_contract import (
     AIError,
@@ -27,11 +27,44 @@ PointsQ4 = Annotated[int, Field(ge=1, le=40)]
 EvidenceList = Annotated[tuple[Evidence, ...], Field(max_length=12)]
 
 
+def points_p100(item: Any) -> int:
+    """Quy đổi điểm của slot/câu/barem về đơn vị nguyên 0,01 điểm."""
+    q4 = getattr(item, "pointsQ4", None)
+    pts = getattr(item, "points", None)
+    if q4 is not None and pts is not None:
+        if q4 * 25 != round(pts * 100):
+            raise ValueError("pointsQ4 và points không khớp.")
+        return q4 * 25
+    if q4 is not None:
+        return q4 * 25
+    if pts is not None:
+        p100 = round(float(pts) * 100)
+        if not 5 <= p100 <= 1000 or abs(float(pts) * 100 - p100) > 1e-6:
+            raise ValueError("Điểm phải từ 0,05 đến 10,00 điểm (tối đa 2 chữ số thập phân).")
+        return p100
+    raise ValueError("Cần chỉ định pointsQ4 hoặc points.")
+
+
 class ExamSlot(ContractModel):
     type: QuestionType
     topic: Annotated[str, Field(min_length=1, max_length=200)]
     level: Annotated[int, Field(ge=0, le=3)]
-    pointsQ4: PointsQ4
+    pointsQ4: PointsQ4 | None = None
+    points: Annotated[float, Field(gt=0, le=10)] | None = None
+    choiceGroup: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+
+    @model_validator(mode="after")
+    def validate_points_pair(self):
+        points_p100(self)
+        return self
+
+    @model_serializer(mode="wrap")
+    def _omit_unset_points(self, handler):
+        data = handler(self)
+        for key in ("pointsQ4", "points", "choiceGroup"):
+            if key in data and data[key] is None:
+                data.pop(key)
+        return data
 
 
 class GenerationPlan(ContractModel):
@@ -39,7 +72,7 @@ class GenerationPlan(ContractModel):
     grade: Annotated[str, Field(min_length=1, max_length=80)]
     instructions: Annotated[str, Field(max_length=4000)] = ""
     slots: Annotated[
-        tuple[ExamSlot, ...], Field(strict=False, min_length=1, max_length=MAX_MATRIX_QUESTIONS)
+        tuple[ExamSlot, ...], Field(strict=False, min_length=1, max_length=MAX_MATRIX_QUESTIONS * 2)
     ]
 
 
@@ -49,7 +82,21 @@ class GenerateJob(AIJob, GenerationPlan):
 
 class RubricStep(ContractModel):
     text: BlockText
-    pointsQ4: PointsQ4
+    pointsQ4: PointsQ4 | None = None
+    points: Annotated[float, Field(gt=0, le=10)] | None = None
+
+    @model_validator(mode="after")
+    def validate_step_points(self):
+        points_p100(self)
+        return self
+
+    @model_serializer(mode="wrap")
+    def _omit_unset_points(self, handler):
+        data = handler(self)
+        for key in ("pointsQ4", "points"):
+            if key in data and data[key] is None:
+                data.pop(key)
+        return data
 
 
 class GeneratedQuestion(ExamSlot):
@@ -93,12 +140,34 @@ class CheckReport(CheckProposal):
     method: Literal["local_arithmetic", "model"] = "model"
 
 
+def _plan_totals_ok(slots: tuple[ExamSlot, ...]) -> bool:
+    common_p100 = 0
+    common_count = 0
+    track_p100: dict[str, int] = {}
+    track_count: dict[str, int] = {}
+    for slot in slots:
+        grp = (slot.choiceGroup or "").strip().casefold()
+        p100 = points_p100(slot)
+        if grp:
+            track_p100[grp] = track_p100.get(grp, 0) + p100
+            track_count[grp] = track_count.get(grp, 0) + 1
+        else:
+            common_p100 += p100
+            common_count += 1
+    active_count = common_count + (max(track_count.values()) if track_count else 0)
+    if not 1 <= active_count <= MAX_MATRIX_QUESTIONS:
+        return False
+    if not track_p100:
+        return common_p100 == 1000
+    return all(common_p100 + pts == 1000 for pts in track_p100.values())
+
+
 def validate_generation_plan(job: GenerateJob) -> None:
     if (
         not job.subject.strip()
         or not job.grade.strip()
         or any(not slot.topic.strip() for slot in job.slots)
-        or sum(slot.pointsQ4 for slot in job.slots) != 40
+        or not _plan_totals_ok(job.slots)
     ):
         raise AIError("invalid_plan", "Ma trận cần môn, lớp, chủ đề và tổng đúng 10 điểm.")
 
@@ -162,23 +231,31 @@ def validate_generation(job: GenerateJob, raw: str) -> GenerateProposal:
     if len(proposal.questions) != len(job.slots):
         raise AIError("invalid_plan", "Số câu AI trả về chưa khớp ma trận đã duyệt.")
     for index, (slot, question) in enumerate(zip(job.slots, proposal.questions, strict=True), 1):
-        if (slot.type, slot.topic, slot.level, slot.pointsQ4) != (
+        if (slot.type, slot.topic, slot.level, points_p100(slot)) != (
             question.type,
             question.topic,
             question.level,
-            question.pointsQ4,
+            points_p100(question),
         ):
             raise AIError("invalid_plan", "Dạng, chủ đề, mức độ hoặc điểm không khớp ma trận.")
         validate_ai_text(question.stem)
         validate_options(question.type, question.options)
         validate_answer(question.type, question.answer)
         validate_ai_text(question.explanation)
-        total = sum(step.pointsQ4 for step in question.rubric)
-        if total != slot.pointsQ4:
+        total = sum(points_p100(step) for step in question.rubric)
+        expected = points_p100(slot)
+        if total != expected:
+            if slot.pointsQ4 is not None and total % 25 == 0:
+                msg = (
+                    f"Câu {index}: tổng barem là {total // 25}, "
+                    f"cần {slot.pointsQ4} đơn vị 0,25 điểm. "
+                    "Nhân điểm với 4 để được số đơn vị. Ví dụ, 2 điểm bằng 8 đơn vị."
+                )
+                raise AIError("invalid_rubric", msg)
             raise AIError(
                 "invalid_rubric",
-                f"Câu {index}: tổng barem là {total}, cần {slot.pointsQ4} đơn vị 0,25 điểm. "
-                "Nhân điểm với 4 để được số đơn vị. Ví dụ, 2 điểm bằng 8 đơn vị.",
+                f"Câu {index}: tổng barem là {total / 100:.2f} điểm, "
+                f"cần {expected / 100:.2f} điểm.",
             )
         for step in question.rubric:
             validate_ai_text(step.text)

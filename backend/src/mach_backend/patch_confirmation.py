@@ -28,6 +28,7 @@ from mach_backend.ai_questions import (
     GenerateJob,
     GenerateProposal,
     GenerationPlan,
+    points_p100,
     validate_generation,
     validate_generation_plan,
 )
@@ -246,13 +247,16 @@ def generated_question_snapshot(question: GeneratedQuestion) -> ExamSnapshot:
         id=str(uuid4()),
         v=1,
         blockIds={field: str(uuid4()) for field in sorted(fields)},
-        points=question.pointsQ4 / 4,
+        points=points_p100(question) / 100,
         answer=answer if question.type == "mcq" else 0,
         answerText=answer if question.type == "short" else "",
         truthValues=answer if question.type == "truefalse" else [],
         answerKnown=question.type != "essay",
         rubric=[
-            {**step.model_dump(mode="json"), "points": step.pointsQ4 / 4}
+            {
+                **step.model_dump(mode="json", exclude_none=True),
+                "points": points_p100(step) / 100,
+            }
             for step in question.rubric
         ],
         check=None,

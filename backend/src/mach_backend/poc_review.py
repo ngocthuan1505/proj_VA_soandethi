@@ -7,7 +7,7 @@ import re
 import zipfile
 
 from mach_backend.ai_contract import AIError
-from mach_backend.ai_questions import saved_answer_label
+from mach_backend.ai_questions import points_p100, saved_answer_label
 from mach_backend.export_assets import render_assets
 from mach_backend.local_documents import chrome_path
 from mach_backend.matrix_agent import sha256_json
@@ -75,7 +75,7 @@ def review_pack(pending, result, audit):
             + "</p>"
             f"<p>Lời giải AI: {formatted(question.explanation)}</p>"
             + "".join(
-                f"<p>Bước {i}: {formatted(step.text)} · {step.pointsQ4 / 4} điểm</p>"
+                f"<p>Bước {i}: {formatted(step.text)} · {points_p100(step) / 100} điểm</p>"
                 for i, step in enumerate(question.rubric, 1)
             )
             + "".join(f"<blockquote>{formatted(e.quote)}</blockquote>" for e in question.evidence)

@@ -140,11 +140,16 @@ class MatrixProvider:
         selected = tuple(evidence[index] for index in draft.evidenceIds)
         identity = job.model_dump(include={"jobId", "examId", "baseRevision"})
         if isinstance(draft, QuestionDraft):
+            pt_entry = (
+                {"pointsQ4": job.slots[0].pointsQ4}
+                if job.slots[0].pointsQ4 is not None
+                else {"points": job.slots[0].points}
+            )
             question = {
-                **job.slots[0].model_dump(),
+                **job.slots[0].model_dump(exclude_none=True),
                 **draft.model_dump(exclude={"evidenceIds"}),
                 "evidence": [item.model_dump(mode="json") for item in selected],
-                "rubric": [{"text": "Chọn đúng phương án.", "pointsQ4": job.slots[0].pointsQ4}],
+                "rubric": [{"text": "Chọn đúng phương án.", **pt_entry}],
             }
             payload = {
                 **job.model_dump(mode="json", include={"jobId", "examId", "baseRevision"}),

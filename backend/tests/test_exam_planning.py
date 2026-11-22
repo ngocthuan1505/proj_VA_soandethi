@@ -393,3 +393,83 @@ def test_reverse_matrix_endpoint_preserves_mixed_types_points_and_unique_choice_
         assert data["missingPointsOrdinals"] == [6]
         assert data["totalPoints"] == pytest.approx(4.0)
         assert any("chưa có điểm" in w for w in data["warnings"])
+
+
+def test_matrix_approve_preserves_decimal_points_040_and_960(tmp_path):
+    from mach_backend.ai_questions import GenerateJob, points_p100, validate_generation_plan
+
+    exam_id = str(uuid4())
+    exam = {
+        "id": exam_id,
+        "revision": 1,
+        "title": "Đề điểm thập phân",
+        "subject": "Toán",
+        "grade": "9",
+        "minutes": 45,
+        "docs": [],
+        "chat": [],
+        "history": [],
+        "undo": [],
+        "redo": [],
+        "matrixConfirmed": True,
+        "matrix": [
+            {"topic": "Nhận biết ngắn", "type": "mcq", "targets": [1, 0, 0, 0], "points": 0.4},
+            {"topic": "Vận dụng lớn", "type": "essay", "targets": [0, 0, 1, 0], "points": 9.6},
+        ],
+        "appliedPrefs": [],
+        "quote": {"text": "", "versions": []},
+        "questions": [],
+    }
+    state = {"exams": [exam], "prefs": [], "current": exam_id}
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        client.put("/api/kv", json={"key": "state", "value": state}).raise_for_status()
+        res = client.post(
+            f"/api/exams/{exam_id}/matrix/approve",
+            json={
+                "baseRevision": 1,
+                "sourceMode": "general",
+                "sourceText": "",
+                "sourceName": "Kiến thức chung",
+            },
+        )
+        assert res.status_code == 200, res.text
+        slots = res.json()["plan"]["slots"]
+        assert [s["points"] for s in slots] == [0.4, 9.6]
+
+        # Dòng 1 cố định 0,40 + dòng 2 tự chia -> tự chia đúng 9,60 còn lại
+        exam2 = {
+            **exam,
+            "revision": 2,
+            "matrix": [
+                {"topic": "Nhận biết ngắn", "type": "mcq", "targets": [1, 0, 0, 0], "points": 0.4},
+                {"topic": "Vận dụng lớn", "type": "essay", "targets": [0, 0, 1, 0]},
+            ],
+        }
+        client.put(
+            "/api/kv",
+            json={"key": "state", "value": {"exams": [exam2], "prefs": [], "current": exam_id}},
+        ).raise_for_status()
+        res2 = client.post(
+            f"/api/exams/{exam_id}/matrix/approve",
+            json={
+                "baseRevision": 2,
+                "sourceMode": "general",
+                "sourceText": "",
+                "sourceName": "Kiến thức chung",
+            },
+        )
+        assert res2.status_code == 200, res2.text
+        slots2 = res2.json()["plan"]["slots"]
+        assert [s["points"] for s in slots2] == [0.4, 9.6]
+
+        job = GenerateJob(
+            jobId=uuid4(),
+            examId=uuid4(),
+            baseRevision=2,
+            ownerId="local",
+            requireEvidence=False,
+            **res2.json()["plan"],
+            sources=(),
+        )
+        validate_generation_plan(job)
+        assert [points_p100(s) for s in job.slots] == [40, 960]

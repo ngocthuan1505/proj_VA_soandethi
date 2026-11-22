@@ -11,7 +11,7 @@ import unicodedata
 import zipfile
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 from xml.etree import ElementTree as ET
 
 from PIL import Image
@@ -177,6 +177,12 @@ def checked_matrix(value):
     return {**data, "count": total, "requiresConfirmation": True}
 
 
+def _p100_to_slot_kwargs(p100: int) -> dict[str, int | float]:
+    if p100 % 25 == 0:
+        return {"pointsQ4": p100 // 25}
+    return {"points": round(p100 / 100, 2)}
+
+
 def matrix_slots(rows):
     try:
         matrix = ImportedMatrix.model_validate_json(
@@ -186,40 +192,104 @@ def matrix_slots(rows):
         raise AIError(
             "invalid_plan", "Ma trận cần chủ đề, loại câu và ba hoặc bốn số nguyên0..30."
         ) from None
-    keys = [(r.topic.strip().casefold(), r.type) for r in matrix]
-    count = sum(sum(row.targets) for row in matrix)
-    if (
-        not 1 <= count <= MAX_MATRIX_QUESTIONS
-        or len(set(keys)) != len(keys)
-        or any(not k[0] for k in keys)
-    ):
-        raise AIError("invalid_plan", "Nhận1–30câu, không lặp cùng chủ đề và loại câu.")
+    keys = [
+        (r.topic.strip().casefold(), r.type, (r.choiceGroup or "").strip().casefold())
+        for r in matrix
+    ]
+    if len(set(keys)) != len(keys) or any(not k[0] for k in keys):
+        raise AIError("invalid_plan", "Nhận1–30câu, không lặp cùng chủ đề, loại câu và nhánh chọn.")
 
-    def cell_points(row, level):
-        return row.pointsByLevelQ4[level] if row.pointsByLevelQ4 else row.pointsQ4
+    uses_extended = any(
+        r.points is not None or r.pointsByLevel is not None or r.choiceGroup is not None
+        for r in matrix
+    )
+    if uses_extended:
+        _validate_decimal_budget(matrix)
+    else:
+        count = sum(sum(row.targets) for row in matrix)
+        if not 1 <= count <= MAX_MATRIX_QUESTIONS:
+            raise AIError("invalid_plan", "Nhận1–30câu, không lặp cùng chủ đề và loại câu.")
+        if any(r.pointsByLevelQ4 is not None and r.pointsQ4 is not None for r in matrix):
+            raise AIError(
+                "invalid_plan", "Chọn điểm chung hoặc điểm theo từng mức, không dùng cả hai."
+            )
+        fixed = sum(
+            n * (_row_cell_p100(r, level) or 0) for r in matrix for level, n in enumerate(r.targets)
+        )
+        automatic = sum(
+            n
+            for r in matrix
+            for level, n in enumerate(r.targets)
+            if _row_cell_p100(r, level) is None
+        )
+        remaining = 1000 - fixed
+        if (automatic and remaining < automatic * 25) or (not automatic and remaining != 0):
+            raise AIError("invalid_plan", "Tổng điểm cần đúng10, mỗi câu ít nhất0,25điểm.")
 
-    if any(r.pointsByLevelQ4 is not None and r.pointsQ4 is not None for r in matrix):
-        raise AIError("invalid_plan", "Chọn điểm chung hoặc điểm theo từng mức, không dùng cả hai.")
-    fixed = sum(
-        n * (cell_points(r, level) or 0) for r in matrix for level, n in enumerate(r.targets)
+    common_fixed = sum(
+        n * (_row_cell_p100(r, level) or 0)
+        for r in matrix
+        if not (r.choiceGroup or "").strip()
+        for level, n in enumerate(r.targets)
     )
-    automatic = sum(
-        n for r in matrix for level, n in enumerate(r.targets) if cell_points(r, level) is None
+    common_auto = sum(
+        n
+        for r in matrix
+        if not (r.choiceGroup or "").strip()
+        for level, n in enumerate(r.targets)
+        if _row_cell_p100(r, level) is None
     )
-    remaining = 40 - fixed
-    if (automatic and remaining < automatic) or (not automatic and remaining != 0):
-        raise AIError("invalid_plan", "Tổng điểm cần đúng10, mỗi câu ít nhất0,25điểm.")
-    slots, auto_index = [], 0
+    track_fixed: dict[str, int] = {}
+    track_auto: dict[str, int] = {}
+    for r in matrix:
+        grp = (r.choiceGroup or "").strip().casefold()
+        if not grp:
+            continue
+        for level, n in enumerate(r.targets):
+            p100 = _row_cell_p100(r, level)
+            if p100 is None:
+                track_auto[grp] = track_auto.get(grp, 0) + n
+            else:
+                track_fixed[grp] = track_fixed.get(grp, 0) + n * p100
+
+    # Chia điểm phần tự động (ưu tiên bước 0,25 nếu tròn; nếu có điểm lẻ dùng bước 0,05 / 0,01)
+    auto_allocs: dict[str, tuple[int, int, int, int]] = {}
+    for grp_key in {"", *track_auto}:
+        auto_n = common_auto + (track_auto.get(grp_key, 0) if grp_key else 0)
+        if not auto_n:
+            continue
+        rem = 1000 - common_fixed - (track_fixed.get(grp_key, 0) if grp_key else 0)
+        unit = (
+            25
+            if rem % 25 == 0 and rem >= auto_n * 25
+            else (5 if rem % 5 == 0 and rem >= auto_n * 5 else 1)
+        )
+        units = rem // unit
+        auto_allocs[grp_key] = (unit, units // auto_n, units % auto_n, 0)
+
+    auto_cursors: dict[str, int] = dict.fromkeys(auto_allocs, 0)
+    slots: list[ExamSlot] = []
     for row in matrix:
+        grp_raw = row.choiceGroup.strip() if row.choiceGroup and row.choiceGroup.strip() else None
+        grp_key = grp_raw.casefold() if grp_raw else ""
         for level, number in enumerate(row.targets):
             for _ in range(number):
-                points = cell_points(row, level)
-                if points is None:
-                    points = remaining // automatic + (auto_index < remaining % automatic)
-                    auto_index += 1
-                slots.append(
-                    ExamSlot(type=row.type, topic=row.topic.strip(), level=level, pointsQ4=points)
-                )
+                p100 = _row_cell_p100(row, level)
+                if p100 is None:
+                    scope_key = grp_key if grp_key in auto_allocs else ""
+                    unit, base_u, extra_u, _ = auto_allocs[scope_key]
+                    idx = auto_cursors[scope_key]
+                    auto_cursors[scope_key] = idx + 1
+                    p100 = (base_u + (1 if idx < extra_u else 0)) * unit
+                kwargs: dict[str, Any] = {
+                    "type": row.type,
+                    "topic": row.topic.strip(),
+                    "level": level,
+                    **_p100_to_slot_kwargs(p100),
+                }
+                if grp_raw is not None:
+                    kwargs["choiceGroup"] = grp_raw
+                slots.append(ExamSlot(**kwargs))
     return tuple(slots)
 
 

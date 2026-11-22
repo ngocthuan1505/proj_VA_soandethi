@@ -329,31 +329,67 @@ async def local_model_call(model, purpose, body):
             for position, index in enumerate(ordinals):
                 ordinal, slot = index + 1, slots[index]
                 kind = slot["type"]
-                points = slot["pointsQ4"]
-                rubric_name = f"RubricQ4_{points}"
-                if rubric_name not in definitions:
-                    step_fields = rubric_step["properties"]
-                    single_step = {
-                        **rubric_step,
-                        "properties": {**step_fields, "pointsQ4": {"const": points}},
-                    }
-                    single = {"type": "array", "items": [single_step]}
-                    definitions[rubric_name] = single
-                    if points > 1:
-                        bounded_step = {
+                if slot.get("pointsQ4") is not None:
+                    points = slot["pointsQ4"]
+                    rubric_name = f"RubricQ4_{points}"
+                    if rubric_name not in definitions:
+                        step_fields = rubric_step["properties"]
+                        single_step = {
                             **rubric_step,
-                            "properties": {
-                                **step_fields,
-                                "pointsQ4": {**step_fields["pointsQ4"], "maximum": points - 1},
-                            },
+                            "properties": {**step_fields, "pointsQ4": {"const": points}},
                         }
-                        multiple = {
-                            "type": "array",
-                            "minItems": 2,
-                            "maxItems": points,
-                            "items": bounded_step,
+                        single = {"type": "array", "items": [single_step]}
+                        definitions[rubric_name] = single
+                        if points > 1:
+                            bounded_step = {
+                                **rubric_step,
+                                "properties": {
+                                    **step_fields,
+                                    "pointsQ4": {**step_fields["pointsQ4"], "maximum": points - 1},
+                                },
+                            }
+                            multiple = {
+                                "type": "array",
+                                "minItems": 2,
+                                "maxItems": points,
+                                "items": bounded_step,
+                            }
+                            definitions[rubric_name] = {"oneOf": [single, multiple]}
+                else:
+                    pts_dec = round(float(slot["points"]), 2)
+                    p100 = round(pts_dec * 100)
+                    rubric_name = f"RubricP100_{p100}"
+                    if rubric_name not in definitions:
+                        step_fields = {
+                            k: v for k, v in rubric_step["properties"].items() if k != "pointsQ4"
                         }
-                        definitions[rubric_name] = {"oneOf": [single, multiple]}
+                        single_step = {
+                            **rubric_step,
+                            "required": ["text", "points"],
+                            "properties": {**step_fields, "points": {"const": pts_dec}},
+                        }
+                        single = {"type": "array", "items": [single_step]}
+                        definitions[rubric_name] = single
+                        if p100 > 5:
+                            bounded_step = {
+                                **rubric_step,
+                                "required": ["text", "points"],
+                                "properties": {
+                                    **step_fields,
+                                    "points": {
+                                        "type": "number",
+                                        "minimum": 0.05,
+                                        "maximum": round((p100 - 5) / 100, 2),
+                                    },
+                                },
+                            }
+                            multiple = {
+                                "type": "array",
+                                "minItems": 2,
+                                "maxItems": min(40, p100 // 5),
+                                "items": bounded_step,
+                            }
+                            definitions[rubric_name] = {"oneOf": [single, multiple]}
                 count = 4 if kind in ("mcq", "truefalse") else 0
                 properties = {
                     **common["properties"],
@@ -804,7 +840,9 @@ class AgentGeneration:
                 "approval": {
                     "baseRevision": job.baseRevision,
                     "plan": job.model_dump(
-                        mode="json", include={"subject", "grade", "instructions", "slots"}
+                        mode="json",
+                        include={"subject", "grade", "instructions", "slots"},
+                        exclude_none=True,
                     ),
                     "sources": [
                         s.model_dump(mode="json", exclude={"ownerId", "text"}) for s in job.sources

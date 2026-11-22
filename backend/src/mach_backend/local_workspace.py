@@ -780,7 +780,8 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             source_text = "\n\n".join(s.text for s in sources)
             feedback = store.prior_feedback(exam_id, source_text, db)
             plan = plan_from_exam(exam, general=request.sourceMode == "general", feedback=feedback)
-            store.put("matrix:" + str(exam_id), plan.model_dump(mode="json"), db=db)
+            plan_dict = plan.model_dump(mode="json", exclude_none=True)
+            store.put("matrix:" + str(exam_id), plan_dict, db=db)
             store.put(
                 "matrix-source:" + str(exam_id),
                 [source.model_dump(mode="json") for source in sources],
@@ -789,7 +790,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             store.put("matrix-source-name:" + str(exam_id), request.sourceName, db=db)
             return {
                 "baseRevision": exam["revision"],
-                "plan": plan,
+                "plan": plan_dict,
                 "sources": [
                     source.model_dump(include={"sourceId", "sourceVersion", "locator"})
                     for source in sources

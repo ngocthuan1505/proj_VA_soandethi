@@ -13,6 +13,7 @@ from mach_backend.ai_contract import AIError, BlockText, ContractModel, validate
 from mach_backend.ai_questions import (
     GenerateJob,
     GenerateProposal,
+    points_p100,
     validate_generation,
     validate_generation_plan,
 )
@@ -188,27 +189,40 @@ def candidate_proposal(job: GenerateJob, arguments: dict) -> GenerateProposal:
                 "Viết lại bốn phương án khác nhau, chỉ một phương án đúng.",
                 ordinal,
             )
+        slot_pts = points_p100(slot)
         if isinstance(item, MixedDraftQuestion):
-            rubric_total = sum(step.pointsQ4 for step in item.rubric)
-            if rubric_total != slot.pointsQ4:
+            rubric_total = sum(points_p100(step) for step in item.rubric)
+            if rubric_total != slot_pts:
+                if slot.pointsQ4 is not None and rubric_total % 25 == 0:
+                    raise CandidateQuestionError(
+                        "invalid_rubric",
+                        f"Câu {ordinal + 1}: tổng barem là {rubric_total // 25}, "
+                        f"cần {slot.pointsQ4} đơn vị 0,25 điểm. "
+                        "Nhân điểm với 4 để được số đơn vị. Ví dụ, 2 điểm bằng 8 đơn vị.",
+                        ordinal,
+                    )
                 raise CandidateQuestionError(
                     "invalid_rubric",
-                    f"Câu {ordinal + 1}: tổng barem là {rubric_total}, cần {slot.pointsQ4} "
-                    "đơn vị 0,25 điểm. Nhân điểm với 4 để được số đơn vị. "
-                    "Ví dụ, 2 điểm bằng 8 đơn vị.",
+                    f"Câu {ordinal + 1}: tổng barem là {rubric_total / 100:.2f} điểm, "
+                    f"cần {slot_pts / 100:.2f} điểm.",
                     ordinal,
                 )
+        fallback_rubric = (
+            [{"text": "Chọn đúng phương án.", "pointsQ4": slot.pointsQ4}]
+            if slot.pointsQ4 is not None
+            else [{"text": "Chọn đúng phương án.", "points": slot.points}]
+        )
         questions.append(
             {
-                **slot.model_dump(mode="json"),
+                **slot.model_dump(mode="json", exclude_none=True),
                 **item.model_dump(mode="json", exclude={"evidenceIds", "rubric"}),
                 "answer": decode_answer(slot.type, item.answer)
                 if isinstance(item, MixedDraftQuestion)
                 else item.answer,
                 "evidence": [source_anchors[i].model_dump(mode="json") for i in item.evidenceIds],
-                "rubric": [r.model_dump(mode="json") for r in item.rubric]
+                "rubric": [r.model_dump(mode="json", exclude_none=True) for r in item.rubric]
                 if isinstance(item, MixedDraftQuestion)
-                else [{"text": "Chọn đúng phương án.", "pointsQ4": slot.pointsQ4}],
+                else fallback_rubric,
             }
         )
     raw = json.dumps(
@@ -369,7 +383,7 @@ async def inspect_candidate(
             {
                 "sources": sources,
                 "blind": blind[i],
-                "slot": job.slots[i].model_dump(mode="json"),
+                "slot": job.slots[i].model_dump(mode="json", exclude_none=True),
                 "answer": proposal.questions[i].model_dump(mode="json")["answer"],
             }
         )
@@ -772,7 +786,9 @@ async def run_matrix_agent(
     candidate_schema["properties"]["questions"]["items"] = {
         k: v for k, v in question_type.model_json_schema().items() if k != "$defs"
     }
-    matrix = job.model_dump(mode="json", include={"subject", "grade", "slots", "instructions"})
+    matrix = job.model_dump(
+        mode="json", include={"subject", "grade", "slots", "instructions"}, exclude_none=True
+    )
     for slot in matrix["slots"]:
         slot["levelName"] = LEVEL_NAMES[slot["level"]]
         slot["requiredTask"] = LEVEL_TASKS[slot["level"]]

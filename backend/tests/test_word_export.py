@@ -515,3 +515,97 @@ def test_b4_default_15pt_chrome_page_numbers_watermark_codeblock_table_image_and
     assert "LOI_GIAI_CODE_BI_MAT" not in all_xml_text
     assert "BAREM_CODE_BI_MAT" not in all_xml_text
     assert "Đáp án đúng" not in all_xml_text
+
+
+def test_pdf_export_keeps_table_cell_images_and_separates_student_solutions(rich_exam, tmp_path):
+    from pypdf import PdfReader
+
+    from mach_backend.local_documents import chrome_path
+
+    if not chrome_path():
+        pytest.skip("Cần Chrome/Edge để chạy ca PDF thật")
+
+    cell_img = data_image("PNG", "navy")
+    doc_img = data_image("PNG", "purple")
+    exam = deepcopy(rich_exam)
+    exam["questions"][0]["tables"] = [
+        {"rows": [["Cot_Bang_A", "Cot_Hinh_B"], ["Dong_1", {"data": cell_img, "caption": "Anh ô"}]]}
+    ]
+    exam["questions"][0]["explanation"] = "LOI_GIAI_PDF_BI_MAT_991"
+    exam["questions"][0]["rubric"] = [{"text": "BAREM_PDF_BI_MAT_992", "points": 2.0}]
+    exam["questions"].append(
+        {
+            "id": "q-rich-cell-img",
+            "v": 1,
+            "type": "essay",
+            "stem": "O_Rich_Text | \nminh_hoa_code",
+            "options": [],
+            "answer": 0,
+            "explanation": "LOI_GIAI_ESSAY_BI_MAT_993",
+            "rubric": [{"text": "BAREM_ESSAY_BI_MAT_994", "points": 1.0}],
+            "richDoc": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "table",
+                        "content": [
+                            {
+                                "type": "tableRow",
+                                "content": [
+                                    {
+                                        "type": "tableCell",
+                                        "content": [p("O_Rich_Text")],
+                                    },
+                                    {
+                                        "type": "tableCell",
+                                        "content": [{"type": "image", "attrs": {"src": doc_img}}],
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                    {"type": "codeBlock", "content": [{"type": "text", "text": "minh_hoa_code"}]},
+                ],
+            },
+        }
+    )
+
+    student_html = exam_html(exam, False, "http://127.0.0.1")
+    assert "<td><img " in student_html
+    assert "{'data':" not in student_html
+    assert '<pre class="code-block">' in student_html
+    for secret in (
+        "LOI_GIAI_PDF_BI_MAT_991",
+        "BAREM_PDF_BI_MAT_992",
+        "LOI_GIAI_ESSAY_BI_MAT_993",
+        "BAREM_ESSAY_BI_MAT_994",
+        "Hướng dẫn chấm",
+        "Lời giải tham khảo",
+    ):
+        assert secret not in student_html
+
+    pdf_res = export_file(
+        {"type": "exam", "exam": exam, "format": "pdf", "teacher": False},
+        tmp_path,
+        "http://127.0.0.1",
+    )
+    reader = PdfReader(str(tmp_path / pdf_res["filename"]))
+    pdf_images = sum(len(page.images) for page in reader.pages)
+    pdf_text = "\n".join((page.extract_text() or "") for page in reader.pages)
+    assert pdf_images >= 2
+    assert "Cot_Bang_A" in pdf_text and "O_Rich_Text" in pdf_text and "minh_hoa_code" in pdf_text
+    assert "LOI_GIAI_PDF_BI_MAT_991" not in pdf_text
+    assert "BAREM_ESSAY_BI_MAT_994" not in pdf_text
+    assert "Lời giải tham khảo" not in pdf_text
+
+    teacher_res = export_file(
+        {"type": "exam", "exam": exam, "format": "pdf", "teacher": True},
+        tmp_path,
+        "http://127.0.0.1",
+    )
+    teacher_text = "\n".join(
+        (page.extract_text() or "")
+        for page in PdfReader(str(tmp_path / teacher_res["filename"])).pages
+    )
+    assert "LOI_GIAI_PDF_BI_MAT_991" in teacher_text
+    assert "BAREM_ESSAY_BI_MAT_994" in teacher_text

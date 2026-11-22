@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import TypedDict
+from typing import Any, TypedDict
 from uuid import uuid4
 from xml.etree import ElementTree as ET
 
@@ -265,6 +265,25 @@ def inline_html(text):
     )
 
 
+def _image_html(data: Any, caption: Any = "", *, in_cell: bool = False) -> str:
+    if (
+        not isinstance(data, str)
+        or len(data) > MAX_DOCUMENT * 2
+        or not re.fullmatch(r"data:image/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+", data)
+    ):
+        raise AIError("invalid_image", "Hình trong câu chưa có dữ liệu hợp lệ để xuất.")
+    binary, _, _ = image_bytes(data)
+    encoded = "data:image/png;base64," + base64.b64encode(binary).decode()
+    alt = html.escape(str(caption or "Hình câu hỏi"), quote=True)
+    if in_cell:
+        return f'<img src="{html.escape(encoded, quote=True)}" alt="{alt}">'
+    return (
+        f'<figure><img style="max-width:100%;max-height:250px" '
+        f'src="{html.escape(encoded, quote=True)}" alt="{alt}">'
+        f"<figcaption>{plain(caption)}</figcaption></figure>"
+    )
+
+
 def rich(node, depth=0):
     if not isinstance(node, dict) or depth > 64:
         return ""
@@ -312,6 +331,19 @@ def rich(node, depth=0):
         return "<br>"
     if kind == "horizontalRule":
         return "<hr>"
+    if kind == "image":
+        attrs = node.get("attrs", {})
+        return _image_html(
+            attrs.get("src") or attrs.get("data"),
+            attrs.get("alt") or attrs.get("caption") or "",
+            in_cell=True,
+        )
+    if kind == "codeBlock":
+        parts = [
+            "<br>" if child.get("type") == "hardBreak" else plain(child.get("text"))
+            for child in node.get("content", [])
+        ]
+        return f'<pre class="code-block"><code>{"".join(parts)}</code></pre>'
     children = "".join(rich(n, depth + 1) for n in node.get("content", []))
     tag = {
         "paragraph": "p",
@@ -418,34 +450,26 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
             body += (
                 '<div class="math" data-display="true">' + plain(formula.get("latex")) + "</div>"
             )
+
+        def table_cell_html(val: Any) -> str:
+            if isinstance(val, dict):
+                if val.get("data"):
+                    return _image_html(val["data"], val.get("caption", ""), in_cell=True)
+                if val.get("type") == "doc":
+                    return rich(val)
+            return inline_html(val)
+
         for table in q.get("tables", []):
             body += (
                 "<table>"
                 + "".join(
-                    "<tr>" + "".join("<td>" + inline_html(v) + "</td>" for v in row) + "</tr>"
+                    "<tr>" + "".join("<td>" + table_cell_html(v) + "</td>" for v in row) + "</tr>"
                     for row in table.get("rows", [])
                 )
                 + "</table>"
             )
         for image in q.get("images", []):
-            data = image.get("data", "")
-            if (
-                not isinstance(data, str)
-                or len(data) > MAX_DOCUMENT * 2
-                or not re.fullmatch(r"data:image/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+", data)
-            ):
-                raise AIError("invalid_image", "Hình trong câu chưa có dữ liệu hợp lệ để xuất.")
-            binary, _, _ = image_bytes(data)
-            data = "data:image/png;base64," + base64.b64encode(binary).decode()
-            body += (
-                '<figure><img style="max-width:100%;max-height:250px" src="'
-                + html.escape(data, quote=True)
-                + '" alt="'
-                + html.escape(str(image.get("caption") or "Hình câu hỏi"), quote=True)
-                + '"><figcaption>'
-                + plain(image.get("caption"))
-                + "</figcaption></figure>"
-            )
+            body += _image_html(image.get("data", ""), image.get("caption", ""))
         if q.get("figure"):
             body += (
                 '<figure style="text-align:center">'
@@ -562,7 +586,11 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         "table{border-collapse:collapse;width:100%}td,th{border:1px solid;padding:6px}"
         "figure svg{max-width:100%;height:auto}"
         "figure{break-inside:avoid;text-align:center;margin:12px 0}"
-        "figure img{display:block;margin:auto}li>p,td>p,th>p{margin:0}tr{break-inside:avoid}"
+        "figure img{display:block;margin:auto}"
+        "td img{max-width:100%;max-height:180px;display:block;margin:4px auto}"
+        ".code-block{background:#f4f6f5;padding:10px 12px;border-radius:6px;"
+        'font-family:Consolas,"Courier New",monospace;white-space:pre-wrap;overflow-wrap:anywhere}'
+        "li>p,td>p,th>p{margin:0}tr{break-inside:avoid}"
         "blockquote,small{font-size:11pt;color:#444}@page{size:A4;margin:18mm}"
         ".page-break{break-before:page}"
         "@media print{body{margin:0}section,ol,ul{break-inside:avoid}"
