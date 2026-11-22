@@ -4,7 +4,7 @@ import {commit,commitTyping,undo,clone} from '../core.js';
 import {essaySample} from '../reference.js';
 import {ensureBlocks,validateEdits} from '../blocks.js';
 import {validateMath} from '../math-content.js';
-import {assistantText} from '../studio.js';
+import {assistantText,collectFindMatches,applySingleFindReplacement} from '../studio.js';
 test('Trang A4: giữ thứ tự, không rơi hoặc lặp block khi chia trang',()=>{const heights=[250,120,600,400,100,1100,80];const pages=packHeights(heights,1000);assert.deepEqual(pages.flat(),[0,1,2,3,4,5,6]);for(const page of pages)assert.ok(page.length===1||page.reduce((n,i)=>n+heights[i],0)<=1000);});
 test('Gộp các lần gõ cùng trường thành một undo, không gộp với giao dịch AI',()=>{const e=essaySample(),before=clone(e.questions[0]);commitTyping(e,'Gõ',()=>e.questions[0].stem='Lần 1','q:stem');commitTyping(e,'Gõ',()=>e.questions[0].stem='Lần 2','q:stem');assert.equal(e.undo.length,1);undo(e);assert.deepEqual(e.questions[0],before);commit(e,'AI',()=>e.questions[0].stem='Bản AI');commitTyping(e,'Gõ',()=>e.questions[0].stem='Sau AI','q:stem');undo(e);assert.equal(e.questions[0].stem,'Bản AI');});
 test('Chọn lời giải không được đổi đề bài; giữ chữ ngoài đoạn lời giải',()=>{const e=ensureBlocks(essaySample()),q=e.questions[0],scope={id:q.id,version:q.v,field:'explanation',start:3,end:8,text:q.explanation.slice(3,8)};assert.throws(()=>validateEdits(e,{edits:[{op:'replace',blockId:q.blockIds.stem,content:'Đổi cả đề'}]},[scope],validateMath));assert.throws(()=>validateEdits(e,{edits:[{op:'replace',blockId:q.blockIds.explanation,content:'Đổi cả lời giải'}]},[scope],validateMath),/ngoài/);});
@@ -22,3 +22,15 @@ test('Bản giáo viên giữ định dạng barem/lời giải khi xuất; bả
 
 import {formattedHTML} from '../exports.mjs';
 test('Bản xuất độc lập nhúng đủ phông KaTeX, không cần server để render ký hiệu phủ định',async()=>{const e=essaySample();e.questions[0].stem='Xét $x\\ne1$ và $\\begin{cases}x+y=5\\\\xy=6\\end{cases}$.';const html=await formattedHTML(e,false);assert.ok(html.includes('data:font/woff2;base64,'));assert.ok(!html.includes('src:url(fonts/'));const browser=await dependency('playwright-core').chromium.launch({headless:true,executablePath:(await import('../runtime.mjs')).chromePath()});try{const page=await browser.newPage();await page.setContent(html,{waitUntil:'networkidle'});await page.evaluate(()=>document.fonts.ready);assert.deepEqual(await page.evaluate(()=>Array.from(document.fonts).filter(f=>f.status==='error').map(f=>f.family)),[]);assert.ok(await page.evaluate(()=>Array.from(document.fonts).some(f=>f.family==='KaTeX_Main'&&f.status==='loaded')));}finally{await browser.close();}});
+
+test('Lát B3: collectFindMatches tìm đếm từng vị trí kể cả LaTeX và thay 1 kết quả chính xác',()=>{
+ const e=essaySample();
+ e.questions[0].stem='Giải $\\frac{x}{2} = 1$ và $\\frac{x}{2} = 3$.';
+ e.questions[0].formulas=[{id:'f1',latex:'\\frac{x}{2}'}];
+ const hits=collectFindMatches(e,'\\frac{x}{2}',true);
+ assert.equal(hits.length,3);
+ assert.deepEqual(hits.map(h=>h.field),['stem','stem','formula']);
+ assert.equal(applySingleFindReplacement(e,hits[1],'\\frac{x}{4}'),true);
+ assert.equal(e.questions[0].stem,'Giải $\\frac{x}{2} = 1$ và $\\frac{x}{4} = 3$.');
+ assert.equal(applySingleFindReplacement(e,hits[2],'blocked'),false);
+});

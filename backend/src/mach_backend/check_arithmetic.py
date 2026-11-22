@@ -6,7 +6,14 @@ from operator import add, mul, sub, truediv
 
 from mach_backend.ai_questions import BlindQuestion
 
-NUMBER = r"[+\-−]?[0-9]{1,9}(?:[.,][0-9]{1,2})?"
+_SIGNED_INT = r"[+\-−]?\s*[0-9]{1,9}"
+FRAC_LATEX = rf"[+\-−]?\s*\\d?frac\{{\s*{_SIGNED_INT}\s*\}}\{{\s*{_SIGNED_INT}\s*\}}"
+PLAIN_FRAC = r"[+\-−]?[0-9]{1,9}/[0-9]{1,9}"
+PLAIN_DEC = r"[+\-−]?[0-9]{1,9}(?:[.,][0-9]{1,2})?"
+NUMBER = rf"(?:{FRAC_LATEX}|{PLAIN_FRAC}|{PLAIN_DEC})"
+_FRAC_MATCH = re.compile(
+    rf"([+\-−]?)\s*\\d?frac\{{\s*({_SIGNED_INT})\s*\}}\{{\s*({_SIGNED_INT})\s*\}}"
+)
 OPERAND = rf"(?:x|{NUMBER})"
 EXPRESSION = re.compile(
     rf"\s*({OPERAND})\s*(\+|-|−|\*|×|/|÷|\\times|\\cdot|\\div)\s*({OPERAND})\s*"
@@ -28,7 +35,13 @@ OPERATORS = {
 
 
 def number(text: str) -> Fraction:
-    return Fraction(text.replace("−", "-").replace(",", "."))
+    cleaned = text.strip().replace("−", "-")
+    if m := _FRAC_MATCH.fullmatch(cleaned):
+        sign = -1 if m.group(1).replace("−", "-") == "-" else 1
+        num = int(m.group(2).replace("−", "-").replace(" ", ""))
+        den = int(m.group(3).replace("−", "-").replace(" ", ""))
+        return Fraction(sign * num, den)
+    return Fraction(cleaned.replace(",", "."))
 
 
 def check_substitution(question: BlindQuestion) -> tuple[int | None, str] | None:
@@ -45,15 +58,18 @@ def check_substitution(question: BlindQuestion) -> tuple[int | None, str] | None
         option = OPTION.fullmatch(text.strip())
         if option is None:
             return None
-        options.append(number(option[1] or option[2]))
+        try:
+            options.append(number(option[1] or option[2]))
+        except ZeroDivisionError:
+            return None, "Phương án chứa phân số có mẫu bằng 0. Cần xem lại đề."
 
-    value = number(stem[2])
-    lhs, rhs = (value if operand == "x" else number(operand) for operand in (left, right))
-    operation, display = OPERATORS[symbol]
     try:
+        value = number(stem[2])
+        lhs, rhs = (value if operand == "x" else number(operand) for operand in (left, right))
+        operation, display = OPERATORS[symbol]
         result = operation(lhs, rhs)
     except ZeroDivisionError:
-        return None, f"Thay x = {value} thì mẫu phép chia bằng 0. Cần xem lại đề."
+        return None, "Thay giá trị x thì phép chia hoặc phân số có mẫu bằng 0. Cần xem lại đề."
     explanation = f"Thay x = {value}, tính ({lhs}) {display} ({rhs}) = {result}."
     matches = [index for index, option in enumerate(options) if option == result]
     if not matches:

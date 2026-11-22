@@ -427,3 +427,41 @@ def test_check_reads_split_workspace_answers_and_hides_them_from_blind_solver(
     blind = json.loads(calls[-1][1]["messages"][1]["content"])["question"]
     assert field not in blind and "answer" not in blind
     assert app.state.store.get("state")["value"]["exams"] == before
+
+
+def test_check_arithmetic_supports_fractions_latex_decimal_eq_and_zero_den():
+    from mach_backend.ai_questions import BlindQuestion
+    from mach_backend.check_arithmetic import check_substitution, number
+
+    assert number(r"\frac{1}{2}") == number("0.5") == number("1/2")
+    assert number(r"-\dfrac{3}{4}") == number("-0,75")
+
+    q_latex = BlindQuestion(
+        questionId=uuid4(),
+        questionVersion=1,
+        type="mcq",
+        stem=r"Tính $x + \frac{1}{4}$ khi $x = \dfrac{1}{2}$.",
+        options=("0.5", r"$\frac{3}{4}$", "1", "2"),
+    )
+    res = check_substitution(q_latex)
+    assert res is not None and res[0] == 1
+
+    q_plain = BlindQuestion(
+        questionId=uuid4(),
+        questionVersion=1,
+        type="mcq",
+        stem="Tính $x - 1/2$ khi $x = 1$.",
+        options=("0.25", "0,5", "1", "3/2"),
+    )
+    res2 = check_substitution(q_plain)
+    assert res2 is not None and res2[0] == 1
+
+    q_zero = BlindQuestion(
+        questionId=uuid4(),
+        questionVersion=1,
+        type="mcq",
+        stem=r"Tính $x + \frac{1}{0}$ khi $x = 2$.",
+        options=("1", "2", "3", "4"),
+    )
+    res_zero = check_substitution(q_zero)
+    assert res_zero is not None and res_zero[0] is None and "mẫu" in res_zero[1]
