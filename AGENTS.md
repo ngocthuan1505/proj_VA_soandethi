@@ -12,6 +12,7 @@
 - Keep repo Private. Never commit real server URLs, keys, invitation codes, `.env`, `.data`, `.runtime`, model weights or teacher documents. Do not send real data to paid AI services without authorization.
 - Do not invent usernames or invite collaborators without the owner's specified recipients. Update `docs/team/roster.json` only from known team identities.
 - Coordinate shared files through the task issue; use small PRs with criteria and validation. Do not add frameworks or move all source merely to split ownership.
+- UI/UX được phép học hỏi và áp dụng các mô hình bố cục, phân cấp thao tác và trải nghiệm tốt hơn từ công cụ tham chiếu (như luồng soandethi) rồi tinh chỉnh theo hướng của đồ án; tự triển khai sạch trên nền HTML/CSS/JS hiện có (không thêm framework, không chép mã nguồn/logo/thương hiệu có bản quyền, không gắn cơ chế nạp tiền) và giữ xanh toàn bộ test/E2E hiện hành.
 - Python: from `backend`, run `uv sync --frozen`, `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .`, `uv run ty check src`.
 - Legacy/UI regression: `npm ci`, `npm test`, `npm run check:team`; rebuild editor with `npm run build-editor` when needed. CI uses fixtures only.
 - GitHub synchronization mutates issues/labels/milestones only with explicit `--apply` and verified Private/admin access. Preserve existing human edits, status and assignees.
