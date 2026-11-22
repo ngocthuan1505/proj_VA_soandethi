@@ -4,7 +4,7 @@ import {mountStudio,refreshStudio,handleStudioAction,handleStudioSubmit} from '.
 import {openMatrixChat as openMatrixSynthesis,mountMatrixChat} from './matrix-chat.js';
 import {bootstrapWorkbench,scheduleAutoReconcile,friendlyClientMessage,accountSaveLabel,initWorkbench,mountWorkbench,refreshWorkbench,handleWorkbenchAction,handleWorkbenchSubmit} from './workbench.js';
 import {ensureBlocks,questionScope} from './blocks.js';
-import {referenceSide,referenceChat,rubricHTML,refreshReferenceScope} from './reference.js';
+import {referenceSide,referenceChat,rubricHTML,refreshReferenceScope,closeFloating} from './reference.js';
 import {mountMVP,initMVP,handleMVPAction,handleMVPSubmit} from './mvp.js';
 import {approveQuestion,isApproved,isConfirmedPreference,LEVELS,clone,uid,esc,sample,blank,commit,commitTyping,undo,redo,touch,derive,check,planDataUpdate,matrix,exportHTML,snapshot,usesTable,dataChartSVG,QUESTION_TYPES,validateMatrixRows} from './core.js';
 import * as db from './storage.js';
@@ -248,7 +248,7 @@ async function importFile(file){if(file.size>15*1024*1024)throw Error('Tệp l�
 const commitBeforeAction=new Set(['ai-check','approve-question','apply-block-patch','show-block-diff','undo','redo','view-student','view-teacher','export','export-html','print','save-local','backup','backup-local']);
 async function handleAction(a,n){
  if(commitBeforeAction.has(a)&&!flushEditor()){toast('Gõ xong chữ đang nhập rồi thử lại.');return;}
- if(await handleStudioAction(a,n))return;if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
+ if(await handleStudioAction(a,n))return;if(a!=='menu')closeFloating();if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
  case 'close':dialog.close();break;
  case 'new':showNew();break;
  case 'create-sample':createExam(n.dataset.subject,true);break;
