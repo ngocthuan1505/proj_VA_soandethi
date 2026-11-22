@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {essaySample,referenceCompose} from '../reference.js';
+import {essaySample,referenceCompose,tableCellHTML,questionTablesHTML} from '../reference.js';
 import {check,clone,exportHTML,commit,undo} from '../core.js';
 import {validateGenerated} from '../ai.mjs';
 import {makeDocx,formattedHTML} from '../exports.mjs';
@@ -26,4 +26,24 @@ test('Lát B1: referenceCompose dựng chip 4 kênh [SGK]/[ĐỀ]/[CỘNG ĐỒN
   assert.ok(html.includes(`data-action="detach-source"`));
   assert.ok(html.includes(`data-doc="${id}"`),id);
  }
+});
+
+test('Ô bảng trên canvas giữ ảnh data:image và chú thích, chặn URL nguy hiểm và không in [object Object]',()=>{
+ const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+ const cellHtml=tableCellHTML({data:png,caption:'Hình "A" <script>alert(1)</script>'});
+ assert.ok(cellHtml.includes('<img class="cell-image" src="'+png+'"'));
+ assert.ok(cellHtml.includes('<small class="cell-caption">Hình &quot;A&quot; &lt;script&gt;alert(1)&lt;/script&gt;</small>'));
+ assert.ok(!cellHtml.includes('[object Object]'));
+ const badSvg=tableCellHTML({data:'data:image/svg+xml;base64,PHN2Zz4=',caption:'SVG'});
+ assert.ok(!badSvg.includes('<img'));
+ const badProto=tableCellHTML({data:'javascript:alert(1)',caption:'JS'});
+ assert.ok(!badProto.includes('<img'));
+ const richCell=tableCellHTML({type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Đậm',marks:[{type:'bold'}]}]}]});
+ assert.ok(richCell.includes('<strong>Đậm</strong>'));
+ assert.equal(tableCellHTML('<plain>'), '&lt;plain&gt;');
+ const full=questionTablesHTML({id:'q1',tables:[{id:'t1',rows:[['Cột 1','Cột 2'],[{data:png,caption:'Bảng ảnh'},'40 km/h']]}]});
+ assert.ok(full.includes('<img class="cell-image"'));
+ assert.ok(full.includes('<small class="cell-caption">Bảng ảnh</small>'));
+ assert.ok(full.includes('<td>40 km/h</td>'));
+ assert.ok(!full.includes('[object Object]'));
 });

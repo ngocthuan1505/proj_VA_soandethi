@@ -89,7 +89,7 @@ try {
  if(!await page.locator('[data-ux-action="attach"]').isVisible())await page.locator('[data-action="toggle-ai"]').first().click();
  await page.locator('[data-ux-action="attach"]').click();
  await page.locator('.ux-attach-menu [data-action="assistant-sources"]').click();
- await dialog.getByRole('button',{name:'Học liệu theo bài',exact:true}).click();
+ await dialog.getByRole('button',{name:'SGK / Bài học',exact:true}).click();
  const picker=dialog.locator('#lesson-picker');
  await picker.locator('[name=subject]').selectOption('Toán');
  await picker.locator('[name=grade]').selectOption('9');
@@ -126,7 +126,7 @@ try {
  if(!await page.locator('[data-ux-action="attach"]').isVisible())await page.locator('[data-action="toggle-ai"]').first().click();
  await page.locator('[data-ux-action="attach"]').click();
  await page.locator('.ux-attach-menu [data-action="assistant-sources"]').click();
- await dialog.getByRole('button',{name:'Học liệu theo bài',exact:true}).click();
+ await dialog.getByRole('button',{name:'SGK / Bài học',exact:true}).click();
  const personal=dialog.locator('#personal-lesson-form');
  await dialog.getByText('Thêm học liệu cá nhân',{exact:true}).click();
  for(const [field,value] of Object.entries({

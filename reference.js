@@ -1,6 +1,6 @@
 import {separateMarking} from './core.js';
 import {documentPages,selectedDocumentPages,sourcePageLabel} from './assistant-sources.js';
-import {documentPlain} from './rich-document.js';
+import {documentPlain,renderRichDocument} from './rich-document.js';
 import {composerHTML,mountComposer,cleanupComposer,handleComposerAction,submitComposerText,refreshComposerPreview} from './composer.js';
 import {esc,uid,touch,check,mathSample} from './core.js';
 import katex from './assets/katex/katex.mjs';
@@ -103,3 +103,23 @@ export function rubricHTML(q){return `<div class="essay-answer"><b>Hướng dẫ
 export function essaySample(prefs=[]){const e=mathSample(prefs),doc=e.docs[0];e.title='Đề kiểm tra cuối học kỳ II';e.school='TRƯỜNG THCS …';e.minutes=90;e.layout={font:'Times New Roman',fontSize:15};e.instructions='Thí sinh trình bày lời giải đầy đủ. Đề gồm 5 bài tự luận.';e.chat=[];const entries=[['Phương trình','Giải các phương trình sau:\na) 2x + 3 = 11.\nb) x² − 5x + 6 = 0.','a) 2x = 8, suy ra x = 4.\nb) (x − 2)(x − 3) = 0, suy ra x = 2 hoặc x = 3.',[['Giải đúng phương trình bậc nhất',1],['Phân tích được đa thức thành nhân tử',0.5],['Kết luận đầy đủ hai nghiệm',0.5]]],['Hàm số','Cho hàm số y = 2x + 1.\na) Tính y khi x = 3.\nb) Tìm x để y = 9.','a) Khi x = 3, y = 2 × 3 + 1 = 7.\nb) 2x + 1 = 9 nên x = 4.',[['Tính đúng giá trị y = 7',1],['Tìm đúng x = 4',1]]],['Hình học','Một tam giác ABC vuông tại A có AB = 6 cm, AC = 8 cm.\na) Tính BC.\nb) Tính diện tích tam giác ABC.','a) BC² = AB² + AC² = 36 + 64 = 100 nên BC = 10 cm.\nb) S = AB × AC / 2 = 24 cm².',[['Áp dụng định lý Pythagore và tính BC = 10 cm',1],['Tính diện tích bằng 24 cm²',1]]],['Xác suất','Gieo một xúc xắc cân đối sáu mặt một lần.\na) Liệt kê các kết quả có thể xảy ra.\nb) Tính xác suất xuất hiện số chấm chẵn.','a) Không gian mẫu Ω = {1; 2; 3; 4; 5; 6}.\nb) Có 3 kết quả thuận lợi là 2, 4, 6; xác suất bằng 3/6 = 1/2.',[['Liệt kê đủ sáu kết quả',1],['Xác định 3 kết quả thuận lợi và tính xác suất 1/2',1]]],['Phương trình','Một hình chữ nhật có chiều dài hơn chiều rộng 3 cm và diện tích 40 cm². Tính chiều dài và chiều rộng.','Gọi chiều rộng là x cm (x > 0), chiều dài x + 3 cm.\nTa có x(x + 3) = 40 ⇔ (x + 8)(x − 5) = 0.\nDo x > 0, chọn x = 5. Chiều rộng 5 cm, chiều dài 8 cm.',[['Đặt ẩn và điều kiện',0.5],['Lập đúng phương trình',0.5],['Giải được x = 5, loại nghiệm âm',0.5],['Kết luận đúng hai kích thước',0.5]]]];e.questions=entries.map(([topic,stem,explanation,rubric])=>({id:uid(),v:1,type:'essay',stem,explanation,options:[],answer:0,points:2,topic,level:1,source:{docId:doc.id,location:'Tư liệu ôn tập tự soạn'},rubric:rubric.map(([text,points])=>({text,points}))}));e.matrix=[...new Set(entries.map(x=>x[0]))].map(topic=>({topic,targets:[0,e.questions.filter(q=>q.topic===topic).length,0]}));e.questions.forEach(q=>check(e,q));return e;}
 
 export function refreshReferenceScope(context){c=context;const box=$('.compose-box');if(!box)return;box.querySelector('.selection-chip')?.remove();const scope=c.currentScope();if(scope){const chip=document.createElement('div');chip.className='selection-chip';chip.title=scope.text;chip.innerHTML=b('scope-details',`↳ Câu ${c.exam().questions.findIndex(q=>q.id===scope.id)+1} · ${esc(scope.text.slice(0,64))}`);box.prepend(chip);}}
+
+const SAFE_CELL_IMAGE_RE=/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i;
+export function tableCellHTML(cell){
+ if(cell&&typeof cell==='object'){
+  if(typeof cell.data==='string'&&cell.data.length){
+   const cap=cell.caption?`<small class="cell-caption">${esc(cell.caption)}</small>`:'';
+   if(SAFE_CELL_IMAGE_RE.test(cell.data)){
+    return `<img class="cell-image" src="${esc(cell.data)}" alt="${esc(cell.caption||'Hình câu hỏi')}">${cap}`;
+   }
+   return cap||esc('[Ảnh chưa hợp lệ]');
+  }
+  if(cell.type==='doc')return renderRichDocument(cell);
+  if(cell.text!=null)return esc(String(cell.text));
+  return '';
+ }
+ return esc(cell??'');
+}
+export function questionTablesHTML(q,actionBtn=b){
+ return (q.tables||[]).map(t=>`<div class="asset-tools">${actionBtn('edit-table','Sửa bảng','tiny-btn',`data-id="${q.id}" data-table="${t.id}"`)}</div><table class="inserted-table">${(t.rows||[]).map(row=>`<tr>${row.map(cell=>`<td>${tableCellHTML(cell)}</td>`).join('')}</tr>`).join('')}</table>`).join('');
+}

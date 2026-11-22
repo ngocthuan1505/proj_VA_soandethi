@@ -363,7 +363,7 @@ try {
   await dialog.locator('[data-action=share]').click();
   await dialog.getByRole('button', {name: 'Mở kho đề cộng đồng'}).click();
   const filter = dialog.locator('#community-filter');
-  await filter.getByLabel('Tìm tên đề').fill('de thu xuat');
+  await filter.locator('input[name="q"]').fill('de thu xuat');
   await filter.getByLabel('Môn').fill('toan');
   await filter.getByLabel('Bộ sách').fill('ket noi');
   await filter.getByLabel('Chương').fill('chuong 1');
@@ -393,7 +393,7 @@ try {
   await action('share').click();
   await dialog.getByRole('button', {name: 'Mở kho đề cộng đồng'}).click();
   const cloneFilter = dialog.locator('#community-filter');
-  await cloneFilter.getByLabel('Tìm tên đề').fill('de thu xuat');
+  await cloneFilter.locator('input[name="q"]').fill('de thu xuat');
   await cloneFilter.getByRole('button', {name: 'Tìm đề'}).click();
   const cloneListing = cloneFilter.getByRole('article').filter({hasText: exam.title});
   await cloneListing.waitFor();

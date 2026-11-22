@@ -353,5 +353,8 @@ body.view-teacher .marking-guide{border-top:2px solid #12675d;padding-top:16px}
  .mach .page-content>.exam-heading{grid-template-columns:1fr!important;gap:10px;margin:4px 0 18px!important}
  .mach .question .options{grid-template-columns:1fr!important;gap:4px}
  .mach .marking-guide{overflow-x:auto}
+ .mach .question-assets{overflow-x:auto;max-width:100%}
  .mach .wb-library-card{flex-direction:column;align-items:flex-start}
 }
+.inserted-table td img.cell-image{display:block;max-width:100%;max-height:180px;height:auto;margin:4px auto;object-fit:contain;border-radius:4px}
+.inserted-table td .cell-caption{display:block;text-align:center;font-size:11px;line-height:1.4;color:#4e635b;margin-top:4px}
