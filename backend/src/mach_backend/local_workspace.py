@@ -61,6 +61,7 @@ from mach_backend.poc_scoped_patch import install_scoped_patch
 from mach_backend.poc_trace import inspect_run
 from mach_backend.question_parser import install_question_parser
 from mach_backend.source_ocr import read_source
+from mach_backend.tnmaker_export import export_tnmaker_pack
 from mach_backend.workspace_agent import AgentGeneration
 from mach_backend.workspace_backup import BACKUP_PATHS, MAX_BACKUP, install_backup
 from mach_backend.workspace_check import install_workspace_check
@@ -686,6 +687,14 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             return await asyncio.to_thread(
                 export_file, payload, directory / "exports", str(request.base_url)
             )
+
+    @app.post("/api/exports/tnmaker-pack")
+    async def save_tnmaker_pack(request: Request):
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise HTTPException(400, "Dữ liệu xuất TNMaker không hợp lệ.")
+        async with export_slot:
+            return await asyncio.to_thread(export_tnmaker_pack, payload, directory / "exports")
 
     @app.get("/api/exports/{name}")
     def exported(name: str):

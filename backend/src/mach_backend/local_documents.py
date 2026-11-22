@@ -591,10 +591,17 @@ def chrome_path():
 
 # shortcut: recognize common positional wording until the editor can mark an option as fixed.
 _POSITION_DEPENDENT = re.compile(
-    r"\b[A-D]\b|(?i:cả (?:hai|ba|bốn)|(?:tất cả|không có).{0,30}(?:trên|sau)|"
-    r"phương án (?:trên|dưới|[a-d]\b)|(?:chọn|đáp án)\s*\(?[a-d]\b|all of|none of|both)",
+    r"\b[A-D]\b|(?i:(?:cả|hai|ba|bốn|tất cả|mọi|một trong (?:hai|ba))\s*"
+    r"(?:hai|ba|bốn|ý|đáp án|phương án|lựa chọn|câu)|"
+    r"(?:tất cả|không có).{0,30}(?:trên|sau|đầu|cuối)|"
+    r"phương án (?:đầu|cuối|trên|dưới|[a-d]\b)|(?:chọn|đáp án)\s*\(?[a-d]\b|"
+    r"(?:câu|bài|hình|bảng)\s*(?:trước|sau|trên|dưới)|all of|none of|both)",
 )
 _QUESTION_REFERENCE = re.compile(r"\b(?:câu|bài)\s*(?:số\s*)?(\d+)\b", re.IGNORECASE)
+_RELATIVE_QUESTION_REF = re.compile(
+    r"\b(?:câu|bài)\s*(?:trước|sau|trên|dưới|kế\s*trước|vừa\s*rồi)\b",
+    re.IGNORECASE,
+)
 _OPTION_LABELS = ("A", "B", "C", "D")
 
 
@@ -745,10 +752,18 @@ def _plan_variant_units(questions, ids):
             question.get("explanation"),
         )
         if isinstance(text, str)
+    ) or any(
+        _RELATIVE_QUESTION_REF.search(text)
+        for idx in positions
+        for text in (
+            questions[idx].get("stem"),
+            *(questions[idx]["options"] if isinstance(questions[idx].get("options"), list) else []),
+        )
+        if isinstance(text, str)
     ):
         raise AIError(
             "invalid_variant",
-            "Có câu được nhắc theo số trong đề. Hãy bỏ chọn câu đó.",
+            "Có câu được nhắc theo số hoặc vị trí trước/sau trong đề. Hãy bỏ chọn câu đó.",
             http_status=400,
         )
     first = questions[positions[0]]
@@ -881,6 +896,41 @@ def shuffle_variant_question(question, offset):
 
 def exam_variant(exam, variant):
     questions = exam["questions"]
+    if (
+        isinstance(variant, dict)
+        and isinstance(variant.get("sections"), list)
+        and variant["sections"]
+    ):
+        offset = variant.get("offset")
+        if type(offset) is not int or offset < 0:
+            raise AIError(
+                "invalid_variant", "Chọn ít nhất hai câu và một mã đề hợp lệ.", http_status=400
+            )
+        seen_ids: set[str] = set()
+        current_exam = {**exam, "questions": list(questions)}
+        for sec in variant["sections"]:
+            sec_ids = sec.get("questionIds") if isinstance(sec, dict) else None
+            if (
+                not isinstance(sec_ids, list)
+                or len(sec_ids) < 2
+                or any(i in seen_ids for i in sec_ids)
+            ):
+                raise AIError(
+                    "invalid_variant",
+                    "Mỗi phần trộn phải có ít nhất hai câu và không trùng câu giữa các phần.",
+                    http_status=400,
+                )
+            seen_ids.update(sec_ids)
+            current_exam = exam_variant(
+                current_exam,
+                {
+                    "questionIds": sec_ids,
+                    "shuffleOptions": bool(sec.get("shuffleOptions", False)),
+                    "offset": offset % len(sec_ids),
+                },
+            )
+        code = str(101 + offset)
+        return {**current_exam, "title": f"{exam.get('title') or 'Đề thi'} · Mã đề {code}"}
     ids = variant.get("questionIds") if isinstance(variant, dict) else None
     offset = variant.get("offset") if isinstance(variant, dict) else None
     shuffle = variant.get("shuffleOptions", False) if isinstance(variant, dict) else False

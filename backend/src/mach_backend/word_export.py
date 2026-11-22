@@ -8,6 +8,7 @@ import math
 import re
 from typing import Any
 from xml.etree import ElementTree as ET
+from xml.sax.saxutils import escape as xml_escape
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -88,7 +89,13 @@ def field_inputs(exam, teacher):
             docs = q.get("optionDocs") or []
             yield text, docs[i] if i < len(docs) else None, None
         for table in q.get("tables", []):
-            yield from ((cell, None, None) for row in table["rows"] for cell in row)
+            for row in table["rows"]:
+                for cell in row:
+                    if isinstance(cell, dict):
+                        if cell.get("type") == "doc":
+                            yield "", cell, None
+                    else:
+                        yield cell, None, None
         if teacher:
             yield saved_answer_label(q), None, None
             yield q.get("explanation", ""), q.get("explanationDoc"), None
@@ -186,7 +193,10 @@ class WordWriter:
         )
         layout = exam.get("layout") or {}
         font = layout.get("font") if layout.get("font") in FONTS else "Times New Roman"
-        size = min(22, max(10, float(layout.get("fontSize") or 13)))
+        size = min(22, max(10, float(layout.get("fontSize") or 15)))
+        self.font_name = font
+        self.font_size = size
+        self._apply_page_chrome(section, layout)
         for name in (
             "Normal",
             "Title",
@@ -213,6 +223,75 @@ class WordWriter:
             )
             + 1
         )
+
+    @staticmethod
+    def _append_field(paragraph, field_name: str) -> None:
+        for kind, text in (("begin", None), ("instr", f" {field_name} "), ("separate", None)):
+            r = paragraph.add_run()
+            if kind == "instr":
+                instr = OxmlElement("w:instrText")
+                instr.set(qn("xml:space"), "preserve")
+                instr.text = text
+                r._r.append(instr)
+            else:
+                fc = OxmlElement("w:fldChar")
+                fc.set(qn("w:fldCharType"), kind)
+                r._r.append(fc)
+        paragraph.add_run("1")
+        r_end = paragraph.add_run()
+        fc_end = OxmlElement("w:fldChar")
+        fc_end.set(qn("w:fldCharType"), "end")
+        r_end._r.append(fc_end)
+
+    def _apply_page_chrome(self, section, layout: dict[str, Any]) -> None:
+        header_text = str(layout.get("headerText") or "").strip()
+        footer_text = str(layout.get("footerText") or "").strip()
+        show_pages = bool(layout.get("showPageNumbers"))
+        watermark = str(layout.get("watermarkText") or "").strip()
+
+        if header_text or watermark:
+            section.header.is_linked_to_previous = False
+            hp = section.header.paragraphs[0]
+            if header_text:
+                hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                hp.add_run(header_text).font.size = Pt(10)
+            if watermark:
+                wp = section.header.add_paragraph() if header_text else hp
+                wp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                escaped_wm = xml_escape(watermark[:80], {'"': "&quot;", "'": "&apos;"})
+                pict_xml = (
+                    '<w:pict xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+                    ' xmlns:v="urn:schemas-microsoft-com:vml"'
+                    ' xmlns:o="urn:schemas-microsoft-com:office:office">'
+                    '<v:shape id="MachWatermark" o:spid="_x0000_s2049" '
+                    'style="position:absolute;margin-left:0;margin-top:0;width:468pt;height:140pt;'
+                    "rotation:315;z-index:-251654144;mso-position-horizontal:center;"
+                    "mso-position-horizontal-relative:margin;mso-position-vertical:center;"
+                    'mso-position-vertical-relative:margin" '
+                    'fillcolor="#d8d8d8" stroked="f">'
+                    f'<v:textpath style="font-family:&quot;Times New Roman&quot;;font-size:1pt" '
+                    f'string="{escaped_wm}"/>'
+                    "</v:shape></w:pict>"
+                )
+                r = wp.add_run()
+                r._r.append(parse_xml(pict_xml))
+
+        if footer_text or show_pages:
+            section.footer.is_linked_to_previous = False
+            fp = section.footer.paragraphs[0]
+            fp.alignment = (
+                WD_ALIGN_PARAGRAPH.RIGHT
+                if show_pages and not footer_text
+                else (WD_ALIGN_PARAGRAPH.CENTER)
+            )
+            if footer_text:
+                fr = fp.add_run(footer_text + ("   |   " if show_pages else ""))
+                fr.font.size = Pt(10)
+            if show_pages:
+                fp.add_run("Trang ").font.size = Pt(10)
+                self._append_field(fp, "PAGE")
+                fp.add_run(" / ").font.size = Pt(10)
+                self._append_field(fp, "NUMPAGES")
 
     def inline(self, p, node, bold=False):
         kind = node["type"]
@@ -339,6 +418,26 @@ class WordWriter:
                     bold,
                     indent=indent + 1,
                 )
+            elif kind == "codeBlock":
+                p = container.add_paragraph()
+                p.paragraph_format.left_indent = Mm(7 * (indent + 1))
+                shade = OxmlElement("w:shd")
+                shade.set(qn("w:val"), "clear")
+                shade.set(qn("w:fill"), "f4f6f5")
+                p._p.get_or_add_pPr().append(shade)
+                code_size = Pt(max(9, self.font_size - 2))
+                for child in node.get("content", []):
+                    if child.get("type") == "hardBreak":
+                        p.add_run().add_break()
+                    else:
+                        run = p.add_run(str(child.get("text", "")))
+                        run.font.name = "Consolas"
+                        run.font.size = code_size
+            elif kind == "image":
+                src = attrs.get("src") or attrs.get("data")
+                caption = attrs.get("alt") or attrs.get("caption") or ""
+                align = attrs.get("align", "center")
+                self.picture(src, caption, align, container=container)
             elif kind == "horizontalRule":
                 p = container.add_paragraph()
                 borders = OxmlElement("w:pBdr")
@@ -406,17 +505,19 @@ class WordWriter:
             prefix,
         )
 
-    def picture(self, data, caption="", align="center"):
+    def picture(self, data, caption="", align="center", container=None):
         binary, width, height = image_bytes(data)
-        scale = min(6.85 / width, 3.2 / height, 1 / 96)
-        p = self.doc.add_paragraph()
+        max_w = 2.4 if container is not None and container is not self.doc else 6.85
+        scale = min(max_w / width, 3.2 / height, 1 / 96)
+        target = container if container is not None else self.doc
+        p = target.add_paragraph()
         p.alignment = ALIGN.get(align, WD_ALIGN_PARAGRAPH.CENTER)
         shape = p.add_run().add_picture(
             io.BytesIO(binary), width=Inches(width * scale), height=Inches(height * scale)
         )
         shape._inline.docPr.set("descr", caption or "Hình câu hỏi")
         if caption:
-            p = self.doc.add_paragraph(caption)
+            p = target.add_paragraph(caption)
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             for run in p.runs:
                 run.italic = True
@@ -480,7 +581,29 @@ class WordWriter:
                     [
                         {
                             "content": [
-                                {"type": "tableCell", "content": field_document(cell)["content"]}
+                                (
+                                    {
+                                        "type": "tableCell",
+                                        "content": [
+                                            {
+                                                "type": "image",
+                                                "attrs": {
+                                                    "src": cell["data"],
+                                                    "caption": cell.get("caption", ""),
+                                                },
+                                            }
+                                        ],
+                                    }
+                                    if isinstance(cell, dict) and cell.get("data")
+                                    else {
+                                        "type": "tableCell",
+                                        "content": (
+                                            cell["content"]
+                                            if isinstance(cell, dict) and cell.get("type") == "doc"
+                                            else field_document(cell)["content"]
+                                        ),
+                                    }
+                                )
                                 for cell in row
                             ]
                         }

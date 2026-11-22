@@ -494,3 +494,60 @@ def test_extract_warns_on_docx_mathtype_ole_and_pptx_image_only_slides():
     pptx_res = extract_text("slides.pptx", "data:application/octet-stream;base64," + pptx_b64)
     assert pptx_res["warnings"][0]["code"] == "image_only_slides"
     assert pptx_res["warnings"][0]["slides"] == [2]
+
+
+def test_b4_variant_hardened_positional_phrases_and_multi_section_shuffle():
+    from mach_backend.local_documents import exam_variant, shuffle_variant_question
+
+    # Câu chứa "hai phương án đầu" hoặc "câu trước" không bị xáo
+    q_pos = {
+        "id": "q1",
+        "type": "mcq",
+        "stem": "Chọn nhận định đúng về hai phương án đầu:",
+        "options": ["Phương án 1", "Phương án 2", "Sai hết", "Khác"],
+        "answer": 0,
+    }
+    assert shuffle_variant_question(q_pos, 1)["options"] == q_pos["options"]
+
+    exam = {
+        "title": "Đề hỗn hợp",
+        "questions": [
+            {
+                "id": "m1",
+                "type": "mcq",
+                "stem": "MCQ 1",
+                "options": ["1", "2", "3", "4"],
+                "answer": 0,
+            },
+            {
+                "id": "m2",
+                "type": "mcq",
+                "stem": "MCQ 2",
+                "options": ["5", "6", "7", "8"],
+                "answer": 1,
+            },
+            {
+                "id": "m3",
+                "type": "mcq",
+                "stem": "MCQ 3 câu trước",
+                "options": ["a", "b", "c", "d"],
+                "answer": 0,
+            },
+            {"id": "t1", "type": "truefalse", "stem": "TF 1", "truthValues": [True, False] * 2},
+            {"id": "t2", "type": "truefalse", "stem": "TF 2", "truthValues": [False, True] * 2},
+        ],
+    }
+    with pytest.raises(AIError, match="trước/sau"):
+        exam_variant(exam, {"questionIds": ["m1", "m3"], "offset": 1})
+
+    multi = exam_variant(
+        exam,
+        {
+            "offset": 1,
+            "sections": [
+                {"questionIds": ["m1", "m2"], "shuffleOptions": True},
+                {"questionIds": ["t1", "t2"], "shuffleOptions": False},
+            ],
+        },
+    )
+    assert [q["id"] for q in multi["questions"]] == ["m2", "m1", "m3", "t2", "t1"]

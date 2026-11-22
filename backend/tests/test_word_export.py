@@ -440,3 +440,78 @@ def test_short_answer_formula_is_rendered_as_editable_math_only_in_teacher_copy(
     student, _, _ = xml_from(export_docx(rich_exam, False, None))
     assert len(teacher.findall(".//" + M + "oMath")) > len(student.findall(".//" + M + "oMath"))
     assert r'<span class="math">\sqrt{49}</span>' in exam_html(rich_exam, True, "http://localhost")
+
+
+def test_b4_default_15pt_chrome_page_numbers_watermark_codeblock_table_image_and_zero_leak(
+    rich_exam, renderer
+):
+    # 1. Cỡ chữ mặc định phải là 15pt (30 half-points)
+    with zipfile.ZipFile(io.BytesIO(export_docx(rich_exam, False, None))) as default_zf:
+        styles_xml = ET.fromstring(default_zf.read("word/styles.xml"))
+    normal_sz = styles_xml.find(f".//{W}style[@{W}styleId='Normal']//{W}sz")
+    assert normal_sz is not None and normal_sz.get(W + "val") == "30"
+
+    # 2. Header/Footer/Số trang PAGE-NUMPAGES/Watermark/codeBlock monospace/ảnh trong ô bảng
+    exam = deepcopy(rich_exam)
+    exam["layout"] = {
+        "headerText": "ĐỀ THI THỬ TOÁN 10",
+        "footerText": "Tổ Toán - Tin",
+        "showPageNumbers": True,
+        "watermarkText": "BẢN CHÍNH THỨC",
+    }
+    exam["questions"][0]["tables"] = [
+        {"rows": [["STT", "Hình minh họa"], ["1", {"data": data_image("PNG", "blue")}]]}
+    ]
+    code_text = "def solve(x):\n    return x * 2"
+    # Cập nhật stem theo codeBlock để project khớp tuyệt đối
+    exam["questions"].append(
+        {
+            "id": "q-code",
+            "v": 1,
+            "type": "essay",
+            "stem": code_text,
+            "options": [],
+            "answer": 0,
+            "explanation": "LOI_GIAI_CODE_BI_MAT",
+            "rubric": [{"text": "BAREM_CODE_BI_MAT", "points": 1.0}],
+            "richDoc": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "codeBlock",
+                        "content": [{"type": "text", "text": code_text}],
+                    }
+                ],
+            },
+        }
+    )
+
+    student_bytes = export_docx(exam, False, None)
+    with zipfile.ZipFile(io.BytesIO(student_bytes)) as zf:
+        files = zf.namelist()
+        doc_bytes = zf.read("word/document.xml")
+        root = ET.fromstring(doc_bytes)
+        doc_xml = doc_bytes.decode("utf-8")
+        header_xml = zf.read("word/header1.xml").decode("utf-8")
+        footer_xml = zf.read("word/footer1.xml").decode("utf-8")
+
+    # Header, Watermark, Footer, PAGE/NUMPAGES
+    assert "ĐỀ THI THỬ TOÁN 10" in header_xml
+    assert "BẢN CHÍNH THỨC" in header_xml
+    assert "Tổ Toán - Tin" in footer_xml
+    assert "PAGE" in footer_xml and "NUMPAGES" in footer_xml
+
+    # CodeBlock monospace + shading
+    assert "Consolas" in doc_xml
+    assert "def solve(x):" in doc_xml
+
+    # Ảnh nằm thực sự bên trong ô bảng <w:tbl>...<w:tc>...<w:drawing>
+    tbl_drawings = root.findall(f".//{W}tbl//{W}tc//{W}drawing")
+    assert len(tbl_drawings) == 1
+    assert any(name.startswith("word/media/") for name in files)
+
+    # Bất biến 0 rò đáp án/lời giải trên toàn bộ XML bản học sinh
+    all_xml_text = doc_xml + header_xml + footer_xml
+    assert "LOI_GIAI_CODE_BI_MAT" not in all_xml_text
+    assert "BAREM_CODE_BI_MAT" not in all_xml_text
+    assert "Đáp án đúng" not in all_xml_text
