@@ -473,3 +473,69 @@ def test_matrix_approve_preserves_decimal_points_040_and_960(tmp_path):
         )
         validate_generation_plan(job)
         assert [points_p100(s) for s in job.slots] == [40, 960]
+
+
+def test_reverse_matrix_does_not_average_1_2_3_4_points_at_same_type_topic_and_level():
+    from mach_backend.exam_planning import reverse_matrix
+    from mach_backend.matrix_import import checked_matrix
+
+    exam = {
+        "subject": "Toán",
+        "grade": "9",
+        "questions": [
+            {
+                "id": f"q{i}",
+                "type": "essay",
+                "topic": "Hình học",
+                "level": 1,
+                "points": float(pt),
+            }
+            for i, pt in enumerate((1, 2, 3, 4), 1)
+        ],
+    }
+    res = reverse_matrix(exam)
+    assert res["totalPoints"] == pytest.approx(10.0)
+    assert res["reviewRequired"] is True
+    assert len(res["pointConflicts"]) == 1
+    assert res["pointConflicts"][0]["action"] == "split_by_points"
+    assert all(
+        slot["needsReview"] is True and slot["pointConflict"] is True for slot in res["slots"]
+    )
+    assert any("khác điểm" in w and "xem lại" in w for w in res["warnings"])
+
+    # Không âm thầm gộp thành 2,50: giữ nguyên điểm 1/2/3/4 qua checked_matrix & plan_from_exam
+    assert len(res["matrix"]) == 4
+    row_points = [r.get("points") or (r["pointsQ4"] / 4) for r in res["matrix"]]
+    assert row_points == [1.0, 2.0, 3.0, 4.0]
+    assert 2.5 not in row_points
+
+    preview = checked_matrix({"matrix": res["matrix"], "notes": ""})
+    plan = plan_from_exam({"subject": "Toán", "matrixConfirmed": True, "matrix": preview["matrix"]})
+    assert [slot.pointsQ4 / 4 for slot in plan.slots] == [1.0, 2.0, 3.0, 4.0]
+
+
+def test_reverse_matrix_keeps_single_row_across_different_levels_and_separates_missing_points():
+    from mach_backend.exam_planning import reverse_matrix
+
+    across_levels = {
+        "questions": [
+            {"id": f"l{lvl}", "type": "essay", "topic": "Đại số", "level": lvl, "points": float(pt)}
+            for lvl, pt in enumerate((1, 2, 3, 4))
+        ]
+    }
+    res_levels = reverse_matrix(across_levels)
+    assert res_levels["pointConflicts"] == []
+    assert len(res_levels["matrix"]) == 1
+    assert res_levels["matrix"][0]["pointsByLevelQ4"] == [4, 8, 12, 16]
+
+    mixed_missing = {
+        "questions": [
+            {"id": "m1", "type": "essay", "topic": "Hàm số", "level": 1, "points": 2.0},
+            {"id": "m2", "type": "essay", "topic": "Hàm số", "level": 1, "points": None},
+        ]
+    }
+    res_missing = reverse_matrix(mixed_missing)
+    assert res_missing["reviewRequired"] is True
+    assert len(res_missing["matrix"]) == 2
+    assert res_missing["matrix"][0].get("pointsQ4") == 8
+    assert "points" not in res_missing["matrix"][1] and "pointsQ4" not in res_missing["matrix"][1]

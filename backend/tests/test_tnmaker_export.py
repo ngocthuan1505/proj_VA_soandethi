@@ -1,4 +1,4 @@
-"""Kiểm thử xuất khóa TNMaker (.xlsx sheet DapAn + QR PNG quét giải mã chuẩn ISO-18004)."""
+"""Kiểm thử xuất gói khóa đáp án & QR chuẩn chung (.xlsx sheet DapAn + QR PNG ISO-18004)."""
 
 from __future__ import annotations
 
@@ -142,9 +142,9 @@ def _decode_qr_png_and_verify_ecc(png_bytes: bytes, box_size: int = 8, border: i
 
 def test_qr_encoder_roundtrip_multiple_versions():
     for text in (
-        "TNM|V1|101:ABCD",  # Version 1
-        "TNM|V1|101:" + "ABCD" * 8 + "|102:" + "DCBA" * 8,  # Version 3
-        "TNM|V1|101:" + "A" * 160,  # Version 7+ (>= 7 co version info bits)
+        "KEY|V1|101:ABCD",  # Version 1
+        "KEY|V1|101:" + "ABCD" * 8 + "|102:" + "DCBA" * 8,  # Version 3
+        "KEY|V1|101:" + "A" * 160,  # Version 7+ (>= 7 co version info bits)
     ):
         png = encode_qr_png(text)
         assert _decode_qr_png_and_verify_ecc(png) == text
@@ -168,6 +168,9 @@ def test_tnmaker_pack_endpoint_exports_valid_dapan_xlsx_qr_and_blocks_missing_ke
         assert ok.status_code == 200, ok.text
         data = ok.json()
         assert data["codes"] == ["101", "102"]
+        assert data["label"] == "Gói khóa đáp án & QR chuẩn chung"
+        assert data["formatId"] == "generic_answer_key_qr_v1"
+        assert data["tnmakerVerified"] is False
 
         dl = client.get(data["url"])
         assert dl.status_code == 200
@@ -175,7 +178,8 @@ def test_tnmaker_pack_endpoint_exports_valid_dapan_xlsx_qr_and_blocks_missing_ke
             assert set(zf.namelist()) == {"DapAn.xlsx", "QR_DapAn.png"}
             decoded_qr = _decode_qr_png_and_verify_ecc(zf.read("QR_DapAn.png"))
             assert decoded_qr == data["qrPayload"]
-            assert "?" not in decoded_qr and "101:DC|102:CC" == decoded_qr.removeprefix("TNM|V1|")
+            assert "TNM" not in decoded_qr
+            assert "?" not in decoded_qr and "101:DC|102:CC" == decoded_qr.removeprefix("KEY|V1|")
 
             with zipfile.ZipFile(io.BytesIO(zf.read("DapAn.xlsx"))) as xf:
                 wb = xf.read("xl/workbook.xml").decode("utf-8")
@@ -186,7 +190,7 @@ def test_tnmaker_pack_endpoint_exports_valid_dapan_xlsx_qr_and_blocks_missing_ke
                 texts = ["".join(c.itertext()) for c in cells]
                 assert "101" in texts and "D" in texts and "C" in texts and "?" not in texts
 
-        # Thiếu đáp án xác nhận -> 400 và tuyệt đối không tạo ?
+        # Thiếu đáp án xác nhận -> 400 và tuyệt đối không tạo ? hoặc khẳng định tương thích TNMaker
         broken = {
             **exam,
             "questions": [
@@ -205,3 +209,4 @@ def test_tnmaker_pack_endpoint_exports_valid_dapan_xlsx_qr_and_blocks_missing_ke
         assert err.status_code == 400
         assert err.json()["code"] == "missing_answer_key"
         assert "Câu 2" in err.json()["error"]
+        assert "TNMaker" not in err.json()["error"]

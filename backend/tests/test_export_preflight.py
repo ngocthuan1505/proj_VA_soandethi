@@ -397,7 +397,7 @@ def test_ocr_review_items_flags_source_pages_and_linked_and_direct_questions():
     assert report["summary"]["ocrReviewCount"] == len(items)
 
 
-@pytest.mark.parametrize("bad_points", [-0.25, 0.3, 1.125, True, "abc"])
+@pytest.mark.parametrize("bad_points", [-0.25, 0.333, 1.125, True, "abc"])
 def test_blocking_issues_reject_invalid_quarter_points_and_negative_values(bad_points: Any):
     exam = _make_clean_exam()
     exam["questions"][0]["points"] = bad_points

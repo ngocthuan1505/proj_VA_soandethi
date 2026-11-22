@@ -692,7 +692,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
     async def save_tnmaker_pack(request: Request):
         payload = await request.json()
         if not isinstance(payload, dict):
-            raise HTTPException(400, "Dữ liệu xuất TNMaker không hợp lệ.")
+            raise HTTPException(400, "Dữ liệu xuất gói khóa đáp án và QR không hợp lệ.")
         async with export_slot:
             return await asyncio.to_thread(export_tnmaker_pack, payload, directory / "exports")
 

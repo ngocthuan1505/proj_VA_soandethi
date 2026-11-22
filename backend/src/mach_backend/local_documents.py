@@ -276,7 +276,11 @@ def _image_html(data: Any, caption: Any = "", *, in_cell: bool = False) -> str:
     encoded = "data:image/png;base64," + base64.b64encode(binary).decode()
     alt = html.escape(str(caption or "Hình câu hỏi"), quote=True)
     if in_cell:
-        return f'<img src="{html.escape(encoded, quote=True)}" alt="{alt}">'
+        caption_text = str(caption or "").strip()
+        caption_html = (
+            f'<small class="cell-caption">{plain(caption_text)}</small>' if caption_text else ""
+        )
+        return f'<img src="{html.escape(encoded, quote=True)}" alt="{alt}">{caption_html}'
     return (
         f'<figure><img style="max-width:100%;max-height:250px" '
         f'src="{html.escape(encoded, quote=True)}" alt="{alt}">'
@@ -453,10 +457,12 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
 
         def table_cell_html(val: Any) -> str:
             if isinstance(val, dict):
-                if val.get("data"):
-                    return _image_html(val["data"], val.get("caption", ""), in_cell=True)
                 if val.get("type") == "doc":
                     return rich(val)
+                if "data" in val or "src" in val:
+                    return _image_html(
+                        val.get("data") or val.get("src"), val.get("caption", ""), in_cell=True
+                    )
             return inline_html(val)
 
         for table in q.get("tables", []):
@@ -588,6 +594,7 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         "figure{break-inside:avoid;text-align:center;margin:12px 0}"
         "figure img{display:block;margin:auto}"
         "td img{max-width:100%;max-height:180px;display:block;margin:4px auto}"
+        ".cell-caption{display:block;text-align:center;margin-top:4px}"
         ".code-block{background:#f4f6f5;padding:10px 12px;border-radius:6px;"
         'font-family:Consolas,"Courier New",monospace;white-space:pre-wrap;overflow-wrap:anywhere}'
         "li>p,td>p,th>p{margin:0}tr{break-inside:avoid}"

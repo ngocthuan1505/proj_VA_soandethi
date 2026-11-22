@@ -30,7 +30,12 @@ export function matrixRowsFromForm(form){
   };
  });
  validateMatrixRows(rows);
- return rows;
+ const picker=form.querySelector('[name=matrix-choice-group]');
+ if(!picker)return rows;
+ if(!picker.value)throw Error('Chọn một nhánh tự chọn để sinh.');
+ const selected=rows.filter(row=>!row.choiceGroup||row.choiceGroup.toLocaleLowerCase()===picker.value);
+ validateMatrixRows(selected);
+ return selected;
 }
 
 function clearPreview(flow){
@@ -74,13 +79,15 @@ function matrixForm(c,flow){
  flow.controller=null;flow.phase='plan';flow.dock?.remove();flow.dock=null;
  const exam=c.getState().exams.find(e=>e.id===flow.examId);
  const rows=flow.rows||(exam.matrix?.length?exam.matrix:[{topic:'',targets:[2,1,1,0]}]);
+ const groups=new Map(rows.filter(row=>row.choiceGroup?.trim()).map(row=>{const name=row.choiceGroup.trim();return [name.toLocaleLowerCase(),name];}));
+ const choiceHTML=groups.size>1?`<label>Nhánh tự chọn để sinh<select name="matrix-choice-group" required><option value="">Chọn nhánh</option>${[...groups].map(([key,name])=>`<option value="${esc(key)}">${esc(name)}</option>`).join('')}</select></label>`:'';
  const rowHTML=row=>{
   const ptVal=row.pointsQ4!=null?row.pointsQ4/4:(row.points??'');
   const lvlPts=row.pointsByLevelQ4||row.pointsByLevel;
   const lvlScale=row.pointsByLevelQ4?4:1;
-  return `<fieldset data-chat-matrix-row><label>Chủ đề${row.choiceGroup?` <span class="pill">${esc(row.choiceGroup)}</span><input type="hidden" name="choiceGroup" value="${esc(row.choiceGroup)}">`:''}<input name="topic" maxlength="160" required value="${esc(row.topic)}"></label><label>Loại câu<select name="type">${Object.entries(QUESTION_TYPES).map(([key,label])=>`<option value="${key}" ${(row.type||'mcq')===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Điểm mỗi câu<input name="points" type="number" min="0.05" max="10" step="0.05" placeholder="Tự chia phần điểm còn lại" value="${ptVal}" ${lvlPts?'disabled':''}></label><div class="matrix-chat-counts">${LEVELS.map((level,i)=>`<label>${level}<input name="target" type="number" min="0" max="30" required value="${row.targets[i]||0}">${lvlPts?`<span>Điểm/câu</span><input name="level-points" aria-label="Điểm mỗi câu ${level}" type="number" min="0.05" max="10" step="0.05" value="${lvlPts[i]==null?'':lvlPts[i]/lvlScale}">`:''}</label>`).join('')}</div><button type="button" data-remove-row aria-label="Bỏ chủ đề này">Bỏ chủ đề</button></fieldset>`;
+  return `<fieldset data-chat-matrix-row><label>Chủ đề${row.choiceGroup?` <span class="pill">${esc(row.choiceGroup)}</span><input type="hidden" name="choiceGroup" value="${esc(row.choiceGroup)}">`:''}<input name="topic" maxlength="160" required value="${esc(row.topic)}"></label><label>Loại câu<select name="type">${Object.entries(QUESTION_TYPES).map(([key,label])=>`<option value="${key}" ${(row.type||'mcq')===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Điểm mỗi câu<input name="points" type="number" min="0.05" max="10" step="0.01" placeholder="Tự chia phần điểm còn lại" value="${ptVal}" ${lvlPts?'disabled':''}></label><div class="matrix-chat-counts">${LEVELS.map((level,i)=>`<label>${level}<input name="target" type="number" min="0" max="30" required value="${row.targets[i]||0}">${lvlPts?`<span>Điểm/câu</span><input name="level-points" aria-label="Điểm mỗi câu ${level}" type="number" min="0.05" max="10" step="0.01" value="${lvlPts[i]==null?'':lvlPts[i]/lvlScale}">`:''}</label>`).join('')}</div><button type="button" data-remove-row aria-label="Bỏ chủ đề này">Bỏ chủ đề</button></fieldset>`;
  };
- flow.root.innerHTML=`<h3>${flow.autoPreview?'Xem lại cơ cấu đề':'Soạn theo ma trận'}</h3><p>${flow.autoPreview?'Kiểm tra bản tóm tắt rồi xác nhận. Chỉ mở phần chỉnh chi tiết khi cần đổi.':'Tải file, lập ngược từ đề đang mở hoặc tự điền cơ cấu bên dưới. Chưa sinh câu hỏi.'}</p><div class="matrix-reverse-bar"><button type="button" data-reverse-matrix ${exam.questions?.length?'':'disabled'}>Lập ma trận ngược từ đề đang mở</button><p class="hint" data-reverse-status role="status"></p></div><form class="matrix-chat-plan"><div data-rows>${rows.map(rowHTML).join('')}</div><button type="button" data-add-row>＋ Thêm chủ đề</button><p class="matrix-chat-error" role="alert"></p><div class="matrix-chat-actions"><button type="submit" class="primary">${flow.autoPreview&&!flow.fromFile?'Dùng gợi ý này':'Dùng ma trận này'}</button><button type="button" data-close-plan>Để sau</button></div></form>`;
+ flow.root.innerHTML=`<h3>${flow.autoPreview?'Xem lại cơ cấu đề':'Soạn theo ma trận'}</h3><p>${flow.autoPreview?'Kiểm tra bản tóm tắt rồi xác nhận. Chỉ mở phần chỉnh chi tiết khi cần đổi.':'Tải file, lập ngược từ đề đang mở hoặc tự điền cơ cấu bên dưới. Chưa sinh câu hỏi.'}</p><div class="matrix-reverse-bar"><button type="button" data-reverse-matrix ${exam.questions?.length?'':'disabled'}>Lập ma trận ngược từ đề đang mở</button><p class="hint" data-reverse-status role="status"></p></div><form class="matrix-chat-plan">${choiceHTML}<div data-rows>${rows.map(rowHTML).join('')}</div><button type="button" data-add-row>＋ Thêm chủ đề</button><p class="matrix-chat-error" role="alert"></p><div class="matrix-chat-actions"><button type="submit" class="primary">${flow.autoPreview&&!flow.fromFile?'Dùng gợi ý này':'Dùng ma trận này'}</button><button type="button" data-close-plan>Để sau</button></div></form>`;
  const form=flow.root.querySelector('form');
  const revBtn=flow.root.querySelector('[data-reverse-matrix]'),revStatus=flow.root.querySelector('[data-reverse-status]');
  revBtn.onclick=async()=>{

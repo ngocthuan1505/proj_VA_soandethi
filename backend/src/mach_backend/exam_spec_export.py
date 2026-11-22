@@ -756,11 +756,28 @@ def _inline_html_safe(value: Any) -> str:
     return "".join(parts)
 
 
-def _to_quarter_points(value: Any, *, field_name: str) -> int:
+def _valid_q4(value: Any) -> bool:
+    return (
+        type(value) in (int, float)
+        and math.isfinite(value)
+        and value >= 0
+        and abs(value * 25 - round(value * 25)) < 1e-9
+    )
+
+
+def _q4_from_p100(p100: int) -> int | float:
+    return p100 // 25 if p100 % 25 == 0 else p100 / 25
+
+
+def _add_q4(a: int | float, b: int | float) -> int | float:
+    return _q4_from_p100(round(a * 25) + round(b * 25))
+
+
+def _to_quarter_points(value: Any, *, field_name: str) -> int | float:
     if isinstance(value, bool) or value is None:
         raise AIError(
             "invalid_points",
-            f"Trường {field_name} phải là số điểm hợp lệ theo bước 0,25.",
+            f"Trường {field_name} phải là số điểm hợp lệ (tối đa 2 chữ số thập phân).",
             http_status=422,
         )
     if isinstance(value, float) and not math.isfinite(value):
@@ -779,33 +796,37 @@ def _to_quarter_points(value: Any, *, field_name: str) -> int:
             f"Trường {field_name} không được âm.",
             http_status=422,
         )
-    scaled = dec * Decimal("4")
-    if scaled != scaled.to_integral_value():
+    scaled_p100 = dec * Decimal("100")
+    if scaled_p100 != scaled_p100.to_integral_value():
         raise AIError(
             "invalid_points",
-            f"Điểm ở {field_name} ({value}) phải là bội số của 0,25.",
+            f"Điểm ở {field_name} ({value}) chỉ được có tối đa 2 chữ số thập phân (bước 0,01).",
             http_status=422,
         )
-    return int(scaled)
+    return _q4_from_p100(int(scaled_p100))
 
 
-def _question_quarter_points(question: dict[str, Any], index: int) -> int:
+def _question_quarter_points(question: dict[str, Any], index: int) -> int | float:
     has_points = "points" in question and question["points"] is not None
     has_q4 = "pointsQ4" in question and question["pointsQ4"] is not None
-    q4_from_points: int | None = None
+    q4_from_points: int | float | None = None
     if has_points:
         q4_from_points = _to_quarter_points(question["points"], field_name=f"câu {index}")
-    q4_from_field: int | None = None
+    q4_from_field: int | float | None = None
     if has_q4:
         raw_q4 = question["pointsQ4"]
-        if type(raw_q4) is not int or raw_q4 < 0:
+        if not _valid_q4(raw_q4):
             raise AIError(
                 "invalid_points",
-                f"Trường pointsQ4 ở câu {index} phải là số nguyên không âm.",
+                f"Trường pointsQ4 ở câu {index} phải là số không âm, chính xác đến 0,01 điểm.",
                 http_status=422,
             )
-        q4_from_field = raw_q4
-    if q4_from_points is not None and q4_from_field is not None and q4_from_points != q4_from_field:
+        q4_from_field = _q4_from_p100(round(raw_q4 * 25))
+    if (
+        q4_from_points is not None
+        and q4_from_field is not None
+        and round(q4_from_points * 25) != round(q4_from_field * 25)
+    ):
         raise AIError(
             "invalid_points",
             f"Câu {index} có points và pointsQ4 không khớp nhau.",
@@ -821,7 +842,7 @@ def _question_quarter_points(question: dict[str, Any], index: int) -> int:
             http_status=422,
         )
     if raw_rubric:
-        rubric_total_q4 = 0
+        rubric_p100 = 0
         for step_idx, step in enumerate(raw_rubric, 1):
             if not isinstance(step, dict):
                 raise AIError(
@@ -831,13 +852,13 @@ def _question_quarter_points(question: dict[str, Any], index: int) -> int:
                 )
             if "pointsQ4" in step and step["pointsQ4"] is not None:
                 raw_step_q4 = step["pointsQ4"]
-                if type(raw_step_q4) is not int or raw_step_q4 < 0:
+                if not _valid_q4(raw_step_q4):
                     raise AIError(
                         "invalid_points",
                         f"Điểm thành phần ý {step_idx} câu {index} không hợp lệ.",
                         http_status=422,
                     )
-                step_q4 = raw_step_q4
+                step_q4: int | float = _q4_from_p100(round(raw_step_q4 * 25))
             elif "points" in step and step["points"] is not None:
                 step_q4 = _to_quarter_points(
                     step["points"], field_name=f"barem câu {index} ý {step_idx}"
@@ -848,21 +869,21 @@ def _question_quarter_points(question: dict[str, Any], index: int) -> int:
                     f"Ý {step_idx} trong barem câu {index} thiếu điểm thành phần.",
                     http_status=422,
                 )
-            rubric_total_q4 += step_q4
-        if explicit_q4 is not None and rubric_total_q4 != explicit_q4:
+            rubric_p100 += round(step_q4 * 25)
+        if explicit_q4 is not None and rubric_p100 != round(explicit_q4 * 25):
             raise AIError(
                 "invalid_rubric",
-                f"Câu {index}: tổng điểm barem ({rubric_total_q4 / 4:.2f}) "
-                f"không khớp tổng điểm câu ({explicit_q4 / 4:.2f}).",
+                f"Câu {index}: tổng điểm barem ({rubric_p100 / 100:.2f}) "
+                f"không khớp tổng điểm câu ({_q4_to_float(explicit_q4):.2f}).",
                 http_status=422,
             )
-        return explicit_q4 if explicit_q4 is not None else rubric_total_q4
+        return explicit_q4 if explicit_q4 is not None else _q4_from_p100(rubric_p100)
 
     return explicit_q4 if explicit_q4 is not None else 0
 
 
-def _q4_to_float(q4: int) -> float:
-    return float(Decimal(q4) / Decimal("4"))
+def _q4_to_float(q4: int | float) -> float:
+    return round(round(q4 * 25) / 100, 2)
 
 
 def _normalize_type(raw_type: Any, index: int) -> QuestionType:
@@ -956,16 +977,24 @@ def _normalize_objective_question_for_label(question: dict[str, Any], kind: Ques
 
 
 def _extract_rubric_steps(
-    question: dict[str, Any], index: int, total_q4: int
+    question: dict[str, Any], index: int, total_q4: int | float
 ) -> list[dict[str, Any]]:
     raw_rubric = question.get("rubric") or []
     steps: list[dict[str, Any]] = []
     for step_idx, step in enumerate(raw_rubric, 1):
-        step_q4 = (
-            int(step["pointsQ4"])
-            if "pointsQ4" in step and step["pointsQ4"] is not None
-            else _to_quarter_points(step["points"], field_name=f"barem câu {index} ý {step_idx}")
-        )
+        if "pointsQ4" in step and step["pointsQ4"] is not None:
+            raw_step_q4 = step["pointsQ4"]
+            if not _valid_q4(raw_step_q4):
+                raise AIError(
+                    "invalid_points",
+                    f"Điểm thành phần ý {step_idx} câu {index} không hợp lệ.",
+                    http_status=422,
+                )
+            step_q4: int | float = _q4_from_p100(round(raw_step_q4 * 25))
+        else:
+            step_q4 = _to_quarter_points(
+                step["points"], field_name=f"barem câu {index} ý {step_idx}"
+            )
         text = str(
             step.get("text")
             or step.get("criterion")
@@ -1067,8 +1096,8 @@ def validate_and_normalize_answer_key(
 
     objective_answers: list[dict[str, Any]] = []
     essay_rubrics: list[dict[str, Any]] = []
-    objective_q4 = 0
-    essay_q4 = 0
+    objective_q4: int | float = 0
+    essay_q4: int | float = 0
 
     for idx, raw_q in enumerate(questions, 1):
         q_type = _normalize_type(raw_q.get("type"), idx)
@@ -1095,7 +1124,7 @@ def validate_and_normalize_answer_key(
                     http_status=422,
                 )
             rubric_steps = _extract_rubric_steps(raw_q, idx, q4) if raw_q.get("rubric") else []
-            objective_q4 += q4
+            objective_q4 = _add_q4(objective_q4, q4)
             objective_answers.append(
                 {
                     "index": idx,
@@ -1122,7 +1151,7 @@ def validate_and_normalize_answer_key(
                     f"Câu tự luận {idx} chưa có barem chấm hoặc lời giải tham khảo.",
                     http_status=422,
                 )
-            essay_q4 += q4
+            essay_q4 = _add_q4(essay_q4, q4)
             essay_rubrics.append(
                 {
                     "index": idx,
@@ -1141,7 +1170,7 @@ def validate_and_normalize_answer_key(
                 }
             )
 
-    total_q4 = objective_q4 + essay_q4
+    total_q4 = _add_q4(objective_q4, essay_q4)
     return {
         "audience": "teacher",
         "title": str(exam_obj.get("title") or "Đề kiểm tra").strip(),
@@ -1177,15 +1206,15 @@ def _extract_competency(question: dict[str, Any], topic: str, lesson: str, level
     return f"Đạt yêu cầu mức {level_name} đối với nội dung {target}"
 
 
-def _allocate_percentages(weights: list[int]) -> list[float]:
+def _allocate_percentages(weights: list[int | float]) -> list[float]:
     """Phân bổ phần trăm (bội 0.01%) theo largest-remainder sao cho tổng đúng 100.00%."""
-    total_w = sum(max(0, w) for w in weights)
+    scaled_weights = [max(0, round(w * 25)) for w in weights]
+    total_w = sum(scaled_weights)
     if total_w <= 0:
         return [0.0] * len(weights)
     floors: list[int] = []
     remainders: list[tuple[int, int]] = []
-    for idx, raw_w in enumerate(weights):
-        w = max(0, raw_w)
+    for idx, w in enumerate(scaled_weights):
         exact = w * 10000
         floors.append(exact // total_w)
         if w > 0:
@@ -1203,10 +1232,10 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
 
     groups: dict[tuple[str, str], dict[str, Any]] = {}
     level_counts = [0, 0, 0, 0]
-    level_q4 = [0, 0, 0, 0]
+    level_q4: list[int | float] = [0, 0, 0, 0]
     type_counts: dict[QuestionType, int] = {"mcq": 0, "truefalse": 0, "short": 0, "essay": 0}
-    type_q4: dict[QuestionType, int] = {"mcq": 0, "truefalse": 0, "short": 0, "essay": 0}
-    total_q4 = 0
+    type_q4: dict[QuestionType, int | float] = {"mcq": 0, "truefalse": 0, "short": 0, "essay": 0}
+    total_q4: int | float = 0
 
     for idx, raw_q in enumerate(questions, 1):
         q_type = _normalize_type(raw_q.get("type"), idx)
@@ -1246,7 +1275,7 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
         level_name = LEVEL_NAMES[level_idx]
         cell: dict[str, Any] = group["levels"][level_name]
         cell["count"] += 1
-        cell["points_q4"] += q4
+        cell["points_q4"] = _add_q4(cell["points_q4"], q4)
         cell["points"] = _q4_to_float(cell["points_q4"])
         cell["question_indices"].append(idx)
         if TYPE_LABELS[q_type] not in cell["question_types"]:
@@ -1260,19 +1289,19 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
             group["competencies"].append(competency)
 
         group["total_questions"] += 1
-        group["total_points_q4"] += q4
+        group["total_points_q4"] = _add_q4(group["total_points_q4"], q4)
 
         level_counts[level_idx] += 1
-        level_q4[level_idx] += q4
+        level_q4[level_idx] = _add_q4(level_q4[level_idx], q4)
         type_counts[q_type] += 1
-        type_q4[q_type] += q4
-        total_q4 += q4
+        type_q4[q_type] = _add_q4(type_q4[q_type], q4)
+        total_q4 = _add_q4(total_q4, q4)
 
     total_questions = len(questions)
     rows: list[dict[str, Any]] = []
     specification_rows: list[dict[str, Any]] = []
 
-    def calc_pct(part_q4: int, part_count: int) -> float:
+    def calc_pct(part_q4: int | float, part_count: int) -> float:
         if total_q4 > 0:
             return round(part_q4 * 100.0 / total_q4, 2)
         if total_questions > 0:
@@ -1514,7 +1543,9 @@ def export_answer_key_rubric_html(exam: dict[str, Any], *, teacher: bool = True)
 def export_student_exam_html(exam: dict[str, Any]) -> str:
     """Xuất HTML in A4 bản học sinh: ẩn hoàn toàn đáp án, lời giải và barem."""
     _, questions = _validate_exam_base(exam)
-    total_q4 = sum(_question_quarter_points(q, idx) for idx, q in enumerate(questions, 1))
+    total_q4: int | float = 0
+    for idx, q in enumerate(questions, 1):
+        total_q4 = _add_q4(total_q4, _question_quarter_points(q, idx))
     redacted = redact_exam_for_student(exam)
     header_data = {
         "title": str(redacted.get("title") or "Đề kiểm tra").strip(),

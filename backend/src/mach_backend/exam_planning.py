@@ -9,8 +9,15 @@ from typing import Annotated, Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from mach_backend.ai_contract import AIError, ContractModel
-from mach_backend.ai_questions import QuestionType
+from mach_backend.ai_questions import MAX_MATRIX_QUESTIONS, QuestionType
 from mach_backend.matrix_import import checked_matrix
+
+_REVERSE_TYPE_LABELS: dict[QuestionType, str] = {
+    "mcq": "Nhiều lựa chọn",
+    "truefalse": "Đúng–sai",
+    "short": "Trả lời ngắn",
+    "essay": "Tự luận",
+}
 
 
 class PlanRequest(BaseModel):
@@ -154,9 +161,50 @@ def _parse_question_points_dec(question: dict[str, Any]) -> Decimal | None:
         except (InvalidOperation, ValueError):
             return None
     raw_q4 = question.get("pointsQ4")
-    if type(raw_q4) is int and raw_q4 > 0:
-        return (Decimal(raw_q4) / Decimal("4")).quantize(Decimal("0.01"))
+    if (
+        isinstance(raw_q4, (int, float))
+        and not isinstance(raw_q4, bool)
+        and math.isfinite(raw_q4)
+        and raw_q4 > 0
+        and abs(raw_q4 * 25 - round(raw_q4 * 25)) < 1e-9
+    ):
+        return (Decimal(str(raw_q4)) / Decimal("4")).quantize(Decimal("0.01"))
     return None
+
+
+def _format_points_suffix(pt: Decimal | None) -> str:
+    if pt is None:
+        return "chưa có điểm"
+    text = f"{pt:.2f}".rstrip("0").rstrip(".")
+    return text.replace(".", ",") + "đ"
+
+
+def _row_point_fields(pt: Decimal) -> dict[str, Any]:
+    q4 = pt * Decimal("4")
+    if q4 == q4.to_integral_value() and 1 <= int(q4) <= 40:
+        return {"pointsQ4": int(q4)}
+    return {"points": float(pt)}
+
+
+def _unique_split_topic(
+    base_topic: str,
+    suffix: str,
+    q_type: QuestionType,
+    choice_group: str,
+    used_keys: set[tuple[str, str, str]],
+) -> str:
+    prefix = f" ({suffix})"
+    max_base = max(1, 80 - len(prefix))
+    trimmed = base_topic[:max_base].rstrip() or base_topic[:max_base]
+    candidate = f"{trimmed}{prefix}"
+    counter = 2
+    while (candidate.casefold(), q_type, choice_group.casefold()) in used_keys:
+        tag = f" ({suffix} · #{counter})"
+        head = base_topic[: max(1, 80 - len(tag))].rstrip() or base_topic[: max(1, 80 - len(tag))]
+        candidate = f"{head}{tag}"
+        counter += 1
+    used_keys.add((candidate.casefold(), q_type, choice_group.casefold()))
+    return candidate
 
 
 def _infer_question_type(question: dict[str, Any]) -> tuple[QuestionType, bool]:
@@ -185,6 +233,7 @@ def reverse_matrix(exam: dict[str, Any]) -> dict[str, Any]:
     group_targets: dict[tuple[str, str, str], list[int]] = {}
     group_points: dict[tuple[str, str, str], list[Decimal | None]] = {}
     group_level_points: dict[tuple[str, str, str], list[list[Decimal | None]]] = {}
+    group_entries: dict[tuple[str, str, str], list[tuple[int, int, Decimal | None]]] = {}
     missing_points: list[int] = []
     common_total = Decimal("0")
     track_totals: dict[str, Decimal] = {}
@@ -227,6 +276,7 @@ def reverse_matrix(exam: dict[str, Any]) -> dict[str, Any]:
         raw_qid = re.sub(r"[^A-Za-z0-9_-]", "", str(raw_q.get("id") or ""))[:12]
         slot_id = f"{q_type}:{choice_group or 'chung'}:q{idx}" + (f":{raw_qid}" if raw_qid else "")
         pts_val = float(pts_dec) if pts_dec is not None else None
+        slot_idx = len(slots)
         slots.append(
             {
                 "slotId": slot_id,
@@ -248,50 +298,136 @@ def reverse_matrix(exam: dict[str, Any]) -> dict[str, Any]:
             group_targets[grp_key] = [0, 0, 0, 0]
             group_points[grp_key] = []
             group_level_points[grp_key] = [[], [], [], []]
+            group_entries[grp_key] = []
         group_targets[grp_key][level] += 1
         group_points[grp_key].append(pts_dec)
         group_level_points[grp_key][level].append(pts_dec)
+        group_entries[grp_key].append((slot_idx, level, pts_dec))
 
-    matrix_rows: list[dict[str, Any]] = []
-    for grp_key, (grp_topic, grp_type, grp_choice) in group_meta.items():
+    used_keys: set[tuple[str, str, str]] = set()
+    conflict_groups: set[tuple[str, str, str]] = set()
+    for grp_key in group_meta:
         targets = group_targets[grp_key]
         raw_pts = group_points[grp_key]
         lvl_lists = group_level_points[grp_key]
-        row: dict[str, Any] = {
-            "topic": grp_topic,
-            "type": grp_type,
-            "targets": targets,
-            **({"choiceGroup": grp_choice} if grp_choice else {}),
-        }
         pts_list = [p for p in raw_pts if p is not None]
-        if pts_list and len(pts_list) == sum(targets) and len(set(pts_list)) == 1:
-            uniform = pts_list[0]
-            q4 = uniform * Decimal("4")
-            if q4 == q4.to_integral_value() and 1 <= int(q4) <= 40:
-                row["pointsQ4"] = int(q4)
-            else:
-                row["points"] = float(uniform)
-        elif pts_list and all(
-            not lst or (len(set(lst)) == 1 and None not in lst) for lst in lvl_lists
-        ):
-            per_level_dec = [lst[0] if lst else None for lst in lvl_lists]
-            if all(
-                p is None or (p * Decimal("4") == (p * Decimal("4")).to_integral_value())
-                for p in per_level_dec
+        is_uniform = bool(pts_list and len(pts_list) == sum(targets) and len(set(pts_list)) == 1)
+        is_by_level = bool(
+            pts_list
+            and all(not lst or (len(set(lst)) == 1 and None not in lst) for lst in lvl_lists)
+        )
+        if not pts_list or is_uniform or is_by_level:
+            used_keys.add(grp_key)
+        else:
+            conflict_groups.add(grp_key)
+
+    matrix_rows: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    point_conflicts: list[dict[str, Any]] = []
+
+    group_items = list(group_meta.items())
+    for group_idx, (grp_key, (grp_topic, grp_type, grp_choice)) in enumerate(group_items):
+        targets = group_targets[grp_key]
+        raw_pts = group_points[grp_key]
+        lvl_lists = group_level_points[grp_key]
+        pts_list = [p for p in raw_pts if p is not None]
+
+        if grp_key not in conflict_groups:
+            row: dict[str, Any] = {
+                "topic": grp_topic,
+                "type": grp_type,
+                "targets": targets,
+                **({"choiceGroup": grp_choice} if grp_choice else {}),
+            }
+            if pts_list and len(pts_list) == sum(targets) and len(set(pts_list)) == 1:
+                row.update(_row_point_fields(pts_list[0]))
+            elif pts_list and all(
+                not lst or (len(set(lst)) == 1 and None not in lst) for lst in lvl_lists
             ):
-                row["pointsByLevelQ4"] = [
-                    int(p * Decimal("4")) if p is not None else None for p in per_level_dec
-                ]
-            else:
-                row["pointsByLevel"] = [float(p) if p is not None else None for p in per_level_dec]
-        elif pts_list:
-            avg = (sum(pts_list) / Decimal(len(pts_list))).quantize(Decimal("0.01"))
-            row["points"] = float(avg)
-        matrix_rows.append(row)
+                per_level_dec = [lst[0] if lst else None for lst in lvl_lists]
+                if all(
+                    p is None or (p * Decimal("4") == (p * Decimal("4")).to_integral_value())
+                    for p in per_level_dec
+                ):
+                    row["pointsByLevelQ4"] = [
+                        int(p * Decimal("4")) if p is not None else None for p in per_level_dec
+                    ]
+                else:
+                    row["pointsByLevel"] = [
+                        float(p) if p is not None else None for p in per_level_dec
+                    ]
+            matrix_rows.append(row)
+            continue
+
+        # Phát hiện lệch điểm trong cùng (chủ đề, loại câu, mức độ): KHÔNG tự bình quân về 2,50.
+        entries = group_entries[grp_key]
+        distinct_pts = list(dict.fromkeys(pt for _, _, pt in entries))
+        conflicting_levels = [lvl for lvl, lst in enumerate(lvl_lists) if len(set(lst)) > 1]
+        for slot_idx, lvl, _ in entries:
+            if lvl in conflicting_levels:
+                slots[slot_idx]["needsReview"] = True
+                slots[slot_idx]["pointConflict"] = True
+                slots[slot_idx]["confidence"] = round(min(slots[slot_idx]["confidence"], 0.75), 2)
+
+        pts_summary = ", ".join(_format_points_suffix(pt) for pt in distinct_pts)
+        type_label = _REVERSE_TYPE_LABELS.get(grp_type, grp_type)
+        remaining_groups = len(group_items) - group_idx - 1
+        can_split = len(matrix_rows) + len(distinct_pts) + remaining_groups <= MAX_MATRIX_QUESTIONS
+
+        if can_split:
+            for pt in distinct_pts:
+                sub_targets = [0, 0, 0, 0]
+                for _, lvl, entry_pt in entries:
+                    if entry_pt == pt:
+                        sub_targets[lvl] += 1
+                sub_topic = _unique_split_topic(
+                    grp_topic, _format_points_suffix(pt), grp_type, grp_choice, used_keys
+                )
+                sub_row: dict[str, Any] = {
+                    "topic": sub_topic,
+                    "type": grp_type,
+                    "targets": sub_targets,
+                    **({"choiceGroup": grp_choice} if grp_choice else {}),
+                }
+                if pt is not None:
+                    sub_row.update(_row_point_fields(pt))
+                matrix_rows.append(sub_row)
+            action = "split_by_points"
+            warnings.append(
+                f"Chủ đề '{grp_topic}' ({type_label}) có câu cùng mức nhưng khác điểm "
+                f"({pts_summary}); đã tách thành {len(distinct_pts)} dòng để giữ đúng điểm từng "
+                "câu — giáo viên cần xem lại trước khi xác nhận."
+            )
+        else:
+            used_keys.add(grp_key)
+            matrix_rows.append(
+                {
+                    "topic": grp_topic,
+                    "type": grp_type,
+                    "targets": targets,
+                    **({"choiceGroup": grp_choice} if grp_choice else {}),
+                }
+            )
+            action = "requires_manual_decision"
+            warnings.append(
+                f"Chủ đề '{grp_topic}' ({type_label}) có câu cùng mức nhưng khác điểm "
+                f"({pts_summary}) và vượt quá {MAX_MATRIX_QUESTIONS} dòng ma trận; chưa tự gộp "
+                "điểm, giáo viên cần tách hoặc chốt lại điểm trước khi xác nhận."
+            )
+
+        point_conflicts.append(
+            {
+                "topic": grp_topic,
+                "type": grp_type,
+                "choiceGroup": grp_choice or None,
+                "levels": conflicting_levels,
+                "distinctPoints": [float(pt) if pt is not None else None for pt in distinct_pts],
+                "action": action,
+            }
+        )
 
     active_points = common_total + (max(track_totals.values()) if track_totals else Decimal("0"))
     counted_questions = common_count + (max(track_counts.values()) if track_counts else 0)
-    warnings: list[str] = []
     if missing_points:
         joined_idx = ", ".join(map(str, missing_points))
         warnings.append(f"Câu {joined_idx} chưa có điểm hợp lệ; cần bổ sung trước khi xác nhận.")
@@ -303,7 +439,7 @@ def reverse_matrix(exam: dict[str, Any]) -> dict[str, Any]:
             f"Tổng điểm hiện tại là {float(active_points):.2f}/10,00 điểm (cần kiểm tra lại)."
         )
     if any(s["needsReview"] for s in slots):
-        warnings.append("Có câu thiếu chủ đề, mức nhận thức hoặc điểm cần giáo viên rà soát.")
+        warnings.append("Có câu thiếu chủ đề, mức nhận thức hoặc lệch điểm cần giáo viên rà soát.")
 
     return {
         "matrix": matrix_rows,
@@ -312,6 +448,8 @@ def reverse_matrix(exam: dict[str, Any]) -> dict[str, Any]:
         "countedQuestions": counted_questions,
         "totalPoints": float(active_points.quantize(Decimal("0.01"))),
         "missingPointsOrdinals": missing_points,
+        "pointConflicts": point_conflicts,
+        "reviewRequired": bool(warnings or any(s["needsReview"] for s in slots)),
         "warnings": warnings,
         "sentToAI": False,
         "method": "python_reverse_matrix",

@@ -1,4 +1,4 @@
-"""Xuất khóa TNMaker (.xlsx 1 sheet DapAn dạng chuỗi + QR PNG quét được bằng stdlib + PIL)."""
+"""Xuất gói khóa đáp án & QR chuẩn chung (.xlsx 1 sheet DapAn dạng chuỗi + QR PNG ISO 18004)."""
 
 from __future__ import annotations
 
@@ -358,20 +358,20 @@ def _mcq_keys_for_exam(exam_obj: dict[str, Any]) -> list[tuple[int, str]]:
         raise AIError(
             "missing_answer_key",
             f"Câu {', '.join(map(str, missing))} chưa xác nhận đáp án đúng; "
-            "cần chốt đáp án trước khi xuất khóa TNMaker (không xuất dấu ?).",
+            "cần chốt đáp án trước khi xuất gói khóa đáp án & QR (không xuất dấu ?).",
             http_status=400,
         )
     if not keys:
         raise AIError(
             "missing_answer_key",
-            "Đề chưa có câu trắc nghiệm có đáp án để tạo khóa TNMaker.",
+            "Đề chưa có câu trắc nghiệm có đáp án để tạo gói khóa đáp án & QR.",
             http_status=400,
         )
     return keys
 
 
 def export_tnmaker_pack(payload: dict[str, Any], directory: Path) -> dict[str, Any]:
-    """Xuất gói .zip gồm DapAn.xlsx (1 sheet DapAn) + QR PNG; chặn nếu thiếu đáp án."""
+    """Xuất gói .zip gồm DapAn.xlsx (1 sheet DapAn) + QR PNG chuẩn chung; chặn nếu thiếu đáp án."""
     from mach_backend.local_documents import _plan_variant_units, exam_variant
 
     exam = payload.get("exam")
@@ -405,7 +405,7 @@ def export_tnmaker_pack(payload: dict[str, Any], directory: Path) -> dict[str, A
         qr_chunks.append(f"{code}:{''.join(letter for _, letter in keys)}")
 
     xlsx_bytes = _build_dapan_xlsx(excel_rows)
-    qr_payload = "TNM|V1|" + "|".join(qr_chunks)
+    qr_payload = "KEY|V1|" + "|".join(qr_chunks)
     qr_png = encode_qr_png(qr_payload)
 
     directory.mkdir(parents=True, exist_ok=True)
@@ -420,4 +420,11 @@ def export_tnmaker_pack(payload: dict[str, Any], directory: Path) -> dict[str, A
         "url": "/api/exports/" + name,
         "codes": [c for c, _ in variant_pairs],
         "qrPayload": qr_payload,
+        "label": "Gói khóa đáp án & QR chuẩn chung",
+        "formatId": "generic_answer_key_qr_v1",
+        "tnmakerVerified": False,
+        "note": (
+            "Gói gồm DapAn.xlsx (cột MaDe, Cau, DapAn) và mã QR chuẩn chung; "
+            "chưa xác minh tương thích trực tiếp với ứng dụng chấm thi bên thứ ba."
+        ),
     }

@@ -207,7 +207,7 @@ def test_answer_key_and_rubric_validates_quarter_points_and_separates_sections(s
     assert len(data["essay_rubrics"][0]["rubric"]) == 3
 
 
-@pytest.mark.parametrize("bad_points", [-0.25, 0.3, 1.1, 0.125, True, "abc"])
+@pytest.mark.parametrize("bad_points", [-0.25, 0.333, 1.125, 0.125, True, "abc"])
 def test_answer_key_and_matrix_reject_invalid_quarter_points(sample_exam, bad_points):
     bad_exam = deepcopy(sample_exam)
     bad_exam["questions"][0]["points"] = bad_points
@@ -472,9 +472,9 @@ def test_fastapi_routes_enforce_validation_teacher_gate_and_owner_resolver(sampl
         )
         assert mismatch_fmt.status_code == 422
 
-        # Lệch bước 0,25 điểm -> 422
+        # Quá 2 chữ số thập phân -> 422
         bad_exam = deepcopy(sample_exam)
-        bad_exam["questions"][0]["points"] = 0.35
+        bad_exam["questions"][0]["points"] = 0.333
         bad_points = client.post(
             "/api/exports/answer-key-rubric",
             headers=headers,

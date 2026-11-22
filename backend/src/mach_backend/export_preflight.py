@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from mach_backend.ai_contract import AIError, validate_math_markers, validate_math_structure
 from mach_backend.ai_questions import saved_answer_label
 from mach_backend.exam_spec_export import (
+    _add_q4,
     _normalize_objective_question_for_label,
     _normalize_type,
     _q4_to_float,
@@ -811,7 +812,7 @@ def audit_export_preflight(
 
     approved_count = 0
     unapproved_count = 0
-    total_points_q4 = 0
+    total_points_q4: int | float = 0
 
     for ordinal, q in enumerate(questions, 1):
         raw_id = q.get("id")
@@ -863,10 +864,10 @@ def audit_export_preflight(
                 }
             )
 
-        # 2d. Kiểm tra điểm bước 0,25 và tổng barem bằng logic chuẩn từ exam_spec_export.
+        # 2d. Kiểm tra điểm hợp lệ (tối đa 2 chữ số thập phân) và tổng barem.
         try:
             q4 = _question_quarter_points(q, ordinal)
-            total_points_q4 += q4
+            total_points_q4 = _add_q4(total_points_q4, q4)
         except AIError as err:
             blocking_issues.append(
                 {

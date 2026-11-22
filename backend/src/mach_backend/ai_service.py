@@ -103,13 +103,24 @@ class OllamaProvider:
             )
         elif isinstance(job, GenerateJob):
             output_format = generation_format(job)
+            has_decimal = any(slot.points is not None for slot in job.slots)
+            score_guide = (
+                "Giữ nguyên trường điểm của từng slot: slot dùng pointsQ4 (đơn vị 0,25 điểm, "
+                "ví dụ pointsQ4=40 là 10 điểm) thì tổng rubric[].pointsQ4 phải bằng pointsQ4 của "
+                "slot; slot dùng points thập phân (ví dụ points=0.4 hoặc points=9.6) thì tổng "
+                "rubric[].points phải bằng đúng points của slot. "
+                if has_decimal
+                else (
+                    "Mọi pointsQ4 đều tính bằng đơn vị 0,25 điểm, không phải điểm thập phân. "
+                    "Tổng các rubric[].pointsQ4 phải bằng chính pointsQ4 của câu tương ứng. "
+                    "Ví dụ câu pointsQ4=40 (10 điểm) có thể có một tiêu chí pointsQ4=40 "
+                    "hoặc hai tiêu chí pointsQ4=16 và pointsQ4=24. "
+                )
+            )
             instruction = (
                 "Sinh một câu cho mỗi slot theo đúng thứ tự, dạng, chủ đề, mức độ và điểm. "
-                "Mọi pointsQ4 đều tính bằng đơn vị 0,25 điểm, không phải điểm thập phân. "
-                "Tổng các rubric[].pointsQ4 phải bằng chính pointsQ4 của câu tương ứng. "
-                "Ví dụ câu pointsQ4=40 (10 điểm) có thể có một tiêu chí pointsQ4=40 "
-                "hoặc hai tiêu chí pointsQ4=16 và pointsQ4=24. "
-                "Rubric chỉ ghi tiêu chí được cộng điểm, không ghi dòng đáp án sai hay điểm trừ. "
+                + score_guide
+                + "Rubric chỉ ghi tiêu chí được cộng điểm, không ghi dòng đáp án sai hay điểm trừ. "
                 "Đáp án là chỉ số 0–3 cho mcq, bốn boolean cho truefalse, "
                 "văn bản cho short và null cho essay."
             )

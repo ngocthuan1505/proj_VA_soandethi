@@ -63,17 +63,27 @@ class ImportedMatrix(ContractModel):
     notes: Annotated[str, Field(max_length=2000)]
 
 
+def _decimal_hundredths(value: float) -> int:
+    try:
+        scaled = Decimal(str(value)) * 100
+    except InvalidOperation:
+        raise AIError("invalid_plan", "Điểm mỗi câu không hợp lệ.") from None
+    if not scaled.is_finite() or scaled != scaled.to_integral_value():
+        raise AIError("invalid_plan", "Điểm mỗi câu chỉ được có tối đa hai chữ số thập phân.")
+    return int(scaled)
+
+
 def _row_cell_p100(row: MatrixRow, level: int) -> int | None:
     if row.pointsByLevelQ4 is not None:
         val = row.pointsByLevelQ4[level]
         return val * 25 if val is not None else None
     if row.pointsByLevel is not None:
         val_f = row.pointsByLevel[level]
-        return round(val_f * 100) if val_f is not None else None
+        return _decimal_hundredths(val_f) if val_f is not None else None
     if row.pointsQ4 is not None:
         return row.pointsQ4 * 25
     if row.points is not None:
-        return round(row.points * 100)
+        return _decimal_hundredths(row.points)
     return None
 
 
