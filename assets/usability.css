@@ -51,7 +51,7 @@
 .mach .ux-option-actions button{min-height:34px;text-align:left;justify-content:flex-start;font-size:12px}
 .mach .ux-jump-latest{flex:0 0 auto;align-self:center;margin:3px auto;min-height:28px;border:1px solid #bfd3c7;border-radius:999px;background:#fff;color:#11695b;padding:3px 11px;font-size:11px;white-space:nowrap;box-shadow:0 2px 6px rgba(17,36,30,.08)}
 .mach [hidden]{display:none!important}
-.mach .assistant.ux-expanded{position:fixed!important;inset:96px 18px 18px auto!important;width:min(660px,calc(100vw - 116px))!important;margin:0!important;z-index:45;box-shadow:-12px 8px 40px rgba(17,36,30,.16)}
+.mach .assistant.ux-expanded{position:fixed!important;inset:52px 0 0 auto!important;width:min(660px,calc(100vw - 40px))!important;margin:0!important;z-index:45;border-left:1px solid #e5e7eb!important;box-shadow:-12px 8px 36px rgba(15,23,42,.14)}
 .mach dialog[open]{display:flex;flex-direction:column;max-height:calc(100dvh - 28px);overflow:hidden}
 .mach .modal-head{flex:0 0 auto}
 .mach .modal-body{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
@@ -99,285 +99,248 @@
 .mach.online-member [data-action=connections]{display:none!important}
 
 /* ==========================================================================
-   LỘT XÁC THẨM MỸ & BỐ CỤC TOÀN DIỆN (Light Editorial · Google Docs × Linear)
+   LỘT XÁC THẨM MỸ & BỐ CỤC PHẲNG CHUẨN GOOGLE DOCS / SOANDETHI
    ========================================================================== */
 .mach{
- --bg:#f4f4f1;
+ --bg:#f8f9fa;
  --surface:#ffffff;
- --surface-subtle:#f8f9f7;
- --surface-hover:#eff3f0;
+ --surface-subtle:#f8f9fa;
+ --surface-hover:#f1f3f4;
  --surface-mint:#ebf5f1;
- --ui-ink:#1b2a26;
- --ui-muted:#556863;
- --ui-line:#e3e6e1;
- --ui-line-strong:#cdd5cf;
+ --ui-ink:#1f2937;
+ --ui-muted:#5f6368;
+ --ui-line:#e5e7eb;
+ --ui-line-strong:#d1d5db;
  --ui-accent:#11695b;
  --ui-accent-hover:#0d5449;
- --mach-ink:#1b2a26;
+ --mach-ink:#1f2937;
  --mach-teal:#11695b;
  --mach-mint:#ebf5f1;
- --mach-canvas:#f4f4f1;
- --mach-line:#e3e6e1;
- --mach-muted:#556863;
+ --mach-canvas:#f8f9fa;
+ --mach-line:#e5e7eb;
+ --mach-muted:#5f6368;
  --mach-accent:#c48426;
  background:var(--bg);
  color:var(--ui-ink);
  font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
-.mach button.primary{background:var(--ui-accent);border-color:var(--ui-accent);color:#fff;font-weight:600;box-shadow:0 1px 2px rgba(17,105,91,.18)}
+.mach button.primary{background:var(--ui-accent);border-color:var(--ui-accent);color:#fff;font-weight:600;box-shadow:0 1px 2px rgba(17,105,91,.16)}
 .mach button.primary:hover:not(:disabled){background:var(--ui-accent-hover);border-color:var(--ui-accent-hover)}
 .mach button:not(:disabled),.mach summary{touch-action:manipulation}
 .mach button:disabled{cursor:not-allowed}
 
-/* 1. Thanh điều hướng trái sáng, thoáng, tinh tế (thay khung xanh đen cũ) */
-.mach .design-rail{
- width:72px;
- background:#fbfcfa;
- color:var(--ui-ink);
- border-right:1px solid var(--ui-line);
- padding:14px 6px 12px;
- gap:16px;
- box-shadow:1px 0 0 rgba(17,36,30,.02);
-}
-.mach .mach-logo{
- width:40px;height:40px;border-radius:11px;
- background:var(--ui-accent);color:#fff;border:0;
- box-shadow:0 2px 8px rgba(17,105,91,.22);
-}
-.mach .mach-logo .ico{width:22px;height:22px}
-.mach .rail-links,.mach .rail-bottom{gap:4px}
-.mach .design-rail button{
- color:#465a54;background:transparent;border:1px solid transparent;
- border-radius:10px;min-height:52px;padding:6px 3px;gap:5px;
- font-size:11px;font-weight:500;width:100%;
- transition:background-color .15s,color .15s,border-color .15s;
-}
-.mach .design-rail button:hover{background:var(--surface-hover);color:var(--ui-ink);border-color:#e4e8e4}
-.mach .design-rail button.rail-active{
- background:var(--surface-mint);color:var(--ui-accent);
- border-color:#c3dfd3;font-weight:650;
- box-shadow:0 1px 2px rgba(17,105,91,.07);
-}
-.mach .design-rail .ico{width:19px;height:19px}
-.mach .rail-version{display:none}
+/* 1. Bỏ hoàn toàn cột rail dọc 64px; tích hợp .design-rail nằm ngang phẳng trong Hàng 1 Header */
 .mach #app{
- margin-left:72px;width:calc(100% - 72px);
+ margin-left:0!important;width:100%!important;
  display:flex;flex-direction:column;height:100dvh;overflow:hidden;
 }
+.mach .design-rail{
+ position:static!important;inset:auto!important;width:auto!important;height:auto!important;
+ display:flex!important;flex-direction:row!important;align-items:center!important;
+ background:transparent!important;color:var(--ui-ink);border:0!important;box-shadow:none!important;
+ padding:0!important;margin-left:auto;gap:2px!important;flex-shrink:0;z-index:auto;
+}
+.mach .design-rail button{
+ display:inline-flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;
+ width:auto!important;min-height:30px!important;height:30px!important;padding:4px 8px!important;gap:5px!important;
+ color:#374151!important;background:transparent!important;border:1px solid transparent!important;
+ border-radius:7px!important;font-size:12.5px!important;font-weight:500!important;white-space:nowrap;
+ transition:background-color .14s,color .14s;
+}
+.mach .design-rail button:hover{background:#f1f3f4!important;color:#111827!important;border-color:transparent!important}
+.mach .design-rail button.rail-active{background:var(--surface-mint)!important;color:var(--ui-accent)!important}
+.mach .design-rail .ico{width:16px!important;height:16px!important}
+.mach .design-rail .rail-label:not(.rail-label-keep){display:none}
+.mach .rail-version,.mach .design-breadcrumb,.mach .design-doc-meta,.mach .design-side-actions,.mach .design-canvas-label{display:none!important}
 
-/* 2. Header gọn sắc nét kiểu Google Docs */
+/* 2. Hàng 1 Header (~52px, nền trắng phẳng, viền dưới 1px #e5e7eb) */
 .mach header.top{
- height:auto!important;min-height:74px;flex:0 0 auto;
- padding:9px 22px!important;background:#ffffff;
- border-bottom:1px solid var(--ui-line);gap:14px!important;
+ height:52px!important;min-height:52px!important;flex:0 0 52px;
+ padding:0 14px!important;background:#ffffff;
+ border-bottom:1px solid var(--ui-line);display:flex;align-items:center;gap:8px!important;
+ overflow:hidden;
 }
-.mach .mvp-document{gap:3px}
-.mach .design-breadcrumb{font-size:11px;letter-spacing:0;color:var(--ui-muted);gap:7px}
-.mach .design-breadcrumb .design-subject-name{color:var(--ui-accent);font-weight:600}
-.mach .breadcrumb-dot{background:#9eb0a9}
-.mach .document-title-line{gap:10px}
+.mach .mvp-document{
+ display:flex!important;flex-direction:row!important;align-items:center!important;
+ gap:10px!important;min-width:0;flex:0 1 auto;
+}
+.mach .mvp-document>div{display:flex;flex-direction:column;min-width:0;gap:0}
+.mach .mach-logo{
+ width:32px!important;height:32px!important;border-radius:8px!important;flex-shrink:0;
+ background:#202124!important;color:#ffffff!important;border:0!important;box-shadow:none!important;
+ display:grid;place-items:center;
+}
+.mach .mach-logo .ico{width:18px!important;height:18px!important}
+.mach .document-title-line{display:flex;align-items:center;gap:8px!important;min-width:0;line-height:1.2}
 .mach .header-title{
- font:600 17px/1.35 "Segoe UI",system-ui,sans-serif;
- letter-spacing:-.25px;color:var(--ui-ink);
- border-radius:6px;padding:2px 6px;margin-left:-6px;
+ font:600 15px/1.25 "Segoe UI",system-ui,sans-serif!important;
+ letter-spacing:-.2px;color:var(--ui-ink)!important;
+ width:auto!important;min-width:110px!important;max-width:clamp(140px,24vw,340px)!important;
+ border-radius:5px;padding:1px 5px!important;margin-left:-5px;
 }
-.mach .header-title:hover{box-shadow:inset 0 0 0 1px #d6deda;background:#fbfcfa}
+.mach .header-title:hover{box-shadow:inset 0 0 0 1px #d1d5db;background:#f8f9fa}
 .mach .saved{
- font-size:11px;color:#285b4d;background:#f1f7f4;
- border:1px solid #d5e6de;border-radius:999px;
- padding:2px 9px;font-weight:550;
+ font-size:11.5px!important;color:#5f6368!important;background:transparent!important;
+ border:0!important;border-radius:0;padding:0!important;font-weight:400!important;white-space:nowrap;
 }
-.mach .saved:before{color:#157a5e}
-.mach .menubar{margin-top:1px;gap:2px}
+.mach .saved:before{color:#15803d!important;margin-right:3px}
+.mach .menubar{margin-top:1px!important;gap:1px!important;display:flex;align-items:center}
 .mach .menubar .menu-button{
- font-size:13px;font-weight:500;color:#435752;
- padding:3px 9px;min-height:27px;border-radius:6px;
+ font-size:12.5px!important;font-weight:450!important;color:#3c4043!important;
+ padding:1px 7px!important;min-height:20px!important;height:20px!important;border-radius:4px!important;
 }
-.mach .menubar .menu-button:hover{background:var(--surface-hover);color:var(--ui-accent)}
-.mach .header-actions{gap:8px}
+.mach .menubar .menu-button:first-child{padding-left:0!important}
+.mach .menubar .menu-button:hover{background:#f1f3f4!important;color:#111827!important}
+.mach .header-actions{display:flex;align-items:center;gap:4px!important;margin-left:0!important;flex-shrink:0}
 .mach .header-actions button{
- font-size:13px;min-height:36px;padding:7px 12px;border-radius:9px;font-weight:550;
+ font-size:12.5px!important;min-height:30px!important;height:30px!important;
+ padding:4px 9px!important;border-radius:7px!important;font-weight:500!important;gap:5px!important;
+ white-space:nowrap;
 }
-.mach .header-actions .focus-button{color:#465a54;border:1px solid transparent;background:transparent}
-.mach .header-actions .focus-button:hover{background:var(--surface-hover);border-color:var(--ui-line)}
-.mach .header-actions .focus-button[aria-pressed=true]{background:var(--surface-mint);color:var(--ui-accent);border-color:#bfdace}
+.mach .header-actions .ico{width:15px!important;height:15px!important}
+.mach .header-actions .focus-button{color:#5f6368!important;border:1px solid transparent!important;background:transparent!important;padding:4px 7px!important}
+.mach .header-actions .focus-button>span{display:none}
+.mach .header-actions .focus-button:hover{background:#f1f3f4!important;color:#111827!important}
+.mach .header-actions .focus-button[aria-pressed=true]{background:var(--surface-mint)!important;color:var(--ui-accent)!important;border-color:#c6e0d5!important}
 .mach .header-actions .design-export{
- background:var(--ui-accent);color:#fff;border:1px solid var(--ui-accent);
- font-weight:600;box-shadow:0 1px 3px rgba(17,105,91,.22);
+ background:#eef6f3!important;color:var(--ui-accent)!important;border:1px solid #cce3da!important;
+ font-weight:600!important;box-shadow:none!important;
 }
-.mach .header-actions .design-export:hover{background:var(--ui-accent-hover);border-color:var(--ui-accent-hover)}
-.mach .header-actions .quiet{background:#fff;border:1px solid var(--ui-line);color:var(--ui-ink)}
-.mach .header-actions .quiet:hover{background:var(--surface-subtle);border-color:var(--ui-line-strong)}
-.mach .header-actions .ai-button{background:var(--surface-mint);color:var(--ui-accent);border:1px solid #c3dfd3;font-weight:600}
-.mach .header-actions .ai-button:hover{background:#def0e8;border-color:#9ec8b9}
-.mach .account-control{border-left:1px solid var(--ui-line);padding-left:12px;margin-left:2px}
-.mach .account-control .account-button{border-radius:999px;padding:3px 8px 3px 4px;background:transparent}
-.mach .account-control .account-button:hover{background:var(--surface-hover)}
-.mach .studio-avatar{background:#dceee6;color:#0e5749;width:32px;height:32px;font-size:13px;font-weight:700}
-.mach .studio-account-text{font-size:12px;color:var(--ui-ink)}
-.mach .studio-account-text small{font-size:10px;color:var(--ui-muted)}
+.mach .header-actions .design-export:hover{background:#dff0e9!important;border-color:#a6d1c1!important}
+.mach .header-actions .quiet{background:transparent!important;border:1px solid transparent!important;color:#374151!important}
+.mach .header-actions .quiet:hover{background:#f1f3f4!important;color:#111827!important}
+.mach .header-actions .ai-button{
+ background:#f1f3f4!important;color:#1f2937!important;border:1px solid #e5e7eb!important;
+ border-radius:999px!important;padding:4px 11px!important;font-weight:550!important;
+}
+.mach .header-actions .ai-button:hover{background:#e8eaed!important;border-color:#d1d5db!important}
+.mach .account-control{border-left:1px solid var(--ui-line)!important;padding-left:8px!important;margin-left:2px!important;gap:2px!important}
+.mach .account-control .account-button{border-radius:999px!important;padding:2px 6px 2px 2px!important;background:transparent!important;height:30px!important;min-height:30px!important}
+.mach .account-control .account-button:hover{background:#f1f3f4!important}
+.mach .account-control .credits-button{padding:2px 4px!important;height:26px!important;min-height:26px!important;min-width:20px!important;color:#5f6368!important}
+.mach .studio-avatar{background:#15803d!important;color:#ffffff!important;width:28px!important;height:28px!important;font-size:12px!important;font-weight:700!important;border-radius:7px!important}
+.mach .studio-account-text{font-size:12px!important;color:var(--ui-ink);max-width:84px}
+.mach .studio-account-text small{display:none!important}
 
-/* 3. Workspace 3 cột thoáng cân đối */
+/* 3. Workspace 3 cột phẳng thoáng cân đối */
 .mach .workspace{
  flex:1 1 0;height:auto!important;min-height:0;
- background:var(--bg);grid-template-columns:220px minmax(0,1fr) 354px;
+ background:var(--bg);grid-template-columns:220px minmax(0,1fr) 352px;
 }
 .mach .workspace.chat-hidden{grid-template-columns:220px minmax(0,1fr)}
-.mach .workspace.outline-collapsed{grid-template-columns:0 minmax(0,1fr) 354px}
+.mach .workspace.outline-collapsed{grid-template-columns:0 minmax(0,1fr) 352px}
 .mach .workspace.outline-collapsed.chat-hidden{grid-template-columns:0 minmax(0,1fr)}
 
-/* Cột trái: Cấu trúc tài liệu */
+/* Cột trái: Tài liệu (~220px, nền sạch #f8f9fa, tách mảnh 1px #e5e7eb) */
 .mach .sidebar{
- margin:14px 6px 14px 14px;border:1px solid var(--ui-line);
- border-radius:14px;background:#ffffff;box-shadow:0 1px 3px rgba(17,36,30,.04);
+ margin:0!important;border:0!important;border-right:1px solid var(--ui-line)!important;
+ border-radius:0!important;background:#f8f9fa!important;box-shadow:none!important;
 }
-.mach .sidebar-top{padding:15px 15px 12px}
-.mach .sidebar-title{font-size:14px;font-weight:650;color:var(--ui-ink)}
-.mach .sidebar-title button{background:#f2f4f1;color:#4a5e58;border-radius:7px;width:26px;height:26px;font-size:18px}
-.mach .sidebar-title button:hover{background:#e6ebe8;color:var(--ui-ink)}
-.mach .design-doc-meta{gap:5px;margin-top:10px}
-.mach .design-doc-meta span{font-size:11px;padding:3px 8px;border-radius:6px;background:#f3f5f2;color:#445953;font-weight:500}
-.mach .tabs{margin:0 12px;background:#f1f3ef;border-radius:9px;padding:3px;gap:2px}
-.mach .tabs button{height:33px;min-height:33px;font-size:12px;font-weight:550;border-radius:7px;color:var(--ui-muted)}
-.mach .tabs button.active{background:#fff;color:var(--ui-accent);font-weight:650;box-shadow:0 1px 3px rgba(17,36,30,.08)}
-.mach .side-content{padding:12px 10px 18px}
-.mach .outline-item{padding:8px 9px;border-radius:8px;margin-bottom:3px;border:1px solid transparent}
-.mach .outline-item:hover{background:#f6f8f6}
-.mach .outline-item .outline-title{font-size:12.5px;line-height:1.5;color:#2f433e}
-.mach .outline-item.active:not(.in-view) .outline-title{color:#2f433e}
-.mach .outline-item.in-view{background:var(--surface-mint)!important;border-color:#c5dfd4}
-.mach .outline-item.in-view .outline-title{color:var(--ui-accent);font-weight:600}
-.mach .outline-section{font-size:11px;letter-spacing:.2px;color:var(--ui-muted);padding:9px 8px;border-radius:7px}
-.mach .outline-section.in-view{background:var(--surface-mint);color:var(--ui-accent)}
-.mach .design-side-actions{padding:12px;border-top:1px solid var(--ui-line);background:#fcfdfb;gap:6px}
-.mach .design-side-actions button{font-size:12px;min-height:36px;border-radius:9px;font-weight:600;background:#eef6f2;border-color:#c6dfd4;color:var(--ui-accent)}
-.mach .design-side-actions button:hover{background:#e1f0e9;border-color:#9fc9b8}
-.mach .design-side-actions .subtle{background:transparent;border-color:transparent;color:#4f645e;font-weight:550}
-.mach .design-side-actions .subtle:hover{background:#f1f4f1;color:var(--ui-ink)}
+.mach .sidebar-top{padding:14px 14px 10px!important}
+.mach .sidebar-title{font-size:13.5px!important;font-weight:600!important;color:var(--ui-ink)!important}
+.mach .sidebar-title button{background:transparent!important;border:0!important;color:#5f6368!important;border-radius:6px!important;width:26px;height:26px;font-size:16px}
+.mach .sidebar-title button:hover{background:#e8eaed!important;color:var(--ui-ink)!important}
+.mach .tabs{margin:0 12px!important;background:#eceef1!important;border-radius:9px!important;padding:3px!important;gap:2px!important;height:auto!important}
+.mach .tabs button{height:30px!important;min-height:30px!important;font-size:12.5px!important;font-weight:500!important;border-radius:7px!important;color:var(--ui-muted)!important}
+.mach .tabs button.active{background:#ffffff!important;color:var(--ui-accent)!important;font-weight:600!important;box-shadow:0 1px 2px rgba(0,0,0,.08)!important}
+.mach .side-content{padding:10px 10px 18px!important}
+.mach .outline-item{padding:7px 9px!important;min-height:34px!important;border-radius:7px!important;margin-bottom:2px!important;border:1px solid transparent!important}
+.mach .outline-item:hover{background:#eef1f4!important}
+.mach .outline-item .outline-title{font-size:12.5px!important;line-height:1.5!important;color:#374151!important}
+.mach .outline-item.active:not(.in-view) .outline-title{color:#374151!important}
+.mach .outline-item.in-view{background:#e6f4ee!important;border-color:transparent!important}
+.mach .outline-item.in-view .outline-title{color:var(--ui-accent)!important;font-weight:600!important}
+.mach .outline-section{font-size:11px!important;letter-spacing:.2px;color:var(--ui-muted)!important;padding:8px 8px!important;border-radius:6px!important}
+.mach .outline-section.in-view{background:#e6f4ee!important;color:var(--ui-accent)!important}
+.mach .outline-empty{text-align:center;color:#6b7280;font-size:12.5px;padding:36px 14px;line-height:1.65}
 
-/* 4. Khu vực giữa: Thanh 4 bước, Thanh công cụ, Thước đo & Tờ giấy A4 */
-html,body.mach{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-.mach .main{background:transparent}
-.mach .main:has(.workflow-strip){grid-template-rows:42px 48px 28px minmax(0,1fr) 28px}
-.mach .workflow-strip{
- grid-row:1;grid-column:1;display:flex;align-items:center;justify-content:space-between;
- gap:8px;padding:6px 16px 5px;min-width:0;overflow:hidden;
- background:#fbfcfa;border-bottom:1px solid var(--ui-line);
+/* 4. Khu vực giữa: Hàng 2 Toolbar (#edf2fa ~40px) + Thước mảnh (22px) + Tờ giấy A4 + Chân trang 1 dòng (32px) */
+html,body.mach{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}
+.mach .main,
+.mach .main:has(.workflow-strip){
+ grid-template-rows:42px 22px minmax(0,1fr) 32px!important;
+ background:var(--bg)!important;
 }
-.mach .wf-steps{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 auto;overflow-x:auto;scrollbar-width:none}
-.mach .wf-step{
- display:inline-flex;align-items:center;gap:6px;
- padding:3px 10px 3px 5px;border-radius:999px;
- border:1px solid var(--ui-line);background:#fff;color:var(--ui-ink);
- min-height:28px;white-space:nowrap;flex-shrink:0;text-align:left;
- box-shadow:0 1px 2px rgba(17,36,30,.03);
-}
-.mach .wf-step:hover{border-color:#98c4b5;background:#f4faf7}
-.mach .wf-num{
- width:19px;height:19px;border-radius:50%;
- background:#ebf0ed;color:#304f47;font-size:11px;font-weight:700;
- display:grid;place-items:center;flex-shrink:0;
-}
-.mach .wf-step.is-done .wf-num{background:var(--ui-accent);color:#fff}
-.mach .wf-step.is-active{border-color:#9ac6b7;background:#f2faf6}
-.mach .wf-step.is-active .wf-num{background:#d4ebe2;color:var(--ui-accent)}
-.mach .wf-text{display:flex;align-items:baseline;gap:5px}
-.mach .wf-text b{font-size:12px;font-weight:600;color:#1b2a26}
-.mach .wf-text small{font-size:10.5px;color:#556863}
-.mach .wf-step.wf-step-export{
- background:var(--surface-mint);border-color:#9ec8b9;color:var(--ui-accent);
-}
-.mach .wf-step.wf-step-export:hover{background:var(--ui-accent);border-color:var(--ui-accent);color:#fff}
-.mach .wf-step.wf-step-export .wf-num{background:var(--ui-accent);color:#fff}
-.mach .wf-step.wf-step-export:hover .wf-num{background:rgba(255,255,255,.22);color:#fff}
-.mach .wf-step.wf-step-export .wf-text b{color:inherit}
-.mach .wf-step.wf-step-export .wf-text small{color:inherit}
-.mach .wf-sep{color:#96a7a1;font-size:12px;flex-shrink:0}
-.mach .wf-mode-pill{
- display:inline-flex;align-items:center;gap:6px;
- padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;
- white-space:nowrap;flex-shrink:0;
-}
-.mach .wf-mode-pill.is-student{background:#eaf5f0;border:1px solid #c2dfd3;color:#0f5c4d}
-.mach .wf-mode-pill.is-teacher{background:#fef5e2;border:1px solid #ead098;color:#7c4d08}
-.mach .wf-mode-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
-.mach .wf-mobile-only{display:none}
 
-/* Thanh công cụ soạn thảo */
-.mach .editing-bar{grid-row:2;padding:6px 16px 4px!important;overflow:visible!important;gap:8px;background:transparent}
+/* Hàng 2: Thanh công cụ định dạng nền #edf2fa bo tròn 1 hàng duy nhất */
+.mach .editing-bar{
+ grid-row:1!important;height:42px!important;padding:4px 14px!important;
+ background:#ffffff!important;border-bottom:1px solid var(--ui-line)!important;
+ display:flex;align-items:center;gap:8px;overflow:visible!important;
+}
 .mach .editor-toolbar{
- flex:1 1 0;min-width:0!important;max-width:100%;height:38px!important;
- padding:0 8px!important;gap:2px!important;overflow-x:auto;scrollbar-width:none;
- background:#ffffff;border:1px solid var(--ui-line);border-radius:11px;
- box-shadow:0 1px 2px rgba(17,36,30,.04);
+ flex:1 1 0;min-width:0!important;max-width:100%;height:34px!important;
+ padding:0 10px!important;gap:2px!important;overflow-x:auto;scrollbar-width:none;
+ background:#edf2fa!important;border:0!important;border-radius:999px!important;
+ box-shadow:none!important;
 }
 .mach .editor-toolbar .toolbar-spacer{display:none}
-.mach .editor-toolbar .toolbar-divider{height:18px;background:#e4e8e4;margin:0 2px!important}
-.mach .editor-toolbar select{max-width:120px;padding:3px 4px;text-overflow:ellipsis;font-size:12px!important;color:#354b45;border-radius:6px}
-.mach .editor-toolbar select:hover{background:#f3f6f4}
+.mach .editor-toolbar .toolbar-divider{height:16px;background:#cbd5e1;margin:0 3px!important}
+.mach .editor-toolbar select{max-width:124px;padding:2px 4px;text-overflow:ellipsis;font-size:12px!important;color:#3c4043!important;border-radius:6px;background:transparent}
+.mach .editor-toolbar select:hover{background:rgba(15,23,42,.06)}
 .mach .editor-toolbar .reference-toolbar-extra select{max-width:120px}
 .mach .editor-toolbar #doc-font{max-width:132px}
 .mach .editor-toolbar input#doc-fontsize{
- width:34px!important;height:26px!important;text-align:center;
- padding:1px!important;font-size:12px!important;border-radius:6px;
- border:1px solid #d4dcd7;background:#fafbfa;appearance:textfield;
+ width:32px!important;height:24px!important;text-align:center;
+ padding:1px!important;font-size:12px!important;border-radius:6px!important;
+ border:1px solid #cbd5e1!important;background:#ffffff!important;appearance:textfield;
 }
 .mach .editor-toolbar input#doc-fontsize::-webkit-inner-spin-button,.mach .editor-toolbar input#doc-fontsize::-webkit-outer-spin-button{display:none}
-.mach .editor-toolbar button{min-width:25px!important;height:28px;padding:2px 4px;border-radius:6px;color:#3e544e}
-.mach .editor-toolbar button:hover{background:#eef3f0;color:var(--ui-accent)}
-.mach .editor-toolbar button.is-active{background:var(--surface-mint);color:var(--ui-accent)}
+.mach .editor-toolbar button{min-width:26px!important;height:26px!important;padding:2px 5px!important;border-radius:6px!important;color:#3c4043!important;font-size:13px!important}
+.mach .editor-toolbar button:hover{background:rgba(17,105,91,.1)!important;color:var(--ui-accent)!important}
+.mach .editor-toolbar button.is-active{background:#d7ebe3!important;color:var(--ui-accent)!important}
 .mach .editor-toolbar .color-tools{gap:2px!important}
-.mach .editor-toolbar .color-tools label{width:20px;height:25px;font-size:12px;border-radius:4px}
-.mach .ux-view-tabs{background:#eaede8;border:1px solid var(--ui-line);border-radius:10px;padding:3px;gap:2px}
-.mach .ux-view-tabs button{border-radius:7px;font-weight:600;min-height:28px;padding:4px 11px;font-size:12px}
-.mach .ux-view-tabs button[data-action="view-student"].active{background:#fff;color:var(--ui-accent);box-shadow:0 1px 3px rgba(17,36,30,.12)}
-.mach .ux-view-tabs button[data-action="view-teacher"].active{background:var(--ui-accent);color:#fff;box-shadow:0 1px 3px rgba(17,105,91,.22)}
+.mach .editor-toolbar .color-tools label{width:20px;height:24px;font-size:12px;border-radius:4px}
+.mach .ux-view-tabs{background:#edf2fa!important;border:0!important;border-radius:999px!important;padding:2px!important;gap:2px!important}
+.mach .ux-view-tabs button{border-radius:999px!important;font-weight:600!important;min-height:26px!important;height:26px!important;padding:2px 10px!important;font-size:11.5px!important;color:#4b5563!important}
+.mach .ux-view-tabs button[data-action="view-student"].active{background:#ffffff!important;color:var(--ui-accent)!important;box-shadow:0 1px 2px rgba(0,0,0,.1)!important}
+.mach .ux-view-tabs button[data-action="view-teacher"].active{background:var(--ui-accent)!important;color:#ffffff!important;box-shadow:0 1px 2px rgba(17,105,91,.22)!important}
 
-/* Thước đo: dàn flex 3 phần không bao giờ đè chữ BẢN SOẠN và 1/1 lên vạch số */
+/* Thước kẻ 1..17 siêu mảnh gọn */
 .mach .document-bar{
- grid-row:3;height:28px!important;padding:0 16px!important;
- display:flex;align-items:center;justify-content:space-between;gap:12px;
- background:var(--bg);overflow:hidden;
+ grid-row:2!important;height:22px!important;min-height:22px!important;padding:0 20px!important;
+ display:flex;align-items:center;justify-content:center;gap:0;
+ background:var(--bg)!important;border:0!important;overflow:hidden;
 }
-.mach .design-canvas-label{
- position:static!important;flex-shrink:0;background:transparent;padding:0;
- font:650 10px/1 "Segoe UI",system-ui,sans-serif;letter-spacing:.7px;color:#556863;
- display:inline-flex;align-items:center;gap:5px;
-}
-.mach .live-dot{width:6px;height:6px;background:#1c8c6c}
 .mach .ruler{
- flex:1 1 auto;min-width:0!important;max-width:794px;width:auto!important;
- margin:0 auto;overflow:hidden;opacity:.65;border-top-color:#dedfd9;height:14px;
+ flex:1 1 auto;min-width:0!important;max-width:920px!important;width:100%!important;
+ margin:0 auto;overflow:hidden;opacity:1!important;background:#ffffff;
+ border-top:1px solid var(--ui-line)!important;border-bottom:1px solid var(--ui-line)!important;
+ height:16px!important;padding:0 72px!important;
 }
-.mach .ruler span{color:#808d88;font-size:8.5px}
-.mach .page-navigation{
- position:static!important;flex-shrink:0;background:#ffffff;
- border:1px solid var(--ui-line);border-radius:999px;padding:1px 9px;
- font-size:11px;color:#3d524c;box-shadow:0 1px 2px rgba(17,36,30,.03);
-}
+.mach .ruler span{color:#9ca3af!important;font-size:8.5px!important}
+.mach .page-navigation{display:none!important}
 
-/* Tờ giấy A4 trung tâm nổi bật, bóng đổ mềm */
-.mach .paper-scroll{grid-row:4;padding:10px 22px 64px;background:var(--bg)}
-.mach .paper.paginated-paper{gap:24px}
+/* Tờ giấy A4 trung tâm rộng rãi & .q-actions thẳng hàng trên .q-top không đè chữ */
+.mach .paper-scroll{grid-row:3!important;padding:12px 24px 48px!important;background:var(--bg)!important}
+.mach .paper.paginated-paper{gap:22px}
 .mach .document-page{
- background:#ffffff;border:1px solid #dfe2dc;border-radius:4px;
- box-shadow:0 1px 3px rgba(17,36,30,.05),0 12px 30px rgba(17,36,30,.06);
+ background:#ffffff!important;border:1px solid #e5e7eb!important;border-radius:2px!important;
+ box-shadow:0 1px 3px rgba(0,0,0,.06)!important;
 }
 .mach .question{
  border-radius:8px;padding:8px 12px!important;margin:0 -12px 14px!important;
- border:1px solid transparent!important;transition:border-color .15s,background-color .15s,box-shadow .15s;
+ border:1px solid transparent!important;transition:border-color .14s,background-color .14s,box-shadow .14s;
 }
-.mach .question:hover:not(.selected){border-color:#e2e8e4!important;background:#fbfdfc!important}
+.mach .question:hover:not(.selected){border-color:#e5e7eb!important;background:#fcfdfd!important}
 .mach .question.selected{
  border-color:#b2d4c5!important;background:#f8fcfa!important;
  box-shadow:inset 3px 0 0 var(--ui-accent);
 }
+.mach .question:is(.selected,:hover,:focus-within) .q-top{
+ display:flex!important;align-items:center;justify-content:space-between;
+ gap:8px;margin-bottom:6px;min-height:28px;flex-wrap:nowrap;
+}
+.mach .question:is(.selected,:hover,:focus-within) .q-label{
+ float:none!important;margin:0!important;flex-shrink:0;
+}
 .mach .question .q-top .q-actions,
 .mach .question .q-actions{
- display:none;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:3px;
- max-width:100%;right:0;top:-24px;z-index:4;
- background:#ffffff;border:1px solid var(--ui-line);border-radius:8px;
- padding:2px 4px;box-shadow:0 2px 8px rgba(17,36,30,.08);
+ position:static!important;top:auto!important;right:auto!important;left:auto!important;
+ display:none;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:2px;
+ max-width:100%;z-index:2;flex-shrink:1;overflow-x:auto;scrollbar-width:none;
+ background:#ffffff;border:1px solid var(--ui-line);border-radius:7px;
+ padding:1px 3px;box-shadow:0 1px 3px rgba(0,0,0,.05);
 }
 .mach .question:hover .q-top .q-actions,
 .mach .question:focus-within .q-top .q-actions,
@@ -387,75 +350,120 @@ html,body.mach{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .mach .question.selected .q-actions{
  display:flex!important;opacity:1!important;
 }
-.mach .question .q-actions button{
- font-size:11px;height:24px;padding:2px 7px;border-radius:6px;border:0;
- color:#3a5049;background:transparent;white-space:nowrap;flex-shrink:0;
+.mach .question .q-actions button,
+.mach .q-quick-btn{
+ font-size:11px!important;height:24px!important;min-height:24px!important;min-width:24px;
+ padding:0 6px!important;border-radius:5px!important;border:0!important;
+ color:#4b5563!important;background:transparent!important;white-space:nowrap;flex-shrink:0;
 }
-.mach .question .q-actions button:hover{background:#eef4f1;color:var(--ui-accent)}
-.mach .q-quick-btn{font-size:11px;padding:3px 7px;border-radius:6px;border:1px solid transparent;color:#3a5049;background:#f7f9f8}
-.mach .q-quick-btn:hover{background:#ebf4ef;border-color:#bdd8cc;color:var(--ui-accent)}
-.mach .q-approve-btn.is-approved{background:#e3f3ec!important;color:#0e5847!important;border-color:#b2d9c8!important;font-weight:600}
+.mach .question .q-actions button:hover,
+.mach .q-quick-btn:hover{background:#eef6f3!important;color:var(--ui-accent)!important}
+.mach .q-approve-btn.is-approved{background:#e3f3ec!important;color:#0e5847!important;font-weight:600}
 .mach .asset-tools{margin:6px 0 4px}
 .mach .asset-tools .tiny-btn{
  font:500 11px/1.3 "Segoe UI",sans-serif;padding:4px 9px;border-radius:6px;
- border:1px solid var(--ui-line);background:#f8faf9;color:#435752;
+ border:1px solid var(--ui-line);background:#f8faf9;color:#4b5563;
 }
 .mach .asset-tools .tiny-btn:hover{border-color:#9cc5b5;background:var(--surface-mint);color:var(--ui-accent)}
 .mach .inserted-table{border-collapse:collapse;margin:10px 0 12px;width:100%}
-.mach .inserted-table th,.mach .inserted-table td{border:1px solid #c5cec9;padding:8px 10px;vertical-align:middle}
+.mach .inserted-table th,.mach .inserted-table td{border:1px solid #d1d5db;padding:8px 10px;vertical-align:middle}
 .mach .add-question{
- border:1px dashed #b9cfc4;border-radius:10px;background:#fbfdfc;
- color:var(--ui-accent);opacity:.82;font-weight:550;transition:.15s;
+ border:1px dashed #cbd5e1;border-radius:8px;background:#fafbfc;
+ color:var(--ui-accent);opacity:.82;font-weight:550;transition:.14s;
 }
 .mach .add-question:hover{opacity:1;background:var(--surface-mint);border-color:var(--ui-accent)}
 body.view-teacher .answer-area{border-left:3px solid var(--ui-accent);background:#f1f8f5;border-radius:0 8px 8px 0;padding:12px 14px}
 body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-top:16px}
-.mach .main-footer{
- grid-row:5;background:var(--bg);border-top:1px solid var(--ui-line);
- font-size:11px;color:var(--ui-muted);padding:4px 16px;
-}
-.mach .main-footer span{color:inherit}
 
-/* 5. Cột phải: Trợ lý AI, Drag-Drop Overlay, Thẻ ngữ cảnh & AI Steps */
-.mach .assistant{
- margin:14px 14px 14px 6px!important;border-radius:14px;
- border:1px solid var(--ui-line);background:#ffffff;
- box-shadow:0 1px 3px rgba(17,36,30,.04);position:relative;
+/* Chân trang 1 dòng 32px ở đáy .main: .workflow-strip bên trái + thống kê 1 dòng bên phải */
+.mach .main-footer{
+ grid-row:4!important;height:32px!important;min-height:32px!important;
+ background:#ffffff!important;border-top:1px solid var(--ui-line)!important;
+ font-size:11.5px!important;color:var(--ui-muted)!important;padding:0 12px!important;
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:10px;overflow:hidden;
 }
-.mach .assistant-head{height:52px;min-height:52px;border-bottom:1px solid #eef1ee;padding:9px 14px}
-.mach .assistant-badge{display:none}
-.mach .assistant-title{font-size:14.5px;font-weight:650;color:var(--ui-ink)}
-.mach .assistant-head .row{gap:3px}
-.mach .assistant-head .row button{font-size:18px;width:30px;min-width:30px;height:30px;border:0;background:none;color:#556863;border-radius:7px}
-.mach .assistant-head .row button:hover{background:var(--surface-hover);color:var(--ui-ink)}
+.mach .main-footer>.footer-legacy-meta,
+.mach .main-footer>.footer-hint{display:none!important}
+.mach .main-footer .workflow-strip{
+ position:static!important;grid-row:auto!important;
+ display:flex!important;align-items:center!important;justify-content:flex-start!important;
+ gap:6px;padding:0!important;margin:0!important;height:32px;
+ border:0!important;background:transparent!important;
+ min-width:0;flex:1 1 auto;overflow-x:auto;scrollbar-width:none;
+}
+.mach .main-footer .wf-steps{display:flex;align-items:center;gap:2px;min-width:0;flex:0 1 auto;overflow-x:auto;scrollbar-width:none}
+.mach .main-footer .wf-step{
+ display:inline-flex;align-items:center;gap:5px;
+ height:24px;min-height:24px;padding:2px 9px;border-radius:6px;
+ border:1px solid transparent;background:transparent;color:#4b5563;
+ font-size:11.5px;font-weight:500;white-space:nowrap;flex-shrink:0;box-shadow:none;
+}
+.mach .main-footer .wf-step .ico{width:13px;height:13px}
+.mach .main-footer .wf-step:hover{background:#f3f4f6;color:#111827;border-color:transparent}
+.mach .main-footer .wf-step b{font-size:11.5px;font-weight:550;color:inherit}
+.mach .main-footer .wf-step small{font-size:10px;color:#6b7280;background:#f3f4f6;padding:0 5px;border-radius:999px;line-height:16px}
+.mach .main-footer .wf-step.is-active{background:#eef6f3;border-color:#cde3da;color:var(--ui-accent)}
+.mach .main-footer .wf-step.is-active small{background:#d6ede4;color:var(--ui-accent)}
+.mach .main-footer .wf-step.is-done small{background:#e1f4ec;color:var(--ui-accent)}
+.mach .main-footer .wf-step.wf-step-export{background:transparent;border-color:transparent;color:#374151}
+.mach .main-footer .wf-step.wf-step-export:hover{background:#eef6f3;color:var(--ui-accent)}
+.mach .main-footer .wf-mode-pill{
+ display:inline-flex;align-items:center;gap:5px;
+ height:22px;min-height:22px;padding:2px 8px;border-radius:999px;
+ font-size:10.5px;font-weight:600;white-space:nowrap;flex-shrink:0;
+}
+.mach .main-footer .wf-mode-pill span{display:inline!important}
+.mach .main-footer .wf-mode-pill.is-student{background:#eef6f3;border:1px solid #cce3da;color:#0f5c4d}
+.mach .main-footer .wf-mode-pill.is-teacher{background:#fef5e2;border:1px solid #ead098;color:#7c4d08}
+.mach .main-footer .wf-mode-dot{display:inline-block!important;width:6px;height:6px;border-radius:50%;background:currentColor}
+.mach .main-footer .studio-page-controls{
+ display:flex!important;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;
+ white-space:nowrap;font-size:11.5px;color:#6b7280;
+}
+.mach .main-footer .studio-page-controls span{display:inline!important;color:inherit}
+.mach .main-footer .footer-sep{color:#cbd5e1!important}
+
+/* 5. Cột phải: Trợ lý AI sạch phẳng chuẩn soandethi, thẻ gợi ý & dropdown thời gian 1 dòng */
+.mach .assistant{
+ margin:0!important;border-radius:0!important;
+ border:0!important;border-left:1px solid var(--ui-line)!important;background:#ffffff!important;
+ box-shadow:none!important;position:relative;
+}
+.mach .assistant-head{height:48px!important;min-height:48px!important;border-bottom:1px solid #f1f3f4!important;padding:0 14px!important}
+.mach .assistant-badge{display:none!important}
+.mach .assistant-title{font-size:14px!important;font-weight:600!important;color:var(--ui-ink)!important}
+.mach .assistant-head .row{gap:2px}
+.mach .assistant-head .row button{font-size:17px;width:28px;min-width:28px;height:28px;border:0;background:none;color:#5f6368;border-radius:6px}
+.mach .assistant-head .row button:hover{background:#f1f3f4;color:var(--ui-ink)}
 .mach .assistant-body{padding:12px 14px;scroll-padding-block:12px;scrollbar-gutter:auto}
-.mach .assistant-message{font-size:13.5px;margin:10px 0 18px;color:var(--ui-ink)}
-.mach .assistant-message.user>div{background:#eef5f2;border:0;border-radius:14px 14px 4px 14px;padding:10px 13px;color:#17362e}
+.mach .assistant-message{font-size:13.5px;margin:8px 0 16px;color:var(--ui-ink)}
+.mach .assistant-message.user>div{background:#eef5f2;border:0;border-radius:14px 14px 4px 14px;padding:9px 13px;color:#17362e}
 .mach .chat-spark{background:linear-gradient(135deg,#11695b,#248a78);color:#fff;width:24px;height:24px;border-radius:50%;font-size:14px}
-.mach .assistant-welcome h2{font-size:18px;line-height:1.35;margin:0 0 2px;color:var(--ui-ink);-webkit-text-fill-color:initial;background:none}
+.mach .assistant-welcome h2{font-size:18px;line-height:1.35;margin:2px 0;color:var(--ui-ink);-webkit-text-fill-color:initial;background:none}
 .mach .assistant-welcome p{font-size:12.5px;line-height:1.5;color:var(--ui-muted);margin:0 0 6px}
 .mach .welcome-prompts,.mach .assistant-shortcuts{margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
 .mach .welcome-prompts button,.mach .suggestion-card{
  min-height:40px;font:13px/1.45 "Segoe UI",system-ui,sans-serif;padding:9px 12px;
  background:#ffffff;color:var(--ui-ink);border:1px solid var(--ui-line);
- border-radius:10px;text-align:left;font-weight:500;box-shadow:0 1px 2px rgba(17,36,30,.03);
+ border-radius:11px;text-align:left;font-weight:500;box-shadow:none;
  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin:0;
 }
-.mach .welcome-prompts button:hover,.mach .suggestion-card:hover{background:#f3faf7;border-color:#9dc8b9;color:var(--ui-accent)}
+.mach .welcome-prompts button:hover,.mach .suggestion-card:hover{background:#f4faf7;border-color:#a8d4c4;color:var(--ui-accent)}
 .mach .welcome-prompts button:after,.mach .suggestion-card:after{display:none}
 .mach .suggestion-card span{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13px;line-height:1.4;color:inherit}
-.mach .suggestion-card span:last-child:not(:first-child){flex:0 0 auto;font-size:15px;line-height:1;color:#72857f}
-.mach .suggestion-card b{display:block;font-size:13.5px;font-weight:600;line-height:1.35;color:var(--ui-ink)}
-.mach .suggestion-card small{display:block;font-size:12px;font-weight:400;line-height:1.4;color:var(--ui-muted)}
+.mach .suggestion-card span:last-child:not(:first-child){flex:0 0 auto;font-size:15px;line-height:1;color:#9ca3af}
+.mach .suggestion-card b{display:block;font-size:13px;font-weight:600;line-height:1.35;color:var(--ui-ink)}
+.mach .suggestion-card small{display:block;font-size:11.5px;font-weight:400;line-height:1.4;color:var(--ui-muted)}
 .mach .suggestion-card:hover b{color:var(--ui-accent)}
 .mach .suggestion-card:hover span:last-child:not(:first-child){color:var(--ui-accent)}
 .mach .assistant-body>.hint{font-size:12px;line-height:1.65;color:var(--ui-muted)}
 
-/* Drag-and-Drop Overlay & Dropzones (phối hợp hook ux-interactions) */
+/* Drag-and-Drop Overlay & Dropzones */
 .mach .assistant.is-drop-active{
  border:2px dashed var(--ui-accent)!important;
  background:#f3faf7!important;
- box-shadow:0 0 0 4px rgba(17,105,91,.1)!important;
+ box-shadow:inset 0 0 0 2px rgba(17,105,91,.1)!important;
 }
 .mach .upload-zone.is-drop-active{
  border:2px dashed var(--ui-accent)!important;
@@ -471,13 +479,35 @@ body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-t
 }
 .mach .assistant-drop-overlay small{font-size:12px;font-weight:400;color:var(--ui-muted)}
 
-/* Ngữ cảnh & Các bước AI */
+/* Ngữ cảnh & Các bước AI (sạch, tách dòng badge/mô tả không dính chữ) */
 .mach .assistant-context-bar{
- display:flex;flex-wrap:wrap;align-items:center;gap:6px;
- padding:8px 11px;margin:0 0 10px;border-radius:10px;
- background:#f5f8f6;border:1px solid var(--ui-line);
+ display:flex;flex-direction:column;align-items:stretch;gap:8px;
+ padding:10px 12px;margin:0 0 10px;border-radius:12px;
+ background:#f8faf9;border:1px solid var(--ui-line);
  font-size:12px;color:var(--ui-ink);
 }
+.mach .assistant-context-head{display:flex;flex-direction:column;gap:4px;min-width:0}
+.mach .assistant-context-badge,
+.mach .ctx-badge{
+ display:inline-flex;align-self:flex-start;font-size:11px;font-weight:600;
+ color:var(--ui-accent);background:#e8f5f0;border:1px solid #cce6dc;
+ padding:2px 8px;border-radius:999px;line-height:1.35;
+}
+.mach .assistant-context-head small,
+.mach .ctx-summary{display:block;font-size:12px;line-height:1.45;color:var(--ui-muted);margin:4px 0 0}
+.mach .assistant-context-actions{display:flex;flex-direction:column;gap:6px;width:100%}
+.mach .chat-source-bar{
+ display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+ padding:5px 8px;margin:0 0 6px;border-radius:9px;
+ background:#f8f9fa;border:1px solid var(--ui-line);
+}
+.mach .chat-source-bar b,.mach .chat-source-bar .chat-source-label{font-size:10px;font-weight:700;letter-spacing:.3px;color:var(--ui-muted);white-space:nowrap;flex-shrink:0}
+.mach .chat-source-bar button{
+ font-size:11px;font-weight:500;padding:3px 7px;min-height:24px;height:24px;
+ border-radius:6px;border:1px solid var(--ui-line);background:#ffffff;color:#374151;
+ white-space:nowrap;flex-shrink:0;
+}
+.mach .chat-source-bar button:hover{background:#eef6f3;border-color:#b8d9cb;color:var(--ui-accent)}
 .mach .ai-steps,.mach #matrix-live-steps{
  display:flex;flex-direction:column;gap:6px;margin:10px 0;padding:10px 12px;
  border-radius:10px;background:#f8faf9;border:1px solid var(--ui-line);
@@ -486,22 +516,30 @@ body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-t
 .mach .ai-step-item.is-active{color:var(--ui-accent);font-weight:600}
 .mach .ai-step-item.is-done{color:#15624b}
 
-.mach .chat-compose{padding:6px 12px 8px;max-height:42%;overflow:auto;border-top:1px solid #eff2ef;background:#fff;position:static}
-.mach .compose-box{padding:7px 10px 5px;border-radius:13px;border:1px solid #cbd6d0;background:#fff;box-shadow:0 2px 6px rgba(17,36,30,.04)}
-.mach .compose-box:focus-within{border-color:var(--ui-accent);box-shadow:0 0 0 3px rgba(17,105,91,.11)}
-.mach #chat-input{font-size:14px;min-height:36px;margin:0 0 3px;padding:0;line-height:1.45;color:var(--ui-ink)}
-.mach #chat-input::placeholder{color:#5a6e68;opacity:1}
-.mach .compose-bottom{margin-top:0;min-height:30px;gap:6px}
+.mach .chat-compose{padding:8px 12px 10px;max-height:42%;overflow:auto;border-top:1px solid #f1f3f4;background:#fff;position:static}
+.mach .compose-box{padding:8px 10px 6px;border-radius:12px;border:1px solid #d1d5db;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.mach .compose-box:focus-within{border-color:var(--ui-accent);box-shadow:0 0 0 3px rgba(17,105,91,.1)}
+.mach #chat-input{font-size:13.5px;min-height:36px;margin:0 0 3px;padding:0;line-height:1.45;color:var(--ui-ink)}
+.mach #chat-input::placeholder{color:#6b7280;opacity:1}
+.mach .compose-bottom{margin-top:0;min-height:30px;gap:5px;flex-wrap:nowrap}
 .mach .compose-bottom>button[type=submit],.mach #matrix-composer-stop{
- width:32px;height:32px;min-width:32px;min-height:32px;padding:6px;
- border:0;border-radius:50%;background:var(--ui-accent);color:#fff;
+ width:30px;height:30px;min-width:30px;min-height:30px;padding:5px;
+ border:0;border-radius:50%;background:var(--ui-accent);color:#fff;flex-shrink:0;
 }
-.mach #chat-form button[type=submit]:disabled{background:#e3ebe7;color:#6e837c;opacity:1}
+.mach #chat-form button[type=submit]:disabled{background:#e5e7eb;color:#9ca3af;opacity:1}
 .mach #matrix-composer-stop{font-size:13px}
-.mach .compose-attachments button{width:30px;height:30px;min-width:30px;min-height:30px;font-size:22px;padding:0;border:0;background:none;color:#465d56;border-radius:7px}
+.mach .compose-attachments button{width:28px;height:28px;min-width:28px;min-height:28px;font-size:20px;padding:0;border:0;background:none;color:#4b5563;border-radius:7px}
 .mach .compose-attachments button:hover{background:var(--surface-hover);color:var(--ui-accent)}
-.mach .effort-toggle{font-size:12px;max-width:none;padding:4px 8px;min-height:30px;background:none;border:0;color:#4f645d;border-radius:7px}
+.mach .effort-toggle{font-size:11.5px;max-width:none;padding:3px 7px;min-height:28px;background:none;border:0;color:#5f6368;border-radius:7px;white-space:nowrap}
 .mach .effort-toggle:hover{background:var(--surface-hover);color:var(--ui-ink)}
+.mach .chat-time-select{
+ width:auto!important;max-width:162px;height:28px!important;min-height:28px!important;
+ padding:2px 6px!important;border-radius:7px!important;border:1px solid #e5e7eb!important;
+ background:#f8f9fa!important;color:#374151!important;font-size:11.5px!important;font-weight:500;
+ margin-left:auto;flex-shrink:0;cursor:pointer;
+}
+.mach .compose-bottom:has(.effort-toggle) .chat-time-select{margin-left:0}
+.mach .chat-time-select:hover{border-color:#cbd5e1!important;background:#f1f3f4!important}
 .mach .ux-mode-slot .chat-context-mode{display:block;margin:14px 0}
 .mach .ux-mode-slot .chat-context-mode label{display:block;margin:0 0 6px;font-size:12px;color:var(--ui-muted)}
 .mach .ux-mode-slot .chat-context-mode select{max-width:none;width:100%;min-height:36px;font-size:13px}
@@ -637,39 +675,30 @@ body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-t
 .inserted-table td img.cell-image{display:block;max-width:100%;max-height:180px;height:auto;margin:4px auto;object-fit:contain;border-radius:4px}
 .inserted-table td .cell-caption{display:block;text-align:center;font-size:11px;line-height:1.4;color:#4a5e57;margin-top:4px}
 
-/* Responsive 1440 / 1280 / 1100 / 760 / 390 */
+/* Responsive 1650 / 1440 / 1280 / 1100 / 760 / 390 / 360 */
 @media(min-width:1650px){
- .mach .workspace{grid-template-columns:244px minmax(0,1fr) 376px}
- .mach .workspace.chat-hidden{grid-template-columns:244px minmax(0,1fr)}
- .mach .workspace.outline-collapsed{grid-template-columns:0 minmax(0,1fr) 376px}
+ .mach .workspace{grid-template-columns:236px minmax(0,1fr) 368px}
+ .mach .workspace.chat-hidden{grid-template-columns:236px minmax(0,1fr)}
+ .mach .workspace.outline-collapsed{grid-template-columns:0 minmax(0,1fr) 368px}
  .mach .workspace.outline-collapsed.chat-hidden{grid-template-columns:0 minmax(0,1fr)}
 }
 @media(max-width:1450px){
- .mach .workspace{grid-template-columns:198px minmax(0,1fr) 326px}
- .mach .workspace.chat-hidden{grid-template-columns:198px minmax(0,1fr)}
- .mach .workspace.outline-collapsed{grid-template-columns:0 minmax(0,1fr) 326px}
+ .mach .workspace{grid-template-columns:206px minmax(0,1fr) 334px}
+ .mach .workspace.chat-hidden{grid-template-columns:206px minmax(0,1fr)}
+ .mach .workspace.outline-collapsed{grid-template-columns:0 minmax(0,1fr) 334px}
  .mach .workspace.outline-collapsed.chat-hidden{grid-template-columns:0 minmax(0,1fr)}
- .mach .top{padding:8px 18px!important}
- .mach .header-title{max-width:36vw;font-size:16px}
- .mach .workflow-strip{padding:5px 12px 4px;gap:6px}
- .mach .wf-steps{gap:3px}
- .mach .wf-step{padding:2px 7px 2px 4px;gap:4px;min-height:26px}
- .mach .wf-num{width:17px;height:17px;font-size:10px}
- .mach .wf-text{gap:4px}
- .mach .wf-text b{font-size:11.5px}
- .mach .wf-text small{font-size:9.5px}
- .mach .wf-sep{font-size:11px}
- .mach .wf-mode-pill{padding:3px 8px;font-size:10.5px}
- .mach .editing-bar{padding:5px 12px 3px!important;gap:6px}
+ .mach header.top{padding:0 12px!important}
+ .mach .header-title{max-width:24vw!important;font-size:14.5px!important}
+ .mach .editing-bar{padding:4px 12px!important;gap:6px}
  .mach .editor-toolbar select{max-width:110px;font-size:11.5px!important}
  .mach .editor-toolbar #doc-font{max-width:124px}
  .mach .editor-toolbar .reference-toolbar-extra select{max-width:110px}
  .mach .document-bar{padding:0 12px!important}
 }
 @media(max-width:1360px){
- .mach .header-title{max-width:38vw}
- .mach .saved{display:none}
- .mach .header-actions .focus-button,.mach .header-actions .quiet span{display:none}
+ .mach .header-title{max-width:22vw!important}
+ .mach .saved{display:none!important}
+ .mach .header-actions .quiet>span{display:none}
  .mach .editor-toolbar select{max-width:98px}
  .mach .editor-toolbar #doc-font{max-width:108px}
  .mach .editor-toolbar .reference-toolbar-extra select{max-width:98px}
@@ -678,54 +707,63 @@ body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-t
  .mach .workspace{grid-template-columns:0 minmax(0,1fr) 322px}
  .mach .workspace.chat-hidden{grid-template-columns:0 minmax(0,1fr)}
  .mach .sidebar{display:none}
- .mach .sidebar.open{display:flex;position:fixed;left:72px;top:80px;bottom:14px;width:250px;z-index:25;margin:10px;box-shadow:0 16px 40px rgba(15,29,25,.18)}
+ .mach .sidebar.open{display:flex;position:fixed;left:0;top:52px;bottom:0;width:250px;z-index:25;margin:0;box-shadow:8px 0 28px rgba(15,29,25,.16)}
+ .mach .design-rail .rail-label-keep{display:none}
+ .mach .account-control .studio-account-text{display:none}
 }
 @media(max-width:760px){
- .mach .design-rail{width:52px;padding:12px 3px 8px;gap:12px}
- .mach .mach-logo{width:34px;height:34px;border-radius:9px}
- .mach .mach-logo .ico{width:18px;height:18px}
- .mach .design-rail button{font-size:9px;min-height:46px;gap:4px;padding:5px 1px}
- .mach .design-rail .ico{width:17px;height:17px}
- .mach .rail-links,.mach .rail-bottom{gap:3px}
- .mach #app{margin-left:52px;width:calc(100% - 52px)}
- .mach header.top{min-height:64px;padding:7px 10px!important;gap:4px!important}
- .mach .mvp-document{flex:1 1 0;min-width:0}
- .mach .design-breadcrumb{font-size:9px;gap:5px}
- .mach .header-title{width:auto!important;max-width:100%!important;font-size:14px;margin-left:-4px;padding:1px 4px}
- .mach .menubar{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none;gap:2px;max-width:100%}
+ .mach #app{margin-left:0!important;width:100%!important}
+ .mach header.top{height:52px!important;min-height:52px!important;padding:0 8px!important;gap:4px!important}
+ .mach .mvp-document{flex:1 1 0;min-width:0;gap:7px!important}
+ .mach .mach-logo{width:28px!important;height:28px!important;border-radius:7px!important}
+ .mach .mach-logo .ico{width:16px!important;height:16px!important}
+ .mach .header-title{width:auto!important;min-width:60px!important;max-width:100%!important;font-size:13px!important;margin-left:-3px;padding:1px 3px!important}
+ .mach .menubar{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none;gap:1px!important;max-width:100%}
  .mach .menubar .menu-button:nth-child(n+5){display:inline-flex!important}
- .mach .menubar .menu-button{flex-shrink:0;white-space:nowrap;font-size:11px!important;padding:4px 7px!important}
- .mach .header-actions{gap:4px;margin-top:2px}
- .mach .header-actions button{width:30px;height:30px;min-width:30px;min-height:30px;padding:5px;border-radius:8px}
- .mach .header-actions button>span{display:none}
- .mach .header-actions .design-export{display:none}
- .mach .studio-avatar{width:27px;height:27px;font-size:12px}
+ .mach .menubar .menu-button{flex-shrink:0;white-space:nowrap;font-size:10.5px!important;padding:1px 5px!important;height:18px!important;min-height:18px!important}
+ .mach .design-rail{gap:1px!important;margin-left:2px!important}
+ .mach .design-rail button{width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important;padding:3px!important}
+ .mach .design-rail .ico{width:15px!important;height:15px!important}
+ .mach .design-rail .rail-label{display:none!important}
+ .mach .design-rail [data-action=design-command]{display:none!important}
+ .mach .header-actions{gap:2px!important}
+ .mach .header-actions button{width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important;padding:3px!important;border-radius:7px!important}
+ .mach .header-actions button>span{display:none!important}
+ .mach .header-actions .focus-button,
+ .mach .header-actions .quiet{display:none!important}
+ .mach .header-actions .design-export{display:inline-flex!important}
+ .mach .account-control{display:flex!important;align-items:center;border:0!important;padding-left:2px!important;margin-left:0!important}
+ .mach .account-control .credits-button{display:none!important}
+ .mach .account-control .account-button{padding:0!important;width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important}
+ .mach .header-actions .account-button .studio-avatar,
+ .mach .studio-avatar{display:grid!important;width:26px!important;height:26px!important;font-size:11px!important}
  .mach .workspace,.mach .workspace.chat-hidden,.mach .workspace.outline-collapsed,.mach .workspace.outline-collapsed.chat-hidden{grid-template-columns:minmax(0,1fr)!important}
- .mach .sidebar.open{left:52px;top:76px;bottom:0;width:calc(100vw - 68px);margin:8px}
- .mach .main:has(.workflow-strip){grid-template-rows:38px 46px 26px minmax(0,1fr) 26px!important}
- .mach .workflow-strip{padding:4px 8px;gap:4px}
- .mach .wf-steps{gap:4px}
- .mach .wf-sep{display:none}
- .mach .wf-step{padding:3px 7px 3px 4px;min-height:26px;gap:4px;border-radius:999px}
- .mach .wf-num{width:17px;height:17px;font-size:10px}
- .mach .wf-text b{font-size:11px}
- .mach .wf-text small,.mach .wf-mode-pill,.mach .wf-desktop-only{display:none!important}
- .mach .wf-mobile-only{display:inline}
- .mach .editing-bar{padding:4px 8px!important;gap:5px}
- .mach .editor-toolbar{height:36px!important}
- .mach .ux-view-tabs button{padding:3px 8px;min-height:26px;font-size:11px}
- .mach .document-bar{height:26px!important;padding:0 8px!important;gap:6px}
+ .mach .sidebar.open{left:0;top:52px;bottom:0;width:min(260px,82vw);margin:0}
+ .mach .main,.mach .main:has(.workflow-strip){grid-template-rows:40px 18px minmax(0,1fr) 32px!important}
+ .mach .editing-bar{height:40px!important;padding:3px 8px!important;gap:5px}
+ .mach .editor-toolbar{height:32px!important;padding:0 6px!important}
+ .mach .ux-view-tabs button{padding:2px 8px!important;min-height:24px!important;height:24px!important;font-size:11px!important}
+ .mach .document-bar{height:18px!important;min-height:18px!important;padding:0 8px!important}
+ .mach .ruler{padding:0 12px!important;height:12px!important}
  .mach .ruler span{display:none}
- .mach .paper-scroll{padding:6px 8px 36px!important}
+ .mach .paper-scroll{padding:8px 8px 36px!important}
  .mach .paper.paginated-paper{width:100%!important;max-width:100%!important;gap:14px}
- .mach .document-page{width:100%!important;min-width:0!important;min-height:auto!important;padding:18px 14px 32px!important;border-radius:6px}
+ .mach .document-page{width:100%!important;min-width:0!important;min-height:auto!important;padding:18px 14px 32px!important;border-radius:4px!important}
  .mach .page-content{min-height:auto!important}
  .mach .page-content>.exam-heading{grid-template-columns:1fr!important;gap:10px;margin:4px 0 18px!important}
  .mach .question .options{grid-template-columns:1fr!important;gap:4px}
- .mach .question:is(.selected,:hover,:focus-within) .q-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:5px;margin-bottom:6px}
- .mach .question:is(.selected,:hover,:focus-within) .q-label{float:none;margin-right:0}
- .mach .question .q-top .q-actions,.mach .question .q-actions{position:static;width:100%;max-width:100%;flex-wrap:wrap;justify-content:flex-start;gap:4px;margin:2px 0 4px;padding:4px 5px;box-shadow:0 1px 4px rgba(17,36,30,.06)}
- .mach .q-quick-btn,.mach .question .q-actions button{min-height:28px;height:auto;padding:4px 8px;font-size:11px;white-space:normal;max-width:100%}
+ .mach .question:is(.selected,:hover,:focus-within) .q-top{display:flex!important;flex-wrap:wrap!important;align-items:center;justify-content:space-between;gap:5px;margin-bottom:6px}
+ .mach .question:is(.selected,:hover,:focus-within) .q-label{float:none!important;margin-right:0}
+ .mach .question .q-top .q-actions,.mach .question .q-actions{position:static!important;width:100%;max-width:100%;flex-wrap:wrap!important;justify-content:flex-start;gap:3px;margin:2px 0 4px;padding:3px 4px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+ .mach .q-quick-btn,.mach .question .q-actions button{min-height:26px!important;height:auto!important;padding:3px 7px!important;font-size:11px!important;white-space:normal;max-width:100%}
+ .mach .main-footer{padding:0 8px!important;gap:6px}
+ .mach .main-footer .wf-step{padding:2px 6px;font-size:11px;gap:3px}
+ .mach .main-footer .wf-step .ico,
+ .mach .main-footer .wf-step small,
+ .mach .main-footer .wf-mode-pill,
+ .mach .main-footer .studio-word-count,
+ .mach .main-footer .studio-q-count,
+ .mach .main-footer .footer-sep{display:none!important}
  .mach .marking-guide{overflow-x:auto}
  .mach .question-assets{overflow-x:auto;max-width:100%}
  .mach .wb-library-card{flex-direction:column;align-items:flex-start}
