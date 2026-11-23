@@ -4,8 +4,10 @@ import asyncio
 import copy
 import hashlib
 import json
+import os
 import platform
 import re
+import shutil
 import time
 import unicodedata
 from itertools import pairwise
@@ -14,11 +16,11 @@ from pathlib import Path
 import httpx
 
 from mach_backend.ai_contract import AIError
-from mach_backend.gemini_model import GEMINI_MODEL, GeminiKeyPool, GeminiModel
+from mach_backend.gemini_model import GEMINI_MODEL, GeminiKeyPool, GeminiModel, clean_api_key
 from mach_backend.matrix_agent import run_matrix_agent, sha256_json
 from mach_backend.mixed_questions import TRUEFALSE_ANSWER_GUIDE
 from mach_backend.poc_matrix import LocalModel, RunLog
-from mach_backend.poc_policy import CallBudget, RunPolicy
+from mach_backend.poc_policy import CallBudget, ExtendedRunPolicy, RunPolicy
 
 LEVEL_NAMES = ("nhan_biet", "thong_hieu", "van_dung", "van_dung_cao")
 LEVEL_DESCRIPTION = (
@@ -731,14 +733,38 @@ async def local_model_call(model, purpose, body):
     return {"role": "assistant", "content": json.dumps({"reviews": combined}, ensure_ascii=False)}
 
 
+def _make_gemini_key_pool(
+    api_key: str, backup_key: str = "", extra_keys: tuple[str, ...] = ()
+) -> GeminiKeyPool:
+    if extra_keys:
+        try:
+            return GeminiKeyPool(api_key, backup_key, *extra_keys)  # type: ignore[call-arg]
+        except TypeError:
+            pool = GeminiKeyPool(api_key, backup_key)
+            cleaned = [clean_api_key(k) for k in (api_key, backup_key, *extra_keys) if k]
+            pool.keys = tuple(dict.fromkeys(cleaned))[:8]
+            return pool
+    return GeminiKeyPool(api_key, backup_key)
+
+
 class AgentGeneration:
     def __init__(self, store, model: str, directory: Path, *, job_status, call=None):
         self.job_status = job_status
         self.store, self.model, self.directory, self.call = store, model, directory, call
         self.provider_name, self.gemini_key, self.gemini_free_tier = "ollama", "", False
         self.gemini_backup_key = ""
+        self.gemini_extra_keys: tuple[str, ...] = ()
         self.gemini_auto_fallback = True
         self.gemini_model = GEMINI_MODEL
+        self.deepseek_key: str = ""
+        self.deepseek_session_limit_usd: float = 0.5
+        self.deepseek_total_limit_usd: float = 5.0
+        self.deepseek_spent_session_usd: float = 0.0
+        self.deepseek_spent_total_usd: float = 0.0
+        self.fixed_router_enabled: bool = True
+        self.extended_policy: ExtendedRunPolicy = ExtendedRunPolicy()
+        self.agy_custom_path: str = ""
+        self.early_stop_jobs: set[str] = set()
         self.review_provider_name = None
         self.review_gemini_model = GEMINI_MODEL
         self.review_model = model
@@ -774,6 +800,81 @@ class AgentGeneration:
         }
 
     @property
+    def all_gemini_keys(self) -> tuple[str, ...]:
+        raw = (self.gemini_key, self.gemini_backup_key, *self.gemini_extra_keys)
+        return tuple(dict.fromkeys(k for k in raw if k))
+
+    @property
+    def agy_available(self) -> bool:
+        return bool(shutil.which("agy") or self.agy_custom_path.strip())
+
+    def _checkpoint_path(self, job_id: str) -> Path:
+        safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", str(job_id).strip()) or "unknown"
+        return self.directory / "job-checkpoints" / f"{safe_id}.json"
+
+    def save_job_checkpoint(
+        self,
+        job_id: str,
+        *,
+        exam_id: str,
+        stage: str,
+        micro_task: str,
+        passed_questions: list[dict],
+        total_slots: int,
+        elapsed_seconds: float,
+    ) -> dict:
+        target = self._checkpoint_path(job_id)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        early_stop = str(job_id) in self.early_stop_jobs
+        payload = {
+            "jobId": str(job_id),
+            "examId": str(exam_id),
+            "status": "early_stopped" if early_stop else "checkpointed",
+            "stage": str(stage),
+            "microTask": str(micro_task),
+            "passedQuestions": list(passed_questions),
+            "passedCount": len(passed_questions),
+            "totalSlots": int(total_slots),
+            "elapsedSeconds": round(float(elapsed_seconds), 3),
+            "earlyStopRequested": early_stop,
+        }
+        tmp_path = target.with_suffix(f".{os.getpid()}.tmp")
+        tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(tmp_path, target)
+        return payload
+
+    def get_job_checkpoint(self, job_id: str) -> dict | None:
+        target = self._checkpoint_path(job_id)
+        if not target.is_file():
+            return None
+        try:
+            data = json.loads(target.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        if not isinstance(data, dict):
+            return None
+        if str(job_id) in self.early_stop_jobs:
+            data["earlyStopRequested"] = True
+            data["status"] = "early_stopped"
+        return data
+
+    def request_early_stop(self, job_id: str) -> dict:
+        job_key = str(job_id)
+        self.early_stop_jobs.add(job_key)
+        existing = self.get_job_checkpoint(job_key)
+        if existing is not None:
+            self.save_job_checkpoint(
+                job_key,
+                exam_id=str(existing.get("examId", "")),
+                stage=str(existing.get("stage", "early_stop")),
+                micro_task=str(existing.get("microTask", "M04_GEN_STANDARD")),
+                passed_questions=list(existing.get("passedQuestions", [])),
+                total_slots=int(existing.get("totalSlots", 0)),
+                elapsed_seconds=float(existing.get("elapsedSeconds", 0.0)),
+            )
+        return {"ok": True, "jobId": job_key, "earlyStopRequested": True}
+
+    @property
     def active_model(self):
         return self.gemini_model if self.provider_name == "gemini" else self.model
 
@@ -789,6 +890,11 @@ class AgentGeneration:
 
     @property
     def connection_stamp(self):
+        cred_items: list[str] = [self.gemini_key, self.gemini_backup_key]
+        if self.gemini_extra_keys:
+            cred_items.extend(self.gemini_extra_keys)
+        if self.deepseek_key:
+            cred_items.append(self.deepseek_key)
         return sha256_json(
             {
                 "generator": {"provider": self.provider_name, "model": self.active_model},
@@ -796,7 +902,7 @@ class AgentGeneration:
                 "budget": self.run_policy.model_dump(),
                 "geminiReady": bool(self.gemini_key) and self.gemini_free_tier,
                 "geminiAutoFallback": self.gemini_auto_fallback,
-                "credentialHash": sha256_json([self.gemini_key, self.gemini_backup_key]),
+                "credentialHash": sha256_json(cred_items),
             }
         )
 
@@ -823,7 +929,11 @@ class AgentGeneration:
                 else None
             ),
         )
-        key_pool = GeminiKeyPool(api_key, self.gemini_backup_key) if api_key else None
+        key_pool = (
+            _make_gemini_key_pool(api_key, self.gemini_backup_key, self.gemini_extra_keys)
+            if api_key
+            else None
+        )
         log.write("input.json", job.model_dump(mode="json"))
         snapshot = log.directory / "source-snapshot"
         snapshot.mkdir()
