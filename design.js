@@ -10,6 +10,7 @@ export function mountDesign(c){ctx=c;document.body.classList.add('mach');documen
  const ai=actions.querySelector('[data-action=toggle-ai]');if(ai){ai.setAttribute('aria-label','Ẩn / hiện trợ lý');ai.setAttribute('title','Hỏi AI');ai.innerHTML=c.icon('chat')+'<span>Hỏi AI</span>';}
  const sidebarTitle=$('.sidebar-title');if(sidebarTitle)sidebarTitle.innerHTML=`Tài liệu ${b('collapse-outline','◧','aria-label="Thu gọn mục lục" title="Thu gọn mục lục"')}`;
  $('.sidebar .design-doc-meta')?.remove();$('.sidebar .design-side-actions')?.remove();
+ $('.sidebar')?.insertAdjacentHTML('beforeend',`<div class="design-side-actions">${b('subject-library','<span class="formula-tool-symbol">ƒ</span> Công thức & mẫu','class="design-library-open"')}${b('studio-question','＋ Thêm câu hỏi','class="subtle"')}</div>`);
  const outlineTab=$('.sidebar .tabs button[data-tab=outline]');if(outlineTab)outlineTab.textContent='Mục lục';
  const templatesTab=$('.sidebar .tabs button[data-tab=templates]');if(templatesTab)templatesTab.textContent='Mẫu đề thi';
  const head=$('.assistant-head');if(head)head.querySelector('.assistant-title').innerHTML='<span>Trợ lý AI soạn đề</span>';

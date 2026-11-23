@@ -9,7 +9,7 @@ import {chromium} from 'playwright-core';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const ROOT = process.cwd();
-const PYTHON_EXE = path.join(ROOT, 'backend', '.venv', 'Scripts', 'python.exe');
+const PYTHON_EXE = process.env.QA_PYTHON || path.join(ROOT, 'backend', '.venv', 'Scripts', 'python.exe');
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -63,6 +63,7 @@ async function startIsolatedServer(port, dataDir) {
       env: {
         ...process.env,
         MACH_DATA_DIR: dataDir,
+        PYTHONPATH: path.join(ROOT, 'backend', 'src'),
         NO_PROXY: '127.0.0.1,localhost',
         PYTHONIOENCODING: 'utf-8',
       },

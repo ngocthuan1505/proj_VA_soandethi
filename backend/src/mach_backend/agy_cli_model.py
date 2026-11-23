@@ -218,7 +218,9 @@ class AgyCliModel:
 
         started = time.perf_counter()
         try:
-            with tempfile.TemporaryDirectory(prefix="mach-agy-sandbox-") as sandbox_dir:
+            with tempfile.TemporaryDirectory(
+                prefix="mach-agy-sandbox-", ignore_cleanup_errors=True
+            ) as sandbox_dir:
                 if len(prompt_text) > 5500:
                     cli_prompt = (
                         "Xử lý yêu cầu đầy đủ được truyền qua stdin và trả đúng định dạng yêu cầu."

@@ -84,6 +84,7 @@ class GeminiKeyPool:
             clean_api_key("")
         self.index, self.exhausted = 0, set()
         self.invalid = set()
+        self.vertex_disabled_slots: set[int] = set()
         self.cooldown_seconds = cooldown_seconds
         self.cooldown_until: dict[tuple[str, int], float] = {}
 
@@ -219,6 +220,18 @@ class GeminiModel:
                             httpStatus=error.http_status,
                             reason=error.code,
                         )
+                    elif error.code == "vertex_api_disabled":
+                        self.key_pool.vertex_disabled_slots.add(slot)
+                        self.log.emit(
+                            "provider_endpoint_switch",
+                            purpose=purpose,
+                            model=actual_model,
+                            keySlot=slot + 1,
+                            httpStatus=403,
+                            reason="vertex_api_disabled",
+                            toEndpoint="generativelanguage",
+                        )
+                        continue
                     elif error.code == "provider_model_not_found" and self.auto_fallback:
                         last_not_found = error
                         last_switch_status = 404
@@ -334,7 +347,9 @@ class GeminiModel:
         # Thinking và nội dung/công cụ dùng chung trần; không cắt phần trả lời để ép nhanh.
         output_limit = min(32768, 8192 + batch_size * 1400) if batch_size else 4096
         active_key = self.key_pool.keys[slot]
-        is_vertex = is_vertex_express_key(active_key)
+        is_vertex = (
+            is_vertex_express_key(active_key) and slot not in self.key_pool.vertex_disabled_slots
+        )
 
         if is_vertex:
             endpoint = f"{VERTEX_EXPRESS_BASE}/{actual_model}:generateContent"
@@ -427,6 +442,18 @@ class GeminiModel:
                         f"call-{index:02}-error.json",
                         redact_secrets(details, self.key_pool.keys),
                     )
+                    if is_vertex and response.status_code == 403:
+                        err_msg_lower = str(details.get("message", "")).casefold()
+                        if (
+                            "aiplatform.googleapis.com" in err_msg_lower
+                            or "has not been used in project" in err_msg_lower
+                            or "or it is disabled" in err_msg_lower
+                        ):
+                            raise AIError(
+                                "vertex_api_disabled",
+                                "Dự án của khóa AQ. chưa bật Vertex AI; chuyển sang Gemini API.",
+                                http_status=403,
+                            )
                     if is_vertex and response.status_code in {401, 403}:
                         raise AIError(
                             "provider_auth",

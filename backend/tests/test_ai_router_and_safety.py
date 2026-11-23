@@ -887,3 +887,59 @@ def test_fixed_task_router_includes_gateway_cross_in_m06_and_m11():
         "gateway_cross",
         "ollama",
     ]
+
+
+def test_vertex_api_disabled_403_falls_back_to_generativelanguage_for_aq_key(tmp_path):
+    from mach_backend.gemini_model import GEMINI_ENDPOINT
+
+    key = "AQ.fake_gl_only_key_000123"
+    pool = GeminiKeyPool.from_keys([key], cooldown_seconds=60.0)
+    log = RunLog(tmp_path / "aq-fallback")
+    urls: list[str] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        urls.append(str(request.url))
+        if str(request.url).startswith(VERTEX_EXPRESS_BASE):
+            return httpx.Response(
+                403,
+                json={
+                    "error": {
+                        "message": (
+                            "Agent Platform API has not been used in project 123456 "
+                            "before or it is disabled. Enable aiplatform.googleapis.com."
+                        )
+                    }
+                },
+            )
+        assert str(request.url) == GEMINI_ENDPOINT
+        assert request.headers.get("authorization") == f"Bearer {key}"
+        return httpx.Response(
+            200,
+            json={
+                "model": GEMINI_MODEL,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": '{"ok": true}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+            },
+        )
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            model = GeminiModel(client, key, log, key_pool=pool, auto_fallback=True)
+            first = await model("chat", {"messages": [{"role": "user", "content": "Hi"}]})
+            second = await model("chat", {"messages": [{"role": "user", "content": "Hi 2"}]})
+            return first, second
+
+    first, second = asyncio.run(run())
+    assert json.loads(first["content"]) == {"ok": True}
+    assert json.loads(second["content"]) == {"ok": True}
+    assert 0 in pool.vertex_disabled_slots
+    assert 0 not in pool.invalid
+    assert urls[0].startswith(VERTEX_EXPRESS_BASE)
+    assert urls[1] == GEMINI_ENDPOINT
+    # Lượt thứ 2 đi thẳng GEMINI_ENDPOINT không tốn vòng 403 trên Vertex nữa.
+    assert urls[2] == GEMINI_ENDPOINT

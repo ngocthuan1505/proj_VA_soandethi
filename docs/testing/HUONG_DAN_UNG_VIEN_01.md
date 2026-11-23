@@ -1,4 +1,4 @@
-# Soạn đề thi · hướng dẫn bản ứng viên
+# Soạn đề thi · hướng dẫn bản ứng viên (Ứng viên 58)
 
 ## Cài và mở app
 
@@ -12,23 +12,29 @@ Giải nén ZIP. Trên Windows, cài [uv](https://docs.astral.sh/uv/getting-star
 
 Chế độ tài khoản mở trang tạo quản trị viên lần đầu. Sau khi vào app, dùng **Tài khoản → Mời thành viên**. Mỗi chế độ có kho SQLite riêng trong thư mục giải nén. Giữ CMD mở khi dùng, nhấn `Ctrl+C` để dừng. Nếu cổng `4182` đã được dùng, chọn chế độ tài khoản hoặc demo có cổng riêng.
 
-## Giao diện mới và luồng soạn 4 bước
+## Giao diện mới 2 hàng phẳng gọn và luồng soạn 4 bước
 
-Ứng dụng sử dụng **giao diện sáng phẳng tối giản**: cột công cụ bên trái, **thanh quy trình 4 bước** (`1 Nguồn` → `2 Ma trận` → `3 Soạn & Sửa` → `4 Xuất & Mã đề`) kèm công tắc chuyển nhanh **Học sinh · Ẩn đáp án / Giáo viên · Hiện đáp án** ở đầu bàn soạn A4, và **khung Trợ lý AI** bên phải.
+Ứng dụng sử dụng **giao diện sáng phẳng 2 hàng** chuẩn bàn soạn văn bản: **2 hàng đầu trang** (hàng menu + thanh định dạng gọn kèm công tắc `Đề / Đáp án`), cột **Mục lục / Mẫu đề thi** bên trái thay cho cột rail dọc cũ, tờ giấy A4 ở giữa, **chân trang 1 dòng gọn** (`Đề gốc` · `Nguồn` · `Ma trận` · `Tạo mã đề` · công tắc `Học sinh · Ẩn đáp án / Giáo viên · Hiện đáp án` · đếm `Trang / câu / từ`), và **khung Trợ lý AI** bên phải.
 
 1. **Bước 1 — Nạp nguồn & Kho bài học mẫu đa môn (15 bộ / 31 bài):**
-   - **Kéo–thả trực tiếp** tệp `.docx`, `.pdf`, `.txt`, `.md`, `.pptx` hoặc ảnh (`PNG`, `JPEG`, `WEBP`, tối đa `15 MB`) thẳng vào khung Trợ lý AI (hoặc vùng tải tệp) để đọc nguồn tại máy và gắn làm ngữ liệu cho đề. PDF scan hoặc ảnh chỉ gửi AI OCR sau khi thầy cô xác nhận đồng ý.
-   - Hoặc bấm **`1 Nguồn`** / **`＋ Nguồn (4 kênh)`** để chọn theo 4 kênh: **`SGK / Bài học`**, **`Đề của tôi`**, **`Cộng đồng`**, **`Tệp/OCR`**. Riêng kênh **`SGK / Bài học`** có sẵn **15 bộ / 31 bài học mẫu đa môn tự biên soạn** (7 môn: Toán, Ngữ văn, Tiếng Anh, Khoa học tự nhiên, Vật lí, Hoá học, Sinh học; lớp 5, 9, 10, 11, 12), hỗ trợ tìm không dấu và trích xuất vào ngữ liệu đề. Có thể chọn **Mở ví dụ mẫu để thử nhanh** trong khung Trợ lý khi bắt đầu với đề trống.
+   - **Kéo–thả trực tiếp** tệp `.docx`, `.pdf`, `.txt`, `.md`, `.pptx` hoặc ảnh (`PNG`, `JPEG`, `WEBP`, tối đa `15 MB`) thẳng vào khung Trợ lý AI (hoặc dùng dải nhanh `+ Kho tài liệu`, `Bài SGK`, `Đề cộng đồng` ngay trên khung nhập chat) để đọc nguồn tại máy và gắn làm ngữ liệu cho đề. PDF scan hoặc ảnh chỉ gửi AI OCR sau khi thầy cô xác nhận đồng ý.
+   - Hoặc bấm **`Nguồn`** ở chân trang / **`＋ Nguồn (4 kênh)`** để chọn theo 4 kênh: **`SGK / Bài học`**, **`Đề của tôi`**, **`Cộng đồng`**, **`Tệp/OCR`**. Riêng kênh **`SGK / Bài học`** có sẵn **15 bộ / 31 bài học mẫu đa môn tự biên soạn** (7 môn: Toán, Ngữ văn, Tiếng Anh, Khoa học tự nhiên, Vật lí, Hoá học, Sinh học; lớp 5, 9, 10, 11, 12), hỗ trợ tìm không dấu và trích xuất vào ngữ liệu đề. Có thể chọn **Mở ví dụ mẫu để thử nhanh** trong khung Trợ lý khi bắt đầu với đề trống.
 2. **Bước 2 — Ma trận đề (`0,05`, `+ Nhánh` và cảnh báo `Lệch điểm`):**
-   - Bấm **`2 Ma trận`** trên thanh quy trình (hoặc **Xem → Ma trận** / **Soạn theo ma trận**). Có thể nhập `docs/testing/Ma-tran-demo-8-cau.csv` (8 câu, 4 dạng, tổng 10 điểm) hoặc tự chỉnh trực tiếp từng dòng:
+   - Bấm **`Ma trận`** ở chân trang (hoặc **Xem → Ma trận** / **Soạn theo ma trận**). Có thể nhập `docs/testing/Ma-tran-demo-8-cau.csv` (8 câu, 4 dạng, tổng 10 điểm) hoặc tự chỉnh trực tiếp từng dòng:
      - Ô **Điểm/câu** hỗ trợ bước thập phân **`0,05`** (như `0,10`, `0,20`, `0,40`, `9,60`) hoặc để trống để tự chia phần điểm còn lại.
      - Bấm **`+ Nhánh`** / **`Đổi nhánh`** ở từng dòng để phân bổ câu theo **`Tự chọn A`** / **`Tự chọn B`** (mỗi nhánh đủ `10,00 đ`).
      - Khi bấm **`↻ Lập ma trận từ đề`** (hoặc **Lập ma trận ngược từ đề đang mở**), nếu các câu cùng chủ đề/loại/mức nhưng khác điểm hoặc thiếu thông tin, hệ thống tách dòng riêng và hiển thị cảnh báo kèm nhãn **`Lệch điểm`** / **`Cần rà`** để giáo viên kiểm lại trước khi tích **Tôi xác nhận cơ cấu này** và bấm **Lưu ma trận** / **Dùng ma trận này**.
-3. **Bước 3 — Soạn, sửa trên thanh thao tác nhanh & Trợ lý AI theo ngữ cảnh:**
+3. **Bước 3 — Soạn, sửa, Chat tự nhiên M11, Thời gian chạy & Quản trị khóa DPAPI:**
    - Khi chọn một câu hỏi trên bàn soạn, **thanh thao tác nhanh** luôn hiển thị ngay đầu câu (gọn trên cả màn hình máy tính lẫn di động `390px`): **Chọn câu** để gửi vào phạm vi Trợ lý, mở nhanh composer công thức (**`ƒ`**), chèn ảnh, chèn bảng (hiển thị cả ảnh trong ô bảng lẫn công thức KaTeX), sửa hình học tọa độ (**`◇`**), **`Duyệt` / `Đã duyệt`**, nhân bản (**`❐`**, cấp UUID mới), di chuyển lên/xuống (**`↑` / `↓`**) và mở thuộc tính/nguồn câu (**`⚙`**).
-   - Khung **Trợ lý AI** hiển thị thẻ gợi ý theo đúng ngữ cảnh hiện tại của đề (đề trống, đã có nguồn, đang mở ma trận, có câu cần rà, đang chọn câu). Nếu chạy AI thật: mở **Công cụ → Kết nối AI & tìm nguồn**, chọn kết nối đã được cấp phép, xác nhận cho phép gửi yêu cầu rồi bấm **Bắt đầu soạn** / gửi prompt. Khi có đề xuất sửa ở dạng **Diff 2 cột**, bấm **`✓ Chấp nhận đề xuất`** để lưu hoặc **`✕ Bỏ đề xuất`** / **`↶ Hoàn tác bước trước`** để giữ bản đang soạn.
+   - **Khung Trợ lý AI tự nhiên (`M11`) & Thẻ hành động 1-chạm (`0` auto-save):** Hiển thị thẻ gợi ý theo ngữ cảnh hiện tại của đề, cho phép hỏi đáp sư phạm tự nhiên, gợi ý câu hỏi, phân tích ma trận hoặc đề xuất sửa. Mọi đề xuất thay đổi đề (như **Diff 2 cột** hoặc **Thẻ hành động 1-chạm**) **tuyệt đối không tự động ghi đè đề** — giáo viên luôn xem trước và bấm **`✓ Chấp nhận đề xuất`** để lưu, hoặc **`✕ Bỏ đề xuất`** / **`↶ Hoàn tác bước trước`** để giữ nguyên bản đang soạn.
+   - **Chọn khung thời gian chạy AI (`2p / 5p / 20p / 60p`, tối đa `7200s`):** Ngay cạnh nút gửi trong khung chat có **1 dropdown thời gian** chọn nhanh 4 mức (`Nhanh 2p`, `Chuẩn 5p`, `Kỹ sâu 20p`, `Mở rộng 60p`; có thể cấu hình sâu tới tối đa `7200s` kèm checkpoint tự phục hồi trong phần Kết nối AI).
+   - **Ngăn Quản trị khóa mã hóa cục bộ (Windows DPAPI):** Mở **Công cụ → Kết nối AI & tìm nguồn** (hoặc biểu tượng cài đặt AI) để cấu hình và lưu khóa mã hóa cục bộ theo từng máy Windows (không ghi plain-text ra repo/ZIP):
+     - **Đa khóa Gemini (6–8 khóa):** Nhập nhiều khóa Gemini (`AIza...` hoặc `AQ....`), tự động luân phiên khóa khi gặp giới hạn `429` và tự chọn đúng endpoint tương thích.
+     - **Cổng OpenAI-compatible tùy chỉnh:** Nhập **HTTPS Base URL**, **API key**, chọn model chính / dự phòng (như `deepseek-v4.1-flash`, `deepseek-v4-pro`, `qwen3.8-max`, `deepseek-chat`, `deepseek-reasoner`) kèm **trần chi phí USD** an toàn theo phiên và tổng tích lũy.
+     - **AGY CLI cục bộ:** Tự phát hiện `agy.exe` trên máy và chạy trong hộp cát thư mục tạm chỉ đọc, tước hoàn toàn biến môi trường bí mật.
+     - **Ollama cục bộ:** Chạy model hoàn toàn tại máy khi không dùng dịch vụ đám mây.
 4. **Bước 4 — Xuất đề tách rạch Học sinh / Giáo viên & Gói khóa QR:**
-   - Bấm **`4 Xuất & Mã đề`** (hoặc **Tệp → Xuất Word / PDF**). Hộp thoại **Xuất đề & Mã đề** gồm:
+   - Bấm **`Tạo mã đề`** ở chân trang hoặc nút **`Mã đề`** trên thanh đầu trang (hoặc **Tệp → Xuất Word / PDF**). Hộp thoại **Xuất đề & Mã đề** gồm:
      - **1. Đối chiếu bản in & OCR**: so ngắt trang giữa bàn soạn với A4 dự kiến và liệt kê thành phần OCR cần rà.
      - **Tạo nhiều mã đề**: chọn ≥ 2 câu cùng phần/cùng dạng/cùng ngữ liệu bảng để trộn câu hoặc phương án và xem trước mã đề.
      - **2. Tách bản Học sinh & Giáo viên**: tách riêng **Bản học sinh** (`HỌC SINH · SẠCH 100% ĐÁP ÁN`, không chứa đáp án, lời giải hay hội thoại) và **Bản giáo viên** (`GIÁO VIÊN · ĐỦ ĐÁP ÁN & BAREM`), xuất ở cả **`Word (.docx)`**, **`PDF`** và **`HTML`**.
