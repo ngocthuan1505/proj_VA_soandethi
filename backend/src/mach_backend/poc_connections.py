@@ -1,10 +1,18 @@
 """Cấu hình PoC; lưu mã hóa theo tài khoản Windows khi người dùng chọn lưu cục bộ."""
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import ValidationError
 
 from mach_backend.ai_contract import AIError
+from mach_backend.ai_safety import (
+    extract_api_key_token,
+    load_local_secrets_env,
+    normalize_openai_base_url,
+)
 from mach_backend.ai_service import OllamaProvider
+from mach_backend.deepseek_model import is_valid_gateway_model
 from mach_backend.gemini_model import GEMINI_MODEL, GEMINI_MODELS, clean_api_key
 from mach_backend.local_credentials import LocalConnectionStore
 from mach_backend.poc_policy import TIME_PRESET_POLICIES, ExtendedRunPolicy, RunPolicy
@@ -12,6 +20,57 @@ from mach_backend.workspace_agent import AgentGeneration
 
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
 DEEPSEEK_BASE = "https://api.deepseek.com/v1"
+
+
+def hydrate_provider_from_secrets_env(
+    provider: AgentGeneration,
+    path: Path | None = None,
+    *,
+    allow_in_pytest: bool = True,
+) -> bool:
+    """Nạp mặc định khóa Gemini và cổng API từ api-keys.env vào RAM (không ghi ra đĩa)."""
+    loaded = load_local_secrets_env(path, allow_in_pytest=allow_in_pytest)
+    if not loaded:
+        return False
+    hydrated = False
+    gemini_keys = loaded.get("geminiKeys")
+    if isinstance(gemini_keys, tuple) and gemini_keys and not provider.gemini_key:
+        provider.gemini_key = gemini_keys[0]
+        provider.gemini_backup_key = gemini_keys[1] if len(gemini_keys) > 1 else ""
+        provider.gemini_extra_keys = tuple(gemini_keys[2:8])
+        provider.gemini_free_tier = True
+        hydrated = True
+
+    gateway_key = loaded.get("gatewayApiKey")
+    if isinstance(gateway_key, str) and gateway_key and not provider.deepseek_key:
+        provider.deepseek_key = gateway_key
+        if isinstance(loaded.get("gatewayBaseUrl"), str):
+            provider.deepseek_url = loaded["gatewayBaseUrl"]
+        if isinstance(loaded.get("gatewayFastModel"), str) and is_valid_gateway_model(
+            loaded["gatewayFastModel"]
+        ):
+            provider.deepseek_model = loaded["gatewayFastModel"]
+        if isinstance(loaded.get("gatewayProModel"), str) and is_valid_gateway_model(
+            loaded["gatewayProModel"]
+        ):
+            provider.deepseek_reasoner_model = loaded["gatewayProModel"]
+        if isinstance(loaded.get("gatewayCrossModel"), str) and is_valid_gateway_model(
+            loaded["gatewayCrossModel"]
+        ):
+            provider.deepseek_cross_model = loaded["gatewayCrossModel"]
+        raw_backups = loaded.get("gatewayBackupModels")
+        if isinstance(raw_backups, tuple):
+            valid_backups = tuple(m for m in raw_backups if is_valid_gateway_model(m))[:12]
+            if valid_backups:
+                provider.deepseek_backup_models = valid_backups
+        sess_limit = loaded.get("gatewaySessionLimitUsd")
+        total_limit = loaded.get("gatewayTotalLimitUsd")
+        if isinstance(total_limit, float):
+            provider.deepseek_total_limit_usd = total_limit
+        if isinstance(sess_limit, float) and sess_limit <= provider.deepseek_total_limit_usd:
+            provider.deepseek_session_limit_usd = sess_limit
+        hydrated = True
+    return hydrated
 
 
 def connection_config(provider: AgentGeneration):
@@ -45,9 +104,11 @@ def connection_config(provider: AgentGeneration):
             "autoFallback": provider.gemini_auto_fallback,
         },
         "deepseek": {
-            "url": DEEPSEEK_BASE,
-            "model": "deepseek-chat",
-            "reasonerModel": "deepseek-reasoner",
+            "url": getattr(provider, "deepseek_url", DEEPSEEK_BASE),
+            "model": getattr(provider, "deepseek_model", "deepseek-chat"),
+            "reasonerModel": getattr(provider, "deepseek_reasoner_model", "deepseek-reasoner"),
+            "crossModel": getattr(provider, "deepseek_cross_model", ""),
+            "backupModels": list(getattr(provider, "deepseek_backup_models", ())),
             "hasKey": bool(getattr(provider, "deepseek_key", "")),
             "sessionLimitUsd": getattr(provider, "deepseek_session_limit_usd", 0.5),
             "totalLimitUsd": getattr(provider, "deepseek_total_limit_usd", 5.0),
@@ -83,9 +144,11 @@ def install_poc_connections(app: FastAPI, provider: AgentGeneration):
     store = LocalConnectionStore(provider.directory.parent)
     provider.persistence_available = store.available
     provider.persist_locally = store.available
+    loaded_saved = False
     try:
         saved = store.load()
         if saved:
+            loaded_saved = True
             for field in ("model", "checkModel"):
                 if saved.get("gemini", {}).get(field) == "gemini-3.5-flash-lite":
                     saved["gemini"][field] = GEMINI_MODEL
@@ -94,6 +157,8 @@ def install_poc_connections(app: FastAPI, provider: AgentGeneration):
         provider.persistence_error = (
             "Không mở được cấu hình mã hóa. Nhập lại khóa trong app nếu cần."
         )
+    if not loaded_saved:
+        hydrate_provider_from_secrets_env(provider, allow_in_pytest=False)
 
     @app.get("/api/config")
     def config():
@@ -149,24 +214,87 @@ def _parse_extra_gemini_keys(
     return extra_keys
 
 
-def _parse_deepseek_config(provider: AgentGeneration, deepseek: object) -> tuple[str, float, float]:
+def _parse_gateway_model_field(value: object, *, default: str, allow_empty: bool = False) -> str:
+    if value is None:
+        return default
+    if not isinstance(value, str) or "\r" in value or "\n" in value:
+        raise HTTPException(400, "Tên model cổng API không hợp lệ.")
+    cleaned = value.strip()
+    if not cleaned:
+        if allow_empty:
+            return ""
+        return default
+    if not is_valid_gateway_model(cleaned):
+        raise HTTPException(400, "Tên model cổng API không hợp lệ (2–80 ký tự chữ/số/._:/-).")
+    return cleaned
+
+
+def _parse_deepseek_config(
+    provider: AgentGeneration, deepseek: object
+) -> tuple[str, str, str, str, str, tuple[str, ...], float, float]:
     if not isinstance(deepseek, dict):
         raise HTTPException(400, "Cấu hình kết nối không hợp lệ.")
-    if deepseek.get("url", DEEPSEEK_BASE) != DEEPSEEK_BASE:
-        raise HTTPException(400, "Chỉ gửi khóa tới endpoint DeepSeek chính thức.")
+    ds_url = getattr(provider, "deepseek_url", DEEPSEEK_BASE)
+    if "url" in deepseek and deepseek["url"] is not None:
+        raw_url = deepseek["url"]
+        if raw_url == "":
+            ds_url = DEEPSEEK_BASE
+        else:
+            try:
+                ds_url = normalize_openai_base_url(raw_url)
+            except AIError as exc:
+                raise HTTPException(400, str(exc)) from None
+
+    ds_model = _parse_gateway_model_field(
+        deepseek.get("model"),
+        default=getattr(provider, "deepseek_model", "deepseek-chat"),
+    )
+    ds_reasoner = _parse_gateway_model_field(
+        deepseek.get("reasonerModel"),
+        default=getattr(provider, "deepseek_reasoner_model", "deepseek-reasoner"),
+    )
+    ds_cross = _parse_gateway_model_field(
+        deepseek.get("crossModel"),
+        default=getattr(provider, "deepseek_cross_model", ""),
+        allow_empty=True,
+    )
+
+    ds_backups = tuple(getattr(provider, "deepseek_backup_models", ()))
+    if "backupModels" in deepseek and deepseek["backupModels"] is not None:
+        raw_backups = deepseek["backupModels"]
+        if isinstance(raw_backups, str):
+            tokens = [
+                part.strip()
+                for line in raw_backups.splitlines()
+                for part in line.split(",")
+                if part.strip()
+            ]
+        elif isinstance(raw_backups, list) and all(isinstance(item, str) for item in raw_backups):
+            tokens = [part.strip() for part in raw_backups if part.strip()]
+        else:
+            raise HTTPException(400, "Danh sách model dự phòng của cổng API không hợp lệ.")
+        validated: list[str] = []
+        for token in tokens:
+            if "\r" in token or "\n" in token or not is_valid_gateway_model(token):
+                raise HTTPException(400, "Tên model dự phòng của cổng API không hợp lệ.")
+            if token not in validated:
+                validated.append(token)
+        if len(validated) > 12:
+            raise HTTPException(400, "Tối đa 12 model dự phòng cho cổng API.")
+        ds_backups = tuple(validated)
+
     deepseek_key = getattr(provider, "deepseek_key", "")
     if deepseek.get("clearKey") is True:
         deepseek_key = ""
     elif "key" in deepseek and deepseek["key"] != "":
         raw_ds_key = deepseek["key"]
-        if (
-            not isinstance(raw_ds_key, str)
-            or not 8 <= len(raw_ds_key.strip()) <= 300
-            or "\r" in raw_ds_key
-            or "\n" in raw_ds_key
-        ):
+        if not isinstance(raw_ds_key, str) or "\r" in raw_ds_key or "\n" in raw_ds_key:
             raise HTTPException(400, "Khóa DeepSeek không hợp lệ.")
-        deepseek_key = clean_api_key(raw_ds_key)
+        extracted_key = extract_api_key_token(raw_ds_key)
+        if not 8 <= len(extracted_key) <= 300:
+            raise HTTPException(400, "Khóa DeepSeek không hợp lệ.")
+        deepseek_key = extracted_key
+
     session_limit = deepseek.get(
         "sessionLimitUsd", getattr(provider, "deepseek_session_limit_usd", 0.5)
     )
@@ -181,7 +309,16 @@ def _parse_deepseek_config(provider: AgentGeneration, deepseek: object) -> tuple
         raise HTTPException(
             400, "Hạn mức DeepSeek phải từ 0.05–30.0 USD/phiên và 0.10–30.0 USD tổng."
         )
-    return deepseek_key, round(float(session_limit), 4), round(float(total_limit), 4)
+    return (
+        ds_url,
+        deepseek_key,
+        ds_model,
+        ds_reasoner,
+        ds_cross,
+        ds_backups,
+        round(float(session_limit), 4),
+        round(float(total_limit), 4),
+    )
 
 
 def _parse_fixed_router_config(
@@ -297,9 +434,16 @@ def apply_config(provider, body, store, *, persist=True):
         new_key,
         backup_key,
     )
-    deepseek_key, ds_session_limit, ds_total_limit = _parse_deepseek_config(
-        provider, body.get("deepseek", {})
-    )
+    (
+        ds_url,
+        deepseek_key,
+        ds_model,
+        ds_reasoner,
+        ds_cross,
+        ds_backups,
+        ds_session_limit,
+        ds_total_limit,
+    ) = _parse_deepseek_config(provider, body.get("deepseek", {}))
     fixed_enabled, extended_policy, agy_custom_path = _parse_fixed_router_config(
         provider, body.get("fixedRouter", {})
     )
@@ -343,8 +487,12 @@ def apply_config(provider, body, store, *, persist=True):
                             "checkModel": check_gemini_model,
                         },
                         "deepseek": {
-                            "url": DEEPSEEK_BASE,
+                            "url": ds_url,
                             "key": deepseek_key,
+                            "model": ds_model,
+                            "reasonerModel": ds_reasoner,
+                            "crossModel": ds_cross,
+                            "backupModels": list(ds_backups),
                             "sessionLimitUsd": ds_session_limit,
                             "totalLimitUsd": ds_total_limit,
                         },
@@ -376,7 +524,12 @@ def apply_config(provider, body, store, *, persist=True):
     provider.gemini_free_tier = free_tier if new_key else False
     provider.gemini_auto_fallback = auto_fallback
     provider.gemini_model = gemini_model
+    provider.deepseek_url = ds_url
     provider.deepseek_key = deepseek_key
+    provider.deepseek_model = ds_model
+    provider.deepseek_reasoner_model = ds_reasoner
+    provider.deepseek_cross_model = ds_cross
+    provider.deepseek_backup_models = ds_backups
     provider.deepseek_session_limit_usd = ds_session_limit
     provider.deepseek_total_limit_usd = ds_total_limit
     provider.fixed_router_enabled = fixed_enabled

@@ -27,6 +27,9 @@ from mach_backend.ai_router import (
 )
 from mach_backend.ai_safety import (
     CostTracker,
+    extract_api_key_token,
+    load_local_secrets_env,
+    normalize_openai_base_url,
     redact_secrets,
     sanitize_ai_output_text,
     sanitize_json_latex_escapes,
@@ -34,7 +37,14 @@ from mach_backend.ai_safety import (
 )
 from mach_backend.deepseek_model import DEEPSEEK_ENDPOINT, DeepSeekModel, clean_deepseek_key
 from mach_backend.export_assets import render_assets
-from mach_backend.gemini_model import GEMINI_MODEL, GeminiKeyPool, GeminiModel
+from mach_backend.gemini_model import (
+    GEMINI_MODEL,
+    VERTEX_EXPRESS_BASE,
+    GeminiKeyPool,
+    GeminiModel,
+    clean_api_key,
+    is_vertex_express_key,
+)
 from mach_backend.local_documents import export_file
 from mach_backend.poc_matrix import RunLog
 
@@ -401,7 +411,15 @@ def test_agy_cli_model_runs_in_isolated_temp_cwd_and_parses_fenced_latex_json(tm
     )
     assert res["provider"] == "agy"
     assert observed["shell"] is False
-    assert observed["cwd_files"] == []
+    assert [p.name for p in observed["cwd_files"]] == ["schema.json"]
+    cmd_list = list(observed["cmd"])
+    assert "-p" in cmd_list
+    assert "--output-format" in cmd_list and "json" in cmd_list
+    assert "--mode" in cmd_list and "plan" in cmd_list
+    assert "--sandbox" in cmd_list
+    assert "--disable-slash-commands" in cmd_list
+    assert "--json-schema" in cmd_list
+    assert observed["prompt"] == ""
     assert "mach-agy-sandbox-" in Path(str(observed["cwd"])).name
     parsed = json.loads(res["content"])
     assert r"\frac{1}{2}" in parsed["message"]
@@ -564,3 +582,308 @@ def test_fixed_task_router_skips_open_circuit_breaker_and_redacts_final_error():
     assert called == ["gemini_flash"]
     assert "AIzaSySecretKey1234567890abcdef" not in str(exc_info.value)
     assert "[REDACTED]" in str(exc_info.value)
+
+
+def test_redact_secrets_masks_vertex_aq_keys_and_extract_token_strips_labels():
+    aq_key = "AQ.fake_test_key_1234567890"
+    assert extract_api_key_token(f'  "tai_khoan_1 : {aq_key}"  ') == aq_key
+    assert extract_api_key_token("acc: AIzaSyTest12345678901234") == "AIzaSyTest12345678901234"
+    assert extract_api_key_token("gw : sk-fake_gateway_key_987654") == "sk-fake_gateway_key_987654"
+    assert clean_api_key(f"acc_vertex : {aq_key}") == aq_key
+    assert is_vertex_express_key(f"acc_vertex : {aq_key}") is True
+    assert is_vertex_express_key("AIzaSyTest12345678901234") is False
+
+    redacted = redact_secrets({"err": f"Auth failed with {aq_key} and sk-fake_gateway_key_987654"})
+    assert aq_key not in redacted["err"]
+    assert "sk-fake_gateway_key_987654" not in redacted["err"]
+    assert redacted["err"].count("[REDACTED]") == 2
+
+
+def test_normalize_openai_base_url_and_gateway_cost_tracker():
+    assert normalize_openai_base_url("https://gateway.example.test/") == (
+        "https://gateway.example.test/v1"
+    )
+    assert normalize_openai_base_url('"https://gateway.example.test/v1/chat/completions"') == (
+        "https://gateway.example.test/v1"
+    )
+    assert normalize_openai_base_url("https://gateway.example.test/openai/") == (
+        "https://gateway.example.test/openai/v1"
+    )
+    assert normalize_openai_base_url("http://127.0.0.1:8080") == "http://127.0.0.1:8080/v1"
+    assert normalize_openai_base_url("http://localhost:8080/v1") == "http://localhost:8080/v1"
+
+    for bad_url in (
+        "http://gateway.example.test/v1",
+        "ftp://gateway.example.test/v1",
+        "not-a-url",
+        "https://",
+        "https://gateway.example.test/v1?x=1",
+    ):
+        with pytest.raises(AIError) as exc:
+            normalize_openai_base_url(bad_url)
+        assert exc.value.code == "invalid_endpoint"
+
+    tracker = CostTracker(session_limit_usd=1.0, total_limit_usd=5.0)
+    assert tracker.record_usage("deepseek-v4.1-flash", 1_000_000, 0) == pytest.approx(0.14)
+    assert tracker.record_usage("qwen3.8-max", 0, 1_000_000) == pytest.approx(1.20)
+    assert tracker.record_usage("unknown-gateway-model", 1_000_000, 0) == pytest.approx(0.27)
+
+
+def test_load_local_secrets_env_is_inert_in_pytest_by_default_and_parses_fake_env(tmp_path):
+    env_file = tmp_path / "api-keys.env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "# comment line",
+                'GEMINI_KEY_1="acc1 : AQ.fake_test_key_0000000001"',
+                "GEMINI_KEY_2=acc2: AQ.fake_test_key_0000000002",
+                "GEMINI_API_KEYS=AQ.fake_test_key_0000000002, acc3 : AQ.fake_test_key_0000000003",
+                'AI_GATEWAY_BASE_URL="https://gateway.example.test/"',
+                'AI_GATEWAY_API_KEY="gw : sk-fake_gateway_secret_123456"',
+                "AI_GATEWAY_FAST_MODEL=deepseek-v4.1-flash",
+                "AI_GATEWAY_PRO_MODEL=deepseek-v4-pro",
+                "AI_GATEWAY_CROSS_MODEL=qwen3.8-max",
+                "AI_GATEWAY_BACKUP_MODELS=gemini-3.8-flash, qwen3.8-flash",
+                "AI_GATEWAY_SESSION_LIMIT_USD=0.60",
+                "AI_GATEWAY_TOTAL_LIMIT_USD=4.50",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    assert load_local_secrets_env(env_file) == {}
+
+    parsed = load_local_secrets_env(env_file, allow_in_pytest=True)
+    assert parsed["geminiKeys"] == (
+        "AQ.fake_test_key_0000000001",
+        "AQ.fake_test_key_0000000002",
+        "AQ.fake_test_key_0000000003",
+    )
+    assert parsed["gatewayBaseUrl"] == "https://gateway.example.test/v1"
+    assert parsed["gatewayApiKey"] == "sk-fake_gateway_secret_123456"
+    assert parsed["gatewayFastModel"] == "deepseek-v4.1-flash"
+    assert parsed["gatewayProModel"] == "deepseek-v4-pro"
+    assert parsed["gatewayCrossModel"] == "qwen3.8-max"
+    assert parsed["gatewayBackupModels"] == ("gemini-3.8-flash", "qwen3.8-flash")
+    assert parsed["gatewaySessionLimitUsd"] == 0.6
+    assert parsed["gatewayTotalLimitUsd"] == 4.5
+
+
+def test_vertex_express_mode_endpoint_rotation_403_and_404_fallback_to_25_flash(tmp_path):
+    k1 = "AQ.fake_vertex_key_slot_01_aaaa"
+    k2 = "AQ.fake_vertex_key_slot_02_bbbb"
+    k3 = "AQ.fake_vertex_key_slot_03_cccc"
+    pool = GeminiKeyPool.from_keys([f"acc1: {k1}", f"acc2 : {k2}", k3], cooldown_seconds=60.0)
+    log = RunLog(tmp_path / "vertex")
+    seen: list[tuple[str, str, dict]] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        assert "authorization" not in request.headers
+        api_key = request.headers["x-goog-api-key"]
+        body = json.loads(request.content)
+        seen.append((str(request.url), api_key, body))
+        if api_key == k1:
+            return httpx.Response(429, json={"error": {"message": f"Quota exceeded for {k1}"}})
+        if api_key == k2:
+            return httpx.Response(403, json={"error": {"message": f"Permission denied {k2}"}})
+        if not str(request.url).endswith("/gemini-2.5-flash:generateContent"):
+            return httpx.Response(404, json={"error": {"message": "Model not found"}})
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "finishReason": "STOP",
+                        "content": {
+                            "parts": [{"text": r'{"message": "Kết quả $\frac{1}{2} + \sqrt{3}$"}'}]
+                        },
+                    }
+                ],
+                "usageMetadata": {"promptTokenCount": 50, "candidatesTokenCount": 25},
+            },
+        )
+
+    async def run():
+        from mach_backend.poc_policy import CallBudget
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            model = GeminiModel(
+                client,
+                k1,
+                log,
+                model="gemini-3.8-flash",
+                budget=CallBudget(16, 60),
+                key_pool=pool,
+                auto_fallback=True,
+            )
+            return await model(
+                "ocr_page",
+                {
+                    "messages": [
+                        {"role": "system", "content": "Bạn là chuyên gia OCR."},
+                        {"role": "user", "content": "Đọc trang tài liệu này."},
+                    ],
+                    "document": {"mimeType": "image/png", "data": "ZmFrZQ=="},
+                    "format": {
+                        "type": "object",
+                        "properties": {"message": {"type": "string"}},
+                    },
+                },
+            )
+
+    result = asyncio.run(run())
+    assert result["provider"] == "vertex-express"
+    assert result["model"] == "gemini-2.5-flash"
+    parsed = json.loads(result["content"])
+    assert r"\frac{1}{2}" in parsed["message"]
+    assert seen[0][0] == f"{VERTEX_EXPRESS_BASE}/gemini-3.8-flash:generateContent"
+    assert seen[0][1] == k1
+    assert seen[1][1] == k2
+    assert 1 in pool.invalid
+    assert seen[-1][0] == f"{VERTEX_EXPRESS_BASE}/gemini-2.5-flash:generateContent"
+    last_payload = seen[-1][2]
+    assert "systemInstruction" in last_payload
+    assert last_payload["generationConfig"]["responseMimeType"] == "application/json"
+    user_parts = last_payload["contents"][-1]["parts"]
+    assert any(p.get("inlineData", {}).get("mimeType") == "image/png" for p in user_parts)
+    for file in log.directory.glob("*"):
+        text = file.read_text(encoding="utf-8")
+        assert k1 not in text and k2 not in text and k3 not in text
+
+
+def test_deepseek_custom_gateway_base_url_and_backup_model_fallback(tmp_path):
+    gw_key = "sk-fake-custom-gateway-key-9999"
+    log = RunLog(tmp_path / "gw")
+    tracker = CostTracker(session_limit_usd=1.0, total_limit_usd=5.0)
+    seen: list[tuple[str, str]] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        seen.append((str(request.url), body["model"]))
+        if body["model"] == "deepseek-v4-pro":
+            return httpx.Response(404, json={"error": {"message": "Model missing"}})
+        if body["model"] == "deepseek-v4.1-flash":
+            return httpx.Response(429, json={"error": {"message": "Rate limited"}})
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": '{"message": "OK gateway"}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 1000, "completion_tokens": 500},
+            },
+        )
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            model = DeepSeekModel(
+                client,
+                f"gw : {gw_key}",
+                log,
+                model="deepseek-v4-pro",
+                base_url="https://gateway.example.test/",
+                backup_models=("deepseek-v4.1-flash", "qwen3.8-max"),
+                cost_tracker=tracker,
+            )
+            return await model("chat", {"messages": [{"role": "user", "content": "Xin chào"}]})
+
+    res = asyncio.run(run())
+    assert seen == [
+        ("https://gateway.example.test/v1/chat/completions", "deepseek-v4-pro"),
+        ("https://gateway.example.test/v1/chat/completions", "deepseek-v4.1-flash"),
+        ("https://gateway.example.test/v1/chat/completions", "qwen3.8-max"),
+    ]
+    assert res["model"] == "qwen3.8-max"
+    assert tracker.session_spent_usd > 0
+
+
+def test_agy_cli_model_envelope_unwrapping_long_prompt_stdin_and_localappdata_detection(
+    tmp_path, monkeypatch
+):
+    fake_local = tmp_path / "LocalAppData"
+    exe_path = fake_local / "agy" / "bin" / "agy.exe"
+    exe_path.parent.mkdir(parents=True)
+    exe_path.write_bytes(b"MZ")
+    monkeypatch.setattr("mach_backend.agy_cli_model.shutil.which", lambda _name: None)
+    monkeypatch.setenv("LOCALAPPDATA", str(fake_local))
+    assert detect_agy_cli("") == str(exe_path.resolve())
+
+    observed: dict[str, object] = {}
+
+    def envelope_runner(cmd, *, input, cwd, **_kwargs):
+        observed["cmd"] = list(cmd)
+        observed["input"] = input.decode("utf-8")
+        observed["cwd_files"] = list(Path(cwd).iterdir())
+        envelope = {
+            "response": r"```json" + "\n" + r'{"message": "Giải $\frac{1}{3}$"}' + "\n```",
+            "stats": {"tokens": 10},
+        }
+        return SimpleNamespace(stdout=json.dumps(envelope).encode("utf-8"))
+
+    model = AgyCliModel(
+        RunLog(tmp_path / "agy-long"),
+        custom_path=str(exe_path),
+        runner=envelope_runner,
+    )
+    long_text = "Nội dung rất dài. " * 400
+    res = asyncio.run(
+        model(
+            "chat",
+            {
+                "messages": [{"role": "user", "content": long_text}],
+                "format": {"type": "object", "properties": {"message": {"type": "string"}}},
+            },
+        )
+    )
+    assert len(str(observed["input"])) > 5500
+    assert json.loads(res["content"]) == {"message": r"Giải $\frac{1}{3}$"}
+
+    # Khi JSON stdout đã khớp trực tiếp schema đầu ra (chứa khóa "message"), giữ nguyên không bóc.
+    def direct_runner(_cmd, **_kwargs):
+        return SimpleNamespace(stdout=b'{"message": "Direct output", "followUps": ["Tiep"]}')
+
+    direct_model = AgyCliModel(
+        RunLog(tmp_path / "agy-direct"),
+        custom_path=str(exe_path),
+        runner=direct_runner,
+    )
+    direct_res = asyncio.run(
+        direct_model(
+            "chat",
+            {
+                "messages": [{"role": "user", "content": "Hi"}],
+                "format": {"type": "object", "properties": {"message": {"type": "string"}}},
+            },
+        )
+    )
+    assert json.loads(direct_res["content"])["message"] == "Direct output"
+
+
+def test_fixed_task_router_includes_gateway_cross_in_m06_and_m11():
+    router = FixedTaskRouter(
+        {
+            "agy": lambda *_: {"content": "agy"},
+            "gemini_hydrogen": lambda *_: {"content": "h"},
+            "gemini_flash": lambda *_: {"content": "f"},
+            "deepseek_reasoner": lambda *_: {"content": "r"},
+            "deepseek_chat": lambda *_: {"content": "c"},
+            "gateway_cross": lambda *_: {"content": "cross"},
+            "ollama": lambda *_: {"content": "o"},
+        }
+    )
+    m06_from_ds = router.candidate_chain("M06_BLIND_SOLVE", generator_family="deepseek_chat")
+    assert "gateway_cross" in m06_from_ds
+    assert m06_from_ds.index("gateway_cross") < m06_from_ds.index("deepseek_reasoner")
+
+    m11 = router.candidate_chain("M11_FLEXIBLE_CHAT")
+    assert m11[:7] == [
+        "agy",
+        "gemini_hydrogen",
+        "gemini_flash",
+        "deepseek_reasoner",
+        "deepseek_chat",
+        "gateway_cross",
+        "ollama",
+    ]

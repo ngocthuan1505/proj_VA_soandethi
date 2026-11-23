@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -44,6 +45,17 @@ _FORBIDDEN_ENV_SUBSTRINGS = (
 
 _ALLOWED_EXE_NAMES = {"agy", "agy.exe", "agy.cmd", "agy.bat"}
 _FENCED_JSON_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE)
+_ENVELOPE_KEYS = ("response", "result", "content", "text", "output")
+_DOMAIN_PAYLOAD_KEYS = {
+    "message",
+    "questions",
+    "reviews",
+    "edits",
+    "pages",
+    "slots",
+    "matrix",
+    "stem",
+}
 
 
 def detect_agy_cli(custom_path: str = "") -> str | None:
@@ -54,7 +66,18 @@ def detect_agy_cli(custom_path: str = "") -> str | None:
         if candidate.is_file() and candidate.name.lower() in _ALLOWED_EXE_NAMES:
             return str(candidate.resolve())
         return None
-    return shutil.which("agy")
+    found = shutil.which("agy")
+    if found:
+        return found
+    local_app = os.environ.get("LOCALAPPDATA", "").strip()
+    if local_app:
+        local_candidate = Path(local_app) / "agy" / "bin" / "agy.exe"
+        if local_candidate.is_file():
+            return str(local_candidate.resolve())
+    home_candidate = Path.home() / "AppData" / "Local" / "agy" / "bin" / "agy.exe"
+    if home_candidate.is_file():
+        return str(home_candidate.resolve())
+    return None
 
 
 def build_sanitized_env(source_env: Mapping[str, str] | None = None) -> dict[str, str]:
@@ -72,8 +95,43 @@ def build_sanitized_env(source_env: Mapping[str, str] | None = None) -> dict[str
     return sanitized
 
 
-def _extract_output_content(raw_stdout: str, expect_json: bool) -> str:
+def _unwrap_cli_envelope(text: str, expected_schema: dict[str, Any] | None) -> str:
+    if not text.startswith("{"):
+        return text
+    parsed: Any = None
+    for candidate in (text, sanitize_json_latex_escapes(text)):
+        try:
+            parsed = json.loads(candidate)
+            break
+        except ValueError:
+            continue
+    if not isinstance(parsed, dict):
+        return text
+    schema_keys: set[str] = set()
+    if isinstance(expected_schema, dict):
+        props = expected_schema.get("properties")
+        if isinstance(props, dict):
+            schema_keys = set(props.keys())
+    if (
+        schema_keys and schema_keys.intersection(parsed.keys())
+    ) or _DOMAIN_PAYLOAD_KEYS.intersection(parsed.keys()):
+        return text
+    for key in _ENVELOPE_KEYS:
+        val = parsed.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+        if isinstance(val, (dict, list)):
+            return json.dumps(val, ensure_ascii=False)
+    return text
+
+
+def _extract_output_content(
+    raw_stdout: str,
+    expect_json: bool,
+    expected_schema: dict[str, Any] | None = None,
+) -> str:
     text = raw_stdout.strip()
+    text = _unwrap_cli_envelope(text, expected_schema)
     fenced = _FENCED_JSON_RE.search(text)
     if fenced:
         text = fenced.group(1).strip()
@@ -161,12 +219,43 @@ class AgyCliModel:
         started = time.perf_counter()
         try:
             with tempfile.TemporaryDirectory(prefix="mach-agy-sandbox-") as sandbox_dir:
-                cmd = [exe]
+                if len(prompt_text) > 5500:
+                    cli_prompt = (
+                        "Xử lý yêu cầu đầy đủ được truyền qua stdin và trả đúng định dạng yêu cầu."
+                    )
+                    stdin_bytes = prompt_bytes
+                else:
+                    cli_prompt = prompt_text
+                    stdin_bytes = b""
+                cmd = [
+                    exe,
+                    "-p",
+                    cli_prompt,
+                    "--output-format",
+                    "json",
+                    "--mode",
+                    "plan",
+                    "--sandbox",
+                    "--disable-slash-commands",
+                    "--print-timeout",
+                    f"{eff_timeout}s",
+                ]
+                expected_schema = (
+                    body.get("format") if isinstance(body.get("format"), dict) else None
+                )
+                if expected_schema is not None:
+                    schema_path = Path(sandbox_dir) / "schema.json"
+                    schema_path.write_text(
+                        json.dumps(expected_schema, ensure_ascii=False),
+                        encoding="utf-8",
+                    )
+                    cmd.extend(["--json-schema", str(schema_path)])
                 run_fn = self.runner or subprocess.run
                 try:
-                    completed = run_fn(
+                    completed = await asyncio.to_thread(
+                        run_fn,
                         cmd,
-                        input=prompt_bytes,
+                        input=stdin_bytes,
                         cwd=sandbox_dir,
                         env=sanitized_env,
                         timeout=eff_timeout,
@@ -199,7 +288,11 @@ class AgyCliModel:
             else:
                 stdout_str = str(stdout_raw or "")
 
-            content = _extract_output_content(stdout_str, expect_json="format" in body)
+            content = _extract_output_content(
+                stdout_str,
+                expect_json="format" in body,
+                expected_schema=expected_schema,
+            )
             if not content:
                 raise AIError("invalid_response", "AGY CLI trả về phản hồi rỗng.")
 

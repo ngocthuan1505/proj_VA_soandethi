@@ -1,34 +1,54 @@
-"""Gọi DeepSeek (deepseek-chat / deepseek-reasoner) kèm kiểm soát chi phí USD và bọc an toàn."""
+"""Gọi DeepSeek & cổng OpenAI-compatible tùy chỉnh kèm kiểm soát chi phí USD và bọc an toàn."""
 
 from __future__ import annotations
 
 import copy
 import json
+import re
 import time
+from collections.abc import Sequence
 from typing import Any
 
 import httpx
 
 from mach_backend.ai_contract import AIError
-from mach_backend.ai_safety import CostTracker, redact_secrets, sanitize_json_latex_escapes
+from mach_backend.ai_safety import (
+    CostTracker,
+    extract_api_key_token,
+    normalize_openai_base_url,
+    redact_secrets,
+    sanitize_json_latex_escapes,
+)
 from mach_backend.ai_service import MAX_RESPONSE_BYTES
 from mach_backend.gemini_model import gemini_messages
 
+DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 DEEPSEEK_ENDPOINT = "https://api.deepseek.com/v1/chat/completions"
 DEEPSEEK_MODELS = ("deepseek-chat", "deepseek-reasoner")
+_VALID_MODEL_RE = re.compile(r"^[A-Za-z0-9._:/-]{2,80}$")
+
+
+def is_valid_gateway_model(model: str) -> bool:
+    return isinstance(model, str) and bool(_VALID_MODEL_RE.fullmatch(model.strip()))
 
 
 def clean_deepseek_key(key: str) -> str:
-    if not isinstance(key, str) or not 8 <= len(key.strip()) <= 300 or "\n" in key or "\r" in key:
+    if not isinstance(key, str) or "\n" in key or "\r" in key:
         raise AIError(
             "provider_unconfigured",
             "Nhập DeepSeek API key hợp lệ trong phần Quản trị khóa.",
         )
-    return key.strip()
+    cleaned = extract_api_key_token(key)
+    if not 8 <= len(cleaned) <= 300:
+        raise AIError(
+            "provider_unconfigured",
+            "Nhập DeepSeek API key hợp lệ trong phần Quản trị khóa.",
+        )
+    return cleaned
 
 
 class DeepSeekModel:
-    """Adapter gọi DeepSeek tương thích hợp đồng công cụ/JSON của hệ thống điều phối."""
+    """Adapter gọi DeepSeek hoặc cổng OpenAI-compatible tùy chỉnh Base URL & đa model."""
 
     def __init__(
         self,
@@ -37,29 +57,56 @@ class DeepSeekModel:
         log: Any,
         *,
         model: str = "deepseek-chat",
+        base_url: str = DEEPSEEK_BASE_URL,
+        backup_models: Sequence[str] = (),
         budget: Any = None,
         cost_tracker: CostTracker | None = None,
         auto_fallback: bool = True,
     ) -> None:
         self.key = clean_deepseek_key(key)
-        if model not in DEEPSEEK_MODELS:
+        self.base_url = normalize_openai_base_url(base_url)
+        self.endpoint = self.base_url + "/chat/completions"
+        cleaned_model = model.strip() if isinstance(model, str) else ""
+        if self.base_url == DEEPSEEK_BASE_URL:
+            if cleaned_model not in DEEPSEEK_MODELS:
+                raise AIError(
+                    "unsupported_model",
+                    "Chọn model DeepSeek hợp lệ (deepseek-chat hoặc deepseek-reasoner).",
+                )
+        elif not is_valid_gateway_model(cleaned_model):
             raise AIError(
                 "unsupported_model",
-                "Chọn model DeepSeek hợp lệ (deepseek-chat hoặc deepseek-reasoner).",
+                "Tên model cổng API không hợp lệ (2–80 ký tự chữ/số/._:/-).",
             )
         self.client = client
         self.log = log
-        self.model = model
+        self.model = cleaned_model
+        cleaned_backups: list[str] = []
+        for item in backup_models:
+            if not isinstance(item, str):
+                continue
+            cand = item.strip()
+            if not cand or cand == self.model or cand in cleaned_backups:
+                continue
+            if self.base_url == DEEPSEEK_BASE_URL:
+                if cand in DEEPSEEK_MODELS:
+                    cleaned_backups.append(cand)
+            elif is_valid_gateway_model(cand):
+                cleaned_backups.append(cand)
+        self.backup_models: tuple[str, ...] = tuple(cleaned_backups)
         self.budget = budget
         self.cost_tracker = cost_tracker
         self.auto_fallback = auto_fallback
 
     async def __call__(self, purpose: str, body: dict[str, Any]) -> dict[str, Any]:
-        candidates = (
-            ("deepseek-reasoner", "deepseek-chat")
-            if self.model == "deepseek-reasoner" and self.auto_fallback
-            else (self.model,)
-        )
+        if self.auto_fallback:
+            ordered = [self.model, *self.backup_models]
+            if self.model == "deepseek-reasoner" and "deepseek-chat" not in ordered:
+                ordered.append("deepseek-chat")
+            candidates = tuple(ordered)
+        else:
+            candidates = (self.model,)
+        last_status = 429
         for idx, actual_model in enumerate(candidates):
             if idx > 0 and self.log is not None:
                 self.log.emit(
@@ -67,22 +114,24 @@ class DeepSeekModel:
                     purpose=purpose,
                     fromModel=candidates[idx - 1],
                     toModel=actual_model,
-                    httpStatus=429,
+                    httpStatus=last_status,
                     reason="fallback",
                 )
             try:
                 return await self._call_once(purpose, body, actual_model)
             except AIError as error:
+                has_next = idx + 1 < len(candidates)
                 can_fallback = (
-                    actual_model == "deepseek-reasoner"
+                    has_next
                     and self.auto_fallback
                     and (
-                        error.http_status == 429
+                        error.http_status in {404, 429}
                         or (error.http_status is not None and error.http_status >= 500)
                         or error.code in {"provider_quota", "provider_unavailable"}
                     )
                 )
                 if can_fallback:
+                    last_status = error.http_status or 429
                     continue
                 raise
         raise AIError("provider_unavailable", "Không thể gọi DeepSeek ở thời điểm hiện tại.")
@@ -141,7 +190,7 @@ class DeepSeekModel:
             data = bytearray()
             async with self.client.stream(
                 "POST",
-                DEEPSEEK_ENDPOINT,
+                self.endpoint,
                 json=payload,
                 headers=headers,
                 timeout=180,

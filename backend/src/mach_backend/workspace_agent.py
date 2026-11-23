@@ -7,20 +7,30 @@ import json
 import os
 import platform
 import re
-import shutil
 import time
 import unicodedata
 from itertools import pairwise
 from pathlib import Path
+from typing import Any
 
 import httpx
 
+from mach_backend.agy_cli_model import AgyCliModel, detect_agy_cli
 from mach_backend.ai_contract import AIError
-from mach_backend.gemini_model import GEMINI_MODEL, GeminiKeyPool, GeminiModel, clean_api_key
+from mach_backend.ai_router import FixedTaskRouter
+from mach_backend.ai_safety import CostTracker
+from mach_backend.deepseek_model import DEEPSEEK_BASE_URL, DeepSeekModel
+from mach_backend.gemini_model import (
+    GEMINI_MODEL,
+    GeminiKeyPool,
+    GeminiModel,
+    clean_api_key,
+    is_vertex_express_key,
+)
 from mach_backend.matrix_agent import run_matrix_agent, sha256_json
 from mach_backend.mixed_questions import TRUEFALSE_ANSWER_GUIDE
 from mach_backend.poc_matrix import LocalModel, RunLog
-from mach_backend.poc_policy import CallBudget, ExtendedRunPolicy, RunPolicy
+from mach_backend.poc_policy import CallBudget, ExtendedCallBudget, ExtendedRunPolicy, RunPolicy
 
 LEVEL_NAMES = ("nhan_biet", "thong_hieu", "van_dung", "van_dung_cao")
 LEVEL_DESCRIPTION = (
@@ -756,7 +766,12 @@ class AgentGeneration:
         self.gemini_extra_keys: tuple[str, ...] = ()
         self.gemini_auto_fallback = True
         self.gemini_model = GEMINI_MODEL
+        self.deepseek_url: str = DEEPSEEK_BASE_URL
         self.deepseek_key: str = ""
+        self.deepseek_model: str = "deepseek-chat"
+        self.deepseek_reasoner_model: str = "deepseek-reasoner"
+        self.deepseek_cross_model: str = ""
+        self.deepseek_backup_models: tuple[str, ...] = ()
         self.deepseek_session_limit_usd: float = 0.5
         self.deepseek_total_limit_usd: float = 5.0
         self.deepseek_spent_session_usd: float = 0.0
@@ -806,7 +821,26 @@ class AgentGeneration:
 
     @property
     def agy_available(self) -> bool:
-        return bool(shutil.which("agy") or self.agy_custom_path.strip())
+        if self.agy_custom_path.strip():
+            return bool(detect_agy_cli(self.agy_custom_path))
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            return False
+        return bool(detect_agy_cli(""))
+
+    def build_cost_tracker(self) -> CostTracker:
+        return CostTracker(
+            session_limit_usd=self.deepseek_session_limit_usd,
+            total_limit_usd=self.deepseek_total_limit_usd,
+            initial_total_usd=self.deepseek_spent_total_usd,
+        )
+
+    def sync_cost_tracker(self, tracker: CostTracker | None) -> None:
+        if tracker is None:
+            return
+        self.deepseek_spent_session_usd = round(
+            self.deepseek_spent_session_usd + tracker.session_spent_usd, 6
+        )
+        self.deepseek_spent_total_usd = round(tracker.total_spent_usd, 6)
 
     def _checkpoint_path(self, job_id: str) -> Path:
         safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", str(job_id).strip()) or "unknown"
@@ -902,6 +936,11 @@ class AgentGeneration:
                 "budget": self.run_policy.model_dump(),
                 "geminiReady": bool(self.gemini_key) and self.gemini_free_tier,
                 "geminiAutoFallback": self.gemini_auto_fallback,
+                "deepseekUrl": self.deepseek_url,
+                "deepseekModel": self.deepseek_model,
+                "deepseekReasonerModel": self.deepseek_reasoner_model,
+                "deepseekCrossModel": self.deepseek_cross_model,
+                "deepseekBackupModels": list(self.deepseek_backup_models),
                 "credentialHash": sha256_json(cred_items),
             }
         )
@@ -911,28 +950,52 @@ class AgentGeneration:
         free_tier = self.gemini_free_tier
         review_provider, review_model = self.reviewer_config.values()
         policy = self.run_policy.model_copy(deep=True)
-        budget = CallBudget(policy.maxModelCalls, policy.timeoutSeconds)
+        has_vertex_keys = any(is_vertex_express_key(k) for k in self.all_gemini_keys)
+        use_fixed_router = (
+            not self.call
+            and self.fixed_router_enabled
+            and (
+                self.agy_available
+                or bool(self.deepseek_key)
+                or (bool(api_key) and free_tier and has_vertex_keys)
+            )
+        )
+        budget = (
+            ExtendedCallBudget(
+                self.extended_policy.maxModelCalls, self.extended_policy.timeoutSeconds
+            )
+            if use_fixed_router
+            else CallBudget(policy.maxModelCalls, policy.timeoutSeconds)
+        )
         mode = (
             "fixture"
             if self.call
+            else "fixed_task_router"
+            if use_fixed_router
             else "real_gemini_api"
             if provider_name == "gemini"
             else "real_local_model"
         )
-        protocol = "native" if provider_name == "gemini" else "structured"
+        protocol = "native" if (use_fixed_router or provider_name == "gemini") else "structured"
         log = RunLog(
             self.directory / str(job.jobId),
             on_event=lambda row: (
                 self.store.trace(job.jobId, row)
                 if row["event"].startswith("provider_")
+                or row["event"].startswith("router_")
                 or row["event"] in {"model_start", "model_end"}
                 else None
             ),
         )
         key_pool = (
-            _make_gemini_key_pool(api_key, self.gemini_backup_key, self.gemini_extra_keys)
+            GeminiKeyPool.from_keys(self.all_gemini_keys, cooldown_seconds=60.0)
+            if use_fixed_router and api_key
+            else _make_gemini_key_pool(api_key, self.gemini_backup_key, self.gemini_extra_keys)
             if api_key
             else None
+        )
+        cost_tracker = (
+            self.build_cost_tracker() if (use_fixed_router and self.deepseek_key) else None
         )
         log.write("input.json", job.model_dump(mode="json"))
         snapshot = log.directory / "source-snapshot"
@@ -988,14 +1051,105 @@ class AgentGeneration:
                     )
                 return LocalModel(client, selected_model, log, protocol="structured", budget=budget)
 
-            model = self.call or make_model(provider_name, model_name)
-            reviewer = self.call or make_model(review_provider, review_model)
+            model = (
+                None if use_fixed_router else (self.call or make_model(provider_name, model_name))
+            )
+            reviewer = (
+                None
+                if use_fixed_router
+                else (self.call or make_model(review_provider, review_model))
+            )
+            router: FixedTaskRouter | None = None
+            last_generator_family = ""
+            if use_fixed_router:
+                router_providers: dict[str, Any] = {}
+                if self.agy_available:
+
+                    async def _call_agy(p: str, b: dict[str, Any]) -> dict[str, Any]:
+                        return await AgyCliModel(
+                            log,
+                            custom_path=self.agy_custom_path,
+                            budget=budget,
+                        )(p, b)
+
+                    router_providers["agy"] = _call_agy
+                if api_key and free_tier and key_pool is not None:
+
+                    def _make_router_gemini(target_model: str):
+                        async def _caller(p: str, b: dict[str, Any]) -> dict[str, Any]:
+                            return await GeminiModel(
+                                client,
+                                api_key,
+                                log,
+                                model=target_model,
+                                budget=budget,
+                                key_pool=key_pool,
+                                auto_fallback=self.gemini_auto_fallback,
+                            )(p, b)
+
+                        return _caller
+
+                    router_providers["gemini_flash"] = _make_router_gemini("gemini-3.8-flash")
+                    router_providers["gemini_hydrogen"] = _make_router_gemini("gemini-4-hydrogen")
+                if self.deepseek_key:
+
+                    def _make_router_ds(target_model: str):
+                        async def _caller(p: str, b: dict[str, Any]) -> dict[str, Any]:
+                            return await DeepSeekModel(
+                                client,
+                                self.deepseek_key,
+                                log,
+                                model=target_model,
+                                base_url=self.deepseek_url,
+                                backup_models=self.deepseek_backup_models,
+                                budget=budget,
+                                cost_tracker=cost_tracker,
+                            )(p, b)
+
+                        return _caller
+
+                    router_providers["deepseek_chat"] = _make_router_ds(self.deepseek_model)
+                    router_providers["deepseek_reasoner"] = _make_router_ds(
+                        self.deepseek_reasoner_model
+                    )
+                    if self.deepseek_cross_model:
+                        router_providers["gateway_cross"] = _make_router_ds(
+                            self.deepseek_cross_model
+                        )
+
+                async def _call_router_ollama(p: str, b: dict[str, Any]) -> dict[str, Any]:
+                    local = LocalModel(
+                        client, self.model, log, protocol="structured", budget=budget
+                    )
+                    return await local_model_call(local, p, b)
+
+                router_providers["ollama"] = _call_router_ollama
+                router = FixedTaskRouter(router_providers, log)
 
             async def current_call(purpose, body):
+                nonlocal last_generator_family
                 if not await self.store.is_current(job):
                     raise AIError("stale_snapshot", "Đề hoặc nguồn đã đổi; dừng vòng tự xử lý.")
                 generation = purpose in {"agent", "repair_stem"}
+                if router is not None:
+                    emit(
+                        "model_call_start",
+                        purpose=purpose,
+                        model="fixed_task_router",
+                        provider="fixed_router",
+                    )
+                    async with asyncio.timeout(budget.remaining()):
+                        result = await router(
+                            purpose,
+                            body,
+                            generator_family="" if generation else last_generator_family,
+                        )
+                    if generation and isinstance(result, dict):
+                        last_generator_family = str(result.get("providerFamily") or "")
+                    emit("model_call_end", purpose=purpose)
+                    return result
                 selected = model if generation else reviewer
+                assert selected is not None
                 selected_provider = provider_name if generation else review_provider
                 emit(
                     "model_call_start",
@@ -1048,7 +1202,11 @@ class AgentGeneration:
                         n: hashlib.sha256(s.encode()).hexdigest() for n, s in self.code.items()
                     },
                 }
-                if not self.call and "ollama" in {provider_name, review_provider}:
+                if (
+                    not self.call
+                    and not use_fixed_router
+                    and "ollama" in {provider_name, review_provider}
+                ):
                     tags = await client.get("http://127.0.0.1:11434/api/tags", timeout=5)
                     tags.raise_for_status()
                     local_names = ({model_name} if provider_name == "ollama" else set()) | (
@@ -1066,14 +1224,21 @@ class AgentGeneration:
                         )
                     environment["installedModel"] = installed
                 log.write("environment.json", environment)
-                real_ollama_review = not self.call and review_provider == "ollama"
+                real_ollama_review = (
+                    not self.call and not use_fixed_router and review_provider == "ollama"
+                )
+                max_turns = (
+                    (self.extended_policy.maxModelCalls + 2)
+                    if use_fixed_router
+                    else (policy.maxModelCalls + 2)
+                )
                 result = await run_matrix_agent(
                     job,
                     current_call,
                     emit,
                     max_attempts=None,
-                    max_turns=policy.maxModelCalls + 2,
-                    recheck_level_drift=review_provider == "ollama",
+                    max_turns=max_turns,
+                    recheck_level_drift=(not use_fixed_router and review_provider == "ollama"),
                     reuse_passed_reviews=real_ollama_review,
                     skip_explanation_on_blind_fail=real_ollama_review,
                 )
@@ -1115,6 +1280,8 @@ class AgentGeneration:
                         code, "Dịch vụ AI chưa trả kết quả. Bản đề giữ nguyên; có thể thử lại sau."
                     ) from None
                 raise
+            finally:
+                self.sync_cost_tracker(cost_tracker)
             result.update(metrics())
             log.write("result.json", result)
             emit("run_end", status=result["status"], saved=False)

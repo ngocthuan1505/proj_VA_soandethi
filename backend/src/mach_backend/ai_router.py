@@ -190,6 +190,7 @@ class FixedTaskRouter:
                     "agy",
                     "gemini_hydrogen",
                     "gemini_flash",
+                    "gateway_cross",
                     "deepseek_reasoner",
                     "deepseek_chat",
                     "ollama",
@@ -198,6 +199,7 @@ class FixedTaskRouter:
                 base = [
                     "deepseek_reasoner",
                     "deepseek_chat",
+                    "gateway_cross",
                     "agy",
                     "gemini_hydrogen",
                     "gemini_flash",
@@ -207,16 +209,26 @@ class FixedTaskRouter:
                 base = [
                     "deepseek_reasoner",
                     "gemini_hydrogen",
+                    "gateway_cross",
                     "agy",
                     "deepseek_chat",
                     "gemini_flash",
                     "ollama",
                 ]
+        elif task_code == M11_FLEXIBLE_CHAT:
+            base = [
+                "agy",
+                "gemini_hydrogen",
+                "gemini_flash",
+                "deepseek_reasoner",
+                "deepseek_chat",
+                "gateway_cross",
+                "ollama",
+            ]
         elif task_code in {
             M03_EXAM_BLUEPRINT,
             M05_GEN_HARD,
             M09_SURGICAL_REPAIR,
-            M11_FLEXIBLE_CHAT,
         }:
             base = [
                 "agy",

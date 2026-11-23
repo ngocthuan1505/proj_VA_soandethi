@@ -9,18 +9,31 @@ from collections.abc import Sequence
 import httpx
 
 from mach_backend.ai_contract import AIError
-from mach_backend.ai_safety import redact_secrets
+from mach_backend.ai_safety import (
+    extract_api_key_token,
+    redact_secrets,
+    sanitize_json_latex_escapes,
+)
 from mach_backend.ai_service import MAX_RESPONSE_BYTES
 
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+VERTEX_EXPRESS_BASE = "https://aiplatform.googleapis.com/v1/publishers/google/models"
+VERTEX_FALLBACK_MODEL = "gemini-2.5-flash"
 GEMINI_MODEL = "gemini-3.6-flash"
 GEMINI_MODELS = (GEMINI_MODEL, "gemini-3.8-flash", "gemini-4-hydrogen")
 
 
+def is_vertex_express_key(key: str) -> bool:
+    return extract_api_key_token(key).startswith("AQ.")
+
+
 def clean_api_key(key):
-    if not isinstance(key, str) or not 8 <= len(key.strip()) <= 300 or "\n" in key or "\r" in key:
+    if not isinstance(key, str) or "\n" in key or "\r" in key:
         raise AIError("provider_unconfigured", "Nhập Gemini API key trong phần kết nối của app.")
-    return key.strip()
+    cleaned = extract_api_key_token(key)
+    if not 8 <= len(cleaned) <= 300:
+        raise AIError("provider_unconfigured", "Nhập Gemini API key trong phần kết nối của app.")
+    return cleaned
 
 
 def gemini_messages(messages):
@@ -146,12 +159,18 @@ class GeminiModel:
 
     async def __call__(self, purpose, body):
         self.key_pool.refresh_cooldowns()
-        candidates = (
-            (self.model, *(m for m in GEMINI_MODELS if m != self.model))
-            if self.auto_fallback
-            else (self.model,)
-        )
+        has_vertex_key = any(is_vertex_express_key(k) for k in self.key_pool.keys)
+        if self.auto_fallback:
+            candidate_list = [self.model, *(m for m in GEMINI_MODELS if m != self.model)]
+            if has_vertex_key and VERTEX_FALLBACK_MODEL not in candidate_list:
+                candidate_list.append(VERTEX_FALLBACK_MODEL)
+            candidates = tuple(candidate_list)
+        else:
+            candidates = (self.model,)
         previous_model = self.model
+        last_switch_status = 429
+        last_switch_reason = "quota"
+        last_not_found: AIError | None = None
         for actual_model in candidates:
             try:
                 slot = self.key_pool.next_slot(actual_model)
@@ -159,14 +178,18 @@ class GeminiModel:
                 if error.code != "provider_quota":
                     raise
                 continue
+            if actual_model == VERTEX_FALLBACK_MODEL and not is_vertex_express_key(
+                self.key_pool.keys[slot]
+            ):
+                continue
             if actual_model != previous_model:
                 self.log.emit(
                     "provider_model_switch",
                     purpose=purpose,
                     fromModel=previous_model,
                     toModel=actual_model,
-                    httpStatus=429,
-                    reason="quota",
+                    httpStatus=last_switch_status,
+                    reason=last_switch_reason,
                 )
             previous_model = actual_model
             retried = False
@@ -184,6 +207,8 @@ class GeminiModel:
                         except AIError as exhausted:
                             if exhausted.code != "provider_quota":
                                 raise
+                            last_switch_status = 429
+                            last_switch_reason = "quota"
                             break
                         self.log.emit(
                             "provider_key_switch",
@@ -194,6 +219,11 @@ class GeminiModel:
                             httpStatus=error.http_status,
                             reason=error.code,
                         )
+                    elif error.code == "provider_model_not_found" and self.auto_fallback:
+                        last_not_found = error
+                        last_switch_status = 404
+                        last_switch_reason = "not_found"
+                        break
                     elif (
                         not retried
                         and self.budget is not None
@@ -209,11 +239,78 @@ class GeminiModel:
                         await asyncio.sleep(min(1, self.budget.remaining()))
                     else:
                         raise
+        if last_not_found is not None and not self.key_pool.exhausted:
+            raise last_not_found
         raise AIError(
             "provider_quota",
             "Các key/model Gemini được phép đã hết quota trong lượt này. "
             "Chờ quota phục hồi; đề cũ được giữ nguyên.",
         )
+
+    def _build_vertex_express_payload(self, body, output_limit: int, actual_model: str) -> dict:
+        system_texts: list[str] = []
+        contents: list[dict] = []
+        for msg in body.get("messages", []):
+            role = str(msg.get("role", "user"))
+            text = str(msg.get("content") or "")
+            if role == "system":
+                if text:
+                    system_texts.append(text)
+                continue
+            vertex_role = "model" if role == "assistant" else "user"
+            parts: list[dict] = []
+            if text:
+                parts.append({"text": text})
+            if parts:
+                contents.append({"role": vertex_role, "parts": parts})
+        if "format" in body:
+            system_texts.append(
+                "Trả về đúng một chuỗi JSON hợp lệ khớp hoàn toàn với JSON Schema sau, "
+                "không dùng markdown: " + json.dumps(body["format"], ensure_ascii=False)
+            )
+        if "document" in body:
+            doc = body["document"]
+            inline_part = {
+                "inlineData": {
+                    "mimeType": doc["mimeType"],
+                    "data": doc["data"],
+                }
+            }
+            last_user = next(
+                (item for item in reversed(contents) if item.get("role") == "user"),
+                None,
+            )
+            if last_user is not None:
+                last_user["parts"].append(inline_part)
+            else:
+                contents.append({"role": "user", "parts": [inline_part]})
+        if not contents:
+            contents.append(
+                {
+                    "role": "user",
+                    "parts": [{"text": "Thực hiện yêu cầu theo chỉ dẫn hệ thống."}],
+                }
+            )
+        options = body.get("options") if isinstance(body.get("options"), dict) else {}
+        temperature = options.get("temperature", 0)
+        max_out = (
+            max(8192, output_limit)
+            if "document" in body
+            else (max(16384, output_limit) if actual_model == "gemini-4-hydrogen" else output_limit)
+        )
+        generation_config: dict = {
+            "temperature": temperature,
+            "maxOutputTokens": max_out,
+        }
+        if "format" in body:
+            generation_config["responseMimeType"] = "application/json"
+        payload: dict = {
+            "contents": contents,
+            "generationConfig": generation_config,
+        }
+        if system_texts:
+            payload["systemInstruction"] = {"parts": [{"text": "\n\n".join(system_texts)}]}
+        return payload
 
     async def _call_once(self, purpose, body, slot, actual_model):
         if self.budget:
@@ -236,53 +333,64 @@ class GeminiModel:
             batch_size = max(batch_size, 4)
         # Thinking và nội dung/công cụ dùng chung trần; không cắt phần trả lời để ép nhanh.
         output_limit = min(32768, 8192 + batch_size * 1400) if batch_size else 4096
-        payload = {
-            "model": actual_model,
-            "stream": False,
-            "temperature": 0,
-            "max_tokens": output_limit,
-            "messages": gemini_messages(body["messages"]),
-        }
-        if actual_model == "gemini-4-hydrogen":
-            # Hydrogen tính cả thinking trong trần token; 4096 có thể hết trước lời gọi tool.
-            payload.update(max_tokens=max(16384, output_limit), reasoning_effort="low")
-        if "tools" in body:
-            payload["tools"] = body["tools"]
-        if "format" in body:
-            payload["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {"name": "review", "strict": True, "schema": body["format"]},
+        active_key = self.key_pool.keys[slot]
+        is_vertex = is_vertex_express_key(active_key)
+
+        if is_vertex:
+            endpoint = f"{VERTEX_EXPRESS_BASE}/{actual_model}:generateContent"
+            headers = {
+                "Content-Type": "application/json",
+                "x-goog-api-key": active_key,
             }
-            if purpose.startswith("scoped_patch") or purpose == "question_check":
-                # Union mảng phương án/barem bị API từ chối; Python vẫn kiểm toàn bộ schema.
-                payload["response_format"] = {"type": "json_object"}
-                payload["messages"][0]["content"] += (
-                    " Trả JSON đúng schema sau, không dùng markdown: "
-                    + json.dumps(body["format"], ensure_ascii=False)
-                )
-        endpoint = GEMINI_ENDPOINT
-        headers = {"Authorization": "Bearer " + self.key_pool.keys[slot]}
-        if "document" in body:
-            # PDF/ảnh dùng inlineData của API native; không coi nhị phân là văn bản.
-            endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{actual_model}:generateContent"
-            headers = {"x-goog-api-key": self.key_pool.keys[slot]}
+            payload = self._build_vertex_express_payload(body, output_limit, actual_model)
+        else:
             payload = {
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [
-                            {"text": "\n".join(m["content"] for m in body["messages"])},
-                            {"inlineData": body["document"]},
-                        ],
-                    }
-                ],
-                "generationConfig": {
-                    "temperature": 0,
-                    "maxOutputTokens": max(8192, payload["max_tokens"]),
-                    "responseMimeType": "application/json",
-                    "responseJsonSchema": body["format"],
-                },
+                "model": actual_model,
+                "stream": False,
+                "temperature": 0,
+                "max_tokens": output_limit,
+                "messages": gemini_messages(body["messages"]),
             }
+            if actual_model == "gemini-4-hydrogen":
+                # Hydrogen tính cả thinking trong trần token; 4096 có thể hết trước lời gọi tool.
+                payload.update(max_tokens=max(16384, output_limit), reasoning_effort="low")
+            if "tools" in body:
+                payload["tools"] = body["tools"]
+            if "format" in body:
+                payload["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {"name": "review", "strict": True, "schema": body["format"]},
+                }
+                if purpose.startswith("scoped_patch") or purpose == "question_check":
+                    # Union mảng phương án/barem bị API từ chối; Python vẫn kiểm toàn bộ schema.
+                    payload["response_format"] = {"type": "json_object"}
+                    payload["messages"][0]["content"] += (
+                        " Trả JSON đúng schema sau, không dùng markdown: "
+                        + json.dumps(body["format"], ensure_ascii=False)
+                    )
+            endpoint = GEMINI_ENDPOINT
+            headers = {"Authorization": "Bearer " + active_key}
+            if "document" in body:
+                # PDF/ảnh dùng inlineData của API native; không coi nhị phân là văn bản.
+                endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{actual_model}:generateContent"
+                headers = {"x-goog-api-key": active_key}
+                payload = {
+                    "contents": [
+                        {
+                            "role": "user",
+                            "parts": [
+                                {"text": "\n".join(m["content"] for m in body["messages"])},
+                                {"inlineData": body["document"]},
+                            ],
+                        }
+                    ],
+                    "generationConfig": {
+                        "temperature": 0,
+                        "maxOutputTokens": max(8192, payload["max_tokens"]),
+                        "responseMimeType": "application/json",
+                        "responseJsonSchema": body["format"],
+                    },
+                }
         self.log.index += 1
         index, started = self.log.index, time.perf_counter()
         self.log.write(f"call-{index:02}-request.json", redact_secrets(payload, self.key_pool.keys))
@@ -319,6 +427,18 @@ class GeminiModel:
                         f"call-{index:02}-error.json",
                         redact_secrets(details, self.key_pool.keys),
                     )
+                    if is_vertex and response.status_code in {401, 403}:
+                        raise AIError(
+                            "provider_auth",
+                            "Khóa Vertex AI Express chưa hợp lệ hoặc bị từ chối.",
+                            http_status=response.status_code,
+                        )
+                    if is_vertex and response.status_code == 404:
+                        raise AIError(
+                            "provider_model_not_found",
+                            f"Model {actual_model} chưa mở trên Vertex AI Express (HTTP 404).",
+                            http_status=404,
+                        )
                     if response.status_code == 401 or (
                         response.status_code == 400
                         and "valid api key" in str(details.get("message", "")).casefold()
@@ -341,6 +461,40 @@ class GeminiModel:
             self.log.write(
                 f"call-{index:02}-response.json", redact_secrets(raw, self.key_pool.keys)
             )
+            if is_vertex:
+                candidates_resp = raw.get("candidates", [])
+                if not candidates_resp or candidates_resp[0].get("finishReason") not in {
+                    "STOP",
+                    None,
+                    "",
+                }:
+                    raise AIError(
+                        "incomplete_response",
+                        "Vertex AI Express chưa hoàn tất phản hồi.",
+                    )
+                raw_text = "".join(
+                    str(p.get("text", ""))
+                    for p in candidates_resp[0].get("content", {}).get("parts", [])
+                    if isinstance(p, dict) and not p.get("thought") and "text" in p
+                )
+                content = sanitize_json_latex_escapes(raw_text)
+                self.log.emit(
+                    "model_end",
+                    modelCall=index,
+                    purpose=purpose,
+                    model=actual_model,
+                    provider="vertex-express",
+                    ok=True,
+                    seconds=round(time.perf_counter() - started, 6),
+                    keySlot=slot + 1,
+                    metrics=raw.get("usageMetadata", {}),
+                )
+                return {
+                    "role": "assistant",
+                    "content": content,
+                    "model": actual_model,
+                    "provider": "vertex-express",
+                }
             if "document" in body:
                 candidates = raw.get("candidates", [])
                 if len(candidates) != 1 or candidates[0].get("finishReason") != "STOP":

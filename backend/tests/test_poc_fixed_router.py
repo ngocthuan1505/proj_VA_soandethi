@@ -172,7 +172,9 @@ def test_config_deepseek_guardrails_and_endpoint_validation(tmp_path):
         assert saved.json()["fingerprint"] != initial["fingerprint"]
 
         for bad_ds in (
-            {"url": "https://evil.example/v1", "key": DS_KEY},
+            {"url": "http://evil.example/v1", "key": DS_KEY},
+            {"url": "ftp://evil.example/v1", "key": DS_KEY},
+            {"model": "bad model with spaces!"},
             {"sessionLimitUsd": 0.01},
             {"totalLimitUsd": 35.0},
             {"sessionLimitUsd": 10.0, "totalLimitUsd": 5.0},
@@ -195,6 +197,30 @@ def test_config_deepseek_guardrails_and_endpoint_validation(tmp_path):
         )
         assert cleared.status_code == 200
         assert cleared.json() == initial
+
+        # Chấp nhận cổng OpenAI-compatible HTTPS tùy chỉnh Base URL & đa model
+        custom_gw = client.post(
+            "/api/config",
+            json={
+                "saveLocally": False,
+                "deepseek": {
+                    "url": "https://gateway.example.test/",
+                    "key": f"gw_acc : {DS_KEY}",
+                    "model": "deepseek-v4.1-flash",
+                    "reasonerModel": "deepseek-v4-pro",
+                    "crossModel": "qwen3.8-max",
+                    "backupModels": ["gemini-3.8-flash", "qwen3.8-flash"],
+                },
+            },
+        )
+        assert custom_gw.status_code == 200, custom_gw.text
+        assert DS_KEY not in custom_gw.text
+        gw_cfg = custom_gw.json()["deepseek"]
+        assert gw_cfg["url"] == "https://gateway.example.test/v1"
+        assert gw_cfg["model"] == "deepseek-v4.1-flash"
+        assert gw_cfg["reasonerModel"] == "deepseek-v4-pro"
+        assert gw_cfg["crossModel"] == "qwen3.8-max"
+        assert gw_cfg["backupModels"] == ["gemini-3.8-flash", "qwen3.8-flash"]
 
 
 def test_config_fixed_router_presets_and_custom_timeout(tmp_path):
@@ -484,3 +510,159 @@ def test_chat_m11_preserves_model_provided_actions_and_strips_script_xss(tmp_pat
         assert data["suggestedActions"][0]["kind"] == "propose_questions"
         assert data["suggestedActions"][0]["autoSave"] is False
         assert data["followUps"] == ["Tạo thêm 1 câu mức Vận dụng cao"]
+
+
+def test_hydrate_provider_from_fake_secrets_env(tmp_path):
+    from mach_backend.poc_connections import hydrate_provider_from_secrets_env
+
+    env_file = tmp_path / "api-keys.env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "GEMINI_KEY_1=acc1 : AQ.fake_vertex_hydrate_0001",
+                "GEMINI_KEY_2=acc2 : AQ.fake_vertex_hydrate_0002",
+                "GEMINI_KEY_3=AQ.fake_vertex_hydrate_0003",
+                "AI_GATEWAY_BASE_URL=https://gateway.example.test/",
+                "AI_GATEWAY_API_KEY=sk-fake_gateway_hydrate_9999",
+                "AI_GATEWAY_FAST_MODEL=deepseek-v4.1-flash",
+                "AI_GATEWAY_PRO_MODEL=deepseek-v4-pro",
+                "AI_GATEWAY_CROSS_MODEL=qwen3.8-max",
+                "AI_GATEWAY_BACKUP_MODELS=gemini-3.8-flash,qwen3.8-flash",
+                "AI_GATEWAY_SESSION_LIMIT_USD=0.75",
+                "AI_GATEWAY_TOTAL_LIMIT_USD=6.5",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    app = create_app(tmp_path)
+    provider = app.state.provider
+    assert provider.gemini_key == ""
+    assert hydrate_provider_from_secrets_env(provider, env_file) is True
+    assert provider.all_gemini_keys == (
+        "AQ.fake_vertex_hydrate_0001",
+        "AQ.fake_vertex_hydrate_0002",
+        "AQ.fake_vertex_hydrate_0003",
+    )
+    assert provider.gemini_free_tier is True
+    assert provider.deepseek_url == "https://gateway.example.test/v1"
+    assert provider.deepseek_key == "sk-fake_gateway_hydrate_9999"
+    assert provider.deepseek_model == "deepseek-v4.1-flash"
+    assert provider.deepseek_reasoner_model == "deepseek-v4-pro"
+    assert provider.deepseek_cross_model == "qwen3.8-max"
+    assert provider.deepseek_backup_models == ("gemini-3.8-flash", "qwen3.8-flash")
+    assert provider.deepseek_session_limit_usd == 0.75
+    assert provider.deepseek_total_limit_usd == 6.5
+
+
+def test_chat_endpoint_routes_via_fixed_task_router_agy_gemini_deepseek_ollama(
+    tmp_path, monkeypatch
+):
+    from mach_backend import local_workspace
+
+    fake_agy = tmp_path / "agy.exe"
+    fake_agy.write_bytes(b"MZ")
+    order: list[str] = []
+
+    class FakeAgy:
+        def __init__(self, _log, *, custom_path="", budget=None):
+            assert custom_path == str(fake_agy)
+
+        async def __call__(self, _purpose, _body):
+            order.append("agy")
+            if state["fail_agy"]:
+                raise AIError("provider_unavailable", "AGY tạm bận.")
+            return {"content": '{"message": "Trả lời từ AGY CLI"}', "model": "agy-cli"}
+
+    class FakeGemini:
+        def __init__(self, _client, _key, _log, *, model, key_pool, auto_fallback):
+            self.model = model
+
+        async def __call__(self, _purpose, _body):
+            order.append(f"gemini:{self.model}")
+            if state["fail_gemini"]:
+                raise AIError("provider_quota", "Vertex hết quota.", http_status=429)
+            return {"content": '{"message": "Trả lời từ Vertex Gemini"}', "model": self.model}
+
+    class FakeDeepSeek:
+        def __init__(self, _client, _key, _log, *, model, base_url, backup_models, cost_tracker):
+            self.model = model
+            assert base_url == "https://gateway.example.test/v1"
+
+        async def __call__(self, _purpose, _body):
+            order.append(f"gateway:{self.model}")
+            if state["fail_gateway"]:
+                raise AIError("provider_unavailable", "Gateway tạm bận.")
+            return {"content": '{"message": "Trả lời từ Cổng Gateway"}', "model": self.model}
+
+    class FakeOllama:
+        def __init__(self, _client, model, _log, *, protocol="structured"):
+            self.model = model
+
+        async def __call__(self, _purpose, _body):
+            order.append(f"ollama:{self.model}")
+            return {"content": '{"message": "Trả lời từ Ollama dự phòng"}', "model": self.model}
+
+    monkeypatch.setattr(local_workspace, "AgyCliModel", FakeAgy)
+    monkeypatch.setattr(local_workspace, "GeminiModel", FakeGemini)
+    monkeypatch.setattr(local_workspace, "DeepSeekModel", FakeDeepSeek)
+    monkeypatch.setattr(local_workspace, "LocalModel", FakeOllama)
+
+    app = create_app(tmp_path)
+    state = {"fail_agy": False, "fail_gemini": False, "fail_gateway": False}
+    with TestClient(app, headers={"Origin": "http://testserver"}) as client:
+        client.post(
+            "/api/config",
+            json={
+                "saveLocally": False,
+                "gemini": {
+                    "key": "AQ.fake_chat_router_key_123456",
+                    "freeTierConfirmed": True,
+                },
+                "deepseek": {
+                    "url": "https://gateway.example.test",
+                    "key": DS_KEY,
+                    "model": "deepseek-v4.1-flash",
+                    "reasonerModel": "deepseek-v4-pro",
+                    "crossModel": "qwen3.8-max",
+                },
+                "fixedRouter": {"enabled": True, "agyCustomPath": str(fake_agy)},
+            },
+        ).raise_for_status()
+
+        # 1. Ưu tiên AGY CLI đầu tiên
+        r1 = client.post("/api/assistant/chat", json={"text": "Hỏi 1", "consent": True})
+        assert r1.status_code == 200, r1.text
+        assert r1.json()["providerUsed"] == "agy"
+        assert r1.json()["modelUsed"] == "agy-cli"
+        assert order == ["agy"]
+
+        # 2. AGY lỗi -> tự rơi xuống Gemini
+        order.clear()
+        state["fail_agy"] = True
+        r2 = client.post("/api/assistant/chat", json={"text": "Hỏi 2", "consent": True})
+        assert r2.status_code == 200, r2.text
+        assert r2.json()["providerUsed"] == "gemini_hydrogen"
+        assert r2.json()["modelUsed"] == "gemini-4-hydrogen"
+        assert order == ["agy", "gemini:gemini-4-hydrogen"]
+
+        # 3. AGY + Gemini lỗi -> tự rơi xuống Gateway (DeepSeek Pro)
+        order.clear()
+        state["fail_gemini"] = True
+        r3 = client.post("/api/assistant/chat", json={"text": "Hỏi 3", "consent": True})
+        assert r3.status_code == 200, r3.text
+        assert r3.json()["providerUsed"] == "deepseek_reasoner"
+        assert r3.json()["modelUsed"] == "deepseek-v4-pro"
+        assert order == [
+            "agy",
+            "gemini:gemini-4-hydrogen",
+            "gemini:gemini-3.8-flash",
+            "gateway:deepseek-v4-pro",
+        ]
+
+        # 4. AGY + Gemini + Gateway lỗi -> rơi xuống Ollama cuối cùng
+        order.clear()
+        state["fail_gateway"] = True
+        r4 = client.post("/api/assistant/chat", json={"text": "Hỏi 4", "consent": True})
+        assert r4.status_code == 200, r4.text
+        assert r4.json()["providerUsed"] == "ollama"
+        assert order[-1].startswith("ollama:")
