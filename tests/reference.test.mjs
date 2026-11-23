@@ -22,7 +22,11 @@ import {
  buildContextualAssistantSuggestions,
  contextualSuggestionsHTML,
  pickDetachFocusTarget,
+ formatProviderName,
+ formatLatencyLabel,
+ chatMetaBadgeText,
 } from '../reference.js';
+import {intentOf} from '../subject-profiles.js';
 import {approveQuestion,isApproved,check,clone,exportHTML,commit,undo,blank} from '../core.js';
 import {validateGenerated} from '../ai.mjs';
 import {makeDocx,formattedHTML} from '../exports.mjs';
@@ -218,8 +222,8 @@ test('Cột phải Trợ lý AI tách rõ ctx-badge/ctx-summary (không dính T�
  assert.ok(composeHtml.includes('NGUỒN CHO TRỢ LÝ'));
  assert.ok(composeHtml.includes('data-action="import-doc"'));
  assert.ok(composeHtml.includes('+ Kho tài liệu'));
+ assert.match(composeHtml,/data-action="lesson-sources"[^>]*>Bài SGK</);
  assert.ok(composeHtml.includes('data-action="assistant-sources"'));
- assert.ok(composeHtml.includes('Bài SGK'));
  assert.ok(composeHtml.includes('data-action="community-exams"'));
  assert.ok(composeHtml.includes('Đề cộng đồng'));
  assert.ok(composeHtml.includes('<select id="chat-time-preset" name="chat-time-preset" class="chat-time-select" aria-label="Thời gian chạy AI"'));
@@ -233,10 +237,69 @@ test('Cột phải Trợ lý AI tách rõ ctx-badge/ctx-summary (không dính T�
  assert.ok(!composeHtml.includes('time-preset-pill'));
  assert.ok(!composeHtml.includes('time-preset-bar'));
 
+ const referenceSrc=readFileSync(new URL('../reference.js',import.meta.url),'utf8');
+ assert.ok(referenceSrc.includes('<span>Trợ lý AI soạn đề</span>'));
+ assert.ok(referenceSrc.includes('assistant-memory-btn'));
+ assert.ok(referenceSrc.includes("'memory','· Trí nhớ'"));
+
  const workbenchSrc=readFileSync(new URL('../workbench.js',import.meta.url),'utf8');
  assert.ok(!workbenchSrc.includes('function paintTimePresets'));
  assert.ok(!workbenchSrc.includes('time-preset-pill'));
+ assert.ok(!workbenchSrc.includes('assistant-context-bar'));
+ assert.ok(!workbenchSrc.includes('contextStripHTML'));
  assert.ok(workbenchSrc.includes("ev.target.id==='chat-time-preset'"));
  assert.ok(workbenchSrc.includes("kind:'exam-questions-summary'"));
  assert.ok(workbenchSrc.includes('result.providerUsed'));
+ assert.ok(workbenchSrc.includes('result.latencyMs'));
+ assert.ok(workbenchSrc.includes('chat-consent-card'));
+ assert.ok(workbenchSrc.includes('✓ Cho phép và gửi ngay'));
+ assert.ok(workbenchSrc.includes('is-attention'));
+ assert.ok(workbenchSrc.includes('Bấm "Cho phép và gửi ngay" phía trên để bật AI cho đề này.'));
+ assert.ok(workbenchSrc.includes('ai-stage-timer'));
+ assert.ok(workbenchSrc.includes('Đang trả lời AI…'));
+ assert.ok(workbenchSrc.includes('copy-chat-msg'));
+ assert.ok(workbenchSrc.includes('chat-msg-tools'));
+});
+
+test('intentOf phân loại câu chào, câu hỏi ngắn và yêu cầu thêm câu mới sang chat; giữ nguyên create/edit/verify',()=>{
+ const scope={id:'q-1',field:'stem',start:0,end:10,text:'Câu hỏi 1'};
+ for(const chatText of [
+  'hello',
+  'hi',
+  'chào',
+  'xin chào',
+  'bạn là ai',
+  'bạn là ai?',
+  'thêm 2 câu trắc nghiệm Toán 9',
+  'thêm 2 câu trắc nghiệm',
+  'tạo thêm 3 bài tự luận',
+  'gợi ý 2 câu vận dụng',
+  'bổ sung thêm 1 câu hỏi',
+  'cho thêm 2 câu đúng sai',
+  'Câu này thuộc mức độ nào?',
+ ]){
+  assert.equal(intentOf(chatText,[scope]),'chat',chatText);
+  assert.equal(intentOf(chatText,[]),'chat',chatText);
+ }
+ assert.equal(intentOf('soạn đề Toán lớp 9 giữa kỳ',[scope]),'create');
+ assert.equal(intentOf('sửa câu 1 rõ hơn',[scope]),'edit');
+ assert.equal(intentOf('viết lại bài 2 cho ngắn gọn',[scope]),'edit');
+ assert.equal(intentOf('đổi thành: Giải phương trình 2x + 4 = 0',[scope]),'edit');
+ assert.equal(intentOf('check đáp án câu 1',[scope]),'verify');
+ assert.equal(intentOf('Tại sao có hai nghiệm?',[scope]),'explain');
+});
+
+test('Huy hiệu nguồn và tốc độ chat hiển thị chuẩn DeepSeek · 2,4s / Gemini · 3,1s',()=>{
+ assert.equal(formatProviderName('deepseek'),'DeepSeek');
+ assert.equal(formatProviderName('deepseek-v4.1-flash'),'DeepSeek');
+ assert.equal(formatProviderName('gemini'),'Gemini');
+ assert.equal(formatProviderName('agy_cli'),'AGY CLI');
+ assert.equal(formatLatencyLabel(2400),'2,4s');
+ assert.equal(formatLatencyLabel(3100),'3,1s');
+ assert.equal(formatLatencyLabel(50),'0,1s');
+ assert.equal(formatLatencyLabel(0),'');
+ assert.equal(chatMetaBadgeText({providerUsed:'deepseek',latencyMs:2400}),'DeepSeek · 2,4s');
+ assert.equal(chatMetaBadgeText({providerUsed:'gemini',latencyMs:3100}),'Gemini · 3,1s');
+ assert.equal(chatMetaBadgeText({providerUsed:'ollama',latencyMs:0}),'Ollama');
+ assert.equal(chatMetaBadgeText({providerUsed:'',latencyMs:1200}),'1,2s');
 });
