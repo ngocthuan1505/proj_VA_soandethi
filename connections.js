@@ -38,6 +38,10 @@ export function connectionFormData(form){
   providers.gemini.clearExtraKeys=fd.has('gemini-clear-extra-keys');
   providers.ollama.checkModel=fd.get('ollama-check-model');
  }
+ const deepseekUrl=String(fd.get('deepseek-url')||'').trim()||'https://api.deepseek.com/v1';
+ const deepseekModel=String(fd.get('deepseek-model')||'').trim();
+ const deepseekReasonerModel=String(fd.get('deepseek-reasoner-model')||'').trim();
+ const deepseekCrossModel=String(fd.get('deepseek-cross-model')||'').trim();
  return {
   ...providers,
   routes:Object.fromEntries(['generate','patch','check'].map(t=>[t,fd.get('route-'+t)])),
@@ -45,7 +49,10 @@ export function connectionFormData(form){
    saveLocally:fd.has('poc-save-local'),
    runBudget:{maxModelCalls:Number(fd.get('max-model-calls')),timeoutSeconds:Number(fd.get('run-timeout'))},
    deepseek:{
-    url:'https://api.deepseek.com/v1',
+    url:deepseekUrl,
+    ...(deepseekModel?{model:deepseekModel}:{}),
+    ...(deepseekReasonerModel?{reasonerModel:deepseekReasonerModel}:{}),
+    ...(deepseekCrossModel?{crossModel:deepseekCrossModel}:{}),
     key:fd.get('deepseek-key')||'',
     clearKey:fd.has('deepseek-clear-key'),
     sessionLimitUsd:Number(fd.get('deepseek-session-limit')||0.5),
@@ -94,14 +101,22 @@ function pocConnectionSettings(config){
   <section class="settings-section" data-poc-provider="ollama" ${selected!=='ollama'&&check!=='ollama'?'hidden':''}><h3>Ollama trên máy</h3><p class="hint">Dùng model đã tải sẵn. Nội dung được xử lý tại máy.</p><input type="hidden" name="ollama-url" value="http://127.0.0.1:11434"><div class="grid2"><label>Model soạn đề<input name="ollama-model" value="${esc(config.ollama?.model||'')}" spellcheck="false" autocomplete="off"></label><label>Model kiểm đề<input name="ollama-check-model" value="${esc(config.ollama?.checkModel||config.ollama?.model||'')}" spellcheck="false" autocomplete="off"></label></div></section>
   <section class="settings-section" data-poc-provider="gemini" ${selected!=='gemini'&&check!=='gemini'?'hidden':''}><h3>Gemini API</h3><p class="hint">Ngữ liệu sẽ được gửi đến Google. Chọn nguồn tự viết hoặc tài liệu được phép chia sẻ.</p><input type="hidden" name="gemini-url" value="https://generativelanguage.googleapis.com/v1beta">
   <div class="grid2"><label>Model soạn đề<select name="gemini-model">${models(g.model)}</select></label><label>Model kiểm đề<select name="gemini-check-model">${models(g.checkModel||g.model)}</select></label></div>
-  <label>API key<input name="gemini-key" type="password" autocomplete="off" placeholder="${g.hasKey?(config.persistence?.saved?'Đã lưu mã hóa trên máy — để trống để giữ':'Đã có khóa trong phiên — để trống để giữ'):'Nhập khóa Google AI Studio…'}"></label>
-  <details class="poc-backup" ${g.hasBackupKey||extraCount?'open':''}><summary>${g.hasBackupKey?'Key dự phòng đã kết nối':'Thêm API key dự phòng'} <span>Không bắt buộc</span></summary><label>API key của project khác<input name="gemini-backup-key" type="password" autocomplete="off" placeholder="${g.hasBackupKey?'Đã có key dự phòng — để trống để giữ':'Nhập key của project thứ hai…'}"></label><label>Cụm khóa Gemini bổ sung (Key 3, 4+ · mỗi dòng 1 key)<textarea name="gemini-extra-keys" rows="2" spellcheck="false" autocomplete="off" placeholder="${extraCount?`Đã có ${extraCount} khóa bổ sung — để trống để giữ`:'Dán thêm key Gemini thứ 3, thứ 4… mỗi dòng 1 key'}"></textarea></label><label class="consent"><input type="checkbox" name="gemini-clear-extra-keys"> Xóa các khóa Gemini bổ sung</label><p class="hint">Hai key cùng project dùng chung quota. App luân phiên các project được phép dùng và bỏ qua key gặp giới hạn trong tác vụ; không tự bật trả phí.</p></details>
+  <label>API key Gemini (AI Studio AIza... hoặc Vertex AI Express AQ....)<input name="gemini-key" type="password" autocomplete="off" placeholder="${g.hasKey?(config.persistence?.saved?'Đã lưu mã hóa trên máy — để trống để giữ':'Đã có khóa trong phiên — để trống để giữ'):'Nhập khóa Google AI Studio (AIza...) hoặc Vertex Express (AQ....)…'}"></label>
+  <details class="poc-backup" ${g.hasBackupKey||extraCount?'open':''}><summary>${g.hasBackupKey?'Key dự phòng đã kết nối':'Thêm API key dự phòng'} <span>Không bắt buộc</span></summary><label>API key của project khác<input name="gemini-backup-key" type="password" autocomplete="off" placeholder="${g.hasBackupKey?'Đã có key dự phòng — để trống để giữ':'Nhập key của project thứ hai…'}"></label><label>Cụm 6–8 khóa Gemini bổ sung (AIza... hoặc Vertex AI Express AQ...., dán nguyên dòng ten_acc : AQ....)<textarea name="gemini-extra-keys" rows="3" spellcheck="false" autocomplete="off" placeholder="${extraCount?`Đã có ${extraCount} khóa bổ sung — để trống để giữ`:'Dán thêm 6–8 khóa Vertex AI Express (AQ.... hoặc ten_acc : AQ....) hoặc Google AI Studio (AIza...), mỗi dòng 1 khóa'}"></textarea></label><label class="consent"><input type="checkbox" name="gemini-clear-extra-keys"> Xóa các khóa Gemini bổ sung</label><p class="hint">Hỗ trợ cả 6–8 khóa Vertex AI Express (<code>AQ....</code>, dán nguyên dòng <code>ten_acc : AQ....</code>) lẫn khóa Google AI Studio (<code>AIza...</code>). Hai key cùng project dùng chung quota; app luân phiên các khóa được phép và không tự bật trả phí.</p></details>
   <label class="consent"><input type="checkbox" name="gemini-auto-fallback" ${g.autoFallback!==false?'checked':''}> Tự đổi model khi hết quota</label><p class="hint">Thử các key được phép trên model đang chọn trước, sau đó chuyển giữa Flash3.6, Flash3.8 và Hydrogen4. Không dùng Flash Lite. Mọi lần thử tính vào ngân sách và ghi model thực tế trong log. Có thể tắt khi cần so sánh cố định một model.</p><label class="consent"><input type="checkbox" name="gemini-free-tier" ${g.freeTierConfirmed?'checked':''}> Tôi xác nhận các project đang ở Free tier và có quyền sử dụng.</label>
   <a class="poc-key-link" href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">Lấy key tại Google AI Studio</a></section>
   <section class="settings-section poc-deepseek-agy-section">
-   <h3>DeepSeek ($30 Guardrail) &amp; AGY CLI Local</h3>
+   <h3>Cổng API / DeepSeek (OpenAI-compatible) &amp; AGY CLI Local</h3>
    <div class="grid2">
-    <label>DeepSeek API key<input type="password" name="deepseek-key" autocomplete="off" placeholder="${d.hasKey?'Đã có khóa DeepSeek — để trống để giữ':'Nhập khóa DeepSeek API…'}"></label>
+    <label>Base URL cổng API (HTTPS · OpenAI-compatible)<input type="url" name="deepseek-url" value="${esc(d.url||'https://api.deepseek.com/v1')}" spellcheck="false" autocomplete="off" placeholder="https://api.deepseek.com/v1"></label>
+    <label>API key Cổng / DeepSeek<input type="password" name="deepseek-key" autocomplete="off" placeholder="${d.hasKey?'Đã có khóa DeepSeek — để trống để giữ':'Nhập khóa cổng API / DeepSeek…'}"></label>
+   </div>
+   <div class="grid2">
+    <label>Model chính (soạn / nhanh)<input name="deepseek-model" value="${esc(d.model||'deepseek-v4.1-flash')}" spellcheck="false" autocomplete="off" placeholder="deepseek-v4.1-flash / deepseek-chat"></label>
+    <label>Model suy luận (Reasoner)<input name="deepseek-reasoner-model" value="${esc(d.reasonerModel||'deepseek-v4-pro')}" spellcheck="false" autocomplete="off" placeholder="deepseek-v4-pro / deepseek-reasoner"></label>
+   </div>
+   <div class="grid2">
+    <label>Model đối chiếu chéo (Cross-model)<input name="deepseek-cross-model" value="${esc(d.crossModel||'qwen3.8-max')}" spellcheck="false" autocomplete="off" placeholder="qwen3.8-max"></label>
     <label>Đường dẫn AGY CLI (tùy chọn)<input name="agy-custom-path" value="${esc(fr.agyCustomPath||'')}" spellcheck="false" autocomplete="off" placeholder="Tự động tìm agy trên máy"></label>
    </div>
    <div class="grid2">

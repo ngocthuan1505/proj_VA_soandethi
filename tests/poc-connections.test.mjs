@@ -122,3 +122,77 @@ test('connectionFormData trích xuất đúng fixedRouter, deepseek và gemini.e
   agyCustomPath:'C:\\tools\\agy.exe',
  });
 });
+
+test('Quản trị khóa hỗ trợ Base URL cổng OpenAI-compatible, đa model và khóa Vertex Express AQ. mà không lộ secret',()=>{
+ const html=connectionSettings({
+  localPoC:true,
+  routes:{generate:'gemini',check:'gemini'},
+  gemini:{
+   hasKey:true,
+   key:'AQ.secret-vertex-must-not-leak',
+   extraKeysCount:6,
+   extraKeys:['acc1 : AQ.extra-secret-1','AIzaSecretShouldNeverRender'],
+  },
+  deepseek:{
+   url:'https://gateway.example.com/v1',
+   model:'deepseek-v4.1-flash',
+   reasonerModel:'deepseek-v4-pro',
+   crossModel:'qwen3.8-max',
+   hasKey:true,
+   key:'sk-gateway-secret-must-not-leak',
+   sessionLimitUsd:0.6,
+   totalLimitUsd:8.0,
+  },
+ });
+ assert.ok(html.includes('Vertex AI Express'));
+ assert.ok(html.includes('AQ....'));
+ assert.ok(html.includes('ten_acc : AQ....'));
+ assert.ok(html.includes('AIza...'));
+ assert.ok(html.includes('name="deepseek-url"'));
+ assert.ok(html.includes('value="https://gateway.example.com/v1"'));
+ assert.ok(html.includes('name="deepseek-model"'));
+ assert.ok(html.includes('value="deepseek-v4.1-flash"'));
+ assert.ok(html.includes('name="deepseek-reasoner-model"'));
+ assert.ok(html.includes('value="deepseek-v4-pro"'));
+ assert.ok(html.includes('name="deepseek-cross-model"'));
+ assert.ok(html.includes('value="qwen3.8-max"'));
+ assert.ok(html.includes('type="password" name="deepseek-key"'));
+ assert.ok(!html.includes('AQ.secret-vertex-must-not-leak'));
+ assert.ok(!html.includes('AQ.extra-secret-1'));
+ assert.ok(!html.includes('AIzaSecretShouldNeverRender'));
+ assert.ok(!html.includes('sk-gateway-secret-must-not-leak'));
+
+ const parsed=connectionFormData({
+  'poc-connection':'1',
+  'route-generate':'gemini',
+  'route-check':'gemini',
+  'gemini-url':'https://generativelanguage.googleapis.com/v1beta',
+  'gemini-model':'gemini-3.6-flash',
+  'gemini-check-model':'gemini-3.8-flash',
+  'gemini-key':'AQ.test-key',
+  'gemini-extra-keys':'acc_a : AQ.k1\nacc_b : AQ.k2',
+  'ollama-url':'http://127.0.0.1:11434',
+  'ollama-model':'qwen3:4b',
+  'deepseek-url':'https://gateway.example.com/v1',
+  'deepseek-model':'deepseek-v4.1-flash',
+  'deepseek-reasoner-model':'deepseek-v4-pro',
+  'deepseek-cross-model':'qwen3.8-max',
+  'deepseek-key':'sk-gw-1',
+  'deepseek-session-limit':'1.2',
+  'deepseek-total-limit':'9.5',
+  'fixed-time-preset':'deep',
+  'fixed-timeout-seconds':'1200',
+  'max-model-calls':'30',
+  'run-timeout':'600',
+ });
+ assert.deepEqual(parsed.deepseek,{
+  url:'https://gateway.example.com/v1',
+  model:'deepseek-v4.1-flash',
+  reasonerModel:'deepseek-v4-pro',
+  crossModel:'qwen3.8-max',
+  key:'sk-gw-1',
+  clearKey:false,
+  sessionLimitUsd:1.2,
+  totalLimitUsd:9.5,
+ });
+});

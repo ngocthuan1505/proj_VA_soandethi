@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {
  essaySample,
+ referenceChat,
  referenceCompose,
+ CHAT_TIME_PRESETS,
  tableCellHTML,
  questionTablesHTML,
  ASSISTANT_DROP_EXTENSIONS,
@@ -193,4 +196,47 @@ test('BUG-5: pickDetachFocusTarget giữ focus hợp lý sau khi gỡ nguồn, b
 
  const mockDocEmpty={querySelectorAll:sel=>sel==='.assistant-sources .add-source'?[hiddenAdd]:sel==='[data-ux-action="attach"]'?[attachBtn]:[]};
  assert.equal(pickDetachFocusTarget(0,mockDocEmpty),attachBtn);
+});
+
+test('Cột phải Trợ lý AI tách rõ ctx-badge/ctx-summary (không dính Tự luậnSửa), có thanh nguồn 1 dòng và 1 dropdown #chat-time-preset',()=>{
+ const e=essaySample();
+ const selectedId=e.questions[0].id;
+ const {plan,buttons,contextHeaderHTML}=contextualSuggestionsHTML(e,{selectedId});
+ assert.equal(plan.mode,'selected-question');
+ assert.ok(contextHeaderHTML.includes('<span class="ctx-badge assistant-context-badge"'));
+ assert.ok(contextHeaderHTML.includes('<p class="ctx-summary"'));
+ assert.ok(contextHeaderHTML.includes('Đang chọn Câu 1 · Tự luận'));
+ assert.ok(contextHeaderHTML.includes('Sửa đúng Câu 1 hoặc kiểm tra độc lập trước khi duyệt.'));
+ assert.ok(!contextHeaderHTML.includes('Tự luậnSửa'));
+ const chatHtml=referenceChat(e,{selectedId});
+ assert.ok(chatHtml.includes('<span class="ctx-badge assistant-context-badge"'));
+ assert.ok(chatHtml.includes('<p class="ctx-summary"'));
+ assert.ok(!chatHtml.includes('Tự luậnSửa'));
+ assert.equal((buttons.match(/class="suggestion-card/g)||[]).length,3);
+
+ const composeHtml=referenceCompose({...e,aiTimePreset:'deep'},null);
+ assert.ok(composeHtml.includes('NGUỒN CHO TRỢ LÝ'));
+ assert.ok(composeHtml.includes('data-action="import-doc"'));
+ assert.ok(composeHtml.includes('+ Kho tài liệu'));
+ assert.ok(composeHtml.includes('data-action="assistant-sources"'));
+ assert.ok(composeHtml.includes('Bài SGK'));
+ assert.ok(composeHtml.includes('data-action="community-exams"'));
+ assert.ok(composeHtml.includes('Đề cộng đồng'));
+ assert.ok(composeHtml.includes('<select id="chat-time-preset" name="chat-time-preset" class="chat-time-select" aria-label="Thời gian chạy AI"'));
+ for(const [id,label] of CHAT_TIME_PRESETS){
+  assert.ok(composeHtml.includes(`value="${id}"`),id);
+  assert.ok(composeHtml.includes(label),label);
+ }
+ assert.ok(composeHtml.includes('<option value="deep" selected>Thời gian: Kỹ sâu (20p)</option>'));
+ assert.ok(!composeHtml.includes('effort-toggle'));
+ assert.ok(!composeHtml.includes('Mức: Trung bình'));
+ assert.ok(!composeHtml.includes('time-preset-pill'));
+ assert.ok(!composeHtml.includes('time-preset-bar'));
+
+ const workbenchSrc=readFileSync(new URL('../workbench.js',import.meta.url),'utf8');
+ assert.ok(!workbenchSrc.includes('function paintTimePresets'));
+ assert.ok(!workbenchSrc.includes('time-preset-pill'));
+ assert.ok(workbenchSrc.includes("ev.target.id==='chat-time-preset'"));
+ assert.ok(workbenchSrc.includes("kind:'exam-questions-summary'"));
+ assert.ok(workbenchSrc.includes('result.providerUsed'));
 });

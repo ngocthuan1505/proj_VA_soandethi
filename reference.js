@@ -10,6 +10,12 @@ let c,formula=null,initialized=false,dropInitialized=false,activeDropHost=null;
 const $=s=>document.querySelector(s);
 const b=(action,label,attrs='')=>`<button type="button" data-action="${action}" ${attrs}>${label}</button>`;
 export const effortNames=['Nhanh','Trung bình','Kỹ hơn'];
+export const CHAT_TIME_PRESETS=[
+ ['fast','Thời gian: Nhanh (2p)',120],
+ ['standard','Thời gian: Chuẩn (5p)',300],
+ ['deep','Thời gian: Kỹ sâu (20p)',1200],
+ ['extended','Thời gian: Sâu (60p)',3600],
+];
 export const ASSISTANT_DROP_EXTENSIONS=['docx','pdf','txt','md','pptx','png','jpg','jpeg','webp'];
 export const MAX_ASSISTANT_DROP_BYTES=15*1024*1024;
 const DROP_ZONE_SELECTOR='.assistant, .assistant-panel, .chat, #chat-form, #prompt, .upload-zone';
@@ -195,25 +201,23 @@ export function buildContextualAssistantSuggestions(exam,options={}){
      ?'Xem bản đề xuất trên trang rồi bấm ✓ Chấp nhận hoặc ✕ Bỏ đề xuất.'
      :`Kiểm tra chủ đề, điểm và ${st.attachedCount?st.attachedCount+' nguồn đang gắn':'gắn nguồn'} trước khi sinh.`,
    actions:[
-    {kind:'action',action:'assistant-sources',label:st.attachedCount?`Nguồn đang gắn (${st.attachedCount})`:'Gắn nguồn cho ma trận',hint:'SGK, Đề cá nhân, Cộng đồng, Tệp'},
-    {kind:'action',action:'matrix',label:'Mở bảng ma trận đầy đủ',hint:`${st.reqCount} câu yêu cầu`},
+    {kind:'action',action:'assistant-sources',label:st.attachedCount?`Nguồn đang gắn (${st.attachedCount})`:'Gắn nguồn cho ma trận',hint:'SGK, Đề cá nhân, Cộng đồng, Tệp',tag:'Nguồn đối chiếu'},
+    {kind:'action',action:'matrix',label:'Mở bảng ma trận đầy đủ',hint:`${st.reqCount} câu yêu cầu`,tag:'Cơ cấu đề'},
    ],
   };
  }
  if(st.mode==='selected-question'&&st.selectedQuestion){
   const qNum=st.selectedIndex+1;
   const q=st.selectedQuestion;
-  const approved=isApproved(q);
   const typeLabel=QUESTION_TYPES[q.type||'mcq']||'Câu hỏi';
   return {
    ...st,
    badge:options.scope?.text&&!options.scope.wholeField?`Đang bôi đen Câu ${qNum}`:`Đang chọn Câu ${qNum} · ${typeLabel}`,
    summary:`Sửa đúng Câu ${qNum} hoặc kiểm tra độc lập trước khi duyệt.`,
    actions:[
-    {kind:'prompt',action:'studio-prompt',label:`Viết lại Câu ${qNum} rõ hơn, giữ đáp án`,prompt:`Viết lại câu ${qNum} cho rõ ràng và chuẩn mực hơn, giữ nguyên ý chính và đáp án đúng.`,hint:'Tạo diff 2 cột để đối chiếu',primary:true},
-    {kind:'action',action:'ai-check',label:`Giải lại độc lập Câu ${qNum} bằng AI`,dataId:q.id,hint:'Không đưa đáp án lưu cho AI'},
-    {kind:'action',action:'quick-formula',label:`Chèn công thức / mẫu Câu ${qNum}`,dataId:q.id,hint:'Mở composer trực quan'},
-    {kind:'action',action:'toggle-approve-question',label:approved?`Bỏ duyệt Câu ${qNum}`:`Duyệt nhanh Câu ${qNum}`,dataId:q.id,hint:approved?'Đưa về chờ rà soát':'Đánh dấu đã rà soát'},
+    {kind:'prompt',action:'studio-prompt',label:`Viết lại Câu ${qNum} rõ hơn, giữ đáp án`,prompt:`Viết lại câu ${qNum} cho rõ ràng và chuẩn mực hơn, giữ nguyên ý chính và đáp án đúng.`,hint:'Tạo diff 2 cột để đối chiếu',tag:'Sửa đúng câu chọn',primary:true},
+    {kind:'action',action:'ai-check',label:`Giải lại độc lập Câu ${qNum} bằng AI`,dataId:q.id,hint:'Không đưa đáp án lưu cho AI',tag:'Kiểm tra độc lập'},
+    {kind:'action',action:'quick-formula',label:`Chèn công thức / mẫu Câu ${qNum}`,dataId:q.id,hint:'Mở composer trực quan',tag:'Công thức & mẫu'},
    ],
   };
  }
@@ -224,20 +228,19 @@ export function buildContextualAssistantSuggestions(exam,options={}){
    badge:st.reviewCount?`${st.reviewCount} câu cần rà · ${st.approvedCount}/${st.questionCount} đã duyệt`:`${st.unapprovedCount}/${st.questionCount} câu chờ duyệt`,
    summary:'Mở nhanh câu cần kiểm tra, giải lại bằng AI hoặc lập ma trận ngược từ đề.',
    actions:[
-    {kind:'action',action:'jump-first-review',label:`Mở câu cần rà đầu tiên (Câu ${issueNum})`,dataId:st.firstIssue.q.id,hint:st.reviewCount?'Có cảnh báo cần xem lại':'Chưa gắn dấu duyệt',primary:true},
-    {kind:'action',action:'ai-check',label:`Giải lại Câu ${issueNum} bằng AI`,dataId:st.firstIssue.q.id,hint:'Đối chiếu đáp án & căn cứ'},
-    {kind:'action',action:'check-all',label:'Rà soát cấu trúc toàn đề',hint:'Kiểm đáp án, nguồn & độ dài'},
-    {kind:'action',action:'local-matrix',label:exam?.matrixConfirmed?'Sinh thêm theo ma trận':'Lập ma trận ngược từ đề',hint:`${st.questionCount} câu hiện có`},
+    {kind:'action',action:'jump-first-review',label:`Mở câu cần rà đầu tiên (Câu ${issueNum})`,dataId:st.firstIssue.q.id,hint:st.reviewCount?'Có cảnh báo cần xem lại':'Chưa gắn dấu duyệt',tag:'Ưu tiên rà soát',primary:true},
+    {kind:'action',action:'ai-check',label:`Giải lại Câu ${issueNum} bằng AI`,dataId:st.firstIssue.q.id,hint:'Đối chiếu đáp án & căn cứ',tag:'Giải độc lập'},
+    {kind:'action',action:'local-matrix',label:exam?.matrixConfirmed?'Sinh thêm theo ma trận':'Lập ma trận ngược từ đề',hint:`${st.questionCount} câu hiện có`,tag:'Ma trận đề'},
    ],
   };
  }
  if(st.mode==='has-sources'){
   const srcCount=st.attachedCount||st.docsCount;
   const actions=[
-   {kind:'action',action:'local-matrix',label:`Sinh đề từ ${srcCount} nguồn đã nạp`,hint:exam?.matrixConfirmed?`Ma trận ${st.reqCount} câu đã xác nhận`:'Đề xuất / chỉnh ma trận rồi sinh',primary:true},
-   {kind:'action',action:'assistant-sources',label:'Chọn trang & 4 kênh nguồn',hint:`${st.attachedCount} đang gắn · ${st.docsCount} tài liệu`},
+   {kind:'action',action:'local-matrix',label:`Sinh đề từ ${srcCount} nguồn đã nạp`,hint:exam?.matrixConfirmed?`Ma trận ${st.reqCount} câu đã xác nhận`:'Đề xuất / chỉnh ma trận rồi sinh',tag:'Theo nguồn đã gắn',primary:true},
+   {kind:'action',action:'assistant-sources',label:'Chọn trang & 4 kênh nguồn',hint:`${st.attachedCount} đang gắn · ${st.docsCount} tài liệu`,tag:'Quản lý nguồn'},
   ];
-  if(st.readableDocsCount)actions.push({kind:'action',action:'parse-first-doc',label:'Tách câu từ đề cũ trong nguồn',hint:'Nhận diện Câu 1 / Bài 1 tại máy'});
+  if(st.readableDocsCount)actions.push({kind:'action',action:'parse-first-doc',label:'Tách câu từ đề cũ trong nguồn',hint:'Nhận diện Câu 1 / Bài 1 tại máy',tag:'Tách câu nhanh'});
   return {
    ...st,
    badge:`Đã có ${srcCount} nguồn sẵn sàng`,
@@ -251,9 +254,9 @@ export function buildContextualAssistantSuggestions(exam,options={}){
    badge:`Đã duyệt ${st.questionCount}/${st.questionCount} câu`,
    summary:'Đề đã sẵn sàng kiểm tra ngắt trang A4, tạo nhiều mã đề hoặc lập ma trận đối chiếu.',
    actions:[
-    {kind:'action',action:'export',label:'Kiểm tra A4 & Xuất đề / Mã đề',hint:'Preflight · Word, PDF, HTML',primary:true},
-    {kind:'action',action:'local-matrix',label:'Lập ma trận ngược / Sinh thêm',hint:'Đối chiếu chủ đề & mức độ'},
-    {kind:'action',action:'assistant-sources',label:'Xem nguồn đang gắn',hint:`${st.attachedCount} nguồn`},
+    {kind:'action',action:'export',label:'Kiểm tra A4 & Xuất đề / Mã đề',hint:'Preflight · Word, PDF, HTML',tag:'Sẵn sàng xuất',primary:true},
+    {kind:'action',action:'local-matrix',label:'Lập ma trận ngược / Sinh thêm',hint:'Đối chiếu chủ đề & mức độ',tag:'Ma trận đối chiếu'},
+    {kind:'action',action:'assistant-sources',label:'Xem nguồn đang gắn',hint:`${st.attachedCount} nguồn`,tag:'Nguồn tài liệu'},
    ],
   };
  }
@@ -262,24 +265,25 @@ export function buildContextualAssistantSuggestions(exam,options={}){
   badge:`Đề trống · ${subject}${grade?' '+grade:''}`,
   summary:'Kéo–thả tệp (.docx, .pdf, ảnh…) vào khung này hoặc chọn học liệu, ma trận để bắt đầu.',
   actions:[
-   {kind:'action',action:'import-doc',label:'Tải hoặc kéo–thả nguồn tài liệu',hint:'.docx, .pdf, .txt, .md, .pptx, ảnh',primary:true},
-   {kind:'action',action:'lesson-sources',label:'Chọn học liệu mẫu / SGK',hint:[subject,grade].filter(Boolean).join(' · ')},
-   {kind:'action',action:'local-matrix',label:`Soạn đề ${subject} theo ma trận`,hint:'Gợi ý cơ cấu & tự kiểm câu'},
-   {kind:'action',action:'local-poc-sample',label:'Mở ví dụ mẫu để thử nhanh',hint:'Kèm nguồn & ma trận sẵn'},
+   {kind:'action',action:'import-doc',label:'Tải hoặc kéo–thả nguồn tài liệu',hint:'.docx, .pdf, .txt, .md, .pptx, ảnh',tag:'Từ kho của thầy cô',primary:true},
+   {kind:'action',action:'lesson-sources',label:'Chọn học liệu mẫu / SGK',hint:[subject,grade].filter(Boolean).join(' · '),tag:'Bám sát chương trình'},
+   {kind:'action',action:'local-matrix',label:`Soạn đề ${subject} theo ma trận`,hint:'Gợi ý cơ cấu & tự kiểm câu',tag:'Đề xuất theo ma trận'},
   ],
  };
 }
 
 export function contextualSuggestionsHTML(exam,options={}){
  const plan=buildContextualAssistantSuggestions(exam,options);
+ const contextHeaderHTML=`<div class="assistant-context-head" style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;margin:0 0 8px"><span class="ctx-badge assistant-context-badge" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;line-height:1.35;background:#e6f4ef;color:#11695b">${esc(plan.badge)}</span><p class="ctx-summary" style="display:block;margin:0;font-size:12.5px;line-height:1.45;color:#4f645d">${esc(plan.summary)}</p></div>`;
  const buttons=plan.actions.map(item=>{
   const attrs=item.kind==='prompt'
    ?`class="suggestion-card${item.primary?' is-primary':''}" data-prompt="${esc(item.prompt)}"`
    :`class="suggestion-card${item.primary?' is-primary':''}"${item.dataId?` data-id="${esc(item.dataId)}"`:''}`;
   const sub=item.hint?`<small>${esc(item.hint)}</small>`:'';
-  return b(item.action,`<span><b>${esc(item.label)}</b>${sub}</span><span>→</span>`,attrs);
+  const tag=item.tag?`<em class="suggestion-tag" style="display:inline-flex;align-self:flex-start;font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-top:3px;background:${item.primary?'#eef2ff':'#f1f5f9'};color:${item.primary?'#3730a3':'#475569'};line-height:1.35">${esc(item.tag)}</em>`:'';
+  return b(item.action,`<span><b>${esc(item.label)}</b>${sub}${tag}</span><span>→</span>`,attrs);
  }).join('');
- return {plan,buttons};
+ return {plan,buttons,contextHeaderHTML};
 }
 
 function setDropOverlayState(active,message=''){
@@ -381,24 +385,19 @@ export function referenceSide(e,selected,tab){
 }
 export function referenceChat(e,options={}){
  const welcome=e.chat.length<=1;
- const {plan,buttons}=contextualSuggestionsHTML(e,options);
- const shortcutCards=plan.actions.map(item=>{
-  const attrs=`class="suggestion-card${item.primary?' is-primary':''}"${item.dataId?` data-id="${esc(item.dataId)}"`:''}`;
-  if(item.kind==='prompt')return b('chat-suggestion',`${esc(item.label)}<span>↑</span>`,`${attrs} data-prompt="${esc(item.prompt)}"`);
-  return b(item.action,`${esc(item.label)}<span>→</span>`,attrs);
- }).join('');
- return `${welcome?`<div class="assistant-welcome"><h2>Tạo đề thi, đáp án và<br>cách chấm điểm cùng AI</h2><p>${esc(plan.summary)}</p></div>`:e.chat.filter((m,i)=>!(i===0&&m.role==='assistant'&&/^(Đây là ví dụ Toán|Thầy cô đang mở ví dụ|Đề mới đã áp dụng)/.test(m.text))).map(m=>`<div class="assistant-message ${m.role==='assistant'?'role-assistant':'user'}">${m.role==='assistant'?'<span class="chat-spark">✧</span>':''}<div>${esc(m.text).replace(/\n/g,'<br>')}</div></div>`).join('')}<div class="assistant-shortcuts" data-context-mode="${esc(plan.mode)}"><div class="assistant-context-badge"><span class="pill">${esc(plan.badge)}</span></div>${shortcutCards||buttons}</div>`;
+ const {plan,buttons,contextHeaderHTML}=contextualSuggestionsHTML(e,options);
+ return `${welcome?`<div class="assistant-welcome"><h2 style="color:#2563eb;font-weight:700;text-align:center;line-height:1.35;margin:2px 0 6px">Thầy cô muốn soạn đề<br>cho lớp nào trước?</h2><p style="text-align:center;margin:0 0 8px">${esc(plan.summary)}</p></div>`:e.chat.filter((m,i)=>!(i===0&&m.role==='assistant'&&/^(Đây là ví dụ Toán|Thầy cô đang mở ví dụ|Đề mới đã áp dụng)/.test(m.text))).map(m=>`<div class="assistant-message ${m.role==='assistant'?'role-assistant':'user'}">${m.role==='assistant'?'<span class="chat-spark">✧</span>':''}<div>${esc(m.text).replace(/\n/g,'<br>')}</div></div>`).join('')}<div class="assistant-shortcuts" data-context-mode="${esc(plan.mode)}">${contextHeaderHTML}${buttons}</div>`;
 }
 function sourceBadge(d){if(d.catalog||d.personalLesson)return 'SGK';if(d.communityToken)return 'CỘNG ĐỒNG';if(d.sourceExamId)return 'ĐỀ';return 'TỆP';}
 function sourceChannelKey(d){if(d.catalog||d.personalLesson)return 'sgk';if(d.communityToken)return 'community';if(d.sourceExamId)return 'exam';return 'file';}
 function examSummaryText(ex){return (ex.questions||[]).map((q,i)=>`Câu ${i+1}. ${q.stem||''}`).join('\n').trim()||(ex.instructions||'').trim()||ex.title||'Đề cá nhân';}
-export function referenceCompose(e,scope){const ico=k=>c?.icon?.(k)||'';const attached=(e.assistantSources||[]).map(id=>e.docs.find(d=>d.id===id)).filter(Boolean);return `<div class="assistant-sources"><div><b>NGUỒN CHO TRỢ LÝ (${attached.length})</b><span>Chọn SGK, tệp OCR, đề cá nhân hoặc đề cộng đồng</span></div><div class="source-chips">${attached.map(d=>`<span class="source-chip-wrap" data-channel="${sourceChannelKey(d)}">${b('source',`<span class="pill source-channel-badge" data-channel="${sourceChannelKey(d)}">${sourceBadge(d)}</span> ${esc(d.name)}`,`class="source-chip" data-doc="${esc(d.id)}" title="Mở xem nguồn: ${esc(d.name)}"`)}${b('detach-source','×',`class="source-detach" aria-label="Gỡ nguồn ${esc(d.name)}" title="Gỡ nguồn này khỏi trợ lý" data-doc="${esc(d.id)}"`)}</span>`).join('')}${b('assistant-sources','＋ Nguồn (4 kênh)','class="add-source"')}</div></div><div class="compose-box">${scope?`<div class="selection-chip" title="${esc(scope.text)}">${b('scope-details',`↳ Câu ${e.questions.findIndex(q=>q.id===scope.id)+1} · ${esc(scope.text.slice(0,64))}`)}</div>`:''}<textarea id="chat-input" aria-label="Nhắn với trợ lý" placeholder="Nhập yêu cầu tạo, sửa, giải hoặc kéo–thả tài liệu vào đây…" rows="2"></textarea><div class="compose-bottom"><div class="compose-attachments">${b('import-doc',ico('image'),'title="Thêm ảnh hoặc tài liệu" aria-label="Thêm ảnh hoặc tài liệu"')}${b('assistant-sources',ico('paperclip'),'title="Đính kèm nguồn" aria-label="Đính kèm nguồn"')}</div>${b('effort-menu','Mức: '+effortNames[e.aiEffort??1]+'⌄','class="effort-toggle" aria-haspopup="dialog"')}<button class="primary" type="submit" aria-label="Gửi yêu cầu">${ico('send')}</button></div></div><div class="chat-foot">Trợ lý AI có thể mắc sai sót. Hãy kiểm tra nội dung nhé.</div>`;}
+export function referenceCompose(e,scope){const ico=k=>c?.icon?.(k)||'';const attached=(e.assistantSources||[]).map(id=>e.docs.find(d=>d.id===id)).filter(Boolean);const currentPreset=CHAT_TIME_PRESETS.some(([id])=>id===e?.aiTimePreset)?e.aiTimePreset:'standard';const quickBtnStyle='font-size:11px;line-height:1.2;padding:3px 6px;min-height:24px;border-radius:7px;border:1px solid #d5dfda;background:#f8fbf9;color:#1e3a32;white-space:nowrap;cursor:pointer;font-weight:500';return `<div class="assistant-source-bar" style="display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:nowrap;overflow-x:auto;padding:1px 0 5px;margin:0"><span class="assistant-source-label" style="font-size:10px;font-weight:700;letter-spacing:.15px;color:#52665f;white-space:nowrap;flex-shrink:0">NGUỒN CHO TRỢ LÝ</span><div class="assistant-source-actions" style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0">${b('import-doc','+ Kho tài liệu',`class="source-quick-btn" style="${quickBtnStyle}" title="Tải tài liệu từ máy"`)}${b('assistant-sources','Bài SGK',`class="source-quick-btn" style="${quickBtnStyle}" title="Chọn bài SGK hoặc nguồn cho trợ lý"`)}${b('community-exams','Đề cộng đồng',`class="source-quick-btn" style="${quickBtnStyle}" title="Mở kho đề cộng đồng"`)}</div></div><div class="assistant-sources"><div><b>NGUỒN ĐÃ GẮN (${attached.length})</b><span>Chọn SGK, tệp OCR, đề cá nhân hoặc đề cộng đồng</span></div><div class="source-chips">${attached.map(d=>`<span class="source-chip-wrap" data-channel="${sourceChannelKey(d)}">${b('source',`<span class="pill source-channel-badge" data-channel="${sourceChannelKey(d)}">${sourceBadge(d)}</span> ${esc(d.name)}`,`class="source-chip" data-doc="${esc(d.id)}" title="Mở xem nguồn: ${esc(d.name)}"`)}${b('detach-source','×',`class="source-detach" aria-label="Gỡ nguồn ${esc(d.name)}" title="Gỡ nguồn này khỏi trợ lý" data-doc="${esc(d.id)}"`)}</span>`).join('')}${b('assistant-sources','＋ Nguồn (4 kênh)','class="add-source"')}</div></div><div class="compose-box">${scope?`<div class="selection-chip" title="${esc(scope.text)}">${b('scope-details',`↳ Câu ${e.questions.findIndex(q=>q.id===scope.id)+1} · ${esc(scope.text.slice(0,64))}`)}</div>`:''}<textarea id="chat-input" aria-label="Nhắn với trợ lý" placeholder="Nhập yêu cầu tạo, sửa, giải hoặc kéo–thả tài liệu vào đây…" rows="2"></textarea><div class="compose-bottom"><div class="compose-attachments">${b('import-doc',ico('image'),'title="Thêm ảnh hoặc tài liệu" aria-label="Thêm ảnh hoặc tài liệu"')}${b('assistant-sources',ico('paperclip'),'title="Đính kèm nguồn" aria-label="Đính kèm nguồn"')}</div><select id="chat-time-preset" name="chat-time-preset" class="chat-time-select" aria-label="Thời gian chạy AI" style="margin-left:auto;max-width:170px;height:30px;min-height:30px;padding:2px 8px;font-size:12px;border:1px solid #d5dfda;border-radius:8px;background:#f8fbf9;color:#27443d;cursor:pointer">${CHAT_TIME_PRESETS.map(([id,label])=>`<option value="${id}"${currentPreset===id?' selected':''}>${label}</option>`).join('')}</select><button class="primary" type="submit" aria-label="Gửi yêu cầu">${ico('send')}</button></div></div><div class="chat-foot">Trợ lý AI có thể mắc sai sót. Hãy kiểm tra nội dung nhé.</div>`;}
 export function mountReference(context){c=context;$('.sidebar-top').innerHTML=`<div class="sidebar-title">Tài liệu ${b('collapse-outline','◧','title="Thu gọn mục lục" aria-label="Thu gọn mục lục"')}</div>`;$('.chat-compose').innerHTML=referenceCompose(c.exam(),c.currentScope());$('.assistant-head .assistant-title').innerHTML='Trợ lý AI soạn đề';$('.assistant-head .row').innerHTML=b('reset-chat','↶','title="Xóa lịch sử trò chuyện" aria-label="Xóa lịch sử trò chuyện"')+b('connections',c.icon('settings'),'title="Kết nối AI" aria-label="Xem kết nối"')+b('toggle-ai','×','title="Đóng trợ lý" aria-label="Đóng trợ lý"');
  bindAssistantDropZone();
  const more=document.createElement('div');more.className='reference-toolbar-extra';more.innerHTML=`<select id="paragraph-style" aria-label="Kiểu văn bản"><option value="normal">Văn bản thường</option><option value="bold">Tiêu đề</option><option value="italic">Phụ đề</option></select>`;$('.toolbar-divider').after(more);const size=$('#doc-fontsize');size.before(Object.assign(document.createElement('button'),{type:'button',textContent:'−',ariaLabel:'Giảm cỡ chữ'}));size.previousSibling.dataset.action='font-smaller';size.after(Object.assign(document.createElement('button'),{type:'button',textContent:'+',ariaLabel:'Tăng cỡ chữ'}));size.nextSibling.dataset.action='font-larger';
  const formats=document.createElement('span');formats.className='color-tools';formats.innerHTML=`<label title="Màu chữ">A<input type="color" id="text-color" value="#111111" aria-label="Màu chữ"></label><label title="Màu đánh dấu">▰<input type="color" id="highlight-color" value="#fff29d" aria-label="Màu đánh dấu"></label>`;$('.formula-tool').before(formats);
  const section=$('.paper-section'),instructions=$('.paper .instructions');if(section&&instructions)instructions.before(section);$('.paper').classList.toggle('empty-paper',!c.exam().questions.length);$('.paper-section').firstChild.textContent=c.isTeacher()?'HƯỚNG DẪN CHẤM VÀ THANG ĐIỂM':c.exam().questions.every(q=>q.type==='essay')?'PHẦN I. CÂU HỎI TỰ LUẬN':'PHẦN I. CÂU TRẮC NGHIỆM NHIỀU LỰA CHỌN';
- $('.paper-scroll').addEventListener('scroll',()=>{if(!document.querySelector('.inline-math-panel,.document-menu'))closeFloating();},{passive:true});if(!initialized){initialized=true;document.addEventListener('pointerdown',ev=>{if(!ev.target.closest('.floating-panel,[data-action="menu"],[data-action="effort-menu"],.formula-block'))closeFloating();});document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeFloating();});document.addEventListener('selectionchange',selectionAsk);document.addEventListener('input',ev=>{if(ev.target.id==='inline-math-input')preview();});document.addEventListener('change',ev=>{if(ev.target.id==='formula-display')preview();if(ev.target.id==='effort-range'){const value=Number(ev.target.value);c.change('Đổi mức trình bày của trợ lý',e=>e.aiEffort=value,{renderPage:false});$('#effort-current').textContent=effortNames[value];$('.effort-toggle').textContent='Mức: '+effortNames[value]+'⌄';}});}
+ $('.paper-scroll').addEventListener('scroll',()=>{if(!document.querySelector('.inline-math-panel,.document-menu'))closeFloating();},{passive:true});if(!initialized){initialized=true;document.addEventListener('pointerdown',ev=>{if(!ev.target.closest('.floating-panel,[data-action="menu"],[data-action="effort-menu"],.formula-block'))closeFloating();});document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeFloating();});document.addEventListener('selectionchange',selectionAsk);document.addEventListener('input',ev=>{if(ev.target.id==='inline-math-input')preview();});document.addEventListener('change',ev=>{if(ev.target.id==='formula-display')preview();if(ev.target.id==='effort-range'){const value=Number(ev.target.value);c.change('Đổi mức trình bày của trợ lý',e=>e.aiEffort=value,{renderPage:false});const cur=$('#effort-current'),toggle=$('.effort-toggle');if(cur)cur.textContent=effortNames[value];if(toggle)toggle.textContent='Mức: '+effortNames[value]+'⌄';}});}
 }
 export function closeFloating(){cleanupComposer();document.querySelectorAll('.floating-panel').forEach(n=>n.remove());}
 export function showDropdown(anchor,html,cls=''){const anchorRect=anchor.getBoundingClientRect();closeFloating();const panel=document.createElement('div');panel.className='floating-panel '+cls;panel.innerHTML=html;document.body.append(panel);const r=anchorRect;panel.style.left=Math.max(8,Math.min(r.left,innerWidth-panel.offsetWidth-8))+'px';panel.style.top=Math.max(8,Math.min(r.bottom+5,innerHeight-panel.offsetHeight-8))+'px';if(panel.getBoundingClientRect().bottom>innerHeight)panel.style.top=Math.max(8,r.top-panel.offsetHeight-5)+'px';return panel;}
