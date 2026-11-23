@@ -129,3 +129,10 @@ body.mach{background:var(--mach-canvas);font-family:"Segoe UI",system-ui,-apple-
 @media(max-width:650px){.new-subject-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.new-subject-grid button{padding:12px;min-height:100px}.new-subject-grid button b{font-size:13px}.new-subject-grid button small{font-size:10px}}
 .main-footer:has([data-save-warning]:not([hidden])) > span:not([data-save-warning]){display:none}
 .mach .main-footer > [data-save-warning]:not([hidden]){display:block;color:#8b321a;font-size:11.5px;white-space:normal}
+.mach .outline-item[draggable="true"]{cursor:grab}
+.mach .outline-item.is-dragging{opacity:.45;cursor:grabbing;background:#e6f4ee!important;border:1px dashed var(--mach-teal)!important}
+.mach .outline-item.is-drop-before{box-shadow:inset 0 2px 0 0 var(--mach-teal)!important}
+.mach .outline-item.is-drop-after{box-shadow:inset 0 -2px 0 0 var(--mach-teal)!important}
+.mach .chat-consent-card{border-radius:12px;border:1px solid #a9d8c6;background:linear-gradient(180deg,#effaf5,#e5f5ee);padding:12px 14px}
+.mach .chat-consent-card.is-attention{border-color:var(--mach-teal);animation:consentPulse .9s ease-out 2}
+.mach .chat-msg-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:6px;border-top:1px solid #eef2f0;font-size:11px;color:#5f6368}
