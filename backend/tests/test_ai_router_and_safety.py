@@ -431,7 +431,7 @@ def test_agy_cli_model_timeout_kills_process_tree_and_raises_provider_timeout(
 ):
     fake_exe = tmp_path / "agy.exe"
     fake_exe.write_bytes(b"MZ")
-    monkeypatch.setattr("mach_backend.agy_cli_model.os.name", "nt")
+    monkeypatch.setattr("mach_backend.agy_cli_model._is_windows", lambda: True)
     killed: list[list[str]] = []
 
     def fake_subprocess_run(cmd, **_kwargs):

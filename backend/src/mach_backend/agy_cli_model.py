@@ -58,6 +58,10 @@ _DOMAIN_PAYLOAD_KEYS = {
 }
 
 
+def _is_windows() -> bool:
+    return os.name == "nt"
+
+
 def detect_agy_cli(custom_path: str = "") -> str | None:
     """Phát hiện đường dẫn thực thi AGY CLI hợp lệ trên máy."""
     cleaned = str(custom_path or "").strip()
@@ -268,7 +272,7 @@ class AgyCliModel:
                     )
                 except subprocess.TimeoutExpired as exc:
                     pid = getattr(exc, "pid", None)
-                    if os.name == "nt" and pid is not None:
+                    if _is_windows() and pid is not None:
                         subprocess.run(
                             ["taskkill", "/F", "/T", "/PID", str(pid)],
                             capture_output=True,
