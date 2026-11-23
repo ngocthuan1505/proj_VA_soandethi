@@ -2,6 +2,7 @@
 
 import asyncio
 import copy
+import hashlib
 import json
 import time
 from collections.abc import Sequence
@@ -21,6 +22,18 @@ VERTEX_EXPRESS_BASE = "https://aiplatform.googleapis.com/v1/publishers/google/mo
 VERTEX_FALLBACK_MODEL = "gemini-2.5-flash"
 GEMINI_MODEL = "gemini-3.6-flash"
 GEMINI_MODELS = (GEMINI_MODEL, "gemini-3.8-flash", "gemini-4-hydrogen")
+
+# Chỉ lưu sha256(key) trong RAM cho các khóa AQ. đã bị Vertex AI từ chối 403, không lưu khóa thô.
+_VERTEX_DISABLED_KEY_HASHES: set[str] = set()
+
+
+def _vertex_key_hash(key: str) -> str:
+    return hashlib.sha256(extract_api_key_token(key).encode("utf-8")).hexdigest()
+
+
+def reset_vertex_disabled_cache() -> None:
+    """Xóa bộ nhớ đệm khóa AQ. bị 403 Vertex AI (dùng để cô lập test)."""
+    _VERTEX_DISABLED_KEY_HASHES.clear()
 
 
 def is_vertex_express_key(key: str) -> bool:
@@ -160,7 +173,10 @@ class GeminiModel:
 
     async def __call__(self, purpose, body):
         self.key_pool.refresh_cooldowns()
-        has_vertex_key = any(is_vertex_express_key(k) for k in self.key_pool.keys)
+        has_vertex_key = any(
+            is_vertex_express_key(k) and _vertex_key_hash(k) not in _VERTEX_DISABLED_KEY_HASHES
+            for k in self.key_pool.keys
+        )
         if self.auto_fallback:
             candidate_list = [self.model, *(m for m in GEMINI_MODELS if m != self.model)]
             if has_vertex_key and VERTEX_FALLBACK_MODEL not in candidate_list:
@@ -179,8 +195,9 @@ class GeminiModel:
                 if error.code != "provider_quota":
                     raise
                 continue
-            if actual_model == VERTEX_FALLBACK_MODEL and not is_vertex_express_key(
-                self.key_pool.keys[slot]
+            if actual_model == VERTEX_FALLBACK_MODEL and (
+                not is_vertex_express_key(self.key_pool.keys[slot])
+                or _vertex_key_hash(self.key_pool.keys[slot]) in _VERTEX_DISABLED_KEY_HASHES
             ):
                 continue
             if actual_model != previous_model:
@@ -222,6 +239,7 @@ class GeminiModel:
                         )
                     elif error.code == "vertex_api_disabled":
                         self.key_pool.vertex_disabled_slots.add(slot)
+                        _VERTEX_DISABLED_KEY_HASHES.add(_vertex_key_hash(self.key_pool.keys[slot]))
                         self.log.emit(
                             "provider_endpoint_switch",
                             purpose=purpose,
@@ -348,7 +366,9 @@ class GeminiModel:
         output_limit = min(32768, 8192 + batch_size * 1400) if batch_size else 4096
         active_key = self.key_pool.keys[slot]
         is_vertex = (
-            is_vertex_express_key(active_key) and slot not in self.key_pool.vertex_disabled_slots
+            is_vertex_express_key(active_key)
+            and slot not in self.key_pool.vertex_disabled_slots
+            and _vertex_key_hash(active_key) not in _VERTEX_DISABLED_KEY_HASHES
         )
 
         if is_vertex:

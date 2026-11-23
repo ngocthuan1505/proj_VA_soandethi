@@ -177,13 +177,23 @@ class FixedTaskRouter:
         providers: dict[str, Callable[..., Any]],
         log: Any = None,
         circuit_breaker: CircuitBreaker | None = None,
+        *,
+        fast_chat: bool = False,
     ) -> None:
         self.providers = dict(providers)
         self.log = log
         self.circuit_breaker = circuit_breaker or CircuitBreaker()
+        self.fast_chat = bool(fast_chat)
 
-    def candidate_chain(self, task_code: str, *, generator_family: str = "") -> list[str]:
+    def candidate_chain(
+        self,
+        task_code: str,
+        *,
+        generator_family: str = "",
+        fast_chat: bool | None = None,
+    ) -> list[str]:
         gen = str(generator_family or "").strip().casefold()
+        use_fast_chat = self.fast_chat if fast_chat is None else bool(fast_chat)
         if task_code == M06_BLIND_SOLVE:
             if gen.startswith("deepseek"):
                 base = [
@@ -216,15 +226,28 @@ class FixedTaskRouter:
                     "ollama",
                 ]
         elif task_code == M11_FLEXIBLE_CHAT:
-            base = [
-                "agy",
-                "gemini_hydrogen",
-                "gemini_flash",
-                "deepseek_reasoner",
-                "deepseek_chat",
-                "gateway_cross",
-                "ollama",
-            ]
+            if use_fast_chat:
+                base = [
+                    "deepseek_fast",
+                    "deepseek_chat",
+                    "gemini",
+                    "gemini_flash",
+                    "gemini_hydrogen",
+                    "deepseek_reasoner",
+                    "gateway_cross",
+                    "agy",
+                    "ollama",
+                ]
+            else:
+                base = [
+                    "agy",
+                    "gemini_hydrogen",
+                    "gemini_flash",
+                    "deepseek_reasoner",
+                    "deepseek_chat",
+                    "gateway_cross",
+                    "ollama",
+                ]
         elif task_code in {
             M03_EXAM_BLUEPRINT,
             M05_GEN_HARD,
@@ -271,14 +294,25 @@ class FixedTaskRouter:
         generator_family: str = "",
         hard_hint: bool = False,
         repair_round: int = 0,
+        fast_chat: bool | None = None,
     ) -> dict[str, Any]:
+        forwarded_body = body
+        if fast_chat is None and isinstance(body, dict) and "fast_chat" in body:
+            use_fast_chat: bool | None = bool(body.get("fast_chat"))
+            forwarded_body = {k: v for k, v in body.items() if k != "fast_chat"}
+        else:
+            use_fast_chat = fast_chat
         task_code = classify_micro_task(
             purpose,
-            body,
+            forwarded_body,
             hard_hint=hard_hint,
             repair_round=repair_round,
         )
-        chain = self.candidate_chain(task_code, generator_family=generator_family)
+        chain = self.candidate_chain(
+            task_code,
+            generator_family=generator_family,
+            fast_chat=use_fast_chat,
+        )
         available = [
             family
             for family in chain
@@ -297,7 +331,7 @@ class FixedTaskRouter:
         for idx, family in enumerate(available):
             provider_fn = self.providers[family]
             try:
-                outcome = provider_fn(purpose, body)
+                outcome = provider_fn(purpose, forwarded_body)
                 if inspect.isawaitable(outcome):
                     result = await outcome
                 else:

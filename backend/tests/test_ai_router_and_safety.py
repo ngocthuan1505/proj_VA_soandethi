@@ -890,8 +890,9 @@ def test_fixed_task_router_includes_gateway_cross_in_m06_and_m11():
 
 
 def test_vertex_api_disabled_403_falls_back_to_generativelanguage_for_aq_key(tmp_path):
-    from mach_backend.gemini_model import GEMINI_ENDPOINT
+    from mach_backend.gemini_model import GEMINI_ENDPOINT, reset_vertex_disabled_cache
 
+    reset_vertex_disabled_cache()
     key = "AQ.fake_gl_only_key_000123"
     pool = GeminiKeyPool.from_keys([key], cooldown_seconds=60.0)
     log = RunLog(tmp_path / "aq-fallback")
@@ -934,12 +935,124 @@ def test_vertex_api_disabled_403_falls_back_to_generativelanguage_for_aq_key(tmp
             second = await model("chat", {"messages": [{"role": "user", "content": "Hi 2"}]})
             return first, second
 
-    first, second = asyncio.run(run())
-    assert json.loads(first["content"]) == {"ok": True}
-    assert json.loads(second["content"]) == {"ok": True}
-    assert 0 in pool.vertex_disabled_slots
-    assert 0 not in pool.invalid
-    assert urls[0].startswith(VERTEX_EXPRESS_BASE)
-    assert urls[1] == GEMINI_ENDPOINT
-    # Lượt thứ 2 đi thẳng GEMINI_ENDPOINT không tốn vòng 403 trên Vertex nữa.
-    assert urls[2] == GEMINI_ENDPOINT
+    try:
+        first, second = asyncio.run(run())
+        assert json.loads(first["content"]) == {"ok": True}
+        assert json.loads(second["content"]) == {"ok": True}
+        assert 0 in pool.vertex_disabled_slots
+        assert 0 not in pool.invalid
+        assert urls[0].startswith(VERTEX_EXPRESS_BASE)
+        assert urls[1] == GEMINI_ENDPOINT
+        # Lượt thứ 2 đi thẳng GEMINI_ENDPOINT không tốn vòng 403 trên Vertex nữa.
+        assert urls[2] == GEMINI_ENDPOINT
+    finally:
+        reset_vertex_disabled_cache()
+
+
+def test_vertex_disabled_aq_key_hash_cache_skips_403_across_fresh_pools(tmp_path):
+    import hashlib
+
+    from mach_backend.gemini_model import (
+        _VERTEX_DISABLED_KEY_HASHES,
+        GEMINI_ENDPOINT,
+        reset_vertex_disabled_cache,
+    )
+
+    reset_vertex_disabled_cache()
+    key = "AQ.fake_cached_vertex_disabled_key_999"
+    expected_hash = hashlib.sha256(key.encode("utf-8")).hexdigest()
+    urls: list[str] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        urls.append(str(request.url))
+        if str(request.url).startswith(VERTEX_EXPRESS_BASE):
+            return httpx.Response(
+                403,
+                json={
+                    "error": {
+                        "message": (
+                            "Vertex AI API has not been used in project 999 "
+                            "or it is disabled on aiplatform.googleapis.com."
+                        )
+                    }
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "model": GEMINI_MODEL,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": '{"cached": true}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 5, "total_tokens": 10},
+            },
+        )
+
+    async def run_once(run_name: str):
+        # Mỗi lần gọi tạo GeminiKeyPool mới hoàn toàn như mỗi request HTTP độc lập
+        fresh_pool = GeminiKeyPool.from_keys([key], cooldown_seconds=60.0)
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            model = GeminiModel(
+                client, key, RunLog(tmp_path / run_name), key_pool=fresh_pool, auto_fallback=True
+            )
+            return await model("chat", {"messages": [{"role": "user", "content": "Hello"}]})
+
+    try:
+        r1 = asyncio.run(run_once("call-1"))
+        assert json.loads(r1["content"]) == {"cached": True}
+        assert len(urls) == 2
+        assert urls[0].startswith(VERTEX_EXPRESS_BASE)
+        assert urls[1] == GEMINI_ENDPOINT
+        # Cache chỉ lưu sha256(key), tuyệt đối không lưu giá trị khóa thô.
+        assert expected_hash in _VERTEX_DISABLED_KEY_HASHES
+        assert key not in _VERTEX_DISABLED_KEY_HASHES
+
+        # Request sau với pool mới nhảy thẳng GEMINI_ENDPOINT (0 round-trip 403 Vertex).
+        r2 = asyncio.run(run_once("call-2"))
+        assert json.loads(r2["content"]) == {"cached": True}
+        assert len(urls) == 3
+        assert urls[2] == GEMINI_ENDPOINT
+
+        # Sau reset_vertex_disabled_cache(), khóa được thử lại Vertex bình thường.
+        reset_vertex_disabled_cache()
+        assert expected_hash not in _VERTEX_DISABLED_KEY_HASHES
+        r3 = asyncio.run(run_once("call-3"))
+        assert json.loads(r3["content"]) == {"cached": True}
+        assert len(urls) == 5
+        assert urls[3].startswith(VERTEX_EXPRESS_BASE)
+        assert urls[4] == GEMINI_ENDPOINT
+    finally:
+        reset_vertex_disabled_cache()
+
+
+def test_fixed_task_router_fast_chat_prioritizes_fast_models_and_keeps_default_m11():
+    called: list[str] = []
+
+    def mk(name: str, *, fail: bool = False):
+        def _fn(_purpose, body):
+            assert "fast_chat" not in body
+            called.append(name)
+            if fail:
+                raise AIError("provider_unavailable", f"{name} busy")
+            return {"content": f'{{"message": "{name}"}}', "model": name}
+
+        return _fn
+
+    router = FixedTaskRouter(
+        {
+            "agy": mk("agy"),
+            "deepseek_fast": mk("deepseek_fast", fail=True),
+            "gemini": mk("gemini"),
+            "ollama": mk("ollama"),
+        }
+    )
+    assert router.candidate_chain("M11_FLEXIBLE_CHAT")[0] == "agy"
+    fast_chain = router.candidate_chain("M11_FLEXIBLE_CHAT", fast_chat=True)
+    assert fast_chain.index("deepseek_fast") < fast_chain.index("gemini") < fast_chain.index("agy")
+
+    res = asyncio.run(router("chat", {"messages": [], "fast_chat": True}))
+    assert res["providerFamily"] == "gemini"
+    assert called == ["deepseek_fast", "gemini"]

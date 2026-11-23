@@ -23,7 +23,14 @@ from mach_backend.curriculum_sources import (
 )
 from mach_backend.local_documents import pdf_pages
 from mach_backend.matrix_import import MIME
-from mach_backend.matrix_templates import validate_and_restore_matrix_templates
+from mach_backend.matrix_templates import (
+    list_owner_matrix_templates,
+    validate_and_restore_matrix_templates,
+)
+from mach_backend.question_bank import (
+    list_owner_question_bank,
+    validate_and_restore_question_bank,
+)
 
 MAX_BACKUP = 150 * 1024 * 1024
 MAX_FILE = 15 * 1024 * 1024
@@ -310,6 +317,40 @@ def apply_matrix_template_records(db, owner, backup, *, dry_run=False):
         invalid("Mẫu ma trận trong bản sao không hợp lệ.")
 
 
+def apply_question_bank_records(db, owner, backup, *, dry_run=False):
+    raw = backup.get("questionBank", [])
+    if raw is None or raw == []:
+        return 0
+    try:
+        return validate_and_restore_question_bank(db, owner, raw, dry_run=dry_run)
+    except (ValidationError, ValueError, TypeError) as exc:
+        message = str(exc)
+        if "trong bản sao" in message or "kho đích" in message or "bản sao" in message:
+            invalid(message)
+        invalid("Ngân hàng câu hỏi trong bản sao không hợp lệ.")
+
+
+def export_workspace_backup(store):
+    """Đóng gói snapshot sao lưu đầy đủ gồm state, files, matrixTemplates và questionBank."""
+    with store.connect() as db:
+        db.execute("BEGIN")
+        state = store.get("state", db)["value"]
+        files = {
+            row[0].removeprefix("file:"): json.loads(row[1])
+            for row in db.execute("SELECT key, value FROM kv WHERE key LIKE 'file:%'").fetchall()
+        }
+        matrix_templates = list_owner_matrix_templates(db, store.owner)
+        question_bank = list_owner_question_bank(db, store.owner)
+    return {
+        "format": "tro-ly-soan-de",
+        "version": 1,
+        "state": state,
+        "files": files,
+        "matrixTemplates": matrix_templates,
+        "questionBank": question_bank,
+    }
+
+
 def restore(store, backup, base_revision):
     state, files, records = validate_backup(backup)
     with store.connect() as db:
@@ -317,6 +358,7 @@ def restore(store, backup, base_revision):
         revision = store.put("state", state, base_revision, db)
         insert_curriculum_records(db, store.owner, records)
         apply_matrix_template_records(db, store.owner, backup, dry_run=False)
+        apply_question_bank_records(db, store.owner, backup, dry_run=False)
         for key, value in files.items():
             store.put("file:" + key, value, db=db)
         # Snapshot phục hồi không được nhận kết quả AI đang chờ của kho trước.
@@ -353,11 +395,13 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
             db.execute("BEGIN")
             insert_curriculum_records(db, store.owner, records, dry_run=True)
             template_count = apply_matrix_template_records(db, store.owner, backup, dry_run=True)
+            bank_count = apply_question_bank_records(db, store.owner, backup, dry_run=True)
             revision = store.get("state", db)["revision"]
         return {
             "revision": revision,
             **({"curriculumSources": len(records)} if records else {}),
             **({"matrixTemplates": template_count} if template_count else {}),
+            **({"questionBank": bank_count} if bank_count else {}),
             "exams": len(state["exams"]),
             "files": len(files),
             "prefs": len(state["prefs"]),
