@@ -131,16 +131,20 @@ def _normalize_level(question: dict[str, Any]) -> int:
 
 def _parse_points(question: dict[str, Any]) -> float:
     raw = question.get("points")
-    if isinstance(raw, bool) or raw is None:
-        return 0.0
-    if isinstance(raw, (int, float)):
-        return float(raw) if math.isfinite(raw) and raw >= 0 else 0.0
-    if isinstance(raw, str):
-        try:
-            val = float(raw.strip().replace(",", "."))
-            return val if math.isfinite(val) and val >= 0 else 0.0
-        except ValueError:
-            return 0.0
+    if not isinstance(raw, bool) and raw is not None:
+        if isinstance(raw, (int, float)):
+            return float(raw) if math.isfinite(raw) and raw >= 0 else 0.0
+        if isinstance(raw, str):
+            try:
+                val = float(raw.strip().replace(",", "."))
+                return val if math.isfinite(val) and val >= 0 else 0.0
+            except ValueError:
+                return 0.0
+    for q4_key in ("pointsQ4", "points_q4"):
+        raw_q4 = question.get(q4_key)
+        if not isinstance(raw_q4, bool) and isinstance(raw_q4, (int, float)):
+            if math.isfinite(raw_q4) and raw_q4 >= 0:
+                return float(raw_q4) / 4.0
     return 0.0
 
 

@@ -2716,6 +2716,10 @@ button:focus-visible {
   margin-top: 10px;
 }
 
+.analytics-type-chips .pill {
+  gap: 4px;
+}
+
 .analytics-ans-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

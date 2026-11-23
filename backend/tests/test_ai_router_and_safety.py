@@ -1056,3 +1056,108 @@ def test_fixed_task_router_fast_chat_prioritizes_fast_models_and_keeps_default_m
     res = asyncio.run(router("chat", {"messages": [], "fast_chat": True}))
     assert res["providerFamily"] == "gemini"
     assert called == ["deepseek_fast", "gemini"]
+
+
+def test_custom_gateway_merges_system_prompt_into_first_user_message(tmp_path):
+    """Cổng OpenAI-compatible tự gộp system prompt vào user đầu để tránh bị bỏ qua."""
+    captured: list[dict] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        captured.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "model": "deepseek-v4.1-flash",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": '{"message": "Xin chào!"}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 60, "completion_tokens": 12, "total_tokens": 72},
+            },
+        )
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            model = DeepSeekModel(
+                client,
+                "sk-custom-gateway-test-123456",
+                RunLog(tmp_path / "gw-merge"),
+                model="deepseek-v4.1-flash",
+                base_url="https://gateway.example.test/v1",
+            )
+            return await model(
+                "chat",
+                {
+                    "messages": [
+                        {"role": "system", "content": "Trả lời bằng tiếng Việt."},
+                        {"role": "user", "content": "hello"},
+                    ],
+                    "format": {
+                        "type": "object",
+                        "properties": {"message": {"type": "string"}},
+                        "required": ["message"],
+                    },
+                },
+            )
+
+    res = asyncio.run(run())
+    assert json.loads(res["content"]) == {"message": "Xin chào!"}
+    assert len(captured) == 1
+    sent_messages = captured[0]["messages"]
+    assert all(m["role"] != "system" for m in sent_messages)
+    assert sent_messages[0]["role"] == "user"
+    assert "Trả lời bằng tiếng Việt." in sent_messages[0]["content"]
+    assert "hello" in sent_messages[0]["content"]
+
+
+def test_assistant_chat_accepts_fenced_json_and_plain_text_but_rejects_broken_json(tmp_path):
+    """M11 chat gỡ markdown code fence, nhận văn bản thuần hợp lệ, nhưng vẫn chặn JSON hỏng."""
+    from fastapi.testclient import TestClient
+
+    from mach_backend.local_workspace import create_app
+
+    replies = iter(
+        [
+            {
+                "content": (
+                    '```json\n{"message": "Chào thầy cô!", "followUps": ["Thêm câu hỏi"]}\n```'
+                )
+            },
+            {"content": "Chào thầy cô, tôi sẵn sàng hỗ trợ soạn đề Toán 9."},
+            {"content": '{"message": "json bi cat cut'},
+        ]
+    )
+
+    async def fake_agent(_purpose, _body):
+        return next(replies)
+
+    app = create_app(tmp_path / "chat-parse", agent_call=fake_agent)
+    client = TestClient(app)
+    headers = {"Origin": "http://testserver"}
+
+    r1 = client.post(
+        "/api/assistant/chat",
+        headers=headers,
+        json={"text": "hello", "consent": True, "context": []},
+    )
+    assert r1.status_code == 200
+    assert r1.json()["message"] == "Chào thầy cô!"
+    assert r1.json()["followUps"] == ["Thêm câu hỏi"]
+
+    r2 = client.post(
+        "/api/assistant/chat",
+        headers=headers,
+        json={"text": "hello plain", "consent": True, "context": []},
+    )
+    assert r2.status_code == 200
+    assert "Toán 9" in r2.json()["message"]
+
+    r3 = client.post(
+        "/api/assistant/chat",
+        headers=headers,
+        json={"text": "broken", "consent": True, "context": []},
+    )
+    assert r3.status_code == 409
+    assert r3.json()["code"] == "invalid_response"

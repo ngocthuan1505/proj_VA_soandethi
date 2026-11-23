@@ -1134,12 +1134,28 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                 if cost_tracker is not None and isinstance(provider, AgentGeneration):
                     provider.sync_cost_tracker(cost_tracker)
             try:
-                raw_content = _sanitize_latex_json(response["content"])
-                parsed = json.loads(raw_content)
-                raw_message = parsed["message"]
-                if not isinstance(raw_message, str):
-                    raise ValueError
-                message = _sanitize_output_text(raw_message)
+                raw_text = str(response.get("content") or "").strip()
+                fenced = re.match(r"^```(?:json)?\s*(.*?)\s*```$", raw_text, flags=re.DOTALL)
+                if fenced:
+                    raw_text = fenced.group(1).strip()
+                raw_content = _sanitize_latex_json(raw_text)
+                parsed: dict[str, Any]
+                try:
+                    loaded_obj = json.loads(raw_content)
+                    if not isinstance(loaded_obj, dict):
+                        raise ValueError
+                    parsed = loaded_obj
+                    raw_message = parsed["message"]
+                    if not isinstance(raw_message, str):
+                        raise ValueError
+                except (KeyError, TypeError, ValueError):
+                    # Cho phép chat tự nhiên M11 nhận văn bản thuần hợp lệ nếu model không bọc JSON,
+                    # nhưng vẫn chặn JSON hỏng/cắt cụt hoặc phản hồi rỗng.
+                    if not raw_text or raw_text.startswith(("{", "[")):
+                        raise
+                    parsed = {}
+                    raw_message = raw_text[:5000]
+                message = _sanitize_output_text(raw_message).strip()
                 if not 1 <= len(message) <= 5000:
                     raise ValueError
             except (KeyError, TypeError, ValueError):

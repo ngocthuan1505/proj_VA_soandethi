@@ -25,7 +25,7 @@ export async function openLessonPicker(context) {
  if(!response.ok)throw Error('Chưa mở được học liệu theo bài.');
  const {collections}=await response.json();
  collections.push(...(personal?.sources||[]).map(asCollection));
- if(context.exam().id!==examId||!origin?.isConnected||!dialog.open)return;
+ if(context.exam().id!==examId||(origin&&(!origin.isConnected||!dialog.open)))return;
  const exam=context.exam(), choices=new Map(), changed=new Set();
  const editedCopy=doc=>doc?.catalog===true&&doc.version>1&&doc.pages?.some(page=>page.method==='manual');
  const editedDocs=new Map(exam.docs.filter(editedCopy).map(doc=>[doc.id,doc]));

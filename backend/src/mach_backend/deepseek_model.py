@@ -154,6 +154,33 @@ class DeepSeekModel:
             elif schema_instruction not in str(messages[0].get("content", "")):
                 messages[0]["content"] = str(messages[0].get("content", "")) + schema_instruction
 
+        # Một số cổng OpenAI-compatible bỏ qua role="system"; gộp vào user đầu
+        # để bảo toàn chỉ dẫn tiếng Việt và JSON schema.
+        if (
+            self.base_url != DEEPSEEK_BASE_URL
+            and any(m.get("role") == "system" for m in messages)
+            and any(m.get("role") == "user" for m in messages)
+        ):
+            system_parts = [
+                str(m.get("content", "")).strip()
+                for m in messages
+                if m.get("role") == "system" and str(m.get("content", "")).strip()
+            ]
+            merged_messages: list[dict[str, Any]] = []
+            merged_prefix = "[Hướng dẫn hệ thống]\n" + "\n\n".join(system_parts) + "\n\n"
+            injected = False
+            for m in messages:
+                if m.get("role") == "system":
+                    continue
+                if not injected and m.get("role") == "user":
+                    item = dict(m)
+                    item["content"] = merged_prefix + str(item.get("content", ""))
+                    merged_messages.append(item)
+                    injected = True
+                else:
+                    merged_messages.append(m)
+            messages = merged_messages
+
         payload: dict[str, Any] = {
             "model": actual_model,
             "stream": False,
