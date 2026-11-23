@@ -4,10 +4,12 @@ import asyncio
 import copy
 import json
 import time
+from collections.abc import Sequence
 
 import httpx
 
 from mach_backend.ai_contract import AIError
+from mach_backend.ai_safety import redact_secrets
 from mach_backend.ai_service import MAX_RESPONSE_BYTES
 
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
@@ -49,14 +51,63 @@ def gemini_messages(messages):
 
 
 class GeminiKeyPool:
-    """Luân phiên hai project đã được chấp thuận; bỏ key gặp 429 trong tác vụ hiện tại."""
+    """Luân phiên tối đa 8 khóa đã được chấp thuận; bỏ key gặp 429 và hồi phục sau cooldown."""
 
-    def __init__(self, key, backup_key=""):
-        self.keys = tuple(dict.fromkeys(clean_api_key(k) for k in (key, backup_key) if k))
+    def __init__(
+        self,
+        key,
+        backup_key="",
+        *extra_keys,
+        cooldown_seconds: float | None = None,
+    ):
+        raw_keys = []
+        for item in (key, backup_key, *extra_keys):
+            if isinstance(item, (list, tuple)):
+                raw_keys.extend(k for k in item if k)
+            elif item:
+                raw_keys.append(item)
+        self.keys = tuple(dict.fromkeys(clean_api_key(k) for k in raw_keys))[:8]
         if not self.keys:
             clean_api_key("")
         self.index, self.exhausted = 0, set()
         self.invalid = set()
+        self.cooldown_seconds = cooldown_seconds
+        self.cooldown_until: dict[tuple[str, int], float] = {}
+
+    @classmethod
+    def from_keys(
+        cls,
+        keys: Sequence[str],
+        *,
+        cooldown_seconds: float | None = 60.0,
+    ) -> "GeminiKeyPool":
+        cleaned = [k for k in keys if isinstance(k, str) and k.strip()]
+        if not cleaned:
+            return cls("", cooldown_seconds=cooldown_seconds)
+        first = cleaned[0]
+        second = cleaned[1] if len(cleaned) > 1 else ""
+        rest = cleaned[2:]
+        return cls(first, second, *rest, cooldown_seconds=cooldown_seconds)
+
+    def mark_rate_limited(
+        self,
+        model: str,
+        slot: int,
+        retry_after: float | None = None,
+    ) -> None:
+        self.exhausted.add((model, slot))
+        if self.cooldown_seconds is not None or retry_after is not None:
+            delay = retry_after if retry_after is not None else (self.cooldown_seconds or 0.0)
+            self.cooldown_until[(model, slot)] = time.monotonic() + float(delay)
+
+    def refresh_cooldowns(self) -> None:
+        if not self.cooldown_until:
+            return
+        now = time.monotonic()
+        expired = [pair for pair, until in self.cooldown_until.items() if until <= now]
+        for pair in expired:
+            self.cooldown_until.pop(pair, None)
+            self.exhausted.discard(pair)
 
     def next_slot(self, model=GEMINI_MODEL):
         for _ in self.keys:
@@ -94,6 +145,7 @@ class GeminiModel:
         self.auto_fallback = auto_fallback
 
     async def __call__(self, purpose, body):
+        self.key_pool.refresh_cooldowns()
         candidates = (
             (self.model, *(m for m in GEMINI_MODELS if m != self.model))
             if self.auto_fallback
@@ -126,7 +178,7 @@ class GeminiModel:
                         if error.code == "provider_auth":
                             self.key_pool.invalid.add(slot)
                         else:
-                            self.key_pool.exhausted.add((actual_model, slot))
+                            self.key_pool.mark_rate_limited(actual_model, slot)
                         try:
                             previous, slot = slot, self.key_pool.next_slot(actual_model)
                         except AIError as exhausted:
@@ -233,7 +285,7 @@ class GeminiModel:
             }
         self.log.index += 1
         index, started = self.log.index, time.perf_counter()
-        self.log.write(f"call-{index:02}-request.json", payload)
+        self.log.write(f"call-{index:02}-request.json", redact_secrets(payload, self.key_pool.keys))
         self.log.emit(
             "model_start", modelCall=index, purpose=purpose, model=actual_model, keySlot=slot + 1
         )
@@ -259,13 +311,14 @@ class GeminiModel:
                         if isinstance(failure, list):
                             failure = failure[0]
                         error = failure["error"]
-                        message = str(error["message"])
-                        for secret in self.key_pool.keys:
-                            message = message.replace(secret, "[ĐÃ ẨN KHÓA]")
+                        message = str(redact_secrets(str(error["message"]), self.key_pool.keys))
                         details["message"] = message[:600]
                     except (ValueError, KeyError, TypeError, IndexError):
                         pass
-                    self.log.write(f"call-{index:02}-error.json", details)
+                    self.log.write(
+                        f"call-{index:02}-error.json",
+                        redact_secrets(details, self.key_pool.keys),
+                    )
                     if response.status_code == 401 or (
                         response.status_code == 400
                         and "valid api key" in str(details.get("message", "")).casefold()
@@ -285,7 +338,9 @@ class GeminiModel:
                         http_status=response.status_code,
                     )
             raw = json.loads(data)
-            self.log.write(f"call-{index:02}-response.json", raw)
+            self.log.write(
+                f"call-{index:02}-response.json", redact_secrets(raw, self.key_pool.keys)
+            )
             if "document" in body:
                 candidates = raw.get("candidates", [])
                 if len(candidates) != 1 or candidates[0].get("finishReason") != "STOP":

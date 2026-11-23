@@ -2,6 +2,7 @@
 
 import html
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -46,25 +47,44 @@ def render_assets(math, figures, chrome):
             + "JSON.stringify({error:error.message});}</script>",
             encoding="utf-8",
         )
+        base_args = [
+            chrome,
+            "--headless",
+            "--disable-gpu",
+            "--allow-file-access-from-files",
+            "--host-resolver-rules=MAP * ~NOTFOUND",
+            "--no-proxy-server",
+            "--user-data-dir=" + str(Path(temp) / "profile"),
+            "--virtual-time-budget=6000",
+            "--dump-dom",
+            source.as_uri(),
+        ]
         try:
-            output = subprocess.run(
-                [
+            try:
+                output = subprocess.run(
+                    base_args,
+                    capture_output=True,
+                    timeout=40,
+                    check=True,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
+            except subprocess.SubprocessError:
+                if os.name == "nt":
+                    raise
+                retry_args = [
                     chrome,
                     "--headless",
-                    "--disable-gpu",
-                    "--allow-file-access-from-files",
-                    "--host-resolver-rules=MAP * ~NOTFOUND",
-                    "--no-proxy-server",
-                    "--user-data-dir=" + str(Path(temp) / "profile"),
-                    "--virtual-time-budget=6000",
-                    "--dump-dom",
-                    source.as_uri(),
-                ],
-                capture_output=True,
-                timeout=40,
-                check=True,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-            )
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    *base_args[2:],
+                ]
+                output = subprocess.run(
+                    retry_args,
+                    capture_output=True,
+                    timeout=40,
+                    check=True,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
             match = re.search(r'<pre id="result">(.*?)</pre>', output.stdout.decode("utf-8"), re.S)
             result = json.loads(html.unescape(match[1])) if match else None
             if (

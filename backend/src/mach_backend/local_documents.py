@@ -5,6 +5,7 @@ import binascii
 import html
 import io
 import json
+import os
 import posixpath
 import re
 import shutil
@@ -1308,26 +1309,45 @@ def export_file(payload, directory, origin):
         with tempfile.TemporaryDirectory(prefix="exam-pdf-") as temp:
             source = target.with_suffix(".html")
             source.write_text(content, encoding="utf-8")
+            base_args = [
+                chrome,
+                "--headless",
+                "--disable-gpu",
+                "--allow-file-access-from-files",
+                "--host-resolver-rules=MAP * ~NOTFOUND",
+                "--no-proxy-server",
+                "--no-pdf-header-footer",
+                "--user-data-dir=" + str(Path(temp) / "profile"),
+                "--print-to-pdf=" + str(target.resolve()),
+                "--virtual-time-budget=3000",
+                source.resolve().as_uri(),
+            ]
             try:
-                subprocess.run(
-                    [
+                try:
+                    subprocess.run(
+                        base_args,
+                        check=True,
+                        timeout=45,
+                        capture_output=True,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                    )
+                except subprocess.SubprocessError:
+                    if os.name == "nt":
+                        raise
+                    retry_args = [
                         chrome,
                         "--headless",
-                        "--disable-gpu",
-                        "--allow-file-access-from-files",
-                        "--host-resolver-rules=MAP * ~NOTFOUND",
-                        "--no-proxy-server",
-                        "--no-pdf-header-footer",
-                        "--user-data-dir=" + str(Path(temp) / "profile"),
-                        "--print-to-pdf=" + str(target.resolve()),
-                        "--virtual-time-budget=3000",
-                        source.resolve().as_uri(),
-                    ],
-                    check=True,
-                    timeout=45,
-                    capture_output=True,
-                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-                )
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        *base_args[2:],
+                    ]
+                    subprocess.run(
+                        retry_args,
+                        check=True,
+                        timeout=45,
+                        capture_output=True,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                    )
             except (OSError, subprocess.SubprocessError):
                 raise AIError(
                     "export_failed", "Chưa tạo được PDF. Hãy thử lại hoặc xuất HTML."

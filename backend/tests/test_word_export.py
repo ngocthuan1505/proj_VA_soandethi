@@ -133,6 +133,7 @@ def renderer(monkeypatch):
         return {"math": {latex: MATHML for latex in math}, "figures": []}
 
     monkeypatch.setattr("mach_backend.word_export.render_assets", render)
+    monkeypatch.setattr("mach_backend.local_documents.render_assets", render)
     return calls
 
 
@@ -517,7 +518,9 @@ def test_b4_default_15pt_chrome_page_numbers_watermark_codeblock_table_image_and
     assert "Đáp án đúng" not in all_xml_text
 
 
-def test_pdf_export_keeps_table_cell_images_and_separates_student_solutions(rich_exam, tmp_path):
+def test_pdf_export_keeps_table_cell_images_and_separates_student_solutions(
+    rich_exam, renderer, tmp_path
+):
     from pypdf import PdfReader
 
     from mach_backend.local_documents import chrome_path
