@@ -204,7 +204,14 @@ async function inspectViewportGeometry(page, label) {
     for (const group of containers) {
       const nodes = [...document.querySelectorAll(group.sel)]
         .map((el) => ({el, rect: visibleRect(el)}))
-        .filter((item) => item.rect);
+        .filter((item) => item.rect)
+        .filter((item) => {
+          // Bước nằm ngoài vùng cuộn ngang .wf-steps bị overflow cắt, không được vẽ nên không thể đè pill.
+          const scroller = item.el.closest('.wf-steps');
+          if (!scroller) return true;
+          const s = scroller.getBoundingClientRect();
+          return item.rect.left >= s.left - 2 && item.rect.right <= s.right + 2;
+        });
 
       for (let i = 0; i < nodes.length; i++) {
         const {el, rect} = nodes[i];
