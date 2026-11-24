@@ -6,12 +6,13 @@ import copy
 import json
 import re
 import time
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 import httpx
 
 from mach_backend.ai_contract import AIError
+from mach_backend.ai_router import structured_tool_request, structured_tool_response
 from mach_backend.ai_safety import (
     CostTracker,
     extract_api_key_token,
@@ -144,10 +145,24 @@ class DeepSeekModel:
         if self.budget is not None:
             self.budget.spend()
 
-        messages = gemini_messages(body.get("messages", []))
-        if "format" in body:
+        use_structured_tools = bool(body.get("tools")) and actual_model == "deepseek-reasoner"
+        allowed_tools = (
+            [
+                t["function"]["name"]
+                for t in body.get("tools", [])
+                if isinstance(t, dict)
+                and isinstance(t.get("function"), dict)
+                and t["function"].get("name")
+            ]
+            if use_structured_tools
+            else []
+        )
+        effective_body = structured_tool_request(body) if use_structured_tools else body
+
+        messages = gemini_messages(effective_body.get("messages", []))
+        if "format" in effective_body and not use_structured_tools:
             schema_instruction = " Trả JSON đúng schema sau, không dùng markdown: " + json.dumps(
-                body["format"], ensure_ascii=False
+                effective_body["format"], ensure_ascii=False
             )
             if not messages:
                 messages = [{"role": "system", "content": schema_instruction.strip()}]
@@ -182,17 +197,34 @@ class DeepSeekModel:
             messages = merged_messages
 
         lower_model = actual_model.lower()
+        schema_props = (
+            effective_body.get("format", {}).get("properties", {})
+            if isinstance(effective_body.get("format"), dict)
+            else {}
+        )
+        needs_8k = (
+            "reasoner" in lower_model
+            or "v4" in lower_model
+            or bool(body.get("tools"))
+            or (
+                actual_model == "deepseek-chat"
+                and (
+                    purpose.startswith(("batch", "generate", "matrix", "M03", "M04", "M05"))
+                    or any(k in schema_props for k in ("questions", "slots"))
+                )
+            )
+        )
         payload: dict[str, Any] = {
             "model": actual_model,
             "stream": False,
             "messages": messages,
-            "max_tokens": 8192 if ("reasoner" in lower_model or "v4" in lower_model) else 4096,
+            "max_tokens": 8192 if needs_8k else 4096,
         }
         if actual_model != "deepseek-reasoner":
             payload["temperature"] = 0
-        if "tools" in body and actual_model != "deepseek-reasoner":
-            payload["tools"] = body["tools"]
-        if "format" in body:
+        if "tools" in effective_body and not use_structured_tools:
+            payload["tools"] = effective_body["tools"]
+        if "format" in effective_body:
             payload["response_format"] = {"type": "json_object"}
 
         if self.log is not None:
@@ -357,7 +389,43 @@ class DeepSeekModel:
                     costUsd=round(cost_usd, 6),
                     metrics=usage,
                 )
+            if use_structured_tools and not message.get("tool_calls"):
+                return structured_tool_response(
+                    message,
+                    allowed_tools=allowed_tools or None,
+                    include_call_id=True,
+                    raise_code="invalid_response",
+                )
             return message
+        except httpx.TimeoutException:
+            if self.log is not None:
+                self.log.emit(
+                    "model_end",
+                    modelCall=index,
+                    purpose=purpose,
+                    model=actual_model,
+                    provider="deepseek",
+                    ok=False,
+                    seconds=round(time.perf_counter() - started, 6),
+                )
+            raise AIError(
+                "provider_timeout", "DeepSeek quá thời gian phản hồi; chuyển kênh dự phòng."
+            ) from None
+        except httpx.HTTPError as exc:
+            if self.log is not None:
+                self.log.emit(
+                    "model_end",
+                    modelCall=index,
+                    purpose=purpose,
+                    model=actual_model,
+                    provider="deepseek",
+                    ok=False,
+                    seconds=round(time.perf_counter() - started, 6),
+                )
+            raise AIError(
+                "provider_unavailable",
+                "Không kết nối được DeepSeek: " + str(redact_secrets(str(exc), [self.key])),
+            ) from None
         except BaseException:
             if self.log is not None:
                 self.log.emit(
@@ -370,3 +438,131 @@ class DeepSeekModel:
                     seconds=round(time.perf_counter() - started, 6),
                 )
             raise
+
+    async def stream_chat(
+        self, messages: Sequence[dict[str, Any]], **kwargs: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Phát luồng từng token DeepSeek / OpenAI-compatible qua SSE (`stream: True`)."""
+        if self.cost_tracker is not None:
+            self.cost_tracker.check_available()
+        if self.budget is not None:
+            self.budget.spend()
+
+        actual_model = str(kwargs.get("model") or self.model).strip() or self.model
+        lower_model = actual_model.lower()
+        payload: dict[str, Any] = {
+            "model": actual_model,
+            "stream": True,
+            "messages": gemini_messages(list(messages)),
+            "max_tokens": int(
+                kwargs.get(
+                    "max_tokens",
+                    8192 if ("reasoner" in lower_model or "v4" in lower_model) else 4096,
+                )
+            ),
+        }
+        if actual_model != "deepseek-reasoner":
+            payload["temperature"] = kwargs.get("temperature", 0)
+        headers = {"Authorization": "Bearer " + self.key}
+
+        full_parts: list[str] = []
+        usage: dict[str, Any] = {}
+        try:
+            async with self.client.stream(
+                "POST",
+                self.endpoint,
+                json=payload,
+                headers=headers,
+                timeout=180,
+                follow_redirects=False,
+            ) as response:
+                if response.status_code >= 300:
+                    raw_err = await response.aread()
+                    err_msg = ""
+                    try:
+                        parsed = json.loads(raw_err)
+                        if isinstance(parsed, dict):
+                            err_obj = parsed.get("error", {})
+                            err_msg = (
+                                err_obj.get("message", "")
+                                if isinstance(err_obj, dict)
+                                else str(err_obj)
+                            )
+                    except ValueError:
+                        pass
+                    safe_msg = str(redact_secrets(err_msg, [self.key]))[:400]
+                    if response.status_code in {401, 403}:
+                        raise AIError(
+                            "provider_auth",
+                            "Khóa DeepSeek chưa hợp lệ.",
+                            http_status=response.status_code,
+                        )
+                    if response.status_code == 402:
+                        raise AIError(
+                            "cost_budget",
+                            "Tài khoản DeepSeek hết số dư.",
+                            http_status=402,
+                        )
+                    if response.status_code == 429:
+                        raise AIError(
+                            "provider_quota",
+                            "DeepSeek gặp giới hạn 429.",
+                            http_status=429,
+                        )
+                    if response.status_code >= 500:
+                        raise AIError(
+                            "provider_unavailable",
+                            f"DeepSeek tạm gián đoạn (HTTP {response.status_code}).",
+                            http_status=response.status_code,
+                        )
+                    raise AIError(
+                        "provider_http_error",
+                        f"DeepSeek stream trả HTTP {response.status_code}: {safe_msg}",
+                        http_status=response.status_code,
+                    )
+
+                async for line in response.aiter_lines():
+                    stripped = line.strip()
+                    if not stripped or not stripped.startswith("data:"):
+                        continue
+                    data_part = stripped[5:].strip()
+                    if not data_part or data_part == "[DONE]":
+                        continue
+                    try:
+                        chunk = json.loads(data_part)
+                    except ValueError:
+                        continue
+                    if isinstance(chunk.get("usage"), dict):
+                        usage = chunk["usage"]
+                    for choice in chunk.get("choices", []):
+                        if not isinstance(choice, dict):
+                            continue
+                        delta = choice.get("delta") or {}
+                        if not isinstance(delta, dict):
+                            continue
+                        token_text = delta.get("content")
+                        if isinstance(token_text, str) and token_text:
+                            safe_delta = str(redact_secrets(token_text, [self.key]))
+                            full_parts.append(safe_delta)
+                            yield {"type": "delta", "text": safe_delta}
+        except httpx.TimeoutException:
+            raise AIError("provider_timeout", "DeepSeek stream quá thời gian phản hồi.") from None
+        except httpx.HTTPError as exc:
+            raise AIError(
+                "provider_unavailable",
+                "Lỗi kết nối stream DeepSeek: " + str(redact_secrets(str(exc), [self.key])),
+            ) from None
+
+        if self.cost_tracker is not None and usage:
+            self.cost_tracker.record_usage(
+                actual_model,
+                int(usage.get("prompt_tokens", 0) or 0),
+                int(usage.get("completion_tokens", 0) or 0),
+            )
+        yield {
+            "type": "done",
+            "text": "".join(full_parts),
+            "provider": "deepseek",
+            "model": actual_model,
+            "usage": usage,
+        }

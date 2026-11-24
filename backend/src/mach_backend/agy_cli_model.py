@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from mach_backend.ai_contract import AIError
+from mach_backend.ai_router import structured_tool_request, structured_tool_response
 from mach_backend.ai_safety import redact_secrets, sanitize_json_latex_escapes
 
 SAFE_ENV_KEYS = (
@@ -45,6 +46,7 @@ _FORBIDDEN_ENV_SUBSTRINGS = (
 
 _ALLOWED_EXE_NAMES = {"agy", "agy.exe", "agy.cmd", "agy.bat"}
 VALID_EFFORT_LEVELS = frozenset({"low", "medium", "high", "xhigh", "max"})
+_VALID_AGY_MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,79}$")
 _FENCED_JSON_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE)
 _ENVELOPE_KEYS = ("response", "result", "content", "text", "output")
 _DOMAIN_PAYLOAD_KEYS = {
@@ -56,6 +58,8 @@ _DOMAIN_PAYLOAD_KEYS = {
     "slots",
     "matrix",
     "stem",
+    "action",
+    "arguments",
 }
 
 
@@ -256,7 +260,31 @@ class AgyCliModel:
         if self.budget is not None and hasattr(self.budget, "remaining"):
             eff_timeout = max(5, min(self.timeout_seconds, int(self.budget.remaining())))
 
-        prompt_text = self._build_prompt(purpose, body)
+        raw_req_model = str(body.get("model") or "").strip() if isinstance(body, dict) else ""
+        effective_model = self.model
+        if (
+            raw_req_model
+            and raw_req_model != "agy-cli"
+            and _VALID_AGY_MODEL_RE.fullmatch(raw_req_model)
+        ):
+            effective_model = raw_req_model
+        model_label = effective_model or "agy-cli"
+
+        has_tools = isinstance(body, dict) and bool(body.get("tools"))
+        allowed_tools = (
+            [
+                t["function"]["name"]
+                for t in body.get("tools", [])
+                if isinstance(t, dict)
+                and isinstance(t.get("function"), dict)
+                and t["function"].get("name")
+            ]
+            if has_tools
+            else []
+        )
+        effective_body = structured_tool_request(body) if has_tools else body
+
+        prompt_text = self._build_prompt(purpose, effective_body)
         prompt_bytes = prompt_text.encode("utf-8")
         sanitized_env = build_sanitized_env()
 
@@ -265,13 +293,13 @@ class AgyCliModel:
             index = self.log.index
             self.log.write(
                 f"call-{index:02}-request.json",
-                redact_secrets({"purpose": purpose, "provider": "agy", "body": body}),
+                redact_secrets({"purpose": purpose, "provider": "agy", "body": effective_body}),
             )
             self.log.emit(
                 "model_start",
                 modelCall=index,
                 purpose=purpose,
-                model="agy-cli",
+                model=model_label,
                 provider="agy",
             )
         else:
@@ -305,10 +333,12 @@ class AgyCliModel:
                 ]
                 if self.effort in VALID_EFFORT_LEVELS:
                     cmd.extend(["--effort", self.effort])
-                if self.model:
-                    cmd.extend(["--model", self.model])
+                if effective_model:
+                    cmd.extend(["--model", effective_model])
                 expected_schema = (
-                    body.get("format") if isinstance(body.get("format"), dict) else None
+                    effective_body.get("format")
+                    if isinstance(effective_body.get("format"), dict)
+                    else None
                 )
                 if expected_schema is not None:
                     schema_path = Path(sandbox_dir) / "schema.json"
@@ -357,19 +387,26 @@ class AgyCliModel:
 
             content = _extract_output_content(
                 stdout_str,
-                expect_json="format" in body,
+                expect_json="format" in effective_body,
                 expected_schema=expected_schema,
             )
             if not content:
                 raise AIError("invalid_response", "AGY CLI trả về phản hồi rỗng.")
 
-            model_label = self.model or "agy-cli"
-            result = {
-                "role": "assistant",
-                "content": content,
-                "provider": "agy",
-                "model": model_label,
-            }
+            if has_tools:
+                result = structured_tool_response(
+                    {"content": content, "provider": "agy", "model": model_label},
+                    allowed_tools=allowed_tools or None,
+                    include_call_id=True,
+                    raise_code="invalid_response",
+                )
+            else:
+                result = {
+                    "role": "assistant",
+                    "content": content,
+                    "provider": "agy",
+                    "model": model_label,
+                }
             if self.log is not None:
                 self.log.write(f"call-{index:02}-response.json", redact_secrets(result))
                 self.log.emit(
@@ -388,7 +425,7 @@ class AgyCliModel:
                     "model_end",
                     modelCall=index,
                     purpose=purpose,
-                    model="agy-cli",
+                    model=model_label,
                     provider="agy",
                     ok=False,
                     seconds=round(time.perf_counter() - started, 6),

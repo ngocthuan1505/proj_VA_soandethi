@@ -3,6 +3,7 @@
 import asyncio
 import copy
 import hashlib
+import inspect
 import json
 import os
 import platform
@@ -17,7 +18,7 @@ import httpx
 
 from mach_backend.agy_cli_model import AgyCliModel, detect_agy_cli
 from mach_backend.ai_contract import AIError
-from mach_backend.ai_router import FixedTaskRouter
+from mach_backend.ai_router import FixedTaskRouter, get_shared_circuit_breaker
 from mach_backend.ai_safety import CostTracker
 from mach_backend.deepseek_model import DEEPSEEK_BASE_URL, DeepSeekModel
 from mach_backend.gemini_model import (
@@ -29,8 +30,21 @@ from mach_backend.gemini_model import (
 )
 from mach_backend.matrix_agent import run_matrix_agent, sha256_json
 from mach_backend.mixed_questions import TRUEFALSE_ANSWER_GUIDE
+from mach_backend.patch_jobs import emit_patch_progress
 from mach_backend.poc_matrix import LocalModel, RunLog
 from mach_backend.poc_policy import CallBudget, ExtendedCallBudget, ExtendedRunPolicy, RunPolicy
+
+
+def _accepted_kwargs(callable_obj: Any, candidate: dict[str, Any]) -> dict[str, Any]:
+    try:
+        sig = inspect.signature(callable_obj)
+    except (ValueError, TypeError):
+        return candidate
+    params = sig.parameters
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return candidate
+    return {k: v for k, v in candidate.items() if k in params}
+
 
 LEVEL_NAMES = ("nhan_biet", "thong_hieu", "van_dung", "van_dung_cao")
 LEVEL_DESCRIPTION = (
@@ -296,6 +310,78 @@ async def propose_repair_stem(model, body, assignment, ordinals, previous):
     return stem
 
 
+async def apply_surgical_repair(
+    call_fn: Any,
+    purpose: str,
+    body: dict[str, Any],
+    *,
+    enable_stem_proposal: bool = True,
+) -> dict[str, Any]:
+    """Áp dụng sửa phẫu thuật (scope_mixed_repair) cho MỌI họ model (AGY/DeepSeek/Gemini/Ollama)."""
+    worked = copy.deepcopy(body)
+    if purpose != "agent" or not any(
+        isinstance(t, dict)
+        and isinstance(t.get("function"), dict)
+        and t["function"].get("name") == "check_exam"
+        for t in worked.get("tools", [])
+    ):
+        return await call_fn(purpose, worked)
+
+    try:
+        assignment = json.loads(worked["messages"][1]["content"])
+    except (ValueError, KeyError, IndexError, TypeError):
+        return await call_fn(purpose, worked)
+
+    slots = assignment.get("matrix", {}).get("slots")
+    if not isinstance(slots, list) or not slots:
+        return await call_fn(purpose, worked)
+
+    repair = scope_mixed_repair(worked, assignment)
+    if not repair:
+        return await call_fn(purpose, worked)
+
+    ordinals, previous = repair
+    emit_patch_progress("repair", repairOrdinals=ordinals, totalSlots=len(slots))
+    if enable_stem_proposal:
+        stem = await propose_repair_stem(call_fn, worked, assignment, ordinals, previous)
+        if stem:
+            assignment["suggestedStem"] = stem
+            worked["messages"][0]["content"] += (
+                " Giải câu suggestedStem dựa vào nguồn trước khi nộp. Nếu tiền đề sai hoặc "
+                "câu chưa đúng mức yêu cầu, hãy sửa thân câu rồi viết đáp án và lời giải khớp."
+            )
+    assignment["matrix"]["slots"] = [{**slots[index], "ordinal": index} for index in ordinals]
+    worked["messages"][1]["content"] = json.dumps(assignment, ensure_ascii=False)
+    for tool in worked.get("tools", []):
+        if isinstance(tool, dict) and tool.get("function", {}).get("name") == "check_exam":
+            q_schema = tool["function"].get("parameters", {}).get("properties", {}).get("questions")
+            if isinstance(q_schema, dict):
+                q_schema["minItems"] = len(ordinals)
+                q_schema["maxItems"] = len(ordinals)
+
+    response = await call_fn(purpose, worked)
+    if isinstance(response, dict):
+        for tool in response.get("tool_calls", []):
+            function = tool.get("function") if isinstance(tool, dict) else None
+            if not isinstance(function, dict) or function.get("name") != "check_exam":
+                continue
+            arguments = function.get("arguments")
+            if not isinstance(arguments, dict):
+                continue
+            patch = arguments.get("questions")
+            if not isinstance(patch, list):
+                arguments.clear()
+                continue
+            if set(arguments) == {"questions"} and len(patch) == len(ordinals):
+                complete = previous.copy()
+                for index, question in zip(ordinals, patch, strict=True):
+                    complete[index] = question
+                arguments["questions"] = complete
+            elif len(patch) != len(slots):
+                arguments.clear()
+    return response
+
+
 async def local_model_call(model, purpose, body):
     """Chia lượt rà thành từng câu để model local không lẫn đáp án giữa các câu."""
     body = copy.deepcopy(body)
@@ -305,8 +391,17 @@ async def local_model_call(model, purpose, body):
     ):
         assignment = json.loads(body["messages"][1]["content"])
         slots = assignment["matrix"]["slots"]
-        repair = scope_mixed_repair(body, assignment)
-        ordinals = repair[0] if repair else range(len(slots))
+        already_scoped = (
+            isinstance(assignment.get("repairOrdinals"), list)
+            and len(slots) == len(assignment["repairOrdinals"])
+            and all(isinstance(s, dict) and type(s.get("ordinal")) is int for s in slots)
+        )
+        repair = None if already_scoped else scope_mixed_repair(body, assignment)
+        ordinals = (
+            [s["ordinal"] for s in slots]
+            if already_scoped
+            else (repair[0] if repair else list(range(len(slots))))
+        )
         stem = (
             await propose_repair_stem(model, body, assignment, ordinals, repair[1])
             if repair
@@ -339,7 +434,8 @@ async def local_model_call(model, purpose, body):
             }
             questions["items"] = []
             for position, index in enumerate(ordinals):
-                ordinal, slot = index + 1, slots[index]
+                slot_idx = position if already_scoped else index
+                ordinal, slot = index + 1, slots[slot_idx]
                 kind = slot["type"]
                 if slot.get("pointsQ4") is not None:
                     points = slot["pointsQ4"]
@@ -460,9 +556,8 @@ async def local_model_call(model, purpose, body):
         for message in body["messages"]:
             convert_truefalse_statements(message, slots, to_ollama=True)
         response = await model(purpose, body)
-        convert_truefalse_statements(
-            response, [slots[index] for index in ordinals], to_ollama=False
-        )
+        narrowed_slots = slots if already_scoped else [slots[index] for index in ordinals]
+        convert_truefalse_statements(response, narrowed_slots, to_ollama=False)
         if repair:
             for tool in response.get("tool_calls", []):
                 function = tool["function"]
@@ -758,9 +853,19 @@ def _make_gemini_key_pool(
 
 
 class AgentGeneration:
-    def __init__(self, store, model: str, directory: Path, *, job_status, call=None):
+    def __init__(
+        self,
+        store,
+        model: str,
+        directory: Path,
+        *,
+        job_status,
+        call=None,
+        chunked: bool | None = None,
+    ):
         self.job_status = job_status
         self.store, self.model, self.directory, self.call = store, model, directory, call
+        self.chunked = chunked
         self.provider_name, self.gemini_key, self.gemini_free_tier = "ollama", "", False
         self.gemini_backup_key = ""
         self.gemini_extra_keys: tuple[str, ...] = ()
@@ -779,6 +884,7 @@ class AgentGeneration:
         self.fixed_router_enabled: bool = True
         self.extended_policy: ExtendedRunPolicy = ExtendedRunPolicy()
         self.agy_custom_path: str = ""
+        self.agy_model: str = ""
         self.early_stop_jobs: set[str] = set()
         self.review_provider_name = None
         self.review_gemini_model = GEMINI_MODEL
@@ -1064,13 +1170,17 @@ class AgentGeneration:
             if use_fixed_router:
                 router_providers: dict[str, Any] = {}
                 if self.agy_available:
+                    agy_kwargs = _accepted_kwargs(
+                        AgyCliModel,
+                        {
+                            "custom_path": self.agy_custom_path,
+                            "budget": budget,
+                            "model": self.agy_model or None,
+                        },
+                    )
 
                     async def _call_agy(p: str, b: dict[str, Any]) -> dict[str, Any]:
-                        return await AgyCliModel(
-                            log,
-                            custom_path=self.agy_custom_path,
-                            budget=budget,
-                        )(p, b)
+                        return await AgyCliModel(log, **agy_kwargs)(p, b)
 
                     router_providers["agy"] = _call_agy
                 if api_key and free_tier and key_pool is not None:
@@ -1091,19 +1201,26 @@ class AgentGeneration:
 
                     router_providers["gemini_flash"] = _make_router_gemini("gemini-3.8-flash")
                     router_providers["gemini_hydrogen"] = _make_router_gemini("gemini-4-hydrogen")
+                    router_providers["gemini_pro"] = _make_router_gemini("gemini-2.5-pro")
                 if self.deepseek_key:
 
                     def _make_router_ds(target_model: str):
                         async def _caller(p: str, b: dict[str, Any]) -> dict[str, Any]:
+                            ds_kwargs = _accepted_kwargs(
+                                DeepSeekModel,
+                                {
+                                    "model": target_model,
+                                    "base_url": self.deepseek_url,
+                                    "backup_models": self.deepseek_backup_models,
+                                    "budget": budget,
+                                    "cost_tracker": cost_tracker,
+                                },
+                            )
                             return await DeepSeekModel(
                                 client,
                                 self.deepseek_key,
                                 log,
-                                model=target_model,
-                                base_url=self.deepseek_url,
-                                backup_models=self.deepseek_backup_models,
-                                budget=budget,
-                                cost_tracker=cost_tracker,
+                                **ds_kwargs,
                             )(p, b)
 
                         return _caller
@@ -1124,7 +1241,12 @@ class AgentGeneration:
                     return await local_model_call(local, p, b)
 
                 router_providers["ollama"] = _call_router_ollama
-                router = FixedTaskRouter(router_providers, log)
+                router = FixedTaskRouter(
+                    router_providers,
+                    log,
+                    circuit_breaker=get_shared_circuit_breaker(),
+                    time_preset=self.extended_policy.timePreset,
+                )
 
             async def current_call(purpose, body):
                 nonlocal last_generator_family
@@ -1139,11 +1261,27 @@ class AgentGeneration:
                         provider="fixed_router",
                     )
                     async with asyncio.timeout(budget.remaining()):
-                        result = await router(
-                            purpose,
-                            body,
-                            generator_family="" if generation else last_generator_family,
-                        )
+                        if purpose == "agent":
+
+                            async def _router_exec(p: str, b: dict[str, Any]) -> dict[str, Any]:
+                                return await router(
+                                    p,
+                                    b,
+                                    generator_family="",
+                                )
+
+                            result = await apply_surgical_repair(
+                                _router_exec,
+                                purpose,
+                                body,
+                                enable_stem_proposal=False,
+                            )
+                        else:
+                            result = await router(
+                                purpose,
+                                body,
+                                generator_family="" if generation else last_generator_family,
+                            )
                     if generation and isinstance(result, dict):
                         last_generator_family = str(result.get("providerFamily") or "")
                     emit("model_call_end", purpose=purpose)
@@ -1160,11 +1298,21 @@ class AgentGeneration:
                 if self.call:
                     budget.spend()
                 async with asyncio.timeout(budget.remaining()):
-                    result = await (
-                        selected(purpose, body)
-                        if self.call or selected_provider == "gemini"
-                        else local_model_call(selected, purpose, body)
-                    )
+                    if self.call:
+                        result = await selected(purpose, body)
+                    elif selected_provider == "gemini":
+                        result = (
+                            await apply_surgical_repair(
+                                selected,
+                                purpose,
+                                body,
+                                enable_stem_proposal=False,
+                            )
+                            if purpose == "agent"
+                            else await selected(purpose, body)
+                        )
+                    else:
+                        result = await local_model_call(selected, purpose, body)
                 emit("model_call_end", purpose=purpose)
                 return result
 
@@ -1224,14 +1372,36 @@ class AgentGeneration:
                         )
                     environment["installedModel"] = installed
                 log.write("environment.json", environment)
-                real_ollama_review = (
-                    not self.call and not use_fixed_router and review_provider == "ollama"
-                )
+                real_provider = not self.call
                 max_turns = (
                     (self.extended_policy.maxModelCalls + 2)
                     if use_fixed_router
                     else (policy.maxModelCalls + 2)
                 )
+                use_chunked = (
+                    self.chunked
+                    if self.chunked is not None
+                    else (real_provider and len(job.slots) > 6)
+                )
+
+                def _save_batch_checkpoint(
+                    passed_questions: list[dict],
+                    *,
+                    stage: str,
+                    micro_task: str,
+                    batch_index: int = 0,
+                    total_batches: int = 1,
+                ) -> None:
+                    self.save_job_checkpoint(
+                        str(job.jobId),
+                        exam_id=str(job.examId),
+                        stage=stage,
+                        micro_task=micro_task,
+                        passed_questions=passed_questions,
+                        total_slots=len(job.slots),
+                        elapsed_seconds=time.perf_counter() - log.at,
+                    )
+
                 result = await run_matrix_agent(
                     job,
                     current_call,
@@ -1239,8 +1409,11 @@ class AgentGeneration:
                     max_attempts=None,
                     max_turns=max_turns,
                     recheck_level_drift=(not use_fixed_router and review_provider == "ollama"),
-                    reuse_passed_reviews=real_ollama_review,
-                    skip_explanation_on_blind_fail=real_ollama_review,
+                    reuse_passed_reviews=real_provider,
+                    skip_explanation_on_blind_fail=real_provider,
+                    chunked=use_chunked,
+                    should_stop=lambda: str(job.jobId) in self.early_stop_jobs,
+                    on_batch_verified=_save_batch_checkpoint,
                 )
             except asyncio.CancelledError:
                 # HTTP transport có thể bỏ thông tin gắn với CancelledError.
@@ -1285,6 +1458,34 @@ class AgentGeneration:
             result.update(metrics())
             log.write("result.json", result)
             emit("run_end", status=result["status"], saved=False)
+            if result["status"] == "early_stopped":
+                partial_questions = list(
+                    result.get("partialQuestions")
+                    or result.get("proposal", {}).get("questions", [])
+                )
+                self.save_job_checkpoint(
+                    str(job.jobId),
+                    exam_id=str(job.examId),
+                    stage="early_stopped",
+                    micro_task="M04_GEN_STANDARD",
+                    passed_questions=partial_questions,
+                    total_slots=len(job.slots),
+                    elapsed_seconds=time.perf_counter() - log.at,
+                )
+                self.store.put(
+                    "matrix-agent-result:" + str(job.jobId),
+                    {**result, "proposalSha256": sha256_json(result.get("proposal", {}))},
+                )
+                return json.dumps(
+                    {
+                        "status": "early_stopped",
+                        **result.get("proposal", {}),
+                        "questions": partial_questions,
+                        "passedCount": len(partial_questions),
+                        "totalSlots": len(job.slots),
+                    },
+                    ensure_ascii=False,
+                )
             if result["status"] != "ready_for_teacher_review":
                 raise AIError(result["status"], "Trợ lý chưa hoàn thành bộ câu; bản đề giữ nguyên.")
             self.store.put(

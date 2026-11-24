@@ -27,6 +27,7 @@ from pydantic import (
 )
 
 from mach_backend.ai_contract import AIError
+from mach_backend.hybrid_retrieval import expand_vi_synonyms, normalize_vi_search
 
 type LicenseStatus = Literal["allowed", "teacher_owned", "pending_review", "restricted"]
 type ConnectCallable = Callable[[], AbstractContextManager[sqlite3.Connection]]
@@ -124,8 +125,8 @@ def _source_not_found() -> CurriculumSourceError:
 
 
 def _normalize_search(value: str) -> str:
-    """Chuẩn hóa NFC và gấp chữ để so khớp tiếng Việt không phân biệt hoa thường."""
-    return unicodedata.normalize("NFC", value).strip().casefold()
+    """Chuẩn hóa tiếng Việt không dấu, gấp chữ và quy đồng i/y khi tìm kiếm."""
+    return normalize_vi_search(value)
 
 
 def compute_source_sha256(payload: Mapping[str, Any]) -> str:
@@ -564,13 +565,14 @@ def install_curriculum_sources(
             ]
 
         if q is not None:
-            needle = _normalize_search(q)
-            if needle:
+            query_variants = expand_vi_synonyms(q)
+            if query_variants:
                 records = [
                     record
                     for record in records
                     if any(
-                        needle in _normalize_search(value)
+                        variant in _normalize_search(value)
+                        for variant in query_variants
                         for value in (
                             record.title,
                             record.chapter,

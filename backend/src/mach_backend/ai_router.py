@@ -4,12 +4,183 @@ from __future__ import annotations
 
 import inspect
 import json
+import re
+import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any
+from uuid import uuid4
 
 from mach_backend.ai_contract import AIError
-from mach_backend.ai_safety import redact_secrets
+from mach_backend.ai_safety import redact_secrets, sanitize_json_latex_escapes
+
+_TOOL_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE)
+_DEFAULT_ALLOWED_TOOLS = frozenset({"check_exam", "finish_exam"})
+
+
+def structured_tool_request(body: dict[str, Any]) -> dict[str, Any]:
+    """Mã hóa yêu cầu gọi công cụ bằng JSON schema hợp nhất cho mọi họ model."""
+    tools = body.get("tools") or []
+    if not tools:
+        return dict(body)
+    choices = []
+    definitions: dict[str, Any] = {}
+    for tool in tools:
+        function = tool["function"]
+        parameters = dict(function["parameters"])
+        # Tham chiếu của Pydantic bắt đầu từ gốc schema đã bọc.
+        definitions.update(parameters.pop("$defs", {}))
+        choices.append(
+            {
+                "type": "object",
+                "properties": {
+                    "action": {"const": function["name"]},
+                    "arguments": parameters,
+                },
+                "required": ["action", "arguments"],
+                "additionalProperties": False,
+            }
+        )
+    schema: dict[str, Any] = {"oneOf": choices}
+    if definitions:
+        schema["$defs"] = definitions
+    history = list(body.get("messages", []))
+    restart = False
+    if len(history) >= 4 and history[-1].get("tool_name") == "check_exam":
+        try:
+            last_tool_payload = json.loads(str(history[-1].get("content", "")))
+            restart = isinstance(last_tool_payload, dict) and (
+                last_tool_payload.get("reusedFromAttempt") is not None
+            )
+        except (ValueError, TypeError):
+            restart = False
+    if restart:
+        # Mẫu trả lời trùng trong lịch sử khiến model tiếp tục chép lại cả bộ cũ.
+        history = [*history[:2], history[-1]]
+    messages: list[dict[str, Any]] = []
+    for message in history:
+        if message.get("role") == "tool":
+            raw_tool_content = message.get("content", "{}")
+            try:
+                parsed_result = (
+                    raw_tool_content
+                    if isinstance(raw_tool_content, dict)
+                    else json.loads(str(raw_tool_content))
+                )
+            except (ValueError, TypeError):
+                parsed_result = {"raw": str(raw_tool_content)}
+            messages.append(
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "toolResult": message.get("tool_name", "check_exam"),
+                            "result": parsed_result,
+                        },
+                        ensure_ascii=False,
+                    ),
+                }
+            )
+        elif "tool_calls" in message and message["tool_calls"]:
+            call = message["tool_calls"][0]["function"]
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": json.dumps(
+                        {"action": call["name"], "arguments": call["arguments"]},
+                        ensure_ascii=False,
+                    ),
+                }
+            )
+        else:
+            messages.append(dict(message))
+    if not messages:
+        messages = [{"role": "system", "content": ""}]
+    protocol_note = (
+        " Giao thức lượt này là JSON action, không phải native tool calling. "
+        "Bạn chọn action và tự viết arguments. Python chỉ thực thi công cụ được phép "
+        "rồi trả toolResult để bạn tự sửa. Khi result.ok=false, xử lý result.errors "
+        "và làm theo result.repairInstruction nếu có trước khi nộp lại. "
+        "Trả đúng JSON theo schema: " + json.dumps(schema, ensure_ascii=False)
+    )
+    first_content = str(messages[0].get("content", ""))
+    if "Giao thức lượt này là JSON action" not in first_content:
+        first_content += protocol_note
+    if restart and "đặt câu hỏi mới cho đúng ô đó" not in first_content:
+        first_content += (
+            " Bộ câu trước bị nộp lặp và đã rút khỏi ngữ cảnh. "
+            "Hãy soạn lại toàn bộ từ ma trận và nguồn ban đầu. Với mỗi lỗi có ordinal "
+            "(đếm từ 0), đặt câu hỏi mới cho đúng ô đó, dùng dữ kiện hoặc cách hỏi khác. "
+            "Tự giải từng câu mới rồi mới nộp qua check_exam."
+        )
+    messages[0]["content"] = first_content
+    request: dict[str, Any] = {"messages": messages, "format": schema}
+    if "options" in body:
+        request["options"] = body["options"]
+    return request
+
+
+def _parse_json_action_payload(raw_text: str) -> Any:
+    text = raw_text.strip()
+    fenced = _TOOL_FENCE_RE.search(text)
+    candidates = [text]
+    if fenced:
+        candidates.insert(0, fenced.group(1).strip())
+    start_obj = text.find("{")
+    end_obj = text.rfind("}")
+    if 0 <= start_obj < end_obj:
+        candidates.append(text[start_obj : end_obj + 1])
+    for cand in candidates:
+        if not cand:
+            continue
+        for attempt in (cand, sanitize_json_latex_escapes(cand)):
+            try:
+                return json.loads(attempt)
+            except (ValueError, TypeError):
+                continue
+    return None
+
+
+def structured_tool_response(
+    message: dict[str, Any] | str,
+    *,
+    allowed_tools: Iterable[str] | None = None,
+    include_call_id: bool = False,
+    raise_code: str = "invalid_action",
+) -> dict[str, Any]:
+    """Chuyển phản hồi JSON {action, arguments} thành tool_calls chuẩn cho run_matrix_agent."""
+    raw_content = message.get("content", "") if isinstance(message, dict) else message
+    action = _parse_json_action_payload(str(raw_content or ""))
+    allowed = frozenset(allowed_tools) if allowed_tools is not None else _DEFAULT_ALLOWED_TOOLS
+    if (
+        not isinstance(action, dict)
+        or set(action) != {"action", "arguments"}
+        or action["action"] not in allowed
+    ):
+        raise AIError(raise_code, "Model trả yêu cầu công cụ không hợp lệ.")
+    arguments = action["arguments"]
+    if isinstance(arguments, str):
+        try:
+            arguments = json.loads(sanitize_json_latex_escapes(arguments))
+        except (ValueError, TypeError):
+            arguments = None
+    if not isinstance(arguments, dict):
+        raise AIError(raise_code, "Model trả yêu cầu công cụ không hợp lệ.")
+    tool_call: dict[str, Any] = {"function": {"name": action["action"], "arguments": arguments}}
+    if include_call_id:
+        tool_call["id"] = f"call_{uuid4().hex[:12]}"
+        tool_call["type"] = "function"
+    result: dict[str, Any] = {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [tool_call],
+    }
+    if isinstance(message, dict):
+        for meta_key in ("provider", "model", "costUsd", "reasoning_content"):
+            if meta_key in message and message[meta_key] is not None:
+                result[meta_key] = message[meta_key]
+    return result
+
 
 M01_OCR = "M01_OCR"
 M02_SOURCE_INDEX = "M02_SOURCE_INDEX"
@@ -85,6 +256,11 @@ FALLBACK_ERROR_CODES = {
     "provider_unconfigured",
     "provider_auth",
     "provider_http_error",
+    "invalid_response",
+    "invalid_result",
+    "result_limit",
+    "rate_limited",
+    "unsupported_model",
 }
 
 
@@ -132,7 +308,7 @@ def classify_micro_task(
 
 
 class CircuitBreaker:
-    """Ngắt mạch tạm thời họ provider gặp lỗi liên tiếp trong cửa sổ thời gian."""
+    """Ngắt mạch tạm thời họ provider gặp lỗi liên tiếp (an toàn đa luồng)."""
 
     def __init__(
         self,
@@ -143,31 +319,56 @@ class CircuitBreaker:
         self.failure_threshold = max(1, int(failure_threshold))
         self.window_seconds = float(window_seconds)
         self.cooldown_seconds = float(cooldown_seconds)
+        self._lock = threading.RLock()
         self._failures: dict[str, list[float]] = {}
         self._open_until: dict[str, float] = {}
 
     def is_open(self, family: str) -> bool:
-        until = self._open_until.get(family)
-        if until is None:
-            return False
-        if time.monotonic() >= until:
-            self._open_until.pop(family, None)
-            self._failures.pop(family, None)
-            return False
-        return True
+        with self._lock:
+            until = self._open_until.get(family)
+            if until is None:
+                return False
+            if time.monotonic() >= until:
+                self._open_until.pop(family, None)
+                self._failures.pop(family, None)
+                return False
+            return True
 
     def record_success(self, family: str) -> None:
-        self._failures.pop(family, None)
-        self._open_until.pop(family, None)
+        with self._lock:
+            self._failures.pop(family, None)
+            self._open_until.pop(family, None)
 
     def record_failure(self, family: str) -> None:
         now = time.monotonic()
-        cutoff = now - self.window_seconds
-        recent = [ts for ts in self._failures.get(family, []) if ts >= cutoff]
-        recent.append(now)
-        self._failures[family] = recent
-        if len(recent) >= self.failure_threshold:
-            self._open_until[family] = now + self.cooldown_seconds
+        with self._lock:
+            cutoff = now - self.window_seconds
+            recent = [ts for ts in self._failures.get(family, []) if ts >= cutoff]
+            recent.append(now)
+            self._failures[family] = recent
+            if len(recent) >= self.failure_threshold:
+                self._open_until[family] = now + self.cooldown_seconds
+
+
+_SHARED_CIRCUIT_LOCK = threading.Lock()
+_SHARED_CIRCUIT_BREAKER: CircuitBreaker | None = None
+
+
+def get_shared_circuit_breaker() -> CircuitBreaker:
+    """Trả về một CircuitBreaker dùng chung toàn tiến trình giữa các lượt gọi AI."""
+    global _SHARED_CIRCUIT_BREAKER
+    with _SHARED_CIRCUIT_LOCK:
+        if _SHARED_CIRCUIT_BREAKER is None:
+            _SHARED_CIRCUIT_BREAKER = CircuitBreaker()
+        return _SHARED_CIRCUIT_BREAKER
+
+
+def reset_shared_circuit_breaker() -> CircuitBreaker:
+    """Đặt lại CircuitBreaker dùng chung (dùng khi đổi cấu hình hoặc trong kiểm thử)."""
+    global _SHARED_CIRCUIT_BREAKER
+    with _SHARED_CIRCUIT_LOCK:
+        _SHARED_CIRCUIT_BREAKER = CircuitBreaker()
+        return _SHARED_CIRCUIT_BREAKER
 
 
 class FixedTaskRouter:
@@ -179,12 +380,14 @@ class FixedTaskRouter:
         log: Any = None,
         circuit_breaker: CircuitBreaker | None = None,
         *,
-        fast_chat: bool = False,
+        fast_chat: bool | None = None,
+        time_preset: str = "standard",
     ) -> None:
         self.providers = dict(providers)
         self.log = log
-        self.circuit_breaker = circuit_breaker or CircuitBreaker()
-        self.fast_chat = bool(fast_chat)
+        self.circuit_breaker = circuit_breaker if circuit_breaker is not None else CircuitBreaker()
+        self.fast_chat: bool | None = fast_chat
+        self.time_preset: str = str(time_preset or "standard").strip().casefold() or "standard"
 
     def candidate_chain(
         self,
@@ -192,27 +395,38 @@ class FixedTaskRouter:
         *,
         generator_family: str = "",
         fast_chat: bool | None = None,
+        time_preset: str | None = None,
     ) -> list[str]:
         gen = str(generator_family or "").strip().casefold()
-        use_fast_chat = self.fast_chat if fast_chat is None else bool(fast_chat)
+        if fast_chat is not None:
+            prefer_deep = not bool(fast_chat)
+        elif time_preset is not None:
+            eff_preset = str(time_preset).strip().casefold() or "standard"
+            prefer_deep = eff_preset in {"deep", "extended"}
+        elif self.fast_chat is not None:
+            prefer_deep = not bool(self.fast_chat)
+        else:
+            prefer_deep = self.time_preset in {"deep", "extended"}
         if task_code == M06_BLIND_SOLVE:
             if gen.startswith("deepseek"):
                 base = [
                     "agy",
                     "gemini_hydrogen",
                     "gemini_flash",
+                    "gemini_pro",
                     "gateway_cross",
                     "deepseek_reasoner",
                     "deepseek_chat",
                     "ollama",
                 ]
-            elif gen in {"agy", "gemini", "gemini_flash", "gemini_hydrogen"}:
+            elif gen in {"agy", "gemini", "gemini_flash", "gemini_pro", "gemini_hydrogen"}:
                 base = [
                     "deepseek_reasoner",
                     "deepseek_chat",
                     "gateway_cross",
                     "agy",
                     "gemini_hydrogen",
+                    "gemini_pro",
                     "gemini_flash",
                     "ollama",
                 ]
@@ -220,6 +434,7 @@ class FixedTaskRouter:
                 base = [
                     "deepseek_reasoner",
                     "gemini_hydrogen",
+                    "gemini_pro",
                     "gateway_cross",
                     "agy",
                     "deepseek_chat",
@@ -227,25 +442,27 @@ class FixedTaskRouter:
                     "ollama",
                 ]
         elif task_code == M11_FLEXIBLE_CHAT:
-            if use_fast_chat:
+            if not prefer_deep:
                 base = [
-                    "deepseek_fast",
                     "deepseek_chat",
-                    "gemini",
                     "gemini_flash",
+                    "ollama",
+                    "agy",
+                    "gemini_pro",
                     "gemini_hydrogen",
+                    "gemini",
                     "deepseek_reasoner",
                     "gateway_cross",
-                    "agy",
-                    "ollama",
                 ]
             else:
                 base = [
                     "agy",
-                    "gemini_hydrogen",
-                    "gemini_flash",
                     "deepseek_reasoner",
+                    "gemini_pro",
+                    "gemini_hydrogen",
                     "deepseek_chat",
+                    "gemini_flash",
+                    "gemini",
                     "gateway_cross",
                     "ollama",
                 ]
@@ -257,6 +474,7 @@ class FixedTaskRouter:
             base = [
                 "agy",
                 "gemini_hydrogen",
+                "gemini_pro",
                 "deepseek_reasoner",
                 "gemini_flash",
                 "deepseek_chat",
@@ -267,6 +485,7 @@ class FixedTaskRouter:
                 "deepseek_chat",
                 "gemini_flash",
                 "agy",
+                "gemini_pro",
                 "gemini_hydrogen",
                 "deepseek_reasoner",
                 "ollama",
@@ -277,6 +496,7 @@ class FixedTaskRouter:
                 "gemini_flash",
                 "deepseek_chat",
                 "agy",
+                "gemini_pro",
                 "gemini_hydrogen",
                 "deepseek_reasoner",
                 "ollama",
@@ -296,13 +516,24 @@ class FixedTaskRouter:
         hard_hint: bool = False,
         repair_round: int = 0,
         fast_chat: bool | None = None,
+        time_preset: str | None = None,
     ) -> dict[str, Any]:
         forwarded_body = body
-        if fast_chat is None and isinstance(body, dict) and "fast_chat" in body:
-            use_fast_chat: bool | None = bool(body.get("fast_chat"))
-            forwarded_body = {k: v for k, v in body.items() if k != "fast_chat"}
-        else:
-            use_fast_chat = fast_chat
+        use_fast_chat = fast_chat
+        use_time_preset = time_preset
+        if isinstance(body, dict) and (
+            "fast_chat" in body or "time_preset" in body or "timePreset" in body
+        ):
+            forwarded_body = {
+                k: v for k, v in body.items() if k not in {"fast_chat", "time_preset", "timePreset"}
+            }
+            if use_fast_chat is None and "fast_chat" in body:
+                use_fast_chat = bool(body.get("fast_chat"))
+            if use_time_preset is None and (
+                body.get("time_preset") is not None or body.get("timePreset") is not None
+            ):
+                raw_preset = body.get("time_preset") or body.get("timePreset")
+                use_time_preset = str(raw_preset).strip().casefold()
         task_code = classify_micro_task(
             purpose,
             forwarded_body,
@@ -313,6 +544,7 @@ class FixedTaskRouter:
             task_code,
             generator_family=generator_family,
             fast_chat=use_fast_chat,
+            time_preset=use_time_preset,
         )
         available = [
             family

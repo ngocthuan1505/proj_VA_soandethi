@@ -1,25 +1,59 @@
 """Cấu hình PoC; lưu mã hóa theo tài khoản Windows khi người dùng chọn lưu cục bộ."""
 
+import asyncio
+import re
+import subprocess
+import time
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import ValidationError
 
+from mach_backend.agy_cli_model import build_sanitized_env, detect_agy_cli
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_safety import (
     extract_api_key_token,
     load_local_secrets_env,
     normalize_openai_base_url,
+    redact_secrets,
 )
 from mach_backend.ai_service import OllamaProvider
 from mach_backend.deepseek_model import is_valid_gateway_model
-from mach_backend.gemini_model import GEMINI_MODEL, GEMINI_MODELS, clean_api_key
+from mach_backend.gemini_model import (
+    _VERTEX_DISABLED_KEY_HASHES,
+    GEMINI_MODEL,
+    GEMINI_MODELS,
+    VERTEX_EXPRESS_BASE,
+    GeminiKeyPool,
+    _vertex_key_hash,
+    clean_api_key,
+    is_vertex_express_key,
+)
 from mach_backend.local_credentials import LocalConnectionStore
 from mach_backend.poc_policy import TIME_PRESET_POLICIES, ExtendedRunPolicy, RunPolicy
 from mach_backend.workspace_agent import AgentGeneration
 
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
 DEEPSEEK_BASE = "https://api.deepseek.com/v1"
+OLLAMA_DEFAULT_BASE = "http://127.0.0.1:11434"
+_VALID_AGY_MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,79}$")
+_EMBED_HINTS = ("embed", "bge-m3", "nomic-embed", "mxbai-embed", "all-minilm", "arctic-embed")
+_VISION_HINTS = (
+    "vision",
+    "-vl",
+    "qwen2.5vl",
+    "qwen3-vl",
+    "llava",
+    "bakllava",
+    "minicpm-v",
+    "moondream",
+    "llama3.2-vision",
+    "gemma3",
+    "ocr",
+)
 
 
 def hydrate_provider_from_secrets_env(
@@ -131,6 +165,7 @@ def connection_config(provider: AgentGeneration, *, mask_gateway_url: bool = Fal
             "maxRepairRounds": extended.maxRepairRounds,
             "agyAvailable": bool(getattr(provider, "agy_available", False)),
             "agyCustomPathSet": bool(getattr(provider, "agy_custom_path", "")),
+            "agyModel": getattr(provider, "agy_model", "") or "",
         },
         "routes": {
             "generate": provider.provider_name,
@@ -179,6 +214,26 @@ def install_poc_connections(app: FastAPI, provider: AgentGeneration):
         except ValueError:
             raise HTTPException(400, "Cấu hình không phải JSON hợp lệ.") from None
         return apply_config(provider, body, store)
+
+    @app.get("/api/providers/health")
+    async def providers_health():
+        return await probe_providers_health(provider, None)
+
+    @app.post("/api/providers/{provider_name}/test")
+    async def provider_single_test(provider_name: str, request: Request):
+        payload: dict[str, Any] = {}
+        raw_body = await request.body()
+        if raw_body.strip():
+            try:
+                parsed = await request.json()
+            except ValueError:
+                raise HTTPException(
+                    400, "Dữ liệu kiểm tra kết nối không phải JSON hợp lệ."
+                ) from None
+            if not isinstance(parsed, dict):
+                raise HTTPException(400, "Dữ liệu kiểm tra kết nối không hợp lệ.")
+            payload = parsed
+        return await test_single_provider(provider_name, provider, None, payload=payload)
 
 
 def _parse_extra_gemini_keys(
@@ -331,7 +386,7 @@ def _parse_deepseek_config(
 
 def _parse_fixed_router_config(
     provider: AgentGeneration, fixed_router: object
-) -> tuple[bool, ExtendedRunPolicy, str]:
+) -> tuple[bool, ExtendedRunPolicy, str, str]:
     if not isinstance(fixed_router, dict):
         raise HTTPException(400, "Cấu hình kết nối không hợp lệ.")
     fixed_enabled = fixed_router.get("enabled", getattr(provider, "fixed_router_enabled", True))
@@ -347,9 +402,22 @@ def _parse_fixed_router_config(
         raise HTTPException(400, "Đường dẫn AGY CLI không hợp lệ.")
     agy_custom_path = agy_custom_path.strip()
 
+    raw_agy_model = fixed_router.get("agyModel", getattr(provider, "agy_model", ""))
+    if raw_agy_model is None:
+        agy_model = ""
+    elif (
+        not isinstance(raw_agy_model, str)
+        or "\r" in raw_agy_model
+        or "\n" in raw_agy_model
+        or (raw_agy_model.strip() and not _VALID_AGY_MODEL_RE.fullmatch(raw_agy_model.strip()))
+    ):
+        raise HTTPException(400, "Tên model AGY CLI không hợp lệ (2–80 ký tự chữ/số/._:/-).")
+    else:
+        agy_model = raw_agy_model.strip()
+
     current_ext = getattr(provider, "extended_policy", None) or ExtendedRunPolicy()
     if not fixed_router:
-        return fixed_enabled, current_ext, agy_custom_path
+        return fixed_enabled, current_ext, agy_custom_path, agy_model
 
     preset = fixed_router.get("timePreset")
     raw_timeout = fixed_router.get("timeoutSeconds")
@@ -395,7 +463,7 @@ def _parse_fixed_router_config(
         raise HTTPException(
             400, "Khung thời gian mở rộng phải từ 30–7200 giây và 4–240 lần gọi AI."
         ) from None
-    return fixed_enabled, extended_policy, agy_custom_path
+    return fixed_enabled, extended_policy, agy_custom_path, agy_model
 
 
 def apply_config(provider, body, store, *, persist=True):
@@ -452,7 +520,7 @@ def apply_config(provider, body, store, *, persist=True):
         ds_session_limit,
         ds_total_limit,
     ) = _parse_deepseek_config(provider, body.get("deepseek", {}))
-    fixed_enabled, extended_policy, agy_custom_path = _parse_fixed_router_config(
+    fixed_enabled, extended_policy, agy_custom_path, agy_model = _parse_fixed_router_config(
         provider, body.get("fixedRouter", {})
     )
     free_tier = gemini.get("freeTierConfirmed", provider.gemini_free_tier) is True
@@ -511,6 +579,7 @@ def apply_config(provider, body, store, *, persist=True):
                             "maxModelCalls": extended_policy.maxModelCalls,
                             "maxRepairRounds": extended_policy.maxRepairRounds,
                             "agyCustomPath": agy_custom_path,
+                            "agyModel": agy_model,
                         },
                         "ollama": {"model": local_model, "checkModel": check_local_model},
                         "runBudget": policy.model_dump(),
@@ -543,6 +612,7 @@ def apply_config(provider, body, store, *, persist=True):
     provider.fixed_router_enabled = fixed_enabled
     provider.extended_policy = extended_policy
     provider.agy_custom_path = agy_custom_path
+    provider.agy_model = agy_model
     provider.provider_name = selected
     provider.review_provider_name = (
         check_provider if routes.get("check") else provider.review_provider_name
@@ -551,3 +621,611 @@ def apply_config(provider, body, store, *, persist=True):
     provider.review_model = check_local_model
     provider.run_policy = policy
     return connection_config(provider)
+
+
+def _classify_ollama_tags(name: str, details: Mapping[str, Any] | None = None) -> list[str]:
+    lower = name.casefold()
+    caps_raw: list[str] = []
+    if isinstance(details, Mapping):
+        for cap in details.get("capabilities", ()) or ():
+            caps_raw.append(str(cap).casefold())
+        for fam in details.get("families", ()) or ():
+            caps_raw.append(str(fam).casefold())
+    joined_caps = " ".join(caps_raw)
+
+    is_embed = any(h in lower for h in _EMBED_HINTS) or "embedding" in joined_caps
+    if is_embed:
+        return ["embed"]
+    tags = ["chat"]
+    if any(h in lower for h in _VISION_HINTS) or "vision" in joined_caps:
+        tags.append("vision")
+    return tags
+
+
+def _resolve_health_inputs(
+    config: Any, secrets: Mapping[str, Any] | None
+) -> tuple[dict[str, Any], list[str]]:
+    secret_map = dict(secrets or {})
+    if isinstance(config, Mapping):
+        ollama_cfg = dict(config.get("ollama") or {})
+        fixed_cfg = dict(config.get("fixedRouter") or {})
+        ds_cfg = dict(config.get("deepseek") or {})
+        gemini_cfg = dict(config.get("gemini") or {})
+        ollama_url = str(
+            ollama_cfg.get("url") or config.get("ollamaUrl") or OLLAMA_DEFAULT_BASE
+        ).rstrip("/")
+        ollama_model = str(ollama_cfg.get("model") or config.get("model") or "")
+        agy_custom_path = str(
+            secret_map.get("agyCustomPath")
+            or fixed_cfg.get("agyCustomPath")
+            or config.get("agyCustomPath")
+            or ""
+        ).strip()
+        agy_model = str(fixed_cfg.get("agyModel") or config.get("agyModel") or "").strip()
+        ds_url = str(
+            secret_map.get("gatewayBaseUrl")
+            or secret_map.get("deepseekUrl")
+            or ds_cfg.get("url")
+            or DEEPSEEK_BASE
+        ).rstrip("/")
+        if ds_url == "[cổng riêng đã cấu hình]":
+            ds_url = DEEPSEEK_BASE
+        ds_key = str(
+            secret_map.get("deepseekKey")
+            or secret_map.get("gatewayApiKey")
+            or (secret_map.get("deepseek") or {}).get("key", "")
+            or ds_cfg.get("key")
+            or ""
+        ).strip()
+        ds_model = str(ds_cfg.get("model") or "deepseek-chat")
+        ds_spent_session = float(ds_cfg.get("spentSessionUsd") or 0.0)
+        ds_spent_total = float(ds_cfg.get("spentTotalUsd") or 0.0)
+        gemini_free_tier = bool(gemini_cfg.get("freeTierConfirmed", True))
+        gemini_model = str(gemini_cfg.get("model") or GEMINI_MODEL)
+        raw_g_keys: list[str] = []
+        for source in (secret_map, secret_map.get("gemini") or {}, gemini_cfg):
+            if not isinstance(source, Mapping):
+                continue
+            for kfield in ("key", "geminiKey", "backupKey", "geminiBackupKey"):
+                if isinstance(source.get(kfield), str) and source[kfield].strip():
+                    raw_g_keys.append(source[kfield].strip())
+            for list_field in ("extraKeys", "geminiExtraKeys", "geminiKeys", "keys"):
+                seq = source.get(list_field)
+                if isinstance(seq, (list, tuple)):
+                    raw_g_keys.extend(str(item).strip() for item in seq if str(item).strip())
+        key_pool = gemini_cfg.get("keyPool") or secret_map.get("geminiKeyPool")
+        cooldown_override = gemini_cfg.get("cooldownSlots") or secret_map.get("cooldownSlots")
+        disabled_override = gemini_cfg.get("disabledKeys") or secret_map.get("disabledKeys")
+    else:
+        ollama_url = OLLAMA_DEFAULT_BASE
+        ollama_model = str(getattr(config, "model", "") or "")
+        agy_custom_path = str(
+            secret_map.get("agyCustomPath") or getattr(config, "agy_custom_path", "") or ""
+        ).strip()
+        agy_model = str(getattr(config, "agy_model", "") or "").strip()
+        ds_url = str(
+            secret_map.get("gatewayBaseUrl")
+            or getattr(config, "deepseek_url", DEEPSEEK_BASE)
+            or DEEPSEEK_BASE
+        ).rstrip("/")
+        ds_key = str(
+            secret_map.get("deepseekKey")
+            or secret_map.get("gatewayApiKey")
+            or getattr(config, "deepseek_key", "")
+            or ""
+        ).strip()
+        ds_model = str(getattr(config, "deepseek_model", "deepseek-chat") or "deepseek-chat")
+        ds_spent_session = float(getattr(config, "deepseek_spent_session_usd", 0.0) or 0.0)
+        ds_spent_total = float(getattr(config, "deepseek_spent_total_usd", 0.0) or 0.0)
+        gemini_free_tier = bool(getattr(config, "gemini_free_tier", False))
+        gemini_model = str(getattr(config, "gemini_model", GEMINI_MODEL) or GEMINI_MODEL)
+        raw_g_keys = list(getattr(config, "all_gemini_keys", ()) or ())
+        if not raw_g_keys:
+            raw_g_keys = [
+                k
+                for k in (
+                    getattr(config, "gemini_key", ""),
+                    getattr(config, "gemini_backup_key", ""),
+                    *tuple(getattr(config, "gemini_extra_keys", ()) or ()),
+                )
+                if k
+            ]
+        key_pool = getattr(config, "gemini_key_pool", None)
+        cooldown_override = None
+        disabled_override = None
+
+    raw_g_keys = list(dict.fromkeys(raw_g_keys))
+    secrets_to_redact = [k for k in (ds_key, *raw_g_keys) if k]
+    return (
+        {
+            "ollamaUrl": ollama_url,
+            "ollamaModel": ollama_model,
+            "agyCustomPath": agy_custom_path,
+            "agyModel": agy_model,
+            "dsUrl": ds_url,
+            "dsKey": ds_key,
+            "dsModel": ds_model,
+            "dsSpentSession": round(ds_spent_session, 4),
+            "dsSpentTotal": round(ds_spent_total, 4),
+            "geminiFreeTier": gemini_free_tier,
+            "geminiModel": gemini_model,
+            "geminiKeys": raw_g_keys,
+            "keyPool": key_pool,
+            "cooldownOverride": cooldown_override,
+            "disabledOverride": disabled_override,
+        },
+        secrets_to_redact,
+    )
+
+
+async def _probe_ollama_health(
+    state: dict[str, Any],
+    http_client: httpx.AsyncClient,
+) -> dict[str, Any]:
+    url = state["ollamaUrl"]
+    try:
+        ver_resp = await http_client.get(f"{url}/api/version", timeout=5.0)
+        if ver_resp.status_code >= 300:
+            return {
+                "reachable": False,
+                "url": url,
+                "version": None,
+                "models": [],
+                "chatModels": [],
+                "visionModels": [],
+                "embedModels": [],
+                "error": f"Ollama trả HTTP {ver_resp.status_code}.",
+            }
+        version = str((ver_resp.json() or {}).get("version") or "").strip() or None
+        tags_resp = await http_client.get(f"{url}/api/tags", timeout=5.0)
+        raw_models = (
+            (tags_resp.json() or {}).get("models", []) if tags_resp.status_code < 300 else []
+        )
+    except (httpx.HTTPError, ValueError, TypeError) as exc:
+        return {
+            "reachable": False,
+            "url": url,
+            "version": None,
+            "models": [],
+            "chatModels": [],
+            "visionModels": [],
+            "embedModels": [],
+            "error": f"Không kết nối được Ollama cục bộ: {exc}",
+        }
+
+    models_out: list[dict[str, Any]] = []
+    chat_models: list[str] = []
+    vision_models: list[str] = []
+    embed_models: list[str] = []
+    for item in raw_models:
+        if not isinstance(item, Mapping):
+            continue
+        name = str(item.get("name") or item.get("model") or "").strip()
+        if not name:
+            continue
+        tags = _classify_ollama_tags(
+            name, item.get("details") if isinstance(item.get("details"), Mapping) else item
+        )
+        if "chat" in tags:
+            chat_models.append(name)
+        if "vision" in tags:
+            vision_models.append(name)
+        if "embed" in tags:
+            embed_models.append(name)
+        models_out.append(
+            {
+                "name": name,
+                "size": item.get("size"),
+                "tags": tags,
+                "remote": bool(item.get("remote_host")),
+            }
+        )
+    return {
+        "reachable": True,
+        "url": url,
+        "version": version,
+        "models": models_out,
+        "chatModels": chat_models,
+        "visionModels": vision_models,
+        "embedModels": embed_models,
+        "error": None,
+    }
+
+
+async def _probe_agy_health(state: dict[str, Any], agy_runner: Any = None) -> dict[str, Any]:
+    custom_path = state["agyCustomPath"]
+    agy_model = state["agyModel"]
+    exe = detect_agy_cli(custom_path)
+    if not exe:
+        return {
+            "available": False,
+            "detected": False,
+            "path": "",
+            "version": None,
+            "agyModel": agy_model,
+            "error": "Không tìm thấy tệp thực thi AGY CLI.",
+        }
+    run_fn = agy_runner or subprocess.run
+    try:
+        completed = await asyncio.to_thread(
+            run_fn,
+            [exe, "--version"],
+            env=build_sanitized_env(),
+            timeout=5,
+            shell=False,
+            capture_output=True,
+            check=False,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "available": False,
+            "detected": True,
+            "path": exe,
+            "version": None,
+            "agyModel": agy_model,
+            "error": "Kiểm tra phiên bản AGY CLI quá thời hạn 5 giây.",
+        }
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {
+            "available": False,
+            "detected": True,
+            "path": exe,
+            "version": None,
+            "agyModel": agy_model,
+            "error": f"Không chạy được AGY CLI: {exc}",
+        }
+
+    raw_out = getattr(completed, "stdout", b"") or getattr(completed, "stderr", b"")
+    text_out = (
+        raw_out.decode("utf-8", errors="replace").strip()
+        if isinstance(raw_out, bytes)
+        else str(raw_out or "").strip()
+    )
+    returncode = getattr(completed, "returncode", 0)
+    ok = returncode == 0
+    return {
+        "available": ok,
+        "detected": True,
+        "path": exe,
+        "version": text_out.splitlines()[0].strip() if text_out else None,
+        "agyModel": agy_model,
+        "error": None if ok else (text_out[:240] or f"AGY CLI thoát mã {returncode}."),
+    }
+
+
+def _deepseek_error_message(status_code: int) -> tuple[str, str]:
+    if status_code == 401:
+        return (
+            "auth_error",
+            "Khóa DeepSeek hoặc cổng API không hợp lệ (HTTP 401). Mở Kết nối để kiểm tra lại khóa.",
+        )
+    if status_code == 402:
+        return (
+            "insufficient_balance",
+            "Tài khoản DeepSeek hết số dư (HTTP 402). Nạp thêm hoặc dùng kênh dự phòng.",
+        )
+    if status_code == 429:
+        return (
+            "rate_limited",
+            "DeepSeek đang gặp giới hạn tốc độ 429; chờ ít phút hoặc chuyển kênh dự phòng.",
+        )
+    if status_code == 403:
+        return ("auth_error", "Cổng DeepSeek từ chối quyền truy cập (HTTP 403).")
+    return ("http_error", f"Cổng DeepSeek trả HTTP {status_code}.")
+
+
+async def _probe_deepseek_health(
+    state: dict[str, Any],
+    http_client: httpx.AsyncClient,
+    secret_list: list[str],
+    payload: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    ds_key = state["dsKey"]
+    ds_url = state["dsUrl"]
+    base_info = {
+        "configured": bool(ds_key),
+        "url": ds_url if ds_url == DEEPSEEK_BASE else "[cổng riêng đã cấu hình]",
+        "model": state["dsModel"],
+        "spentSessionUsd": state["dsSpentSession"],
+        "spentTotalUsd": state["dsSpentTotal"],
+    }
+    if not ds_key:
+        return {
+            **base_info,
+            "ok": False,
+            "reachable": False,
+            "status": "unconfigured",
+            "message": "Chưa cấu hình khóa DeepSeek hoặc cổng API.",
+        }
+    try:
+        headers = {"Authorization": f"Bearer {ds_key}"}
+        if payload and payload.get("testChat"):
+            resp = await http_client.post(
+                f"{ds_url}/chat/completions",
+                json={
+                    "model": str(payload.get("model") or state["dsModel"]),
+                    "messages": [{"role": "user", "content": str(payload.get("prompt") or "OK")}],
+                    "max_tokens": 8,
+                    "stream": False,
+                },
+                headers=headers,
+                timeout=8.0,
+            )
+        else:
+            resp = await http_client.get(f"{ds_url}/models", headers=headers, timeout=5.0)
+        if resp.status_code == 404 and ds_url != DEEPSEEK_BASE:
+            return {
+                **base_info,
+                "ok": True,
+                "reachable": True,
+                "status": "configured",
+                "message": "Cổng API đã cấu hình khóa (không mở danh sách /models).",
+            }
+        if resp.status_code >= 300:
+            err_code, err_msg = _deepseek_error_message(resp.status_code)
+            return {
+                **base_info,
+                "ok": False,
+                "reachable": resp.status_code < 500,
+                "status": err_code,
+                "httpStatus": resp.status_code,
+                "message": str(redact_secrets(err_msg, secret_list)),
+            }
+        return {
+            **base_info,
+            "ok": True,
+            "reachable": True,
+            "status": "ready",
+            "message": "Kết nối DeepSeek / cổng API sẵn sàng.",
+        }
+    except httpx.TimeoutException:
+        return {
+            **base_info,
+            "ok": False,
+            "reachable": False,
+            "status": "timeout",
+            "message": "Kiểm tra DeepSeek quá thời gian phản hồi.",
+        }
+    except httpx.HTTPError as exc:
+        return {
+            **base_info,
+            "ok": False,
+            "reachable": False,
+            "status": "unreachable",
+            "message": str(redact_secrets(f"Không kết nối được DeepSeek: {exc}", secret_list)),
+        }
+
+
+def _summarize_gemini_pool(state: dict[str, Any]) -> dict[str, Any]:
+    raw_keys: list[str] = state["geminiKeys"]
+    valid_tokens: list[str] = []
+    invalid_count = 0
+    for raw in raw_keys:
+        if "\n" in raw or "\r" in raw:
+            invalid_count += 1
+            continue
+        tok = extract_api_key_token(raw)
+        if 8 <= len(tok) <= 300:
+            valid_tokens.append(tok)
+        else:
+            invalid_count += 1
+
+    key_pool = state.get("keyPool")
+    cooldown_slots: set[int] = set()
+    disabled_indices: set[int] = set()
+    if isinstance(key_pool, GeminiKeyPool):
+        key_pool.refresh_cooldowns()
+        for slot_key, until in key_pool.cooldown_until.items():
+            if until > time.monotonic():
+                slot_idx = (
+                    slot_key[1] if isinstance(slot_key, tuple) and len(slot_key) >= 2 else slot_key
+                )
+                cooldown_slots.add(int(slot_idx))
+        disabled_indices.update(int(i) for i in key_pool.invalid)
+        disabled_indices.update(int(i) for i in key_pool.vertex_disabled_slots)
+    else:
+        for idx, tok in enumerate(valid_tokens):
+            if is_vertex_express_key(tok) and _vertex_key_hash(tok) in _VERTEX_DISABLED_KEY_HASHES:
+                disabled_indices.add(idx)
+
+    if isinstance(state.get("cooldownOverride"), (list, tuple, set)):
+        cooldown_slots.update(int(i) for i in state["cooldownOverride"])
+    if isinstance(state.get("disabledOverride"), int):
+        disabled_count = int(state["disabledOverride"])
+    elif isinstance(state.get("disabledOverride"), (list, tuple, set)):
+        disabled_count = len(state["disabledOverride"])
+    else:
+        disabled_count = len(disabled_indices)
+
+    vertex_count = sum(1 for tok in valid_tokens if is_vertex_express_key(tok))
+    valid_count = len(valid_tokens)
+    active_count = max(0, valid_count - len(cooldown_slots) - disabled_count)
+    return {
+        "configured": valid_count > 0,
+        "freeTierConfirmed": bool(state["geminiFreeTier"]),
+        "model": state["geminiModel"],
+        "models": list(GEMINI_MODELS),
+        "validKeys": valid_count,
+        "invalidKeys": invalid_count,
+        "cooldownSlots": sorted(cooldown_slots),
+        "cooldownCount": len(cooldown_slots),
+        "disabledKeys": disabled_count,
+        "activeKeys": active_count,
+        "vertexExpressKeys": vertex_count,
+    }
+
+
+async def probe_providers_health(
+    config: Any,
+    secrets: Mapping[str, Any] | None = None,
+    *,
+    client: httpx.AsyncClient | None = None,
+    agy_runner: Any = None,
+) -> dict[str, Any]:
+    """Kiểm tra tình trạng tất cả provider AI (Ollama, AGY CLI, DeepSeek/Gateway, Gemini Pool)."""
+    state, secret_list = _resolve_health_inputs(config, secrets)
+    owns_client = client is None
+    http_client = client or httpx.AsyncClient(trust_env=False, follow_redirects=False)
+    try:
+        ollama_res, agy_res, ds_res = await asyncio.gather(
+            _probe_ollama_health(state, http_client),
+            _probe_agy_health(state, agy_runner=agy_runner),
+            _probe_deepseek_health(state, http_client, secret_list),
+        )
+        gemini_res = _summarize_gemini_pool(state)
+        result = {
+            "ollama": ollama_res,
+            "agy": agy_res,
+            "deepseek": ds_res,
+            "gemini": gemini_res,
+            "checkedAt": int(time.time()),
+        }
+        return redact_secrets(result, secret_list)
+    finally:
+        if owns_client:
+            await http_client.aclose()
+
+
+async def test_single_provider(
+    provider: str,
+    config: Any,
+    secrets: Mapping[str, Any] | None = None,
+    payload: Mapping[str, Any] | None = None,
+    *,
+    client: httpx.AsyncClient | None = None,
+    agy_runner: Any = None,
+) -> dict[str, Any]:
+    """Kiểm tra trực tiếp một nhà cung cấp AI cụ thể và trả thông báo tiếng Việt rõ ràng."""
+    target = str(provider or "").strip().casefold()
+    state, secret_list = _resolve_health_inputs(config, secrets)
+    owns_client = client is None
+    http_client = client or httpx.AsyncClient(trust_env=False, follow_redirects=False)
+    try:
+        if target == "ollama":
+            res = await _probe_ollama_health(state, http_client)
+            if payload and payload.get("testChat") and res.get("reachable"):
+                model_name = str(payload.get("model") or state["ollamaModel"] or "").strip()
+                if model_name:
+                    chat_resp = await http_client.post(
+                        f"{state['ollamaUrl']}/api/chat",
+                        json={
+                            "model": model_name,
+                            "stream": False,
+                            "messages": [
+                                {"role": "user", "content": str(payload.get("prompt") or "OK")}
+                            ],
+                        },
+                        timeout=15.0,
+                    )
+                    res["chatStatusCode"] = chat_resp.status_code
+            return redact_secrets(
+                {"provider": "ollama", "ok": res["reachable"], **res}, secret_list
+            )
+        if target == "agy":
+            res = await _probe_agy_health(state, agy_runner=agy_runner)
+            return redact_secrets({"provider": "agy", "ok": res["available"], **res}, secret_list)
+        if target in {"deepseek", "gateway"}:
+            res = await _probe_deepseek_health(state, http_client, secret_list, payload=payload)
+            return redact_secrets({"provider": target, **res}, secret_list)
+        if target == "gemini":
+            summary = _summarize_gemini_pool(state)
+            if summary["validKeys"] == 0:
+                return redact_secrets(
+                    {
+                        "provider": "gemini",
+                        "ok": False,
+                        "status": "unconfigured",
+                        "message": "Chưa có khóa Gemini hợp lệ để kiểm tra.",
+                        **summary,
+                    },
+                    secret_list,
+                )
+            first_key = extract_api_key_token(state["geminiKeys"][0])
+            test_model = str((payload or {}).get("model") or state["geminiModel"] or GEMINI_MODEL)
+            try:
+                if is_vertex_express_key(first_key):
+                    resp = await http_client.post(
+                        f"{VERTEX_EXPRESS_BASE}/{test_model}:generateContent",
+                        json={
+                            "contents": [{"role": "user", "parts": [{"text": "OK"}]}],
+                            "generationConfig": {"maxOutputTokens": 4},
+                        },
+                        headers={"Content-Type": "application/json", "x-goog-api-key": first_key},
+                        timeout=8.0,
+                    )
+                else:
+                    resp = await http_client.get(
+                        f"{GEMINI_BASE}/models?pageSize=1",
+                        headers={"x-goog-api-key": first_key},
+                        timeout=5.0,
+                    )
+                if resp.status_code in {401, 403}:
+                    return redact_secrets(
+                        {
+                            "provider": "gemini",
+                            "ok": False,
+                            "status": "auth_error",
+                            "httpStatus": resp.status_code,
+                            "message": f"Khóa Gemini bị từ chối (HTTP {resp.status_code}).",
+                            **summary,
+                        },
+                        secret_list,
+                    )
+                if resp.status_code == 429:
+                    return redact_secrets(
+                        {
+                            "provider": "gemini",
+                            "ok": False,
+                            "status": "rate_limited",
+                            "httpStatus": 429,
+                            "message": (
+                                "Khóa Gemini đang chạm hạn mức 429; thử khóa dự phòng "
+                                "hoặc chờ phục hồi."
+                            ),
+                            **summary,
+                        },
+                        secret_list,
+                    )
+                if resp.status_code >= 300:
+                    return redact_secrets(
+                        {
+                            "provider": "gemini",
+                            "ok": False,
+                            "status": "http_error",
+                            "httpStatus": resp.status_code,
+                            "message": f"Gemini trả HTTP {resp.status_code}.",
+                            **summary,
+                        },
+                        secret_list,
+                    )
+                return redact_secrets(
+                    {
+                        "provider": "gemini",
+                        "ok": True,
+                        "status": "ready",
+                        "message": "Khóa Gemini sẵn sàng.",
+                        **summary,
+                    },
+                    secret_list,
+                )
+            except httpx.HTTPError as exc:
+                return redact_secrets(
+                    {
+                        "provider": "gemini",
+                        "ok": False,
+                        "status": "unreachable",
+                        "message": f"Không kết nối được Gemini: {exc}",
+                        **summary,
+                    },
+                    secret_list,
+                )
+        return {
+            "provider": target,
+            "ok": False,
+            "status": "unsupported_provider",
+            "message": f"Không hỗ trợ kiểm tra provider '{target}'.",
+        }
+    finally:
+        if owns_client:
+            await http_client.aclose()

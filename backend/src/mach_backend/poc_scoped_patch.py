@@ -2,6 +2,7 @@
 
 import asyncio
 import copy
+import inspect
 import json
 import time
 from pathlib import Path
@@ -27,6 +28,7 @@ from mach_backend.ai_router import (
     M07_DISTRACTOR_CHECK,
     M10_SCOPED_PATCH,
     FixedTaskRouter,
+    get_shared_circuit_breaker,
 )
 from mach_backend.deepseek_model import DeepSeekModel
 from mach_backend.gemini_model import GeminiKeyPool, GeminiModel, is_vertex_express_key
@@ -504,6 +506,18 @@ def commit_questions(store, exam_id, proposal_id):
         return receipt
 
 
+def _accepted_kwargs(callable_obj: Any, candidate: dict[str, Any]) -> dict[str, Any]:
+    """Lọc kwargs hợp lệ theo signature thực tế (tránh lỗi khi test monkeypatch adapter)."""
+    try:
+        sig = inspect.signature(callable_obj)
+    except (ValueError, TypeError):
+        return candidate
+    params = sig.parameters
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return candidate
+    return {k: v for k, v in candidate.items() if k in params}
+
+
 def _build_default_patch_router(
     client: httpx.AsyncClient,
     log: RunLog,
@@ -521,13 +535,17 @@ def _build_default_patch_router(
         and not any(is_vertex_express_key(k) for k in all_gemini_keys)
     )
     if getattr(provider, "agy_available", False):
+        agy_kwargs = _accepted_kwargs(
+            AgyCliModel,
+            {
+                "custom_path": getattr(provider, "agy_custom_path", ""),
+                "budget": budget,
+                "model": getattr(provider, "agy_model", "") or None,
+            },
+        )
 
         async def _call_agy(p, b):
-            return await AgyCliModel(
-                log,
-                custom_path=getattr(provider, "agy_custom_path", ""),
-                budget=budget,
-            )(p, b)
+            return await AgyCliModel(log, **agy_kwargs)(p, b)
 
         providers["agy"] = _call_agy
     if getattr(provider, "gemini_key", "") and getattr(provider, "gemini_free_tier", False):
@@ -564,18 +582,28 @@ def _build_default_patch_router(
 
             providers["gemini_flash"] = _make_gemini("gemini-3.8-flash")
             providers["gemini_hydrogen"] = _make_gemini("gemini-4-hydrogen")
+            providers["gemini_pro"] = _make_gemini("gemini-2.5-pro")
     if getattr(provider, "deepseek_key", ""):
 
         def _make_ds(target_model: str):
             async def _caller(p, b):
+                ds_kwargs = _accepted_kwargs(
+                    DeepSeekModel,
+                    {
+                        "model": target_model,
+                        "base_url": getattr(
+                            provider, "deepseek_url", "https://api.deepseek.com/v1"
+                        ),
+                        "backup_models": getattr(provider, "deepseek_backup_models", ()),
+                        "budget": budget,
+                        "cost_tracker": cost_tracker,
+                    },
+                )
                 return await DeepSeekModel(
                     client,
                     provider.deepseek_key,
                     log,
-                    model=target_model,
-                    base_url=getattr(provider, "deepseek_url", "https://api.deepseek.com/v1"),
-                    backup_models=getattr(provider, "deepseek_backup_models", ()),
-                    cost_tracker=cost_tracker,
+                    **ds_kwargs,
                 )(p, b)
 
             return _caller
@@ -595,7 +623,13 @@ def _build_default_patch_router(
             )(p, b)
 
         providers["ollama"] = _call_ollama
-    return FixedTaskRouter(providers, log)
+    time_preset = getattr(getattr(provider, "extended_policy", None), "timePreset", "standard")
+    return FixedTaskRouter(
+        providers,
+        log,
+        circuit_breaker=get_shared_circuit_breaker(),
+        time_preset=time_preset,
+    )
 
 
 def install_scoped_patch(
@@ -706,7 +740,12 @@ def install_scoped_patch(
                         raise AIError(
                             "provider_unconfigured", "Xác nhận project Free tier trong Kết nối."
                         )
-                    pool = pool or GeminiKeyPool(provider.gemini_key, provider.gemini_backup_key)
+                    all_gemini_keys = getattr(provider, "all_gemini_keys", ()) or (
+                        provider.gemini_key,
+                        provider.gemini_backup_key,
+                        *getattr(provider, "gemini_extra_keys", ()),
+                    )
+                    pool = pool or GeminiKeyPool.from_keys(all_gemini_keys)
                     return GeminiModel(
                         client,
                         provider.gemini_key,

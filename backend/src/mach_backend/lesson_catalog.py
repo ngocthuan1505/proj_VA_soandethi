@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-import unicodedata
 from collections.abc import Mapping
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
+
+from mach_backend.hybrid_retrieval import expand_vi_synonyms, normalize_vi_search
 
 
 def _catalog_sha256(
@@ -28,11 +29,8 @@ def _catalog_sha256(
 
 
 def normalize_nfd_text(value: str) -> str:
-    """Chuẩn hóa NFD, bỏ dấu thanh/dấu mũ tiếng Việt (kể cả đ -> d) để tìm kiếm không dấu."""
-    decomposed = unicodedata.normalize("NFD", value)
-    stripped = "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
-    folded = stripped.replace("đ", "d").replace("Đ", "d").casefold()
-    return " ".join(folded.split())
+    """Chuẩn hóa NFD, bỏ dấu tiếng Việt (kể cả đ -> d) và quy đồng chính tả i/y."""
+    return normalize_vi_search(value)
 
 
 _SUBJECT_ALIASES: dict[str, frozenset[str]] = {
@@ -1892,39 +1890,37 @@ def search_lesson_catalog(
     book: str | None = None,
     volume: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Lọc danh mục học liệu mẫu theo lớp/môn/bộ sách/tập và từ khóa không dấu NFD."""
-    needle = normalize_nfd_text(query)
+    """Lọc danh mục học liệu mẫu theo lớp/môn/bộ sách/tập, chuẩn hóa i/y và đồng nghĩa."""
+    query_variants = expand_vi_synonyms(query)
     grade_str = str(grade).strip() if grade is not None else ""
-    subject_norm = normalize_nfd_text(subject) if subject else ""
+    subject_norm = normalize_vi_search(subject) if subject else ""
     allowed_subjects = _SUBJECT_ALIASES.get(subject_norm, frozenset({subject_norm}))
-    book_norm = normalize_nfd_text(book) if book else ""
-    volume_norm = normalize_nfd_text(volume) if volume else ""
+    book_norm = normalize_vi_search(book) if book else ""
+    volume_norm = normalize_vi_search(volume) if volume else ""
 
     exact_matched: list[dict[str, Any]] = []
     alias_matched: list[dict[str, Any]] = []
     for collection in lesson_catalog():
         if grade_str and collection["grade"] != grade_str:
             continue
-        col_subject_norm = normalize_nfd_text(collection["subject"])
+        col_subject_norm = normalize_vi_search(collection["subject"])
         if subject_norm and col_subject_norm not in allowed_subjects:
             continue
-        if book_norm and normalize_nfd_text(collection["book"]) != book_norm:
+        if book_norm and normalize_vi_search(collection["book"]) != book_norm:
             continue
-        if volume_norm and normalize_nfd_text(collection["volume"]) != volume_norm:
+        if volume_norm and normalize_vi_search(collection["volume"]) != volume_norm:
             continue
 
         lessons = collection["lessons"]
-        if needle:
+        if query_variants:
             subject_tokens = (
                 "Tiếng Việt Ngữ văn"
                 if col_subject_norm in _SUBJECT_ALIASES
                 else collection["subject"]
             )
-            lessons = [
-                lesson
-                for lesson in lessons
-                if needle
-                in normalize_nfd_text(
+            filtered_lessons = []
+            for lesson in lessons:
+                searchable = normalize_vi_search(
                     " ".join(
                         [
                             subject_tokens,
@@ -1937,7 +1933,9 @@ def search_lesson_catalog(
                         ]
                     )
                 )
-            ]
+                if any(variant in searchable for variant in query_variants):
+                    filtered_lessons.append(lesson)
+            lessons = filtered_lessons
         if lessons:
             item = {**collection, "lessons": list(lessons)}
             if not subject_norm or col_subject_norm == subject_norm:

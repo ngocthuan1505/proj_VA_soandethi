@@ -5,11 +5,13 @@ import copy
 import hashlib
 import json
 import time
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from typing import Any
 
 import httpx
 
 from mach_backend.ai_contract import AIError
+from mach_backend.ai_router import structured_tool_request, structured_tool_response
 from mach_backend.ai_safety import (
     extract_api_key_token,
     redact_secrets,
@@ -21,7 +23,14 @@ GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/
 VERTEX_EXPRESS_BASE = "https://aiplatform.googleapis.com/v1/publishers/google/models"
 VERTEX_FALLBACK_MODEL = "gemini-2.5-flash"
 GEMINI_MODEL = "gemini-3.6-flash"
-GEMINI_MODELS = (GEMINI_MODEL, "gemini-3.8-flash", "gemini-4-hydrogen")
+GEMINI_FALLBACK_MODELS = (GEMINI_MODEL, "gemini-3.8-flash", "gemini-4-hydrogen")
+GEMINI_MODELS = (
+    GEMINI_MODEL,
+    "gemini-3.8-flash",
+    "gemini-4-hydrogen",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+)
 
 # Chỉ lưu sha256(key) trong RAM cho các khóa AQ. đã bị Vertex AI từ chối 403, không lưu khóa thô.
 _VERTEX_DISABLED_KEY_HASHES: set[str] = set()
@@ -178,7 +187,10 @@ class GeminiModel:
             for k in self.key_pool.keys
         )
         if self.auto_fallback:
-            candidate_list = [self.model, *(m for m in GEMINI_MODELS if m != self.model)]
+            candidate_list = [
+                self.model,
+                *(m for m in GEMINI_FALLBACK_MODELS if m != self.model),
+            ]
             if has_vertex_key and VERTEX_FALLBACK_MODEL not in candidate_list:
                 candidate_list.append(VERTEX_FALLBACK_MODEL)
             candidates = tuple(candidate_list)
@@ -279,6 +291,8 @@ class GeminiModel:
         )
 
     def _build_vertex_express_payload(self, body, output_limit: int, actual_model: str) -> dict:
+        if body.get("tools"):
+            body = structured_tool_request(body)
         system_texts: list[str] = []
         contents: list[dict] = []
         for msg in body.get("messages", []):
@@ -294,7 +308,9 @@ class GeminiModel:
                 parts.append({"text": text})
             if parts:
                 contents.append({"role": vertex_role, "parts": parts})
-        if "format" in body:
+        if "format" in body and not any(
+            "Trả đúng JSON theo schema:" in item for item in system_texts
+        ):
             system_texts.append(
                 "Trả về đúng một chuỗi JSON hợp lệ khớp hoàn toàn với JSON Schema sau, "
                 "không dùng markdown: " + json.dumps(body["format"], ensure_ascii=False)
@@ -322,7 +338,8 @@ class GeminiModel:
                     "parts": [{"text": "Thực hiện yêu cầu theo chỉ dẫn hệ thống."}],
                 }
             )
-        options = body.get("options") if isinstance(body.get("options"), dict) else {}
+        raw_options = body.get("options")
+        options: dict[str, Any] = raw_options if isinstance(raw_options, dict) else {}
         temperature = options.get("temperature", 0)
         max_out = (
             max(8192, output_limit)
@@ -536,6 +553,24 @@ class GeminiModel:
                     keySlot=slot + 1,
                     metrics=raw.get("usageMetadata", {}),
                 )
+                if body.get("tools"):
+                    allowed_tools = [
+                        t["function"]["name"]
+                        for t in body.get("tools", [])
+                        if isinstance(t, dict)
+                        and isinstance(t.get("function"), dict)
+                        and t["function"].get("name")
+                    ]
+                    return structured_tool_response(
+                        {
+                            "content": content,
+                            "model": actual_model,
+                            "provider": "vertex-express",
+                        },
+                        allowed_tools=allowed_tools or None,
+                        include_call_id=True,
+                        raise_code="invalid_response",
+                    )
                 return {
                     "role": "assistant",
                     "content": content,
@@ -602,6 +637,33 @@ class GeminiModel:
                 metrics=raw.get("usage", {}),
             )
             return message
+        except httpx.TimeoutException:
+            self.log.emit(
+                "model_end",
+                modelCall=index,
+                purpose=purpose,
+                model=actual_model,
+                ok=False,
+                seconds=round(time.perf_counter() - started, 6),
+                keySlot=slot + 1,
+            )
+            raise AIError(
+                "provider_timeout", "Gemini quá thời gian phản hồi; chuyển kênh dự phòng."
+            ) from None
+        except httpx.HTTPError as exc:
+            self.log.emit(
+                "model_end",
+                modelCall=index,
+                purpose=purpose,
+                model=actual_model,
+                ok=False,
+                seconds=round(time.perf_counter() - started, 6),
+                keySlot=slot + 1,
+            )
+            raise AIError(
+                "provider_unavailable",
+                "Không kết nối được Gemini: " + str(redact_secrets(str(exc), self.key_pool.keys)),
+            ) from None
         except BaseException:
             self.log.emit(
                 "model_end",
@@ -613,3 +675,155 @@ class GeminiModel:
                 keySlot=slot + 1,
             )
             raise
+
+    async def stream_chat(
+        self, messages: Sequence[dict[str, Any]], **kwargs: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Phát luồng văn bản Gemini / Vertex Express qua SSE (:streamGenerateContent?alt=sse)."""
+        self.key_pool.refresh_cooldowns()
+        requested_model = str(kwargs.get("model") or self.model).strip() or self.model
+        if self.auto_fallback:
+            candidate_list = [
+                requested_model,
+                *(m for m in GEMINI_FALLBACK_MODELS if m != requested_model),
+            ]
+            has_vertex = any(
+                is_vertex_express_key(k) and _vertex_key_hash(k) not in _VERTEX_DISABLED_KEY_HASHES
+                for k in self.key_pool.keys
+            )
+            if has_vertex and VERTEX_FALLBACK_MODEL not in candidate_list:
+                candidate_list.append(VERTEX_FALLBACK_MODEL)
+            candidates = tuple(candidate_list)
+        else:
+            candidates = (requested_model,)
+
+        body: dict[str, Any] = {
+            "messages": list(messages),
+            "options": {"temperature": kwargs.get("temperature", 0.2)},
+        }
+        output_limit = int(kwargs.get("max_tokens", 4096))
+
+        for actual_model in candidates:
+            try:
+                slot = self.key_pool.next_slot(actual_model)
+            except AIError as error:
+                if error.code != "provider_quota":
+                    raise
+                continue
+            while True:
+                if self.budget:
+                    self.budget.spend()
+                active_key = self.key_pool.keys[slot]
+                is_vertex = (
+                    is_vertex_express_key(active_key)
+                    and slot not in self.key_pool.vertex_disabled_slots
+                    and _vertex_key_hash(active_key) not in _VERTEX_DISABLED_KEY_HASHES
+                )
+                if actual_model == VERTEX_FALLBACK_MODEL and not is_vertex:
+                    break
+                base = (
+                    VERTEX_EXPRESS_BASE
+                    if is_vertex
+                    else "https://generativelanguage.googleapis.com/v1beta/models"
+                )
+                endpoint = f"{base}/{actual_model}:streamGenerateContent?alt=sse"
+                headers = {"Content-Type": "application/json", "x-goog-api-key": active_key}
+                payload = self._build_vertex_express_payload(body, output_limit, actual_model)
+                full_parts: list[str] = []
+                usage: dict[str, Any] = {}
+                try:
+                    async with self.client.stream(
+                        "POST",
+                        endpoint,
+                        json=payload,
+                        headers=headers,
+                        timeout=180,
+                        follow_redirects=False,
+                    ) as response:
+                        if response.status_code >= 300:
+                            raw_err = await response.aread()
+                            err_msg = ""
+                            try:
+                                parsed_err = json.loads(raw_err)
+                                if isinstance(parsed_err, list) and parsed_err:
+                                    parsed_err = parsed_err[0]
+                                err_msg = str(parsed_err.get("error", {}).get("message", ""))
+                            except (ValueError, KeyError, TypeError):
+                                pass
+                            if is_vertex and response.status_code == 403:
+                                lower_msg = err_msg.casefold()
+                                if (
+                                    "aiplatform.googleapis.com" in lower_msg
+                                    or "has not been used in project" in lower_msg
+                                    or "or it is disabled" in lower_msg
+                                ):
+                                    self.key_pool.vertex_disabled_slots.add(slot)
+                                    _VERTEX_DISABLED_KEY_HASHES.add(_vertex_key_hash(active_key))
+                                    continue
+                            if response.status_code in {401, 403, 429}:
+                                if response.status_code == 429:
+                                    self.key_pool.mark_rate_limited(actual_model, slot)
+                                else:
+                                    self.key_pool.invalid.add(slot)
+                                try:
+                                    slot = self.key_pool.next_slot(actual_model)
+                                    continue
+                                except AIError as exhausted:
+                                    if exhausted.code != "provider_quota":
+                                        raise
+                                    break
+                            if response.status_code == 404 and self.auto_fallback:
+                                break
+                            raise AIError(
+                                "provider_http_error",
+                                f"Gemini stream trả HTTP {response.status_code}: "
+                                + str(redact_secrets(err_msg[:400], self.key_pool.keys)),
+                                http_status=response.status_code,
+                            )
+
+                        async for line in response.aiter_lines():
+                            stripped = line.strip()
+                            if not stripped or not stripped.startswith("data:"):
+                                continue
+                            data_part = stripped[5:].strip()
+                            if not data_part or data_part == "[DONE]":
+                                continue
+                            try:
+                                chunk = json.loads(data_part)
+                            except ValueError:
+                                continue
+                            if isinstance(chunk.get("usageMetadata"), dict):
+                                usage = chunk["usageMetadata"]
+                            cands = chunk.get("candidates", [])
+                            if not cands:
+                                continue
+                            parts = cands[0].get("content", {}).get("parts", [])
+                            delta_text = "".join(
+                                str(p.get("text", ""))
+                                for p in parts
+                                if isinstance(p, dict) and not p.get("thought") and "text" in p
+                            )
+                            if delta_text:
+                                safe_delta = str(redact_secrets(delta_text, self.key_pool.keys))
+                                full_parts.append(safe_delta)
+                                yield {"type": "delta", "text": safe_delta}
+                        yield {
+                            "type": "done",
+                            "text": "".join(full_parts),
+                            "provider": "vertex-express" if is_vertex else "gemini",
+                            "model": actual_model,
+                            "usage": usage,
+                        }
+                        return
+                except httpx.TimeoutException:
+                    raise AIError(
+                        "provider_timeout", "Gemini stream quá thời gian phản hồi."
+                    ) from None
+                except httpx.HTTPError as exc:
+                    raise AIError(
+                        "provider_unavailable",
+                        "Lỗi kết nối stream Gemini: "
+                        + str(redact_secrets(str(exc), self.key_pool.keys)),
+                    ) from None
+
+        raise AIError("provider_quota", "Các key/model Gemini đã hết quota cho luồng stream.")

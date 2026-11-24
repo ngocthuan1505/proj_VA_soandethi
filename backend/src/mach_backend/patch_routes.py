@@ -110,13 +110,18 @@ def build_patch_job_router(
         after: Annotated[int, Header(alias="Last-Event-ID", ge=0, le=2)] = 0,
     ) -> StreamingResponse:
         try:
-            updates = runner.events(owner_id, exam_id, job_id, after=after)
+            frames = runner.stream_events(owner_id, exam_id, job_id, after=after)
         except AIError as error:
             raise HTTPException(404, detail={"code": error.code, "message": str(error)}) from None
 
         async def encode() -> AsyncIterator[str]:
-            async for update in updates:
-                yield (f"id: {update.sequence}\nevent: patch\ndata: {update.model_dump_json()}\n\n")
+            async for frame in frames:
+                if frame.event_id is not None:
+                    yield (
+                        f"id: {frame.event_id}\nevent: {frame.event}\ndata: {frame.data_json}\n\n"
+                    )
+                else:
+                    yield f"event: {frame.event}\ndata: {frame.data_json}\n\n"
 
         return StreamingResponse(
             encode(),
