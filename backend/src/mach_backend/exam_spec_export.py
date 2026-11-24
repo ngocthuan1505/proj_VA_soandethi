@@ -1130,6 +1130,22 @@ def validate_and_normalize_answer_key(
                     f"Câu {idx} chưa có đáp án; không xuất bản đáp án rỗng cho giáo viên.",
                     http_status=422,
                 )
+            if q_type == "mcq":
+                ans = normalized_q.get("answer")
+                options = raw_q.get("options")
+                if isinstance(options, list) and type(ans) is int and ans >= 0:
+                    if (
+                        ans >= len(options)
+                        or not isinstance(options[ans], str)
+                        or not options[ans].strip()
+                    ):
+                        raise AIError(
+                            "empty_selected_option",
+                            f"Câu {idx} đang chọn đáp án "
+                            f"{'ABCD'[ans] if ans < 4 else ans + 1} "
+                            "nhưng phương án bị trống.",
+                            http_status=400,
+                        )
             rubric_steps = _extract_rubric_steps(raw_q, idx, q4) if raw_q.get("rubric") else []
             objective_q4 = _add_q4(objective_q4, q4)
             objective_answers.append(

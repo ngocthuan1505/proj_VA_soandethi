@@ -114,7 +114,15 @@ class WorkspaceStore:
         )
         if not keys:
             return approved
-        actual = workspace_page_sources(exam, self.owner, keys, db)
+        strict_teacher = bool(exam.get("strictTeacherOnly"))
+        actual = workspace_page_sources(
+            exam,
+            self.owner,
+            keys,
+            db,
+            teacher_files_only=strict_teacher,
+            reject_non_teacher=strict_teacher,
+        )
         pages = {(source.sourceId, source.locator): source for source in actual}
         if any(
             source.locator.kind == "page" and pages.get((source.sourceId, source.locator)) != source

@@ -690,6 +690,14 @@ _POSITION_DEPENDENT = re.compile(
     r"(?:câu|bài|hình|bảng)\s*(?:trước|sau|trên|dưới)|all of|none of|both)",
 )
 _QUESTION_REFERENCE = re.compile(r"\b(?:câu|bài)\s*(?:số\s*)?(\d+)\b", re.IGNORECASE)
+_RELATIVE_BACKWARD_REF = re.compile(
+    r"\b(?:câu|bài)\s*(?:trước|trên|kế\s*trước|vừa\s*rồi)\b",
+    re.IGNORECASE,
+)
+_RELATIVE_FORWARD_REF = re.compile(
+    r"\b(?:câu|bài)\s*(?:sau|dưới)\b",
+    re.IGNORECASE,
+)
 _RELATIVE_QUESTION_REF = re.compile(
     r"\b(?:câu|bài)\s*(?:trước|sau|trên|dưới|kế\s*trước|vừa\s*rồi)\b",
     re.IGNORECASE,
@@ -825,6 +833,66 @@ def _summarize_passage_groups(original_questions, variant_questions):
     return groups
 
 
+def _validate_relative_question_refs(
+    questions: list[dict[str, Any]],
+    plan: dict[str, Any],
+) -> None:
+    mode = plan["mode"]
+    positions = plan["positions"]
+    units = plan["units"]
+    if mode in ("standalone", "intra_block"):
+        unlocked = [i for i in positions if questions[i].get("lockPosition") is not True]
+        moving = set(unlocked) if len(unlocked) >= 2 else set()
+    else:
+        locked_flags = [
+            any(questions[idx].get("lockPosition") is True for idx in unit) for unit in units
+        ]
+        unlocked_units = [
+            unit for unit, is_locked in zip(units, locked_flags, strict=True) if not is_locked
+        ]
+        if any(locked_flags) and len({len(u) for u in unlocked_units}) != 1:
+            moving = set()
+        elif len(unlocked_units) >= 2:
+            moving = {idx for unit in unlocked_units for idx in unit}
+        else:
+            moving = set()
+
+    if not moving:
+        return
+
+    for idx in range(len(questions)):
+        q = questions[idx]
+        texts = [
+            text
+            for text in (
+                q.get("stem"),
+                *(q["options"] if isinstance(q.get("options"), list) else []),
+                q.get("explanation"),
+            )
+            if isinstance(text, str)
+        ]
+        if not texts:
+            continue
+        has_backward = any(_RELATIVE_BACKWARD_REF.search(text) for text in texts)
+        has_forward = any(_RELATIVE_FORWARD_REF.search(text) for text in texts)
+        if not has_backward and not has_forward:
+            continue
+        if has_backward and (any(m < idx for m in moving) or idx in moving):
+            raise AIError(
+                "invalid_variant",
+                f"Câu {idx + 1} có tham chiếu tương đối tới câu liền kề trước/sau trong vùng trộn. "
+                "Hãy giữ cố định hoặc bỏ chọn câu liên quan.",
+                http_status=400,
+            )
+        if has_forward and (any(m > idx for m in moving) or idx in moving):
+            raise AIError(
+                "invalid_variant",
+                f"Câu {idx + 1} có tham chiếu tương đối tới câu liền kề trước/sau trong vùng trộn. "
+                "Hãy giữ cố định hoặc bỏ chọn câu liên quan.",
+                http_status=400,
+            )
+
+
 def _plan_variant_units(questions, ids):
     selected = set(ids)
     positions = [i for i, q in enumerate(questions) if q.get("id") in selected]
@@ -842,14 +910,6 @@ def _plan_variant_units(questions, ids):
             question.get("stem"),
             *(question["options"] if isinstance(question.get("options"), list) else []),
             question.get("explanation"),
-        )
-        if isinstance(text, str)
-    ) or any(
-        _RELATIVE_QUESTION_REF.search(text)
-        for idx in positions
-        for text in (
-            questions[idx].get("stem"),
-            *(questions[idx]["options"] if isinstance(questions[idx].get("options"), list) else []),
         )
         if isinstance(text, str)
     ):
@@ -875,13 +935,15 @@ def _plan_variant_units(questions, ids):
     unique_span_keys = set(span_keys)
     if len(unique_span_keys) == 1:
         single_key = next(iter(unique_span_keys))
-        return {
+        plan = {
             "mode": "intra_block" if single_key is not None else "standalone",
             "positions": positions,
             "units": [[i] for i in positions],
             "block_key": single_key,
             "contiguous_span": positions == span_indices,
         }
+        _validate_relative_question_refs(questions, plan)
+        return plan
 
     # Khi chọn qua nhiều khối: mỗi khối ngữ liệu/nhóm phải đầy đủ 100% và đứng liên tiếp.
     pos_set = set(positions)
@@ -952,13 +1014,15 @@ def _plan_variant_units(questions, ids):
             "Chọn các khối ngữ liệu liền nhau khi kích thước các khối khác nhau.",
             http_status=400,
         )
-    return {
+    plan = {
         "mode": "multi_block",
         "positions": positions,
         "units": units,
         "block_key": None,
         "contiguous_span": contiguous_span,
     }
+    _validate_relative_question_refs(questions, plan)
+    return plan
 
 
 def shuffle_variant_question(question, offset):

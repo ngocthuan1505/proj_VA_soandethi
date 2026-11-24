@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import io
+import math
+import re
 import zipfile
 from collections.abc import Sequence
 from pathlib import Path
@@ -276,36 +278,98 @@ def _col_ref(col_idx: int, row_idx: int) -> str:
     return f"{label}{row_idx}"
 
 
-def _build_dapan_xlsx(rows: list[list[str]]) -> bytes:
-    """Tạo file XLSX 1 sheet tên 'DapAn', toàn bộ ô kiểu chuỗi inlineStr (không ép ngày)."""
-    sheet_rows = []
-    for r_idx, row in enumerate(rows, 1):
-        cells = "".join(
-            f'<c r="{_col_ref(c_idx, r_idx)}" t="inlineStr">'
-            f"<is><t>{xml_escape(str(val))}</t></is></c>"
-            for c_idx, val in enumerate(row)
-        )
-        sheet_rows.append(f'<row r="{r_idx}">{cells}</row>')
+_INVALID_XML_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+_INVALID_SHEET_CHARS = re.compile(r"[\\/?*\[\]:]")
 
-    sheet_xml = (
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        f"<sheetData>{''.join(sheet_rows)}</sheetData>"
-        "</worksheet>"
-    )
+
+def _clean_xml_text(text: str) -> str:
+    return _INVALID_XML_CHARS.sub("", text)
+
+
+def _sanitize_sheet_names(raw_names: Sequence[str]) -> list[str]:
+    used: set[str] = set()
+    cleaned: list[str] = []
+    for idx, raw in enumerate(raw_names, 1):
+        base = _INVALID_SHEET_CHARS.sub("_", _clean_xml_text(str(raw or ""))).strip(" '")
+        if not base:
+            base = f"Sheet{idx}"
+        candidate = base[:31]
+        if candidate.casefold() in used:
+            suffix = f"_{idx}"
+            candidate = f"{base[: 31 - len(suffix)]}{suffix}"
+        counter = 2
+        while candidate.casefold() in used:
+            suffix = f"_{counter}"
+            candidate = f"{base[: 31 - len(suffix)]}{suffix}"
+            counter += 1
+        used.add(candidate.casefold())
+        cleaned.append(candidate)
+    return cleaned
+
+
+def _xlsx_cell_xml(col_idx: int, row_idx: int, val: Any) -> str:
+    if val is None:
+        return ""
+    ref = _col_ref(col_idx, row_idx)
+    if isinstance(val, bool):
+        return f'<c r="{ref}" t="b"><v>{1 if val else 0}</v></c>'
+    if isinstance(val, (int, float)):
+        if math.isfinite(val):
+            return f'<c r="{ref}"><v>{val}</v></c>'
+        return f'<c r="{ref}" t="inlineStr"><is><t></t></is></c>'
+    escaped = xml_escape(_clean_xml_text(str(val)))
+    return f'<c r="{ref}" t="inlineStr"><is><t>{escaped}</t></is></c>'
+
+
+def build_xlsx_workbook(sheets: Sequence[tuple[str, Sequence[Sequence[Any]]]]) -> bytes:
+    """Tạo file OOXML .xlsx thuần Python hỗ trợ nhiều sheet, chuỗi inlineStr và ô số."""
+    if not sheets:
+        raise ValueError("Cần ít nhất một trang tính (sheet) để tạo workbook XLSX.")
+    sheet_names = _sanitize_sheet_names([name for name, _ in sheets])
+    sheet_xml_map: dict[str, str] = {}
+    sheet_tags: list[str] = []
+    wb_rels: list[str] = []
+    ct_overrides: list[str] = []
+
+    for idx, (sheet_name, rows) in enumerate(
+        zip(sheet_names, [r for _, r in sheets], strict=True), 1
+    ):
+        sheet_rows: list[str] = []
+        for r_idx, row in enumerate(rows, 1):
+            cells = "".join(_xlsx_cell_xml(c_idx, r_idx, val) for c_idx, val in enumerate(row))
+            sheet_rows.append(f'<row r="{r_idx}">{cells}</row>')
+        sheet_xml = (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            f"<sheetData>{''.join(sheet_rows)}</sheetData>"
+            "</worksheet>"
+        )
+        part_path = f"xl/worksheets/sheet{idx}.xml"
+        sheet_xml_map[part_path] = sheet_xml
+        sheet_tags.append(
+            f'<sheet name="{xml_escape(sheet_name)}" sheetId="{idx}" r:id="rId{idx}"/>'
+        )
+        wb_rels.append(
+            f'<Relationship Id="rId{idx}" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+            f'Target="worksheets/sheet{idx}.xml"/>'
+        )
+        ct_overrides.append(
+            f'<Override PartName="/{part_path}" '
+            'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        )
+
     workbook_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-        '<sheets><sheet name="DapAn" sheetId="1" r:id="rId1"/></sheets>'
+        f"<sheets>{''.join(sheet_tags)}</sheets>"
         "</workbook>"
     )
     workbook_rels = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        '<Relationship Id="rId1" '
-        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
-        'Target="worksheets/sheet1.xml"/>'
+        f"{''.join(wb_rels)}"
         "</Relationships>"
     )
     root_rels = (
@@ -324,8 +388,7 @@ def _build_dapan_xlsx(rows: list[list[str]]) -> bytes:
         '<Default Extension="xml" ContentType="application/xml"/>'
         '<Override PartName="/xl/workbook.xml" '
         'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-        '<Override PartName="/xl/worksheets/sheet1.xml" '
-        'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        f"{''.join(ct_overrides)}"
         "</Types>"
     )
 
@@ -335,8 +398,14 @@ def _build_dapan_xlsx(rows: list[list[str]]) -> bytes:
         zf.writestr("_rels/.rels", root_rels)
         zf.writestr("xl/workbook.xml", workbook_xml)
         zf.writestr("xl/_rels/workbook.xml.rels", workbook_rels)
-        zf.writestr("xl/worksheets/sheet1.xml", sheet_xml)
+        for part_path, xml_text in sheet_xml_map.items():
+            zf.writestr(part_path, xml_text)
     return buf.getvalue()
+
+
+def _build_dapan_xlsx(rows: list[list[str]]) -> bytes:
+    """Tạo file XLSX 1 sheet tên 'DapAn', toàn bộ ô kiểu chuỗi inlineStr (không ép ngày)."""
+    return build_xlsx_workbook([("DapAn", rows)])
 
 
 def _mcq_keys_for_exam(exam_obj: dict[str, Any]) -> list[tuple[int, str]]:
@@ -353,6 +422,12 @@ def _mcq_keys_for_exam(exam_obj: dict[str, Any]) -> list[tuple[int, str]]:
         if type(ans) is not int or not 0 <= ans < len(options) or ans >= 26:
             missing.append(idx)
             continue
+        if not isinstance(options[ans], str) or not options[ans].strip():
+            raise AIError(
+                "empty_selected_option",
+                f"Câu {idx} đang chọn đáp án {chr(65 + ans)} nhưng phương án bị trống.",
+                http_status=400,
+            )
         keys.append((idx, chr(65 + ans)))
     if missing:
         raise AIError(
@@ -397,15 +472,32 @@ def export_tnmaker_pack(payload: dict[str, Any], directory: Path) -> dict[str, A
         variant_pairs = [("101", exam)]
 
     excel_rows: list[list[str]] = [["MaDe", "Cau", "DapAn"]]
-    qr_chunks: list[str] = []
+    keys_per_variant: list[tuple[str, list[tuple[int, str]]]] = []
     for code, var_exam in variant_pairs:
         keys = _mcq_keys_for_exam(var_exam)
+        keys_per_variant.append((code, keys))
         for q_num, letter in keys:
             excel_rows.append([code, str(q_num), letter])
-        qr_chunks.append(f"{code}:{''.join(letter for _, letter in keys)}")
+
+    is_contiguous = all(
+        [q_num for q_num, _ in keys] == list(range(1, len(keys) + 1))
+        for _, keys in keys_per_variant
+    )
+    if is_contiguous:
+        qr_format = "V1_contiguous"
+        qr_chunks = [
+            f"{code}:{''.join(letter for _, letter in keys)}" for code, keys in keys_per_variant
+        ]
+        qr_payload = "KEY|V1|" + "|".join(qr_chunks)
+    else:
+        qr_format = "V2_indexed"
+        qr_chunks = [
+            f"{code}:{','.join(f'{q_num}{letter}' for q_num, letter in keys)}"
+            for code, keys in keys_per_variant
+        ]
+        qr_payload = "KEY|V2|" + "|".join(qr_chunks)
 
     xlsx_bytes = _build_dapan_xlsx(excel_rows)
-    qr_payload = "KEY|V1|" + "|".join(qr_chunks)
     qr_png = encode_qr_png(qr_payload)
 
     directory.mkdir(parents=True, exist_ok=True)
@@ -420,6 +512,7 @@ def export_tnmaker_pack(payload: dict[str, Any], directory: Path) -> dict[str, A
         "url": "/api/exports/" + name,
         "codes": [c for c, _ in variant_pairs],
         "qrPayload": qr_payload,
+        "qrFormat": qr_format,
         "label": "Gói khóa đáp án & QR chuẩn chung",
         "formatId": "generic_answer_key_qr_v1",
         "tnmakerVerified": False,

@@ -7,9 +7,10 @@ import json
 import math
 import re
 import zipfile
+from copy import deepcopy
 from pathlib import Path
-from typing import Never
-from uuid import UUID
+from typing import Any, Never
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, Request
 from PIL import Image
@@ -200,94 +201,167 @@ def insert_curriculum_records(db, owner, records, *, dry_run=False):
             )
 
 
-def validate_backup(backup):
-    if (
-        not isinstance(backup, dict)
-        or backup.get("format") != "tro-ly-soan-de"
-        or type(backup.get("version")) is not int
-        or backup.get("version") != 1
+def _validate_exam_entry(exam: Any, ids: set[str], *, require_full_fields: bool) -> dict[str, Any]:
+    if not isinstance(exam, dict) or not isinstance(exam.get("id"), str) or exam["id"] in ids:
+        invalid()
+    if not exam["id"].strip():
+        invalid()
+    ids.add(exam["id"])
+    title = exam.get("title")
+    if not isinstance(title, str) or not title.strip():
+        invalid("Đề trong bản sao thiếu tên đề hợp lệ.")
+
+    required_lists = (
+        ("questions", "docs", "matrix", "history", "undo", "redo", "chat", "data")
+        if require_full_fields
+        else ("questions",)
+    )
+    if any(not isinstance(exam.get(k), list) for k in required_lists):
+        invalid()
+    if not require_full_fields:
+        for k in ("docs", "matrix", "history", "undo", "redo", "chat", "data"):
+            if k in exam and exam[k] is not None and not isinstance(exam[k], list):
+                invalid()
+        if "quote" in exam and exam["quote"] is not None:
+            if not isinstance(exam["quote"], dict) or not isinstance(
+                exam["quote"].get("versions"), list
+            ):
+                invalid()
+    elif not isinstance(exam.get("quote"), dict) or not isinstance(
+        exam["quote"].get("versions"), list
     ):
         invalid()
-    state, files = backup.get("state"), backup.get("files", {})
-    if (
-        not isinstance(state, dict)
-        or not isinstance(files, dict)
-        or not isinstance(state.get("prefs"), list)
-    ):
+
+    question_ids = set()
+    for q in exam["questions"]:
+        if not isinstance(q, dict) or not isinstance(q.get("id"), str) or q["id"] in question_ids:
+            invalid("Mã câu bị thiếu hoặc trùng trong cùng đề.")
+        question_ids.add(q["id"])
+        kind, options, answer = q.get("type", "mcq"), q.get("options"), q.get("answer")
+        if (
+            kind not in ("mcq", "essay", "short", "truefalse")
+            or not isinstance(q.get("stem"), str)
+            or not isinstance(options, list)
+            or any(not isinstance(v, str) for v in options)
+        ):
+            invalid("Câu hỏi trong bản sao không hợp lệ.")
+        if (
+            len(options) != (0 if kind in {"essay", "short"} else 4)
+            or type(q.get("level")) is not int
+            or q["level"] not in range(4)
+        ):
+            invalid("Loại câu hoặc mức độ trong bản sao không hợp lệ.")
+        legacy = type(answer) is int and answer in range(4)
+        if (
+            not legacy
+            and not (kind == "short" and isinstance(answer, str))
+            and not (
+                kind == "truefalse"
+                and isinstance(answer, list)
+                and len(answer) == 4
+                and all(type(v) is bool for v in answer)
+            )
+            and not (kind == "essay" and answer in (None, ""))
+        ):
+            invalid("Đáp án trong bản sao không đúng dạng câu.")
+        if "answerText" in q and not isinstance(q["answerText"], str):
+            invalid("Đáp án trả lời ngắn cần là văn bản.")
+        if (
+            kind == "truefalse"
+            and "truthValues" in q
+            and (
+                not isinstance(q["truthValues"], list)
+                or len(q["truthValues"]) != 4
+                or any(type(v) is not bool for v in q["truthValues"])
+            )
+        ):
+            invalid("Đáp án đúng–sai cần đủ bốn giá trị.")
+    for row in exam.get("matrix") or []:
+        targets = row.get("targets") if isinstance(row, dict) else None
+        if (
+            not isinstance(targets, list)
+            or len(targets) not in {3, 4}
+            or any(type(v) is not int or not 0 <= v <= 100 for v in targets)
+        ):
+            invalid("Ma trận trong bản sao không hợp lệ.")
+
+    if require_full_fields:
+        return exam
+    normalized_exam = deepcopy(exam)
+    for k in ("docs", "matrix", "history", "undo", "redo", "chat", "data"):
+        if not isinstance(normalized_exam.get(k), list):
+            normalized_exam[k] = []
+    if not isinstance(normalized_exam.get("quote"), dict):
+        normalized_exam["quote"] = {"text": "", "versions": []}
+    return normalized_exam
+
+
+def _remap_file_ids_in_value(value: Any, mapping: dict[str, str]) -> None:
+    if not mapping:
+        return
+    stack: list[Any] = [value]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, dict):
+            fid = item.get("fileId")
+            if isinstance(fid, str) and fid in mapping:
+                item["fileId"] = mapping[fid]
+            stack.extend(v for v in item.values() if isinstance(v, (dict, list)))
+        elif isinstance(item, list):
+            stack.extend(v for v in item if isinstance(v, (dict, list)))
+
+
+def validate_backup(backup):
+    if not isinstance(backup, dict) or type(backup.get("version")) is not int:
+        invalid()
+    fmt = backup.get("format")
+    if fmt not in {"tro-ly-soan-de", "tro-ly-soan-de-batch"} or backup.get("version") != 1:
+        invalid()
+    files = backup.get("files", {})
+    if files is None:
+        files = {}
+    if not isinstance(files, dict):
+        invalid()
+
+    if fmt == "tro-ly-soan-de-batch":
+        if (
+            "savedAt" in backup
+            and backup["savedAt"] is not None
+            and not isinstance(backup["savedAt"], str)
+        ):
+            invalid()
+        raw_exams = backup.get("exams")
+        if not isinstance(raw_exams, list) or not raw_exams or len(raw_exams) > 1000:
+            invalid()
+        ids: set[str] = set()
+        normalized_exams = [
+            _validate_exam_entry(exam, ids, require_full_fields=False) for exam in raw_exams
+        ]
+        state = {"exams": normalized_exams, "prefs": [], "current": normalized_exams[0]["id"]}
+        references = file_references(normalized_exams)
+        missing = references.keys() - files.keys()
+        if missing:
+            invalid(
+                f"Bản sao thiếu {len(missing)} tệp gốc (kể cả lịch sử/hoàn tác). Chưa thay dữ liệu."
+            )
+        return (
+            state,
+            {
+                key: check_file(key, value, references.get(key, set()))
+                for key, value in files.items()
+            },
+            curriculum_records(backup),
+        )
+
+    state = backup.get("state")
+    if not isinstance(state, dict) or not isinstance(state.get("prefs"), list):
         invalid()
     exams = state.get("exams")
     if not isinstance(exams, list) or not exams or len(exams) > 1000:
         invalid()
     ids = set()
     for exam in exams:
-        if not isinstance(exam, dict) or not isinstance(exam.get("id"), str) or exam["id"] in ids:
-            invalid()
-        ids.add(exam["id"])
-        if any(
-            not isinstance(exam.get(k), list)
-            for k in ("questions", "docs", "matrix", "history", "undo", "redo", "chat", "data")
-        ):
-            invalid()
-        if not isinstance(exam.get("quote"), dict) or not isinstance(
-            exam["quote"].get("versions"), list
-        ):
-            invalid()
-        question_ids = set()
-        for q in exam["questions"]:
-            if (
-                not isinstance(q, dict)
-                or not isinstance(q.get("id"), str)
-                or q["id"] in question_ids
-            ):
-                invalid("Mã câu bị thiếu hoặc trùng trong cùng đề.")
-            question_ids.add(q["id"])
-            kind, options, answer = q.get("type", "mcq"), q.get("options"), q.get("answer")
-            if (
-                kind not in ("mcq", "essay", "short", "truefalse")
-                or not isinstance(q.get("stem"), str)
-                or not isinstance(options, list)
-                or any(not isinstance(v, str) for v in options)
-            ):
-                invalid("Câu hỏi trong bản sao không hợp lệ.")
-            if (
-                len(options) != (0 if kind in {"essay", "short"} else 4)
-                or type(q.get("level")) is not int
-                or q["level"] not in range(4)
-            ):
-                invalid("Loại câu hoặc mức độ trong bản sao không hợp lệ.")
-            legacy = type(answer) is int and answer in range(4)
-            if (
-                not legacy
-                and not (kind == "short" and isinstance(answer, str))
-                and not (
-                    kind == "truefalse"
-                    and isinstance(answer, list)
-                    and len(answer) == 4
-                    and all(type(v) is bool for v in answer)
-                )
-                and not (kind == "essay" and answer in (None, ""))
-            ):
-                invalid("Đáp án trong bản sao không đúng dạng câu.")
-            if "answerText" in q and not isinstance(q["answerText"], str):
-                invalid("Đáp án trả lời ngắn cần là văn bản.")
-            if (
-                kind == "truefalse"
-                and "truthValues" in q
-                and (
-                    not isinstance(q["truthValues"], list)
-                    or len(q["truthValues"]) != 4
-                    or any(type(v) is not bool for v in q["truthValues"])
-                )
-            ):
-                invalid("Đáp án đúng–sai cần đủ bốn giá trị.")
-        for row in exam["matrix"]:
-            targets = row.get("targets") if isinstance(row, dict) else None
-            if (
-                not isinstance(targets, list)
-                or len(targets) not in {3, 4}
-                or any(type(v) is not int or not 0 <= v <= 100 for v in targets)
-            ):
-                invalid("Ma trận trong bản sao không hợp lệ.")
+        _validate_exam_entry(exam, ids, require_full_fields=True)
     current = state.get("current")
     if not isinstance(current, str) or current not in ids:
         invalid("Bản sao thiếu đề đang mở.")
@@ -400,6 +474,74 @@ def export_workspace_backup(store):
 
 def restore(store, backup, base_revision):
     state, files, records = validate_backup(backup)
+    if backup.get("format") == "tro-ly-soan-de-batch":
+        skip_colliding = (
+            backup.get("skipDuplicateIds") is True
+            or backup.get("skipExisting") is True
+            or backup.get("onCollision") == "skip"
+        )
+        with store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            current_state = store.get("state", db)["value"]
+            if not isinstance(current_state, dict):
+                current_state = {"current": None, "exams": [], "prefs": []}
+            existing_exams = list(current_state.get("exams") or [])
+            existing_ids = {
+                e["id"]
+                for e in existing_exams
+                if isinstance(e, dict) and isinstance(e.get("id"), str)
+            }
+            file_remap: dict[str, str] = {}
+            imported_files = 0
+            for key, value in files.items():
+                existing_file = store.get("file:" + key, db)["value"]
+                if existing_file is None:
+                    store.put("file:" + key, value, db=db)
+                    imported_files += 1
+                elif existing_file != value:
+                    new_key = f"{key[:90]}-{uuid4().hex[:8]}"
+                    file_remap[key] = new_key
+                    store.put("file:" + new_key, value, db=db)
+                    imported_files += 1
+
+            imported_exams = 0
+            skipped_exams = 0
+            merged_exams = list(existing_exams)
+            for incoming in state["exams"]:
+                exam_copy = deepcopy(incoming)
+                _remap_file_ids_in_value(exam_copy, file_remap)
+                if exam_copy["id"] in existing_ids:
+                    if skip_colliding:
+                        skipped_exams += 1
+                        continue
+                    new_id = str(uuid4())
+                    while new_id in existing_ids:
+                        new_id = str(uuid4())
+                    exam_copy["id"] = new_id
+                existing_ids.add(exam_copy["id"])
+                merged_exams.append(exam_copy)
+                imported_exams += 1
+
+            merged_state = {
+                **current_state,
+                "exams": merged_exams,
+                "prefs": list(current_state.get("prefs") or []),
+                "current": current_state.get("current")
+                or (merged_exams[0]["id"] if merged_exams else None),
+            }
+            revision = store.put("state", merged_state, base_revision, db)
+            insert_curriculum_records(db, store.owner, records)
+            apply_matrix_template_records(db, store.owner, backup, dry_run=False)
+            apply_question_bank_records(db, store.owner, backup, dry_run=False)
+        return {
+            "revision": revision,
+            "restored": True,
+            "mode": "merge_batch",
+            "importedExams": imported_exams,
+            "skippedExams": skipped_exams,
+            "importedFiles": imported_files,
+        }
+
     with store.connect() as db:
         db.execute("BEGIN IMMEDIATE")
         revision = store.put("state", state, base_revision, db)
@@ -447,7 +589,35 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
             insert_curriculum_records(db, store.owner, records, dry_run=True)
             template_count = apply_matrix_template_records(db, store.owner, backup, dry_run=True)
             bank_count = apply_question_bank_records(db, store.owner, backup, dry_run=True)
-            revision = store.get("state", db)["revision"]
+            current_entry = store.get("state", db)
+            revision = current_entry["revision"]
+            current_state = current_entry["value"]
+        if backup.get("format") == "tro-ly-soan-de-batch":
+            existing_exams = (
+                current_state.get("exams") or [] if isinstance(current_state, dict) else []
+            )
+            seen_titles = {
+                e["title"].strip().casefold()
+                for e in existing_exams
+                if isinstance(e, dict) and isinstance(e.get("title"), str) and e["title"].strip()
+            }
+            duplicate_titles: list[str] = []
+            for incoming in state["exams"]:
+                title_clean = incoming["title"].strip()
+                norm_title = title_clean.casefold()
+                if norm_title in seen_titles and title_clean not in duplicate_titles:
+                    duplicate_titles.append(title_clean)
+                seen_titles.add(norm_title)
+            return {
+                "revision": revision,
+                "mode": "merge_batch",
+                "examCount": len(state["exams"]),
+                "fileCount": len(files),
+                "duplicateTitles": duplicate_titles,
+                **({"curriculumSources": len(records)} if records else {}),
+                **({"matrixTemplates": template_count} if template_count else {}),
+                **({"questionBank": bank_count} if bank_count else {}),
+            }
         return {
             "revision": revision,
             **({"curriculumSources": len(records)} if records else {}),

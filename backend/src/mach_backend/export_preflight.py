@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 import re
 from collections.abc import Callable
@@ -335,6 +337,378 @@ def _is_question_approved(question: dict[str, Any]) -> bool:
         if version is None or verification.get("version") == version:
             return True
     return False
+
+
+def data_snapshot_hash(data: Any) -> str:
+    """Tính mã băm chuẩn cho bảng dữ kiện liên kết (UC8)."""
+    canonical = json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _data_hash_matches(given_hash: str, data: Any) -> bool:
+    if given_hash == data_snapshot_hash(data):
+        return True
+    alt = json.dumps(data, ensure_ascii=False, sort_keys=True)
+    return given_hash == hashlib.sha256(alt.encode("utf-8")).hexdigest()
+
+
+def _extract_explanation_numbers(text: str) -> list[float]:
+    if not text:
+        return []
+    cleaned = re.sub(r"\b(?:Bảng|Câu|Bài|Hình|Mục)\s+\d+\b", " ", text, flags=re.IGNORECASE)
+    nums: list[float] = []
+    for raw in re.findall(r"(?<![A-Za-zÀ-ỹ0-9_])(-?\d+(?:[.,]\d+)?)", cleaned):
+        try:
+            val = float(raw.replace(",", "."))
+        except ValueError:
+            continue
+        if math.isfinite(val):
+            nums.append(val)
+    return nums
+
+
+def _parse_numeric_option(option: Any) -> float | None:
+    if not isinstance(option, str):
+        return None
+    m = re.fullmatch(
+        r"\s*(-?\d+(?:[.,]\d+)?)\s*(?:[A-Za-zÀ-ỹ%/°]+(?:\s+[A-Za-zÀ-ỹ%/°]+)*)?\s*",
+        option.replace("−", "-"),
+    )
+    if not m:
+        return None
+    try:
+        val = float(m.group(1).replace(",", "."))
+    except ValueError:
+        return None
+    return val if math.isfinite(val) else None
+
+
+def _audit_linked_data_question(
+    question: dict[str, Any],
+    ordinal: int,
+    q_id: str,
+    exam: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """UC8: đối chiếu câu hỏi liên kết Bảng 1 về giá trị tính lại, đáp án, hash và giải thích."""
+    rule = question.get("rule")
+    is_linked = question.get("dataLinked") is True or rule in {"max", "difference"}
+    if not is_linked:
+        return []
+
+    issues: list[dict[str, Any]] = []
+    raw_data = exam.get("data")
+    data_rows: list[tuple[str, float]] = []
+    if isinstance(raw_data, list):
+        for row in raw_data:
+            if not isinstance(row, dict):
+                continue
+            val = row.get("value")
+            if isinstance(val, (int, float)) and not isinstance(val, bool) and math.isfinite(val):
+                data_rows.append((str(row.get("label") or "").strip(), float(val)))
+
+    if not data_rows:
+        issues.append(
+            {
+                "code": "linked_data_mismatch",
+                "severity": "blocking",
+                "questionId": q_id,
+                "ordinal": ordinal,
+                "field": "data",
+                "message": f"Câu {ordinal} liên kết bảng dữ kiện nhưng bảng dữ liệu đang trống.",
+            }
+        )
+        return issues
+
+    snap_hash = question.get("dataSnapshotHash")
+    if (
+        isinstance(snap_hash, str)
+        and snap_hash.strip()
+        and not _data_hash_matches(snap_hash.strip(), raw_data)
+    ):
+        issues.append(
+            {
+                "code": "linked_data_mismatch",
+                "severity": "blocking",
+                "questionId": q_id,
+                "ordinal": ordinal,
+                "field": "dataSnapshotHash",
+                "message": (
+                    f"Câu {ordinal} có mã đối chiếu dữ liệu (dataSnapshotHash) đã cũ so với "
+                    "Bảng 1 hiện tại."
+                ),
+            }
+        )
+
+    check_obj = question.get("check")
+    if isinstance(check_obj, dict) and check_obj.get("status") == "review":
+        issues.append(
+            {
+                "code": "linked_data_mismatch",
+                "severity": "blocking",
+                "questionId": q_id,
+                "ordinal": ordinal,
+                "field": "check",
+                "message": (
+                    f"Câu {ordinal} liên kết dữ liệu đang ở trạng thái cần rà soát "
+                    "(check.status='review')."
+                ),
+            }
+        )
+
+    raw_options = question.get("options")
+    options: list[Any] = raw_options if isinstance(raw_options, list) else []
+    ans = question.get("answer")
+    explanation = str(question.get("explanation") or "")
+    exp_nums = _extract_explanation_numbers(explanation)
+    valid_data_vals = [v for _, v in data_rows]
+
+    def _in_vals(target: float, pool: list[float]) -> bool:
+        return any(math.isclose(target, item, rel_tol=0.0, abs_tol=1e-6) for item in pool)
+
+    if rule == "max":
+        max_val = max(valid_data_vals)
+        max_indices = [
+            i
+            for i, (_, v) in enumerate(data_rows)
+            if math.isclose(v, max_val, rel_tol=0.0, abs_tol=1e-6)
+        ]
+        if len(max_indices) != 1:
+            issues.append(
+                {
+                    "code": "linked_data_mismatch",
+                    "severity": "blocking",
+                    "questionId": q_id,
+                    "ordinal": ordinal,
+                    "field": "options",
+                    "message": f"Câu {ordinal}: có nhiều mục cùng giá trị lớn nhất trong Bảng 1.",
+                }
+            )
+        else:
+            expected_label = data_rows[max_indices[0]][0]
+            opt_matches = [
+                i
+                for i, opt in enumerate(options)
+                if isinstance(opt, str) and opt.strip().casefold() == expected_label.casefold()
+            ]
+            if len(opt_matches) != 1 or (type(ans) is int and ans != opt_matches[0]):
+                issues.append(
+                    {
+                        "code": "linked_data_mismatch",
+                        "severity": "blocking",
+                        "questionId": q_id,
+                        "ordinal": ordinal,
+                        "field": "answer",
+                        "message": (
+                            f"Câu {ordinal}: đáp án/phương án chưa khớp mục lớn nhất "
+                            f"({expected_label}) theo Bảng 1."
+                        ),
+                    }
+                )
+        if exp_nums:
+            stale = not _in_vals(max_val, exp_nums) or any(
+                not _in_vals(n, valid_data_vals)
+                and not math.isclose(n, len(data_rows), abs_tol=1e-6)
+                for n in exp_nums
+            )
+            if stale:
+                issues.append(
+                    {
+                        "code": "linked_data_explanation_stale",
+                        "severity": "blocking",
+                        "questionId": q_id,
+                        "ordinal": ordinal,
+                        "field": "explanation",
+                        "message": (
+                            f"Câu {ordinal}: lời giải chứa số liệu cũ chưa khớp giá trị lớn nhất "
+                            f"({max_val:g}) của Bảng 1."
+                        ),
+                    }
+                )
+
+    elif rule == "difference":
+        if len(data_rows) < 2:
+            issues.append(
+                {
+                    "code": "linked_data_mismatch",
+                    "severity": "blocking",
+                    "questionId": q_id,
+                    "ordinal": ordinal,
+                    "field": "data",
+                    "message": f"Câu {ordinal}: Bảng 1 thiếu hai dòng dữ kiện để so sánh hiệu số.",
+                }
+            )
+        else:
+            stem_cf = _question_stem_text(question).casefold()
+            mentioned: list[tuple[int, float]] = []
+            for label, val in data_rows:
+                if label and label.casefold() in stem_cf:
+                    mentioned.append((stem_cf.index(label.casefold()), val))
+            mentioned.sort(key=lambda pair: pair[0])
+            if len(mentioned) >= 2:
+                val1, val2 = mentioned[0][1], mentioned[1][1]
+                expected_diff = (val2 - val1) if "ít hơn" in stem_cf else (val1 - val2)
+                operands = [val1, val2]
+            else:
+                val_a, val_b = data_rows[0][1], data_rows[1][1]
+                expected_diff = val_b - val_a
+                operands = [val_a, val_b]
+
+            if expected_diff <= 0:
+                issues.append(
+                    {
+                        "code": "linked_data_mismatch",
+                        "severity": "blocking",
+                        "questionId": q_id,
+                        "ordinal": ordinal,
+                        "field": "data",
+                        "message": (
+                            f"Câu {ordinal}: hiệu số Bảng 1 không dương ({expected_diff:g})."
+                        ),
+                    }
+                )
+            else:
+                opt_matches = [
+                    i
+                    for i, opt in enumerate(options)
+                    if (num := _parse_numeric_option(opt)) is not None
+                    and math.isclose(num, expected_diff, rel_tol=0.0, abs_tol=1e-6)
+                ]
+                if len(opt_matches) != 1 or (type(ans) is int and ans != opt_matches[0]):
+                    issues.append(
+                        {
+                            "code": "linked_data_mismatch",
+                            "severity": "blocking",
+                            "questionId": q_id,
+                            "ordinal": ordinal,
+                            "field": "answer",
+                            "message": (
+                                f"Câu {ordinal}: đáp án/phương án chưa khớp hiệu số "
+                                f"{expected_diff:g} từ Bảng 1."
+                            ),
+                        }
+                    )
+                if exp_nums:
+                    allowed = [*operands, expected_diff, *valid_data_vals]
+                    stale = not _in_vals(expected_diff, exp_nums) or any(
+                        not _in_vals(n, allowed)
+                        and not math.isclose(n, len(data_rows), abs_tol=1e-6)
+                        for n in exp_nums
+                    )
+                    if stale:
+                        issues.append(
+                            {
+                                "code": "linked_data_explanation_stale",
+                                "severity": "blocking",
+                                "questionId": q_id,
+                                "ordinal": ordinal,
+                                "field": "explanation",
+                                "message": (
+                                    f"Câu {ordinal}: lời giải chứa số liệu cũ chưa khớp hiệu "
+                                    f"({expected_diff:g}) của Bảng 1."
+                                ),
+                            }
+                        )
+    elif explanation:
+        eq_match = re.search(
+            r"(-?\d+(?:[.,]\d+)?)\s*[-−+]\s*(-?\d+(?:[.,]\d+)?)\s*=\s*(-?\d+(?:[.,]\d+)?)",
+            explanation,
+        )
+        if eq_match:
+            lhs = float(eq_match.group(1).replace(",", "."))
+            rhs = float(eq_match.group(2).replace(",", "."))
+            if not _in_vals(lhs, valid_data_vals) or not _in_vals(rhs, valid_data_vals):
+                issues.append(
+                    {
+                        "code": "linked_data_explanation_stale",
+                        "severity": "blocking",
+                        "questionId": q_id,
+                        "ordinal": ordinal,
+                        "field": "explanation",
+                        "message": (
+                            f"Câu {ordinal}: phép tính trong lời giải không khớp số liệu Bảng 1."
+                        ),
+                    }
+                )
+
+    return issues
+
+
+def _audit_question_evidence_staleness(
+    question: dict[str, Any],
+    ordinal: int,
+    q_id: str,
+) -> dict[str, Any] | None:
+    """UC9: kiểm tra chứng cứ bị đánh dấu stale hoặc lệch trang nguồn cùng docId."""
+    evidence_list = question.get("evidence")
+    if not isinstance(evidence_list, list) or not evidence_list:
+        return None
+
+    src_obj = question.get("source")
+    src_doc_id = (
+        src_obj["docId"].strip()
+        if isinstance(src_obj, dict)
+        and isinstance(src_obj.get("docId"), str)
+        and src_obj["docId"].strip()
+        else None
+    )
+    src_page: int | None = None
+    if isinstance(src_obj, dict):
+        for pkey in ("page", "pageNumber"):
+            cand = src_obj.get(pkey)
+            if type(cand) is int and cand >= 1:
+                src_page = cand
+                break
+        if src_page is None and isinstance(src_obj.get("location"), str):
+            loc_match = _LOCATION_PAGE_RE.search(src_obj["location"])
+            if loc_match:
+                parsed = int(loc_match.group(1))
+                if parsed >= 1:
+                    src_page = parsed
+    if src_page is None and type(question.get("sourcePage")) is int and question["sourcePage"] >= 1:
+        src_page = question["sourcePage"]
+
+    reasons: list[str] = []
+    for ev in evidence_list:
+        if not isinstance(ev, dict):
+            continue
+        if ev.get("stale") is True:
+            _add_unique(reasons, "trích dẫn được đánh dấu đã cũ (stale)")
+        raw_ev_doc = ev.get("sourceId") if ev.get("sourceId") is not None else ev.get("docId")
+        ev_doc_id = (
+            str(raw_ev_doc).strip() if raw_ev_doc is not None and str(raw_ev_doc).strip() else None
+        )
+        ev_page: int | None = None
+        ev_loc = ev.get("locator")
+        if isinstance(ev_loc, dict) and ev_loc.get("kind") == "page":
+            idx_val = ev_loc.get("index")
+            if type(idx_val) is int and idx_val >= 1:
+                ev_page = idx_val
+        elif type(ev.get("page")) is int and ev["page"] >= 1:
+            ev_page = ev["page"]
+
+        if (
+            src_doc_id is not None
+            and src_page is not None
+            and ev_doc_id == src_doc_id
+            and ev_page is not None
+            and ev_page != src_page
+        ):
+            _add_unique(
+                reasons,
+                f"trang trích dẫn ({ev_page}) lệch với trang nguồn ({src_page})",
+            )
+
+    if not reasons:
+        return None
+    return {
+        "code": "stale_quote_evidence",
+        "severity": "warning",
+        "questionId": q_id,
+        "ordinal": ordinal,
+        "field": "evidence",
+        "requiresReverification": True,
+        "message": f"Câu {ordinal} có trích dẫn nguồn cần rà lại: {'; '.join(reasons)}.",
+    }
 
 
 def _extract_source_ref(question: dict[str, Any]) -> tuple[str | None, int | None]:
@@ -999,6 +1373,12 @@ def audit_export_preflight(
             standalone_invalid_count,
         ) = _validate_question_math(q, ordinal, q_id)
         blocking_issues.extend(math_errors)
+
+        # 2f-bis. UC8 (dữ kiện liên kết Bảng 1) và UC9 (trích dẫn nguồn cũ/lệch trang).
+        blocking_issues.extend(_audit_linked_data_question(q, ordinal, q_id, exam))
+        stale_evidence_warn = _audit_question_evidence_staleness(q, ordinal, q_id)
+        if stale_evidence_warn is not None:
+            warnings.append(stale_evidence_warn)
 
         # 2g. Quét thành phần OCR cần duyệt trên câu hỏi và liên kết nguồn.
         q_scan_text = _collect_question_scan_text(q)

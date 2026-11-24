@@ -3,7 +3,7 @@
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import Field, model_serializer, model_validator
+from pydantic import Field, field_validator, model_serializer, model_validator
 
 from mach_backend.ai_contract import (
     AIError,
@@ -18,7 +18,7 @@ from mach_backend.ai_contract import (
     validate_evidence,
 )
 
-MAX_MATRIX_QUESTIONS = 30
+MAX_MATRIX_QUESTIONS = 60
 QuestionType = Literal["mcq", "essay", "short", "truefalse"]
 Choice = Annotated[int, Field(ge=0, le=3)]
 ShortAnswer = Annotated[str, Field(min_length=1, max_length=1000)]
@@ -52,6 +52,24 @@ class ExamSlot(ContractModel):
     pointsQ4: PointsQ4 | None = None
     points: Annotated[float, Field(gt=0, le=10)] | None = None
     choiceGroup: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    subLevels: tuple[int, int, int, int] | None = None
+    scoringMode: Literal["cv7991_graduated", "uniform"] | None = None
+
+    @field_validator("subLevels", mode="before")
+    @classmethod
+    def _coerce_sub_levels(cls, value: Any) -> Any:
+        if isinstance(value, list):
+            return tuple(value)
+        return value
+
+    @field_validator("subLevels")
+    @classmethod
+    def _validate_sub_levels_range(
+        cls, value: tuple[int, int, int, int] | None
+    ) -> tuple[int, int, int, int] | None:
+        if value is not None and any(not 0 <= item <= 4 for item in value):
+            raise ValueError("Mỗi phần tử trong subLevels phải từ 0 đến 4.")
+        return value
 
     @model_validator(mode="after")
     def validate_points_pair(self):
@@ -61,7 +79,7 @@ class ExamSlot(ContractModel):
     @model_serializer(mode="wrap")
     def _omit_unset_points(self, handler):
         data = handler(self)
-        for key in ("pointsQ4", "points", "choiceGroup"):
+        for key in ("pointsQ4", "points", "choiceGroup", "subLevels", "scoringMode"):
             if key in data and data[key] is None:
                 data.pop(key)
         return data
