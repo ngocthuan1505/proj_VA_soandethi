@@ -516,7 +516,42 @@ body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-t
  white-space:nowrap;flex-shrink:0;
 }
 .mach .chat-source-bar button:hover{background:#eef6f3;border-color:#b8d9cb;color:var(--ui-accent)}
-.mach .ai-steps,.mach #matrix-live-steps{
+.mach .ai-stage{
+ display:flex;flex-direction:column;align-items:stretch;gap:8px;
+ margin:4px 0;padding:11px 13px;border-radius:12px;
+ background:#f4f8f6;border:1px solid #d4e6dd;color:#1f3b34;
+}
+.mach .ai-stage-head{
+ display:flex;align-items:center;gap:8px;width:100%;
+ font-size:13px;font-weight:600;line-height:1.4;color:#11695b;
+}
+.mach .ai-orbit{
+ width:24px;height:24px;font-size:12px;
+ background:#e6f4ef;border-color:#b8ddd0;color:#11695b;
+}
+.mach .ai-stage-label{flex:1;min-width:0}
+.mach .ai-stage-timer{
+ margin-left:auto;padding:1px 8px;border-radius:999px;
+ background:#e3f1eb;color:#11695b;font-size:11.5px;
+ font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;
+}
+.mach .ai-steps{
+ list-style:none!important;display:flex;flex-direction:column;gap:4px;
+ margin:0!important;padding:0!important;background:transparent!important;border:0!important;
+}
+.mach .ai-step{
+ display:flex;align-items:center;gap:8px;
+ font-size:12px;line-height:1.45;color:#64748b;
+}
+.mach .ai-step-dot{
+ width:6px;height:6px;border-radius:50%;background:#cbd5e1;flex-shrink:0;
+}
+.mach .ai-step.is-active{color:#11695b;font-weight:600}
+.mach .ai-step.is-active .ai-step-dot{background:#11695b;box-shadow:0 0 0 3px rgba(17,105,91,.16)}
+.mach .ai-step.is-done{color:#15803d}
+.mach .ai-step.is-done .ai-step-dot{background:#16a34a}
+.mach .ai-stage-actions{display:flex;gap:6px;padding-top:2px}
+.mach #matrix-live-steps{
  display:flex;flex-direction:column;gap:6px;margin:10px 0;padding:10px 12px;
  border-radius:10px;background:#f8faf9;border:1px solid var(--ui-line);
 }
@@ -527,6 +562,9 @@ body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-t
 .mach .chat-compose{padding:8px 12px 10px;max-height:42%;overflow:auto;border-top:1px solid #f1f3f4;background:#fff;position:static}
 .mach .compose-box{padding:8px 10px 6px;border-radius:12px;border:1px solid #d1d5db;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .mach .compose-box:focus-within{border-color:var(--ui-accent);box-shadow:0 0 0 3px rgba(17,105,91,.1)}
+.mach #chat-input,.mach #chat-input:focus,.mach #chat-input:focus-visible{
+ border:0!important;outline:none!important;box-shadow:none!important;background:transparent!important;
+}
 .mach #chat-input{font-size:13.5px;min-height:36px;margin:0 0 3px;padding:0;line-height:1.45;color:var(--ui-ink)}
 .mach #chat-input::placeholder{color:#6b7280;opacity:1}
 .mach .compose-bottom{margin-top:0;min-height:30px;gap:5px;flex-wrap:nowrap}
@@ -534,6 +572,13 @@ body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-t
  width:30px;height:30px;min-width:30px;min-height:30px;padding:5px;
  border:0;border-radius:50%;background:var(--ui-accent);color:#fff;flex-shrink:0;
 }
+.mach .compose-bottom>.stop-ai-button,.mach .stop-ai-button{
+ width:30px;height:30px;min-width:30px;min-height:30px;padding:0;
+ border:0;border-radius:50%;background:#dc2626!important;color:#fff!important;
+ display:inline-grid;place-items:center;font-size:11px;line-height:1;flex-shrink:0;
+ box-shadow:0 1px 3px rgba(220,38,38,.25);
+}
+.mach .compose-bottom>.stop-ai-button:hover,.mach .stop-ai-button:hover{background:#b91c1c!important}
 .mach #chat-form button[type=submit]:disabled{background:#e5e7eb;color:#9ca3af;opacity:1}
 .mach #matrix-composer-stop{font-size:13px}
 .mach .compose-attachments button{width:28px;height:28px;min-width:28px;min-height:28px;font-size:20px;padding:0;border:0;background:none;color:#4b5563;border-radius:7px}
