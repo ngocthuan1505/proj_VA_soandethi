@@ -119,10 +119,12 @@ def test_fast_chat_routes_deepseek_and_gemini_ahead_of_agy_and_returns_latency_m
     fake_agy.write_bytes(b"MZ")
     order: list[str] = []
     captured_prompts: list[str] = []
+    captured_efforts: list[str | None] = []
 
     class FakeAgy:
-        def __init__(self, _log, *, custom_path="", budget=None):
+        def __init__(self, _log, *, custom_path="", budget=None, effort=None):
             assert custom_path == str(fake_agy)
+            captured_efforts.append(effort)
 
         async def __call__(self, _purpose, body):
             order.append("agy")
@@ -171,33 +173,51 @@ def test_fast_chat_routes_deepseek_and_gemini_ahead_of_agy_and_returns_latency_m
             },
         ).raise_for_status()
 
-        # 1. timePreset='standard' / 'fast' -> ưu tiên deepseek_chat trước AGY và trả latencyMs
+        # 1. timePreset='standard' -> ưu tiên AGY ĐẦU TIÊN với effort='low' và trả latencyMs
         r_std = client.post(
             "/api/assistant/chat",
             json={"text": "hello", "consent": True, "timePreset": "standard"},
         )
         assert r_std.status_code == 200, r_std.text
         data_std = r_std.json()
-        assert data_std["providerUsed"] == "deepseek_chat"
-        assert data_std["modelUsed"] == "deepseek-v4.1-flash"
+        assert data_std["providerUsed"] == "agy"
+        assert data_std["modelUsed"] == "agy-cli"
+        assert data_std["attemptedProviders"] == ["agy"]
+        assert data_std["fallbackFrom"] is None
         assert isinstance(data_std["latencyMs"], int) and data_std["latencyMs"] >= 0
-        assert order == ["deepseek:deepseek-v4.1-flash"]
+        assert order == ["agy"]
+        assert captured_efforts[-1] == "low"
         assert "propose_questions" in captured_prompts[-1]
         assert "propose_patch" in captured_prompts[-1]
         assert "propose_matrix" in captured_prompts[-1]
 
-        # 2. Nếu deepseek_chat lỗi ở chế độ fast -> nhảy sang gemini_flash (chưa gọi AGY)
+        # 2. timePreset='fast' (hoặc fastChat=True) -> ưu tiên deepseek_chat/gemini trước AGY
+        order.clear()
+        r_fast_ok = client.post(
+            "/api/assistant/chat",
+            json={"text": "hello fast", "consent": True, "timePreset": "fast"},
+        )
+        assert r_fast_ok.status_code == 200, r_fast_ok.text
+        assert r_fast_ok.json()["providerUsed"] == "deepseek_chat"
+        assert r_fast_ok.json()["modelUsed"] == "deepseek-v4.1-flash"
+        assert order == ["deepseek:deepseek-v4.1-flash"]
+
+        # 3. Nếu deepseek_chat lỗi ở chế độ fast -> nhảy sang gemini_flash kèm fallbackFrom/Reason
         order.clear()
         state["fail_fast_ds"] = True
         r_fast = client.post(
             "/api/assistant/chat",
-            json={"text": "hello", "consent": True, "timePreset": "fast"},
+            json={"text": "hello", "consent": True, "fastChat": True},
         )
         assert r_fast.status_code == 200, r_fast.text
-        assert r_fast.json()["providerUsed"] == "gemini_flash"
+        data_fast = r_fast.json()
+        assert data_fast["providerUsed"] == "gemini_flash"
+        assert data_fast["attemptedProviders"] == ["deepseek_chat", "gemini_flash"]
+        assert data_fast["fallbackFrom"] == "deepseek_chat"
+        assert "Fast gateway busy" in (data_fast["fallbackReason"] or "")
         assert order == ["deepseek:deepseek-v4.1-flash", "gemini:gemini-3.8-flash"]
 
-        # 3. timePreset='deep' -> giữ nguyên chuỗi mặc định M11 (AGY đầu tiên)
+        # 4. timePreset='deep' -> ưu tiên AGY đầu tiên với effort='medium'
         order.clear()
         r_deep = client.post(
             "/api/assistant/chat",
@@ -205,6 +225,18 @@ def test_fast_chat_routes_deepseek_and_gemini_ahead_of_agy_and_returns_latency_m
         )
         assert r_deep.status_code == 200, r_deep.text
         assert r_deep.json()["providerUsed"] == "agy"
+        assert captured_efforts[-1] == "medium"
+        assert order == ["agy"]
+
+        # 5. timePreset='extended' -> ưu tiên AGY đầu tiên với effort='high'
+        order.clear()
+        r_ext = client.post(
+            "/api/assistant/chat",
+            json={"text": "Phân tích chuyên sâu", "consent": True, "timePreset": "extended"},
+        )
+        assert r_ext.status_code == 200, r_ext.text
+        assert r_ext.json()["providerUsed"] == "agy"
+        assert captured_efforts[-1] == "high"
         assert order == ["agy"]
 
 

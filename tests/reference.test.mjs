@@ -231,7 +231,7 @@ test('Cột phải Trợ lý AI tách rõ ctx-badge/ctx-summary (không dính T�
   assert.ok(composeHtml.includes(`value="${id}"`),id);
   assert.ok(composeHtml.includes(label),label);
  }
- assert.ok(composeHtml.includes('<option value="deep" selected>Thời gian: Kỹ sâu (20p)</option>'));
+ assert.ok(composeHtml.includes('<option value="deep" selected>Thời gian: Kỹ sâu (20p · AGY)</option>'));
  assert.ok(!composeHtml.includes('effort-toggle'));
  assert.ok(!composeHtml.includes('Mức: Trung bình'));
  assert.ok(!composeHtml.includes('time-preset-pill'));
@@ -302,4 +302,6 @@ test('Huy hiệu nguồn và tốc độ chat hiển thị chuẩn DeepSeek · 2
  assert.equal(chatMetaBadgeText({providerUsed:'gemini',latencyMs:3100}),'Gemini · 3,1s');
  assert.equal(chatMetaBadgeText({providerUsed:'ollama',latencyMs:0}),'Ollama');
  assert.equal(chatMetaBadgeText({providerUsed:'',latencyMs:1200}),'1,2s');
+ assert.equal(chatMetaBadgeText({providerUsed:'deepseek',fallbackFrom:'agy_cli',latencyMs:2400}),'DeepSeek (dự phòng từ AGY CLI) · 2,4s');
+ assert.equal(chatMetaBadgeText({providerUsed:'agy_cli',latencyMs:14200}),'AGY CLI · 14,2s');
 });

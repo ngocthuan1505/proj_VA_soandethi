@@ -5,12 +5,14 @@ import binascii
 import html
 import io
 import json
+import math
 import os
 import posixpath
 import re
 import shutil
 import subprocess
 import tempfile
+import unicodedata
 import zipfile
 from pathlib import Path
 from typing import Any, TypedDict
@@ -33,6 +35,7 @@ from mach_backend.word_export import (
     math_parts,
     recipient_line,
     uses_table,
+    watermark_image_bytes,
 )
 from mach_backend.word_math_read import paragraph_text
 
@@ -175,7 +178,7 @@ def extract_text(name, data_url):
     if not isinstance(name, str) or not isinstance(data_url, str):
         raise AIError("invalid_document", "Tệp nguồn chưa hợp lệ.")
     if len(data_url) > MAX_DOCUMENT * 4 // 3 + 200:
-        raise AIError("invalid_document", "Tệp nguồn vượt15MB.")
+        raise AIError("invalid_document", "Tệp nguồn vượt giới hạn 15 MB.")
     warnings: list[dict] = []
     try:
         header, encoded = data_url.split(",", 1)
@@ -183,7 +186,7 @@ def extract_text(name, data_url):
             raise ValueError
         data = base64.b64decode(encoded, validate=True)
         if len(data) > MAX_DOCUMENT:
-            raise ValueError
+            raise AIError("invalid_document", "Tệp nguồn vượt giới hạn 15 MB.")
         ext = Path(name).suffix.lower()
         pages: list[Page]
         if ext in {".txt", ".md"}:
@@ -202,30 +205,55 @@ def extract_text(name, data_url):
                 "document_ai_consent",
                 "Ảnh cần được nhận dạng. Cần cho phép gửi tới Gemini để đọc; chưa gửi tệp.",
             )
+        elif ext == ".xlsx":
+            raise AIError(
+                "unsupported_document",
+                "Tệp Excel (.xlsx) dùng để nhập bảng ma trận. "
+                "Hãy mở Ma trận → Nhập ma trận từ file để nạp tệp này.",
+            )
         elif ext in {".docx", ".pptx"}:
-            with zipfile.ZipFile(io.BytesIO(data)) as archive:
-                parts = pptx_slides(archive) if ext == ".pptx" else [(1, "word/document.xml")]
-                if (
-                    not parts
-                    or sum(archive.getinfo(name).file_size for _, name in parts) > MAX_DOCUMENT
-                ):
-                    raise ValueError
-                parsed_parts = [
-                    (number, ET.fromstring(archive.read(part_name))) for number, part_name in parts
-                ]
-                pages = []
-                slide_roots: list[tuple[int, ET.Element, str]] = []
-                for number, root in parsed_parts:
-                    text = "\n".join(
-                        paragraph_text(p)
-                        if ext == ".docx"
-                        else "".join(t.text or "" for t in p.iter(DRAWING + "t"))
-                        for p in root.iter()
-                        if p.tag in {W + "p", DRAWING + "p"}
-                    )
-                    pages.append({"number": number, "text": text})
-                    slide_roots.append((number, root, text))
-                warnings = _extract_zip_warnings(ext, slide_roots)
+            try:
+                with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                    parts = pptx_slides(archive) if ext == ".pptx" else [(1, "word/document.xml")]
+                    if not parts:
+                        raise KeyError("missing_parts")
+                    if sum(archive.getinfo(part_name).file_size for _, part_name in parts) > (
+                        MAX_DOCUMENT
+                    ):
+                        raise AIError(
+                            "invalid_document",
+                            "Nội dung giải nén của tệp vượt giới hạn 15 MB.",
+                        )
+                    parsed_parts = [
+                        (number, ET.fromstring(archive.read(part_name)))
+                        for number, part_name in parts
+                    ]
+                    pages = []
+                    slide_roots: list[tuple[int, ET.Element, str]] = []
+                    for number, root in parsed_parts:
+                        text = "\n".join(
+                            paragraph_text(p)
+                            if ext == ".docx"
+                            else "".join(t.text or "" for t in p.iter(DRAWING + "t"))
+                            for p in root.iter()
+                            if p.tag in {W + "p", DRAWING + "p"}
+                        )
+                        pages.append({"number": number, "text": text})
+                        slide_roots.append((number, root, text))
+                    warnings = _extract_zip_warnings(ext, slide_roots)
+            except AIError:
+                raise
+            except (zipfile.BadZipFile, ET.ParseError, KeyError, ValueError):
+                if ext == ".docx":
+                    raise AIError(
+                        "invalid_document",
+                        "Tệp Word (.docx) bị hỏng hoặc không đúng định dạng Word hiện đại. "
+                        "Hãy mở tệp trong Word và lưu lại dạng .docx rồi thử lại.",
+                    ) from None
+                raise AIError(
+                    "invalid_document",
+                    "Tệp trình chiếu (.pptx) bị hỏng hoặc thiếu cấu trúc slide hợp lệ.",
+                ) from None
         else:
             raise AIError(
                 "unsupported_document",
@@ -234,15 +262,13 @@ def extract_text(name, data_url):
     except AIError:
         raise
     except (ValueError, UnicodeError, binascii.Error, zipfile.BadZipFile, ET.ParseError, KeyError):
-        raise AIError(
-            "invalid_document", "Không đọc được tệp hoặc tệp vượt giới hạn 15 MB."
-        ) from None
+        raise AIError("invalid_document", "Không đọc được nội dung tệp nguồn.") from None
     if not any(page["text"].strip() for page in pages):
         if warnings:
             raise AIError("empty_document", warnings[0]["message"])
         raise AIError("empty_document", "Không tìm thấy chữ trong tệp. Hãy dán nội dung nguồn.")
     if sum(len(page["text"]) for page in pages) > 200000:
-        raise AIError("document_limit", "Văn bản vượt200.000ký tự. Hãy tách phần cần dùng.")
+        raise AIError("document_limit", "Văn bản vượt 200.000 ký tự. Hãy tách phần cần dùng.")
     return {
         "pages": pages,
         "method": "pypdf_local_text" if ext == ".pdf" else "python_local_text",
@@ -440,6 +466,8 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
             + figures.pop(0)["svg"]
             + "<figcaption>Biểu đồ dữ kiện Bảng 1</figcaption></figure></section>"
         )
+    layout = exam.get("layout") or {}
+    mcq_two_cols = layout.get("mcqColumns") == 2
     if presenting and has_reference:
         body += "</div>"
     for i, q in enumerate(exam["questions"]):
@@ -487,8 +515,13 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
             )
         if q.get("options"):
             docs = q.get("optionDocs") or []
+            opt_class = (
+                ' class="mcq-cols-2"'
+                if mcq_two_cols and q.get("type", "mcq") == "mcq" and len(q["options"]) == 4
+                else ""
+            )
             body += (
-                '<ol type="A">'
+                f'<ol type="A"{opt_class}>'
                 + "".join(
                     "<li>" + field(o, docs[j] if j < len(docs) else None) + "</li>"
                     for j, o in enumerate(q["options"])
@@ -569,13 +602,30 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
             embed_math,
             body,
         )
-    layout = exam.get("layout") or {}
     font = (
         layout.get("font")
         if layout.get("font") in {"Times New Roman", "Arial", "Calibri"}
         else "Times New Roman"
     )
     size = min(22, max(10, float(layout.get("fontSize") or 15)))
+    raw_line_height = layout.get("lineHeight")
+    line_height_css = ""
+    if (
+        not isinstance(raw_line_height, bool)
+        and isinstance(raw_line_height, (int, float))
+        and math.isfinite(raw_line_height)
+    ):
+        lh = min(2.5, max(1.0, float(raw_line_height)))
+        line_height_css = f"line-height:{lh:g};"
+    watermark_html = ""
+    raw_wm_img = layout.get("watermarkImage")
+    if isinstance(raw_wm_img, str) and raw_wm_img.strip():
+        wm_png, _, _ = watermark_image_bytes(raw_wm_img, fade_alpha=1.0)
+        wm_src = "data:image/png;base64," + base64.b64encode(wm_png).decode()
+        watermark_html = (
+            '<div class="watermark-img" aria-hidden="true">'
+            f'<img src="{html.escape(wm_src, quote=True)}" alt=""></div>'
+        )
     return (
         '<!doctype html><html lang="vi"><meta charset="utf-8"><title>'
         + plain(exam.get("title"))
@@ -587,9 +637,14 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         )
         + math_css
         + "<style>"
-        f'body{{font:{size}pt "{font}",serif;max-width:760px;margin:30px auto;color:#111}}'
+        f'body{{font:{size}pt "{font}",serif;{line_height_css}'
+        "max-width:760px;margin:30px auto;color:#111}"
         "h1{font-size:18pt;text-align:center}section{margin:20px 0}"
         "section>b{display:block;break-after:avoid}"
+        ".mcq-cols-2{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;padding-left:20px}"
+        ".watermark-img{position:fixed;inset:0;display:flex;align-items:center;"
+        "justify-content:center;pointer-events:none;z-index:-1;opacity:0.12}"
+        ".watermark-img img{max-width:65%;max-height:65%;object-fit:contain}"
         "table{border-collapse:collapse;width:100%}td,th{border:1px solid;padding:6px}"
         "figure svg{max-width:100%;height:auto}"
         "figure{break-inside:avoid;text-align:center;margin:12px 0}"
@@ -605,6 +660,7 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         ".rubric-title{break-after:avoid}}"
         + (PRESENTATION_CSS if presenting else "")
         + "</style><body>"
+        + watermark_html
         + body
         + math_script
         + (PRESENTATION_SCRIPT if presenting else "")
@@ -994,13 +1050,25 @@ def exam_variant(exam, variant):
     mode = plan["mode"]
     positions = plan["positions"]
     if mode in ("standalone", "intra_block"):
-        group = [questions[i] for i in positions]
-        for index, question in zip(positions, group[offset:] + group[:offset], strict=True):
+        locked_positions = [i for i in positions if questions[i].get("lockPosition") is True]
+        unlocked_positions = [i for i in positions if questions[i].get("lockPosition") is not True]
+        for pos in locked_positions:
+            question = questions[pos]
             candidate = shuffle_variant_question(question, offset) if shuffle else question
-            reordered[index] = {
+            reordered[pos] = {
                 **candidate,
-                "pageBreak": questions[index].get("pageBreak", False),
+                "pageBreak": questions[pos].get("pageBreak", False),
             }
+        if unlocked_positions:
+            group = [questions[i] for i in unlocked_positions]
+            shift = offset % len(group) if len(group) >= 2 else 0
+            rotated_group = group[shift:] + group[:shift]
+            for index, question in zip(unlocked_positions, rotated_group, strict=True):
+                candidate = shuffle_variant_question(question, offset) if shuffle else question
+                reordered[index] = {
+                    **candidate,
+                    "pageBreak": questions[index].get("pageBreak", False),
+                }
         if mode == "intra_block":
             block_key = plan["block_key"]
             block_indices = [i for i, q in enumerate(questions) if _block_identity(q) == block_key]
@@ -1035,31 +1103,91 @@ def exam_variant(exam, variant):
                             moved_copy.pop(header_field, None)
                             reordered[moved_idx] = moved_copy
     else:
-        rotated_units = units[offset:] + units[:offset]
-        if plan["contiguous_span"]:
-            cursor = positions[0]
-            for unit_pos, src_unit in enumerate(rotated_units):
-                orig_start_break = questions[units[unit_pos][0]].get("pageBreak", False)
-                for local_idx, src_idx in enumerate(src_unit):
-                    question = questions[src_idx]
+        locked_flags = [
+            any(questions[idx].get("lockPosition") is True for idx in unit) for unit in units
+        ]
+        if any(locked_flags):
+            unlocked_slot_units = [
+                unit for unit, is_locked in zip(units, locked_flags, strict=True) if not is_locked
+            ]
+            for unit, is_locked in zip(units, locked_flags, strict=True):
+                if not is_locked:
+                    continue
+                for idx in unit:
+                    question = questions[idx]
                     candidate = shuffle_variant_question(question, offset) if shuffle else question
-                    page_break = (
-                        orig_start_break if local_idx == 0 else candidate.get("pageBreak", False)
-                    )
-                    reordered[cursor] = {**candidate, "pageBreak": page_break}
-                    cursor += 1
+                    reordered[idx] = {
+                        **candidate,
+                        "pageBreak": questions[idx].get("pageBreak", False),
+                    }
+            if unlocked_slot_units:
+                shift = offset % len(unlocked_slot_units) if len(unlocked_slot_units) >= 2 else 0
+                rotated_unlocked = unlocked_slot_units[shift:] + unlocked_slot_units[:shift]
+                same_sizes = len({len(u) for u in unlocked_slot_units}) == 1
+                if same_sizes:
+                    for dest_unit, src_unit in zip(
+                        unlocked_slot_units, rotated_unlocked, strict=True
+                    ):
+                        orig_start_break = questions[dest_unit[0]].get("pageBreak", False)
+                        for local_idx, (dest_idx, src_idx) in enumerate(
+                            zip(dest_unit, src_unit, strict=True)
+                        ):
+                            question = questions[src_idx]
+                            candidate = (
+                                shuffle_variant_question(question, offset) if shuffle else question
+                            )
+                            page_break = (
+                                orig_start_break
+                                if local_idx == 0
+                                else candidate.get("pageBreak", False)
+                            )
+                            reordered[dest_idx] = {**candidate, "pageBreak": page_break}
+                else:
+                    # Khối tự do có kích thước khác nhau quanh khối khóa: giữ nguyên vị trí mỗi khối
+                    for unit in unlocked_slot_units:
+                        for idx in unit:
+                            question = questions[idx]
+                            candidate = (
+                                shuffle_variant_question(question, offset) if shuffle else question
+                            )
+                            reordered[idx] = {
+                                **candidate,
+                                "pageBreak": questions[idx].get("pageBreak", False),
+                            }
         else:
-            for dest_unit, src_unit in zip(units, rotated_units, strict=True):
-                orig_start_break = questions[dest_unit[0]].get("pageBreak", False)
-                for local_idx, (dest_idx, src_idx) in enumerate(
-                    zip(dest_unit, src_unit, strict=True)
-                ):
-                    question = questions[src_idx]
-                    candidate = shuffle_variant_question(question, offset) if shuffle else question
-                    page_break = (
-                        orig_start_break if local_idx == 0 else candidate.get("pageBreak", False)
-                    )
-                    reordered[dest_idx] = {**candidate, "pageBreak": page_break}
+            rotated_units = units[offset:] + units[:offset]
+            if plan["contiguous_span"]:
+                cursor = positions[0]
+                for unit_pos, src_unit in enumerate(rotated_units):
+                    orig_start_break = questions[units[unit_pos][0]].get("pageBreak", False)
+                    for local_idx, src_idx in enumerate(src_unit):
+                        question = questions[src_idx]
+                        candidate = (
+                            shuffle_variant_question(question, offset) if shuffle else question
+                        )
+                        page_break = (
+                            orig_start_break
+                            if local_idx == 0
+                            else candidate.get("pageBreak", False)
+                        )
+                        reordered[cursor] = {**candidate, "pageBreak": page_break}
+                        cursor += 1
+            else:
+                for dest_unit, src_unit in zip(units, rotated_units, strict=True):
+                    orig_start_break = questions[dest_unit[0]].get("pageBreak", False)
+                    for local_idx, (dest_idx, src_idx) in enumerate(
+                        zip(dest_unit, src_unit, strict=True)
+                    ):
+                        question = questions[src_idx]
+                        candidate = (
+                            shuffle_variant_question(question, offset) if shuffle else question
+                        )
+                        page_break = (
+                            orig_start_break
+                            if local_idx == 0
+                            else candidate.get("pageBreak", False)
+                        )
+                        reordered[dest_idx] = {**candidate, "pageBreak": page_break}
 
     code = str(101 + offset)
     return {
@@ -1105,6 +1233,7 @@ def preview_exam_variant(payload):
             {
                 "questionNumber": i + 1,
                 "originalNumber": orig_num,
+                "locked": bool(q.get("lockPosition") is True),
                 "passageId": q.get("passageId"),
                 "groupId": q.get("groupId"),
                 "optionsShuffled": mapping["optionsShuffled"],
@@ -1119,6 +1248,44 @@ def preview_exam_variant(payload):
         "questionMappings": question_mappings,
         "passageGroups": _summarize_passage_groups(exam["questions"], variant["questions"]),
     }
+
+
+def _ascii_slug(value: Any, *, max_len: int = 24) -> str:
+    nfd = unicodedata.normalize("NFD", str(value or ""))
+    no_marks = "".join(ch for ch in nfd if unicodedata.category(ch) != "Mn")
+    ascii_text = no_marks.replace("đ", "d").replace("Đ", "D")
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "_", ascii_text).strip("_")
+    return cleaned[:max_len].strip("_")
+
+
+def build_export_filename(
+    exam: dict[str, Any] | None,
+    *,
+    teacher: bool = False,
+    class_label: str = "",
+    ext: str = "html",
+    suffix_tag: str = "",
+) -> str:
+    """Tạo tên tệp xuất an toàn, có nghĩa, luôn bắt đầu bằng `De_thi_`."""
+    hex8 = uuid4().hex[:8]
+    if not isinstance(exam, dict):
+        tag = _ascii_slug(suffix_tag, max_len=24) or "Sao_luu"
+        return f"De_thi_{tag}_{hex8}.{ext}"
+    subj = _ascii_slug(exam.get("subject"), max_len=24)
+    grade = _ascii_slug(exam.get("grade"), max_len=12)
+    subj_grade = "_".join(part for part in (subj, grade) if part) or "Chung"
+    class_slug = _ascii_slug(class_label, max_len=20)
+    rev = exam.get("revision")
+    rev_part = f"v{rev}" if type(rev) is int and rev >= 1 else ""
+    aud_part = suffix_tag or ("GV" if teacher else "HS")
+    parts = ["De_thi", subj_grade]
+    if class_slug:
+        parts.append(class_slug)
+    if rev_part:
+        parts.append(rev_part)
+    parts.append(aud_part)
+    stem = "_".join(parts)[:118].strip("_")
+    return f"{stem}_{hex8}.{ext}"
 
 
 def export_variant_pack(payload, directory, origin):
@@ -1240,7 +1407,14 @@ def export_variant_pack(payload, directory, origin):
         f"<tbody>{''.join(rows)}</tbody></table>{passage_summary_html}</html>"
     )
     directory.mkdir(parents=True, exist_ok=True)
-    name = "De_thi_" + str(uuid4()) + ".zip"
+    class_label = str(payload.get("classLabel") or payload.get("class_label") or "")
+    name = build_export_filename(
+        exam,
+        teacher=True,
+        class_label=class_label,
+        ext="zip",
+        suffix_tag="BoMa",
+    )
     target = directory / name
     with tempfile.TemporaryDirectory(prefix="ma-de-", dir=directory) as temp:
         staging = Path(temp)
@@ -1296,7 +1470,14 @@ def export_file(payload, directory, origin):
     else:
         raise AIError("unsupported_export", "Chọn xuất đề hoặc sao lưu JSON.")
     directory.mkdir(parents=True, exist_ok=True)
-    name = "De_thi_" + str(uuid4()) + "." + format_
+    class_label = str(payload.get("classLabel") or payload.get("class_label") or "")
+    name = build_export_filename(
+        exam if kind == "exam" else None,
+        teacher=payload.get("teacher") is True,
+        class_label=class_label,
+        ext=format_,
+        suffix_tag="Sao_luu" if kind in {"backup", "json"} else "",
+    )
     target = directory / name
     if format_ == "html" or format_ == "json":
         target.write_text(content, encoding="utf-8")

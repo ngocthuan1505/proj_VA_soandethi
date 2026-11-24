@@ -44,6 +44,7 @@ _FORBIDDEN_ENV_SUBSTRINGS = (
 )
 
 _ALLOWED_EXE_NAMES = {"agy", "agy.exe", "agy.cmd", "agy.bat"}
+VALID_EFFORT_LEVELS = frozenset({"low", "medium", "high", "xhigh", "max"})
 _FENCED_JSON_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE)
 _ENVELOPE_KEYS = ("response", "result", "content", "text", "output")
 _DOMAIN_PAYLOAD_KEYS = {
@@ -160,12 +161,18 @@ class AgyCliModel:
         budget: Any = None,
         timeout_seconds: int = 180,
         runner: Callable[..., Any] | None = None,
+        effort: str | None = None,
+        model: str | None = None,
     ) -> None:
         self.log = log
         self.custom_path = custom_path
         self.budget = budget
         self.timeout_seconds = max(5, int(timeout_seconds))
         self.runner = runner
+        cleaned_effort = str(effort).strip().lower() if isinstance(effort, str) else ""
+        self.effort: str | None = cleaned_effort if cleaned_effort in VALID_EFFORT_LEVELS else None
+        cleaned_model = str(model).strip() if isinstance(model, str) else ""
+        self.model: str | None = cleaned_model or None
 
     def _build_prompt(self, purpose: str, body: dict[str, Any]) -> str:
         parts = [
@@ -246,6 +253,10 @@ class AgyCliModel:
                     "--print-timeout",
                     f"{eff_timeout}s",
                 ]
+                if self.effort in VALID_EFFORT_LEVELS:
+                    cmd.extend(["--effort", self.effort])
+                if self.model:
+                    cmd.extend(["--model", self.model])
                 expected_schema = (
                     body.get("format") if isinstance(body.get("format"), dict) else None
                 )
@@ -302,11 +313,12 @@ class AgyCliModel:
             if not content:
                 raise AIError("invalid_response", "AGY CLI trả về phản hồi rỗng.")
 
+            model_label = self.model or "agy-cli"
             result = {
                 "role": "assistant",
                 "content": content,
                 "provider": "agy",
-                "model": "agy-cli",
+                "model": model_label,
             }
             if self.log is not None:
                 self.log.write(f"call-{index:02}-response.json", redact_secrets(result))
@@ -314,7 +326,7 @@ class AgyCliModel:
                     "model_end",
                     modelCall=index,
                     purpose=purpose,
-                    model="agy-cli",
+                    model=model_label,
                     provider="agy",
                     ok=True,
                     seconds=round(time.perf_counter() - started, 6),

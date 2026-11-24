@@ -8,6 +8,6 @@ if errorlevel 1 (
   exit /b 1
 )
 cls
-title PoC - DEMO MOI - Cho tao de tren web
+title PoC - DEMO MỚI - Chờ tạo đề trên web
 "backend\.venv\Scripts\python.exe" -X utf8 scripts\theo-doi-poc.py --port 4182 --follow --new-run
 pause

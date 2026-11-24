@@ -34,3 +34,18 @@ test('Lát B3: collectFindMatches tìm đếm từng vị trí kể cả LaTeX v
  assert.equal(e.questions[0].stem,'Giải $\\frac{x}{2} = 1$ và $\\frac{x}{4} = 3$.');
  assert.equal(applySingleFindReplacement(e,hits[2],'blocked'),false);
 });
+
+test('UV60: collectFindMatches và applySingleFindReplacement hỗ trợ nội dung bảng q.tables',()=>{
+ const e=essaySample();
+ e.questions[0].tables=[{id:'t1',rows:[['Đại lượng','40 km/h'],[{text:'Vận tốc ban đầu'},'x']]}];
+ const hits=collectFindMatches(e,'40 km/h',true);
+ assert.equal(hits.length,1);
+ assert.equal(hits[0].field,'table');
+ assert.equal(applySingleFindReplacement(e,hits[0],'50 km/h'),true);
+ assert.equal(e.questions[0].tables[0].rows[0][1],'50 km/h');
+
+ const objHits=collectFindMatches(e,'Vận tốc',false);
+ assert.equal(objHits.length,1);
+ assert.equal(applySingleFindReplacement(e,objHits[0],'Quãng đường'),true);
+ assert.equal(e.questions[0].tables[0].rows[1][0].text,'Quãng đường ban đầu');
+});

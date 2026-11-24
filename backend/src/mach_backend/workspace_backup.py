@@ -330,8 +330,53 @@ def apply_question_bank_records(db, owner, backup, *, dry_run=False):
         invalid("Ngân hàng câu hỏi trong bản sao không hợp lệ.")
 
 
+def _list_owner_curriculum_sources(db, owner_id: str) -> list[dict]:
+    exists = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'curriculum_sources'"
+    ).fetchone()
+    if not exists:
+        return []
+    rows = db.execute(
+        """
+        SELECT id, grade, subject, series, volume, chapter, lesson, title,
+               license_status, license_note, source_origin, locator, content_excerpt,
+               sha256, created_at, updated_at
+        FROM curriculum_sources
+        WHERE owner_id = ?
+        ORDER BY created_at ASC, id ASC
+        """,
+        (owner_id,),
+    ).fetchall()
+    out = []
+    for row in rows:
+        payload = {
+            "grade": row[1],
+            "subject": row[2],
+            "series": row[3],
+            "volume": row[4],
+            "chapter": row[5],
+            "lesson": row[6],
+            "title": row[7],
+            "license_status": row[8],
+            "license_note": row[9],
+            "source_origin": row[10],
+            "locator": row[11],
+            "content_excerpt": row[12],
+        }
+        out.append(
+            {
+                "id": row[0],
+                **payload,
+                "sha256": compute_source_sha256(payload),
+                "created_at": row[14],
+                "updated_at": row[15],
+            }
+        )
+    return out
+
+
 def export_workspace_backup(store):
-    """Đóng gói snapshot sao lưu đầy đủ gồm state, files, matrixTemplates và questionBank."""
+    """Đóng gói snapshot sao lưu đầy đủ gồm state, files, templates, bank và học liệu."""
     with store.connect() as db:
         db.execute("BEGIN")
         state = store.get("state", db)["value"]
@@ -341,6 +386,7 @@ def export_workspace_backup(store):
         }
         matrix_templates = list_owner_matrix_templates(db, store.owner)
         question_bank = list_owner_question_bank(db, store.owner)
+        curriculum_sources = _list_owner_curriculum_sources(db, store.owner)
     return {
         "format": "tro-ly-soan-de",
         "version": 1,
@@ -348,6 +394,7 @@ def export_workspace_backup(store):
         "files": files,
         "matrixTemplates": matrix_templates,
         "questionBank": question_bank,
+        "curriculumSources": curriculum_sources,
     }
 
 
@@ -386,6 +433,10 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
             )
         except (ValueError, RecursionError):
             invalid("Tệp JSON hỏng hoặc quá phức tạp. Chưa thay dữ liệu.")
+
+    @app.get("/api/workspace/backup")
+    def download_backup():
+        return export_workspace_backup(store)
 
     @app.post("/api/workspace/restore/preview")
     async def preview(request: Request):

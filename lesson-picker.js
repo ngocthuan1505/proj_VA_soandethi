@@ -1,9 +1,16 @@
-import {esc} from './core.js';
+import {esc,touch,check} from './core.js';
 import {selectedDocumentPages} from './assistant-sources.js';
 import {workspaceHeaders} from './storage.js';
 
 const personalRoute='/api/lesson-catalog/sources';
 const usable=record=>['allowed','teacher_owned'].includes(record.license_status);
+const normSubject=v=>String(v??'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/đ/g,'d').trim();
+const isLiteratureSubject=v=>['ngu van','tieng viet'].includes(normSubject(v));
+export function lessonSubjectMatches(selected,candidate){
+ if(!selected)return true;
+ if(selected===candidate)return true;
+ return isLiteratureSubject(selected)&&isLiteratureSubject(candidate);
+}
 const asCollection=record=>({
  id:record.id,version:record.updated_at,grade:String(record.grade),subject:record.subject,
  book:record.series||'Học liệu cá nhân',volume:record.volume||'Chưa xếp tập',
@@ -16,6 +23,7 @@ const asCollection=record=>({
 export async function openLessonPicker(context) {
  const examId=context.exam().id;
  const dialog=document.querySelector('#dialog');
+ const returnFocusEl=document.activeElement instanceof HTMLElement?document.activeElement:null;
  const origin=dialog.querySelector('#assistant-source-form');
  const headers=workspaceHeaders();
  const [response,personal]=await Promise.all([
@@ -45,6 +53,7 @@ export async function openLessonPicker(context) {
  const select=(label,name,values,selected)=>`<label>${label}<select name="${name}"><option value="">Tất cả</option>${values.map(value=>`<option ${value===selected?'selected':''}>${esc(value)}</option>`).join('')}</select></label>`;
  const grades=[...new Set(collections.map(c=>c.grade))].sort((a,b)=>Number(a)-Number(b));
  const subjects=[...new Set(collections.map(c=>c.subject))];
+ const initialSubject=subjects.find(s=>lessonSubjectMatches(exam.subject,s))||'';
  context.modal('Học liệu theo bài',`
  ${personal?`<details data-personal-editor><summary>Thêm học liệu cá nhân</summary>
  <form id="personal-lesson-form">
@@ -70,7 +79,7 @@ export async function openLessonPicker(context) {
  <button type="submit" class="primary">Lưu học liệu</button>
  </form></details>`:'<p class="hint">Chưa tải được kho học liệu cá nhân.</p>'}
  <form id="lesson-picker"><p class="hint">Chọn học liệu mẫu của dự án hoặc bài trong kho cá nhân.</p><div class="grid2">
- <label>Kho<select name="library"><option value="">Tất cả</option><option value="sample">Học liệu mẫu</option><option value="personal">Kho cá nhân</option></select></label>${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,exam.subject)}${select('Bộ học liệu','book',[])}${select('Tập','volume',[])}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div class="modal-foot"><button type="button" data-action="assistant-sources">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`);
+ <label>Kho<select name="library"><option value="">Tất cả</option><option value="sample">Học liệu mẫu</option><option value="personal">Kho cá nhân</option></select></label>${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,initialSubject)}${select('Bộ học liệu','book',[])}${select('Tập','volume',[])}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div class="modal-foot"><button type="button" data-action="assistant-sources">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`);
  const form=dialog.querySelector('#lesson-picker'),list=form.querySelector('[data-lesson-list]');
  const editor=dialog.querySelector('[data-personal-editor]'),personalForm=editor?.querySelector('form');
  let editing=null, importSequence=0, imported=null, sourceOrigin='';
@@ -92,7 +101,8 @@ export async function openLessonPicker(context) {
    personalForm.elements.usage.checked=usable(record);
   }
   editor.querySelector('summary').textContent=record?'Sửa học liệu cá nhân':'Thêm học liệu cá nhân';
-  personalForm.querySelector('[data-personal-status]').textContent='';
+  const linkedCount=record?context.exam().questions.filter(q=>q.source?.docId===record.id).length:0;
+  personalForm.querySelector('[data-personal-status]').textContent=linkedCount?`Cảnh báo: có ${linkedCount} câu trong đề đang dùng học liệu này; sửa hoặc bỏ quyền dùng sẽ đánh dấu rà soát lại.`:'';
  }
  fileInput?.addEventListener('change',async()=>{
   const turn=++importSequence, file=fileInput.files[0];
@@ -172,6 +182,23 @@ export async function openLessonPicker(context) {
    const previous=choices.get(record.id)?.size>0;
    choices.set(record.id,new Set(previous&&usable(record)?[1]:[]));
    if(previous)changed.add(record.id);
+   const linkedDoc=context.exam().docs.find(d=>d.id===record.id);
+   const linkedQs=context.exam().questions.filter(q=>q.source?.docId===record.id);
+   if(linkedDoc||linkedQs.length){
+    context.change('Cập nhật học liệu cá nhân liên kết',cur=>{
+     const d=cur.docs.find(item=>item.id===record.id);
+     if(d){
+      Object.assign(d,{name:record.title,version:record.updated_at,pages:[{number:1,text:record.content_excerpt,title:record.lesson||record.title}],text:record.content_excerpt,sourceLocator:record.locator,licenseStatus:record.license_status});
+      if(!usable(record)||!record.content_excerpt.trim()){
+       cur.assistantSources=(cur.assistantSources||[]).filter(id=>id!==record.id);
+       if(cur.assistantSourcePages)delete cur.assistantSourcePages[record.id];
+      }
+     }
+     for(const q of cur.questions.filter(item=>item.source?.docId===record.id)){
+      touch(q);check(cur,q);
+     }
+    },{renderPage:false});
+   }
    form.elements.library.value='personal';
    form.elements.query.value='';
    updateFilter(form.elements.grade,[...new Set(collections.map(c=>c.grade))].sort((a,b)=>Number(a)-Number(b)),collection.grade);
@@ -213,7 +240,7 @@ export async function openLessonPicker(context) {
  function render(){
   const {grade,subject,book,volume,query,library}=form.elements;
   const eligible=collections.filter(c=>(!library.value||(library.value==='personal')===Boolean(c.record))
-   &&(!grade.value||grade.value===c.grade)&&(!subject.value||subject.value===c.subject));
+   &&(!grade.value||grade.value===c.grade)&&lessonSubjectMatches(subject.value,c.subject));
   updateFilter(book,eligible.map(c=>c.book));
   const books=eligible.filter(c=>!book.value||book.value===c.book);
   updateFilter(volume,books.map(c=>c.volume));
@@ -307,4 +334,10 @@ export async function openLessonPicker(context) {
   dialog.close();
  });
  render();
+ form.elements.query?.focus();
+ if(returnFocusEl){
+  dialog.addEventListener('close',()=>{
+   if(!dialog.open&&returnFocusEl.isConnected)returnFocusEl.focus?.();
+  },{once:true});
+ }
 }

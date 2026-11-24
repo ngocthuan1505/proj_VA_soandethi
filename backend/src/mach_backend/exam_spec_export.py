@@ -24,10 +24,17 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import QuestionType, saved_answer_label
-from mach_backend.local_documents import points as format_points_vi
 from mach_backend.math_word import omml
 from mach_backend.ocr_structured import structure_ocr_reading
 from mach_backend.word_export import math_parts
+
+
+def format_points_vi(value: int | float | None) -> str:
+    """Định dạng điểm số tiếng Việt chuẩn 2 chữ số thập phân (ví dụ: 0,40 điểm; 10,00 điểm)."""
+    if value is None:
+        return ""
+    return f"{float(value):.2f}".replace(".", ",") + " điểm"
+
 
 MATHML_NS = "http://www.w3.org/1998/Math/MathML"
 LEVEL_NAMES: tuple[str, str, str, str] = (
@@ -1171,6 +1178,9 @@ def validate_and_normalize_answer_key(
             )
 
     total_q4 = _add_q4(objective_q4, essay_q4)
+    total_pts = _q4_to_float(total_q4)
+    obj_pts = _q4_to_float(objective_q4)
+    ess_pts = _q4_to_float(essay_q4)
     return {
         "audience": "teacher",
         "title": str(exam_obj.get("title") or "Đề kiểm tra").strip(),
@@ -1179,10 +1189,13 @@ def validate_and_normalize_answer_key(
         "grade": str(exam_obj.get("grade") or "").strip(),
         "minutes": exam_obj.get("minutes"),
         "total_questions": len(questions),
-        "total_points": _q4_to_float(total_q4),
+        "total_points": total_pts,
         "total_points_q4": total_q4,
-        "objective_points": _q4_to_float(objective_q4),
-        "essay_points": _q4_to_float(essay_q4),
+        "total_points_label": format_points_vi(total_pts),
+        "objective_points": obj_pts,
+        "objective_points_label": format_points_vi(obj_pts),
+        "essay_points": ess_pts,
+        "essay_points_label": format_points_vi(ess_pts),
         "objective_answers": objective_answers,
         "essay_rubrics": essay_rubrics,
     }
@@ -1255,6 +1268,7 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
                     "count": 0,
                     "points_q4": 0,
                     "points": 0.0,
+                    "points_label": format_points_vi(0.0),
                     "question_indices": [],
                     "question_types": [],
                     "competencies": [],
@@ -1277,6 +1291,7 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
         cell["count"] += 1
         cell["points_q4"] = _add_q4(cell["points_q4"], q4)
         cell["points"] = _q4_to_float(cell["points_q4"])
+        cell["points_label"] = format_points_vi(cell["points"])
         cell["question_indices"].append(idx)
         if TYPE_LABELS[q_type] not in cell["question_types"]:
             cell["question_types"].append(TYPE_LABELS[q_type])
@@ -1363,6 +1378,7 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
             "count": type_counts[q_type],
             "points": _q4_to_float(type_q4[q_type]),
             "points_q4": type_q4[q_type],
+            "points_label": format_points_vi(_q4_to_float(type_q4[q_type])),
             "percentage": calc_pct(type_q4[q_type], type_counts[q_type]),
         }
         for q_type in ("mcq", "truefalse", "short", "essay")

@@ -4,10 +4,16 @@ import {richTextHTML} from './math-content.js';
 const LEVEL_COLORS = ['#11695b', '#2563eb', '#d97706', '#dc2626'];
 const LEVEL_SHORT = ['NB', 'TH', 'VD', 'VDC'];
 const ESTIMATED_MINUTES_BY_TYPE = {mcq: 1.5, truefalse: 2.5, short: 2.5, essay: 10};
+const SAFE_CELL_IMAGE_RE = /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i;
 
 let activeCtx = null;
 let bankCache = [];
-let bankFilters = {q: '', subject: '', grade: '', qtype: '', level: ''};
+let bankTotal = 0;
+let bankHasMore = false;
+let bankFacets = null;
+let bankFilters = {q: '', subject: '', grade: '', topic: '', qtype: '', level: ''};
+let bankSearchTimer = null;
+let bankRequestSeq = 0;
 let dragState = {draggedId: null, listenersBound: false, refreshBound: false};
 
 export function stripVietnameseDiacritics(value) {
@@ -39,6 +45,9 @@ function jaccardSimilarity(tokensA, tokensB) {
 }
 
 function questionPoints(q) {
+  if (q && q.points_real != null && q.points_real !== '' && Number.isFinite(Number(q.points_real))) {
+    return Number(q.points_real);
+  }
   if (q && q.points != null && q.points !== '' && Number.isFinite(Number(q.points))) {
     return Number(q.points);
   }
@@ -60,6 +69,7 @@ export function filterQuestionBankItems(items, filters = {}) {
   const qNeedle = stripVietnameseDiacritics(filters.q || '');
   const subjectNeedle = stripVietnameseDiacritics(filters.subject || '');
   const gradeNeedle = String(filters.grade ?? '').trim();
+  const topicNeedle = stripVietnameseDiacritics(filters.topic || '');
   const typeNeedle = String(filters.qtype ?? '').trim();
   const hasLevel = filters.level !== '' && filters.level !== null && filters.level !== undefined;
   const levelNeedle = hasLevel ? Number(filters.level) : null;
@@ -69,11 +79,13 @@ export function filterQuestionBankItems(items, filters = {}) {
     const q = item.question && typeof item.question === 'object' ? item.question : {};
     const subject = item.subject || q.subject || '';
     const grade = String(item.grade ?? q.grade ?? '').trim();
+    const topic = item.topic || q.topic || '';
     const qtype = item.qtype || q.type || 'mcq';
     const level = item.level != null ? Number(item.level) : Number(q.level ?? 0);
 
     if (subjectNeedle && stripVietnameseDiacritics(subject) !== subjectNeedle) return false;
     if (gradeNeedle && grade !== gradeNeedle) return false;
+    if (topicNeedle && stripVietnameseDiacritics(topic) !== topicNeedle) return false;
     if (typeNeedle && qtype !== typeNeedle) return false;
     if (hasLevel && Number.isFinite(levelNeedle) && level !== levelNeedle) return false;
 
@@ -169,6 +181,15 @@ export function computeClientAnalyticsSummary(exam) {
         }
       }
       if (q?.answerKnown !== false && Number.isInteger(q?.answer) && q.answer >= 0 && q.answer < 4) {
+        const selectedOptText = String(opts[q.answer] || '').trim();
+        if (!selectedOptText) {
+          issues.push({
+            severity: 'error',
+            code: 'empty_selected_option',
+            message: `Câu ${idx + 1} đang chọn đáp án ${'ABCD'[q.answer]} nhưng nội dung phương án đó còn trống.`,
+            questionIndex: idx,
+          });
+        }
         const letter = 'ABCD'[q.answer];
         answerCounts[letter] += 1;
         mcqAnswers.push({letter, index: idx});
@@ -348,12 +369,22 @@ export function renderQuestionBankItemsHTML(items) {
       const typeLabel = QUESTION_TYPES[qType] || qType;
       const lvl = Number.isInteger(item.level) ? item.level : Number(q.level ?? 0);
       const levelLabel = LEVELS[lvl] || LEVELS[0];
-      const pts = questionPoints(item) || questionPoints(q);
+      const exactPts =
+        item.points_real ??
+        (item.points != null && item.points !== '' ? item.points : null) ??
+        (q.points != null && q.points !== '' ? q.points : null);
+      const pts =
+        exactPts != null && Number.isFinite(Number(exactPts))
+          ? Number(exactPts)
+          : questionPoints(item) || questionPoints(q);
       const subject = item.subject || q.subject || 'Chưa rõ môn';
       const grade = item.grade || q.grade ? `Lớp ${item.grade || q.grade}` : '';
       const topic = item.topic || q.topic || '';
       const tags = Array.isArray(item.tags) ? item.tags.filter(Boolean).slice(0, 5) : [];
       const opts = Array.isArray(q.options) ? q.options.filter((o) => String(o || '').trim()) : [];
+      const thumbImg = Array.isArray(q.images)
+        ? q.images.find((im) => typeof im?.data === 'string' && SAFE_CELL_IMAGE_RE.test(im.data))
+        : null;
       return `<article class="qbank-card" data-bank-id="${esc(item.id)}">
         <div class="qbank-card-head">
           <div class="qbank-meta">
@@ -369,6 +400,7 @@ export function renderQuestionBankItemsHTML(items) {
         </div>
         ${topic ? `<div class="qbank-topic">Chủ đề: <b>${esc(topic)}</b></div>` : ''}
         <div class="qbank-stem read-formula">${richTextHTML(q.stem || '(Chưa có nội dung)')}</div>
+        ${thumbImg ? `<div class="qbank-thumb-wrap"><img class="qbank-thumb" src="${esc(thumbImg.data)}" alt="${esc(thumbImg.caption || 'Hình câu hỏi')}"></div>` : ''}
         ${opts.length ? `<div class="qbank-options">${opts.map((opt, idx) => `<div class="qbank-opt"><b>${String.fromCharCode(65 + idx)}.</b> ${richTextHTML(opt)}</div>`).join('')}</div>` : ''}
         ${tags.length ? `<div class="qbank-tags">${tags.map((t) => `<span class="qbank-tag">#${esc(t)}</span>`).join('')}</div>` : ''}
       </article>`;
@@ -422,7 +454,12 @@ export function renderAnalyticsModalHTML(report, exam = null, {clientFallback = 
   const issueItems = issues.length
     ? issues
         .map((issue) => {
-          const sev = issue.severity === 'error' ? 'error' : issue.severity === 'warning' ? 'warning' : 'info';
+          const sev =
+            issue.severity === 'error'
+              ? 'error'
+              : issue.severity === 'warning' || issue.severity === 'warn'
+                ? 'warning'
+                : 'info';
           const sevLabel = sev === 'error' ? 'Lỗi' : sev === 'warning' ? 'Cảnh báo' : 'Gợi ý';
           const hasIdx = Number.isInteger(issue.questionIndex) && issue.questionIndex >= 0;
           const qObj = hasIdx && Array.isArray(exam?.questions) ? exam.questions[issue.questionIndex] : null;
@@ -551,14 +588,17 @@ async function vipApi(path, {method = 'GET', body} = {}) {
   return data;
 }
 
-function buildBankPayload(exam, q) {
-  const tags = [exam?.subject, exam?.grade ? `Lớp ${exam.grade}` : '', q?.topic]
-    .map((t) => String(t || '').trim())
-    .filter(Boolean);
+export function buildBankPayload(exam, q) {
+  const subject = String(q?.subject || exam?.subject || '').trim();
+  const grade = String(q?.grade ?? exam?.grade ?? '').trim();
+  const topic = String(q?.topic || '').trim();
+  const points = questionPoints(q) || 1;
+  const tags = [subject, grade ? `Lớp ${grade}` : '', topic].filter(Boolean);
   const questionCopy = clone(q);
-  if (exam?.subject && !questionCopy.subject) questionCopy.subject = exam.subject;
-  if (exam?.grade && !questionCopy.grade) questionCopy.grade = exam.grade;
-  return {question: questionCopy, tags};
+  if (subject && !questionCopy.subject) questionCopy.subject = subject;
+  if (grade && !questionCopy.grade) questionCopy.grade = grade;
+  questionCopy.points = points;
+  return {subject, grade, topic, points, question: questionCopy, tags};
 }
 
 export async function saveQuestionToBank(c, questionId) {
@@ -571,7 +611,11 @@ export async function saveQuestionToBank(c, questionId) {
   }
   const q = e.questions[idx];
   const res = await vipApi('/api/question-bank', {method: 'POST', body: buildBankPayload(e, q)});
-  c.toast(`Đã lưu Câu ${idx + 1} vào Ngân hàng câu hỏi`);
+  if (res?.duplicateOf) {
+    c.toast(`Câu ${idx + 1} tương tự câu đã có trong Ngân hàng (trùng lặp).`);
+  } else {
+    c.toast(`Đã lưu Câu ${idx + 1} vào Ngân hàng câu hỏi`);
+  }
   return res?.item || null;
 }
 
@@ -582,58 +626,135 @@ export async function saveAllQuestionsToBank(c) {
     return 0;
   }
   let saved = 0;
+  let dupCount = 0;
   for (const q of e.questions) {
-    await vipApi('/api/question-bank', {method: 'POST', body: buildBankPayload(e, q)});
-    saved += 1;
+    const res = await vipApi('/api/question-bank', {method: 'POST', body: buildBankPayload(e, q)});
+    if (res?.duplicateOf) dupCount += 1;
+    else saved += 1;
   }
-  c.toast(`Đã lưu ${saved}/${e.questions.length} câu vào Ngân hàng câu hỏi`);
+  c.toast(
+    dupCount
+      ? `Đã lưu ${saved} câu mới vào Ngân hàng (${dupCount} câu đã có/trùng lặp).`
+      : `Đã lưu ${saved}/${e.questions.length} câu vào Ngân hàng câu hỏi`,
+  );
   if (document.querySelector('#qbank-list')) {
     await refreshQuestionBankList(c);
   }
-  return saved;
+  return saved + dupCount;
 }
 
 function paintQuestionBankList() {
   const listEl = document.querySelector('#qbank-list');
   const countEl = document.querySelector('#qbank-count');
+  const loadMoreBtn = document.querySelector('#qbank-load-more');
   if (!listEl) return;
-  const filtered = filterQuestionBankItems(bankCache, bankFilters);
+  const total = Math.max(bankTotal || 0, bankCache.length);
   if (countEl) {
-    countEl.textContent = `Hiển thị ${filtered.length} / ${bankCache.length} câu hỏi trong kho`;
+    countEl.textContent = `Hiển thị ${bankCache.length} / ${total} câu hỏi trong kho`;
   }
-  listEl.innerHTML = renderQuestionBankItemsHTML(filtered);
+  listEl.innerHTML = renderQuestionBankItemsHTML(bankCache);
+  if (loadMoreBtn) {
+    loadMoreBtn.hidden = !bankHasMore;
+    loadMoreBtn.disabled = false;
+  }
 }
 
 function populateQuestionBankFilterOptions(e) {
   const subjectSel = document.querySelector('#qbank-subject');
   const gradeSel = document.querySelector('#qbank-grade');
+  const topicSel = document.querySelector('#qbank-topic');
+  const facetSubjects = Array.isArray(bankFacets?.subjects) ? bankFacets.subjects : [];
+  const facetGrades = Array.isArray(bankFacets?.grades) ? bankFacets.grades : [];
+  const facetTopics = Array.isArray(bankFacets?.topics) ? bankFacets.topics : [];
   if (subjectSel) {
-    const subjects = [...new Set([e?.subject, ...bankCache.map((it) => it.subject || it.question?.subject)].filter(Boolean))].sort();
+    const subjects = [
+      ...new Set([
+        ...(facetSubjects.length ? facetSubjects : []),
+        ...(bankFilters.subject ? [bankFilters.subject] : []),
+        ...(!facetSubjects.length && e?.subject ? [e.subject] : []),
+        ...(!facetSubjects.length ? bankCache.map((it) => it.subject || it.question?.subject) : []),
+      ].filter(Boolean)),
+    ].sort((a, b) => a.localeCompare(b, 'vi-VN'));
     subjectSel.innerHTML = `<option value="">Tất cả môn</option>${subjects.map((s) => `<option value="${esc(s)}" ${bankFilters.subject === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}`;
   }
   if (gradeSel) {
-    const grades = [...new Set([e?.grade, ...bankCache.map((it) => String(it.grade ?? it.question?.grade ?? '').trim())].filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+    const grades = [
+      ...new Set([
+        ...(facetGrades.length ? facetGrades : []),
+        ...(bankFilters.grade ? [bankFilters.grade] : []),
+        ...(!facetGrades.length && e?.grade ? [String(e.grade)] : []),
+        ...(!facetGrades.length ? bankCache.map((it) => String(it.grade ?? it.question?.grade ?? '').trim()) : []),
+      ].filter(Boolean)),
+    ].sort((a, b) => Number(a) - Number(b));
     gradeSel.innerHTML = `<option value="">Tất cả lớp</option>${grades.map((g) => `<option value="${esc(g)}" ${bankFilters.grade === g ? 'selected' : ''}>Lớp ${esc(g)}</option>`).join('')}`;
+  }
+  if (topicSel) {
+    const topics = [
+      ...new Set([
+        ...(facetTopics.length ? facetTopics : []),
+        ...(bankFilters.topic ? [bankFilters.topic] : []),
+        ...(!facetTopics.length ? bankCache.map((it) => it.topic || it.question?.topic) : []),
+      ].filter(Boolean)),
+    ].sort((a, b) => a.localeCompare(b, 'vi-VN'));
+    topicSel.innerHTML = `<option value="">Tất cả chủ đề</option>${topics.map((t) => `<option value="${esc(t)}" ${bankFilters.topic === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}`;
   }
 }
 
-async function refreshQuestionBankList(c) {
+async function refreshQuestionBankList(c, {append = false} = {}) {
   const listEl = document.querySelector('#qbank-list');
-  if (listEl) listEl.innerHTML = '<div class="busy"><span class="spinner"></span>Đang tải Ngân hàng câu hỏi…</div>';
+  const loadMoreBtn = document.querySelector('#qbank-load-more');
+  const seq = ++bankRequestSeq;
+  if (!append && listEl) {
+    listEl.innerHTML = '<div class="busy"><span class="spinner"></span>Đang tải Ngân hàng câu hỏi…</div>';
+  }
+  if (append && loadMoreBtn) {
+    loadMoreBtn.disabled = true;
+  }
   try {
-    const data = await vipApi('/api/question-bank');
-    bankCache = Array.isArray(data?.items) ? data.items : [];
+    const params = new URLSearchParams();
+    if (bankFilters.q.trim()) params.set('q', bankFilters.q.trim());
+    if (bankFilters.subject) params.set('subject', bankFilters.subject);
+    if (bankFilters.grade) params.set('grade', bankFilters.grade);
+    if (bankFilters.topic) params.set('topic', bankFilters.topic);
+    if (bankFilters.qtype) params.set('qtype', bankFilters.qtype);
+    if (bankFilters.level !== '' && bankFilters.level != null) params.set('level', String(bankFilters.level));
+    params.set('limit', '50');
+    params.set('offset', String(append ? bankCache.length : 0));
+
+    const data = await vipApi(`/api/question-bank?${params.toString()}`);
+    if (seq !== bankRequestSeq) return;
+    const incoming = Array.isArray(data?.items) ? data.items : [];
+    if (append) {
+      const seen = new Set(bankCache.map((it) => it.id));
+      bankCache = [...bankCache, ...incoming.filter((it) => !seen.has(it.id))];
+    } else {
+      bankCache = incoming;
+    }
+    bankTotal = Number.isFinite(Number(data?.total)) ? Number(data.total) : bankCache.length;
+    bankHasMore = typeof data?.hasMore === 'boolean' ? data.hasMore : bankCache.length < bankTotal;
+    if (data?.facets && typeof data.facets === 'object') {
+      bankFacets = data.facets;
+    }
     populateQuestionBankFilterOptions(c.exam());
     paintQuestionBankList();
   } catch (err) {
-    if (listEl) {
+    if (seq !== bankRequestSeq) return;
+    if (loadMoreBtn) loadMoreBtn.disabled = false;
+    if (!append && listEl) {
       listEl.innerHTML = `<div class="alert">Chưa tải được Ngân hàng câu hỏi: ${esc(err.message)}</div>`;
+    } else {
+      c.toast(`Chưa tải thêm được câu hỏi: ${err.message}`);
     }
   }
 }
 
 export async function openQuestionBank(c) {
-  bankFilters = {q: '', subject: '', grade: '', qtype: '', level: ''};
+  clearTimeout(bankSearchTimer);
+  bankFilters = {q: '', subject: '', grade: '', topic: '', qtype: '', level: ''};
+  bankCache = [];
+  bankTotal = 0;
+  bankHasMore = false;
+  bankFacets = null;
   c.modal(
     'Ngân hàng câu hỏi thông minh',
     `<div class="qbank-modal">
@@ -644,6 +765,7 @@ export async function openQuestionBank(c) {
       <div class="qbank-filters">
         <select id="qbank-subject" aria-label="Lọc theo môn"><option value="">Tất cả môn</option></select>
         <select id="qbank-grade" aria-label="Lọc theo lớp"><option value="">Tất cả lớp</option></select>
+        <select id="qbank-topic" aria-label="Lọc theo chủ đề"><option value="">Tất cả chủ đề</option></select>
         <select id="qbank-qtype" aria-label="Lọc theo dạng câu">
           <option value="">Tất cả dạng</option>
           ${Object.entries(QUESTION_TYPES).map(([k, label]) => `<option value="${esc(k)}">${esc(label)}</option>`).join('')}
@@ -655,6 +777,7 @@ export async function openQuestionBank(c) {
       </div>
       <div id="qbank-count" class="qbank-count">Đang tải…</div>
       <div id="qbank-list" class="qbank-list"></div>
+      <div class="qbank-more-wrap"><button type="button" id="qbank-load-more" data-action="load-more-bank" hidden>Tải thêm</button></div>
     </div>`,
     'Lưu câu hỏi hay từ mọi đề thi, tìm không dấu tiếng Việt và chèn lại kèm hoàn tác Ctrl+Z.',
   );
@@ -664,17 +787,21 @@ export async function openQuestionBank(c) {
     modalRoot.addEventListener('input', (ev) => {
       if (ev.target.id === 'qbank-search') {
         bankFilters.q = ev.target.value;
-        paintQuestionBankList();
+        clearTimeout(bankSearchTimer);
+        bankSearchTimer = setTimeout(() => {
+          refreshQuestionBankList(c);
+        }, 200);
       }
     });
     modalRoot.addEventListener('change', (ev) => {
       const id = ev.target.id;
       if (id === 'qbank-subject') bankFilters.subject = ev.target.value;
       else if (id === 'qbank-grade') bankFilters.grade = ev.target.value;
+      else if (id === 'qbank-topic') bankFilters.topic = ev.target.value;
       else if (id === 'qbank-qtype') bankFilters.qtype = ev.target.value;
       else if (id === 'qbank-level') bankFilters.level = ev.target.value;
       else return;
-      paintQuestionBankList();
+      refreshQuestionBankList(c);
     });
   }
 
@@ -704,6 +831,7 @@ async function deleteBankItem(c, itemId) {
   if (!itemId) return;
   await vipApi(`/api/question-bank/${encodeURIComponent(itemId)}`, {method: 'DELETE'});
   bankCache = bankCache.filter((it) => it.id !== itemId);
+  bankTotal = Math.max(bankCache.length, bankTotal - 1);
   paintQuestionBankList();
   c.toast('Đã xóa câu hỏi khỏi Ngân hàng.');
 }
@@ -916,6 +1044,9 @@ export async function handleVipAction(action, node, c) {
       return true;
     case 'delete-bank-item':
       await deleteBankItem(c, node?.dataset?.id);
+      return true;
+    case 'load-more-bank':
+      await refreshQuestionBankList(c, {append: true});
       return true;
     case 'exam-analytics':
       await openExamAnalytics(c);

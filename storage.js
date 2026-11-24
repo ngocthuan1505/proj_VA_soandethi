@@ -5,28 +5,33 @@ function contextFor(id){
 }
 let active=contextFor('local');
 export const setIdentity=id=>{active=contextFor(id||'local');};
-const dbp=new Promise((resolve,reject)=>{
+const dbp=typeof indexedDB==='undefined'?Promise.resolve(null):new Promise((resolve,reject)=>{
  const request=indexedDB.open('tro-ly-soan-de-v1',1);
  request.onupgradeneeded=()=>request.result.createObjectStore('kv');
  request.onsuccess=()=>resolve(request.result);
  request.onerror=()=>reject(request.error);
 });
-async function localGet(ctx,key){
+async function requireDb(){
  const db=await dbp;
+ if(!db)throw Error('IndexedDB không khả dụng trong môi trường này.');
+ return db;
+}
+async function localGet(ctx,key){
+ const db=await requireDb();
  return new Promise((resolve,reject)=>{
   const request=db.transaction('kv').objectStore('kv').get(ctx.id+':'+key);
   request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);
  });
 }
 async function localPut(ctx,key,value){
- const db=await dbp;
+ const db=await requireDb();
  return new Promise((resolve,reject)=>{
   const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(value,ctx.id+':'+key);
   tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Không lưu được bản tạm.'));
  });
 }
 async function updatePending(ctx,key,record,next){
- const db=await dbp;
+ const db=await requireDb();
  return new Promise((resolve,reject)=>{
   const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv'),name=ctx.id+':__pending:'+key;
   const request=store.get(name);
@@ -125,6 +130,29 @@ export async function allPersonalLessons(){
  sameIdentity(ctx);
  if(!Array.isArray(sources))throw Error('Kho học liệu cá nhân trả dữ liệu không hợp lệ.');
  return sources.map(({owner_id,...source})=>source);
+}
+
+export async function allQuestionBank(){
+ const ctx=active,limit=500,items=[];
+ let offset=0;
+ while(true){
+  const response=await fetch(`/api/question-bank?limit=${limit}&offset=${offset}`,{headers:workspaceHeaders(ctx)}).catch(()=>null);
+  sameIdentity(ctx);
+  if(offset===0&&(!response||response.status===404))return null;
+  if(!response||!response.ok)throw Error('Chưa đọc được ngân hàng câu hỏi để sao lưu.');
+  const data=await response.json();
+  sameIdentity(ctx);
+  if(!Array.isArray(data?.items))throw Error('Ngân hàng câu hỏi trả dữ liệu không hợp lệ.');
+  const page=data.items.map(entry=>entry&&typeof entry==='object'?(()=>{const {owner_id,...rest}=entry;return rest;})():entry);
+  items.push(...page);
+  offset+=page.length;
+  const total=Number.isFinite(Number(data.total))?Number(data.total):null;
+  if(page.length===0)break;
+  if(total!==null&&items.length>=total)break;
+  if(total===null&&data.hasMore===false)break;
+  if(total===null&&data.hasMore!==true&&page.length<limit)break;
+ }
+ return items;
 }
 
 export async function allMatrixTemplates(){

@@ -202,3 +202,20 @@ test('Mất phản hồi lúc khôi phục yêu cầu kiểm kho, giữ cache v�
   assert.equal(h.writes.length,1);
  }finally{h.restore();}
 });
+
+test('allQuestionBank phân trang tới hết total và trả null khi máy chủ chưa có route (404)',async()=>{
+ const h=await harness();try{
+  const urls=[];
+  globalThis.fetch=async(url)=>{
+   urls.push(url);
+   if(url.includes('offset=0'))return {ok:true,status:200,json:async()=>({items:[{id:'q1',owner_id:'u1',topic:'Toán'}],total:2,hasMore:true})};
+   return {ok:true,status:200,json:async()=>({items:[{id:'q2',owner_id:'u1',topic:'Văn'}],total:2,hasMore:false})};
+  };
+  const all=await h.storage.allQuestionBank();
+  assert.deepEqual(urls,['/api/question-bank?limit=500&offset=0','/api/question-bank?limit=500&offset=1']);
+  assert.equal(all.length,2);
+  assert.equal(all[0].owner_id,undefined);
+  globalThis.fetch=async()=>({ok:false,status:404,json:async()=>({})});
+  assert.equal(await h.storage.allQuestionBank(),null);
+ }finally{h.restore();}
+});

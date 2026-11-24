@@ -179,6 +179,19 @@ def _is_approved(question: dict[str, Any]) -> bool:
     return False
 
 
+def _mcq_selected_index(question: dict[str, Any]) -> int | None:
+    ans = question.get("answer")
+    if isinstance(ans, bool):
+        return None
+    if isinstance(ans, int) and 0 <= ans < 4:
+        return ans
+    if isinstance(ans, str):
+        clean = ans.strip().upper()
+        if clean in {"A", "B", "C", "D"}:
+            return ord(clean) - 65
+    return None
+
+
 def _has_valid_answer(question: dict[str, Any], qtype: str) -> tuple[bool, int | None]:
     """Trả về `(có_đáp_án_hợp_lệ, chỉ_số_mcq_0_3_hoặc_None)`."""
     if question.get("answerKnown") is False:
@@ -186,19 +199,12 @@ def _has_valid_answer(question: dict[str, Any], qtype: str) -> tuple[bool, int |
 
     if qtype == "mcq":
         options = question.get("options")
-        opt_len = len(options) if isinstance(options, list) else 4
-        ans = question.get("answer")
-        if isinstance(ans, bool):
+        idx = _mcq_selected_index(question)
+        if idx is None or not isinstance(options, list) or idx >= len(options):
             return False, None
-        if isinstance(ans, int) and 0 <= ans < max(1, min(4, opt_len)):
-            return True, ans
-        if isinstance(ans, str):
-            clean = ans.strip().upper()
-            if clean in {"A", "B", "C", "D"}:
-                idx = ord(clean) - 65
-                if idx < max(1, opt_len):
-                    return True, idx
-        return False, None
+        if str(options[idx] or "").strip() == "":
+            return False, None
+        return True, idx
 
     if qtype == "truefalse":
         truth = question.get("truthValues")
@@ -369,7 +375,56 @@ def analyze_exam(exam: dict[str, Any]) -> dict[str, Any]:
             approved_count += 1
 
         has_ans, mcq_idx = _has_valid_answer(q, qtype)
-        if not has_ans:
+        if qtype == "mcq":
+            raw_options = q.get("options")
+            opt_list = raw_options if isinstance(raw_options, list) else []
+            selected_idx = _mcq_selected_index(q)
+            selected_is_empty = (
+                q.get("answerKnown") is not False
+                and selected_idx is not None
+                and (
+                    selected_idx >= len(opt_list) or str(opt_list[selected_idx] or "").strip() == ""
+                )
+            )
+            if not has_ans:
+                if selected_is_empty:
+                    issues.append(
+                        {
+                            "severity": "error",
+                            "code": "empty_selected_option",
+                            "message": (
+                                f"Câu {idx + 1}: Phương án đang chọn làm đáp án bị trống nội dung."
+                            ),
+                            "questionIndex": idx,
+                        }
+                    )
+                else:
+                    issues.append(
+                        {
+                            "severity": "error",
+                            "code": "missing_answer",
+                            "message": f"Câu {idx + 1} chưa có đáp án đúng.",
+                            "questionIndex": idx,
+                        }
+                    )
+            elif mcq_idx is not None:
+                letter = "ABCD"[mcq_idx]
+                answer_counts[letter] += 1
+                mcq_letter_sequence.append((idx, letter))
+
+            non_empty_opts = sum(1 for opt in opt_list[:4] if str(opt or "").strip() != "")
+            if non_empty_opts < 4:
+                issues.append(
+                    {
+                        "severity": "warn",
+                        "code": "incomplete_options",
+                        "message": (
+                            f"Câu {idx + 1} mới có {non_empty_opts}/4 phương án có nội dung."
+                        ),
+                        "questionIndex": idx,
+                    }
+                )
+        elif not has_ans:
             issues.append(
                 {
                     "severity": "error" if qtype != "essay" else "warn",
@@ -382,10 +437,6 @@ def analyze_exam(exam: dict[str, Any]) -> dict[str, Any]:
                     "questionIndex": idx,
                 }
             )
-        elif qtype == "mcq" and mcq_idx is not None:
-            letter = "ABCD"[mcq_idx]
-            answer_counts[letter] += 1
-            mcq_letter_sequence.append((idx, letter))
 
         if not _explanation_text(q) and qtype != "essay":
             issues.append(
@@ -489,7 +540,8 @@ def analyze_exam(exam: dict[str, Any]) -> dict[str, Any]:
             }
         )
 
-    # Phát hiện câu trùng lặp (Jaccard >= 0.65)
+    # Phát hiện câu trùng lặp (Jaccard >= 0.65); giới hạn tối đa 15 cặp trong issues để tránh spam
+    max_duplicate_issues = 15
     duplicates: list[dict[str, Any]] = []
     for i in range(total_questions):
         s1 = token_sets[i]
@@ -506,17 +558,30 @@ def analyze_exam(exam: dict[str, Any]) -> dict[str, Any]:
             if sim >= 0.65:
                 sim_rounded = round(sim, 4)
                 duplicates.append({"q1Index": i, "q2Index": j, "similarity": sim_rounded})
-                issues.append(
-                    {
-                        "severity": "warn",
-                        "code": "duplicate_question",
-                        "message": (
-                            f"Câu {i + 1} và Câu {j + 1} có độ tương đồng cao "
-                            f"({round(sim_rounded * 100, 1)}%)."
-                        ),
-                        "questionIndex": j,
-                    }
-                )
+                if len(duplicates) <= max_duplicate_issues:
+                    issues.append(
+                        {
+                            "severity": "warn",
+                            "code": "duplicate_question",
+                            "message": (
+                                f"Câu {i + 1} và Câu {j + 1} có độ tương đồng cao "
+                                f"({round(sim_rounded * 100, 1)}%)."
+                            ),
+                            "questionIndex": j,
+                        }
+                    )
+    if len(duplicates) > max_duplicate_issues:
+        extra_pairs = len(duplicates) - max_duplicate_issues
+        issues.append(
+            {
+                "severity": "warn",
+                "code": "duplicate_question_summary",
+                "message": (
+                    f"Còn thêm {extra_pairs} cặp câu hỏi có độ tương đồng cao khác "
+                    f"(tổng cộng {len(duplicates)} cặp)."
+                ),
+            }
+        )
 
     level_distribution = [
         {

@@ -149,6 +149,36 @@ def image_bytes(data):
         ) from None
 
 
+def watermark_image_bytes(data: Any, *, fade_alpha: float = 0.16) -> tuple[bytes, int, int]:
+    """Xác thực ảnh hình mờ PNG/JPEG qua Pillow và tạo bản PNG an toàn."""
+    if (
+        not isinstance(data, str)
+        or len(data) > 20 * 1024 * 1024
+        or not re.fullmatch(r"data:image/(?:png|jpeg);base64,[A-Za-z0-9+/=]+", data)
+    ):
+        raise AIError("invalid_image", "Ảnh hình mờ phải là định dạng PNG hoặc JPEG hợp lệ.")
+    try:
+        raw = base64.b64decode(data.split(",", 1)[1], validate=True)
+        if len(raw) > 15 * 1024 * 1024:
+            raise ValueError
+        with Image.open(io.BytesIO(raw), formats=("PNG", "JPEG")) as image:
+            if image.width * image.height > 20_000_000 or getattr(image, "n_frames", 1) != 1:
+                raise ValueError
+            image = ImageOps.exif_transpose(image)
+            image.thumbnail((1200, 1200))
+            rgba = image.convert("RGBA")
+            if 0.0 < fade_alpha < 1.0:
+                alpha = rgba.getchannel("A").point(lambda px: int(px * fade_alpha))
+                rgba.putalpha(alpha)
+            out = io.BytesIO()
+            rgba.save(out, format="PNG")
+            return out.getvalue(), rgba.width, rgba.height
+    except (ValueError, OSError, binascii.Error, Image.DecompressionBombError):
+        raise AIError(
+            "invalid_image", "Ảnh hình mờ PNG/JPEG bị hỏng hoặc vượt giới hạn cho phép."
+        ) from None
+
+
 def export_inputs(exam, teacher):
     if len(exam["questions"]) > 300 or len(json.dumps(exam, ensure_ascii=False)) > 25_000_000:
         raise AIError("export_limit", "Đề vượt giới hạn 300 câu hoặc 25 MB.")
@@ -194,8 +224,17 @@ class WordWriter:
         layout = exam.get("layout") or {}
         font = layout.get("font") if layout.get("font") in FONTS else "Times New Roman"
         size = min(22, max(10, float(layout.get("fontSize") or 15)))
+        raw_line_height = layout.get("lineHeight")
+        line_height: float | None = None
+        if (
+            not isinstance(raw_line_height, bool)
+            and isinstance(raw_line_height, (int, float))
+            and math.isfinite(raw_line_height)
+        ):
+            line_height = min(2.5, max(1.0, float(raw_line_height)))
         self.font_name = font
         self.font_size = size
+        self.mcq_columns = 2 if layout.get("mcqColumns") == 2 else 1
         self._apply_page_chrome(section, layout)
         for name in (
             "Normal",
@@ -214,6 +253,8 @@ class WordWriter:
             style.font.color.rgb = RGBColor(0, 0, 0)
             style.paragraph_format.space_before = Pt(0)
             style.paragraph_format.space_after = Pt(6)
+            if line_height is not None and name in {"Normal", "List Bullet", "List Number"}:
+                style.paragraph_format.line_spacing = line_height
         for border in self.doc.styles.element.findall(".//" + qn("w:pBdr")):
             border.getparent().remove(border)
         self.num_id = (
@@ -248,15 +289,20 @@ class WordWriter:
         footer_text = str(layout.get("footerText") or "").strip()
         show_pages = bool(layout.get("showPageNumbers"))
         watermark = str(layout.get("watermarkText") or "").strip()
+        watermark_image = layout.get("watermarkImage")
+        has_wm_image = isinstance(watermark_image, str) and bool(watermark_image.strip())
 
-        if header_text or watermark:
+        if header_text or watermark or has_wm_image:
             section.header.is_linked_to_previous = False
             hp = section.header.paragraphs[0]
+            used_first = False
             if header_text:
                 hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
                 hp.add_run(header_text).font.size = Pt(10)
+                used_first = True
             if watermark:
-                wp = section.header.add_paragraph() if header_text else hp
+                wp = section.header.add_paragraph() if used_first else hp
+                used_first = True
                 wp.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 escaped_wm = xml_escape(watermark[:80], {'"': "&quot;", "'": "&apos;"})
                 pict_xml = (
@@ -275,6 +321,17 @@ class WordWriter:
                 )
                 r = wp.add_run()
                 r._r.append(parse_xml(pict_xml))
+            if has_wm_image:
+                wm_bytes, wm_w, wm_h = watermark_image_bytes(watermark_image, fade_alpha=0.16)
+                wp_img = section.header.add_paragraph() if used_first else hp
+                wp_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                scale = min(3.4 / max(1, wm_w), 1.6 / max(1, wm_h), 1 / 96)
+                shape = wp_img.add_run().add_picture(
+                    io.BytesIO(wm_bytes),
+                    width=Inches(max(0.4, wm_w * scale)),
+                    height=Inches(max(0.4, wm_h * scale)),
+                )
+                shape._inline.docPr.set("descr", "Hình mờ đề thi")
 
         if footer_text or show_pages:
             section.footer.is_linked_to_previous = False
@@ -522,6 +579,32 @@ class WordWriter:
             for run in p.runs:
                 run.italic = True
 
+    def _write_mcq_two_column(self, options: list[str], docs: list[Any]) -> None:
+        tbl = self.doc.add_table(rows=2, cols=2)
+        tbl.autofit = False
+        tbl_pr = tbl._tbl.tblPr
+        borders = OxmlElement("w:tblBorders")
+        for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+            el = OxmlElement(f"w:{edge}")
+            el.set(qn("w:val"), "none")
+            borders.append(el)
+        tbl_pr.append(borders)
+        col_width = Mm(87)
+        for col in tbl.columns:
+            col.width = col_width
+        for j, option in enumerate(options[:4]):
+            cell = tbl.cell(j // 2, j % 2)
+            cell.width = col_width
+            cell._tc.clear_content()
+            self.field(
+                option,
+                docs[j] if j < len(docs) else None,
+                prefix=f"{'ABCD'[j]}. ",
+                container=cell,
+            )
+            if len(cell._tc) == 0 or cell._tc[-1].tag != qn("w:p"):
+                cell.add_paragraph()
+
     def write(self):
         e = self.exam
         self.doc.add_paragraph(str(e.get("school", ""))).alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -619,9 +702,18 @@ class WordWriter:
                     q["figure"].get("align", "center"),
                 )
                 self.figure_at += 1
-            for j, option in enumerate(q.get("options", [])):
-                docs = q.get("optionDocs") or []
-                self.field(option, docs[j] if j < len(docs) else None, prefix=f"{'ABCD'[j]}. ")
+            options = q.get("options", [])
+            docs = q.get("optionDocs") or []
+            if (
+                self.mcq_columns == 2
+                and q.get("type", "mcq") == "mcq"
+                and isinstance(options, list)
+                and len(options) == 4
+            ):
+                self._write_mcq_two_column(options, docs)
+            else:
+                for j, option in enumerate(options):
+                    self.field(option, docs[j] if j < len(docs) else None, prefix=f"{'ABCD'[j]}. ")
             if self.teacher:
                 answer = saved_answer_label(q)
                 self.field("Lời giải tham khảo" if q.get("type") == "essay" else "Đáp án " + answer)

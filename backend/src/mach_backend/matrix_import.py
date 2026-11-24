@@ -200,14 +200,16 @@ def matrix_slots(rows):
         ).matrix
     except (ValidationError, TypeError, ValueError):
         raise AIError(
-            "invalid_plan", "Ma trận cần chủ đề, loại câu và ba hoặc bốn số nguyên0..30."
+            "invalid_plan", "Ma trận cần chủ đề, loại câu và ba hoặc bốn số nguyên 0..30."
         ) from None
     keys = [
         (r.topic.strip().casefold(), r.type, (r.choiceGroup or "").strip().casefold())
         for r in matrix
     ]
     if len(set(keys)) != len(keys) or any(not k[0] for k in keys):
-        raise AIError("invalid_plan", "Nhận1–30câu, không lặp cùng chủ đề, loại câu và nhánh chọn.")
+        raise AIError(
+            "invalid_plan", "Nhận 1–30 câu, không lặp cùng chủ đề, loại câu và nhánh chọn."
+        )
 
     uses_extended = any(
         r.points is not None or r.pointsByLevel is not None or r.choiceGroup is not None
@@ -218,7 +220,7 @@ def matrix_slots(rows):
     else:
         count = sum(sum(row.targets) for row in matrix)
         if not 1 <= count <= MAX_MATRIX_QUESTIONS:
-            raise AIError("invalid_plan", "Nhận1–30câu, không lặp cùng chủ đề và loại câu.")
+            raise AIError("invalid_plan", "Nhận 1–30 câu, không lặp cùng chủ đề và loại câu.")
         if any(r.pointsByLevelQ4 is not None and r.pointsQ4 is not None for r in matrix):
             raise AIError(
                 "invalid_plan", "Chọn điểm chung hoặc điểm theo từng mức, không dùng cả hai."
@@ -234,7 +236,7 @@ def matrix_slots(rows):
         )
         remaining = 1000 - fixed
         if (automatic and remaining < automatic * 25) or (not automatic and remaining != 0):
-            raise AIError("invalid_plan", "Tổng điểm cần đúng10, mỗi câu ít nhất0,25điểm.")
+            raise AIError("invalid_plan", "Tổng điểm cần đúng 10, mỗi câu ít nhất 0,25 điểm.")
 
     common_fixed = sum(
         n * (_row_cell_p100(r, level) or 0)

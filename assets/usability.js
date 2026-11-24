@@ -29,7 +29,7 @@ function syncTimePresetSelect(){
   select.setAttribute('data-ux-time-select','');
   select.setAttribute('aria-label','Thời gian chạy AI');
   select.title='Thời gian chạy AI';
-  select.innerHTML='<option value="fast">2p Nhanh</option><option value="standard">5p Chuẩn</option><option value="deep">20p Kỹ</option><option value="extended">60p Sâu</option>';
+  select.innerHTML='<option value="fast">Thời gian: Nhanh (2p · API nhanh)</option><option value="standard">Thời gian: Chuẩn (5p · AGY)</option><option value="deep">Thời gian: Kỹ sâu (20p · AGY)</option><option value="extended">Thời gian: Sâu (60p · AGY)</option>';
   const send=bottom.querySelector('button[type=submit]');
   if(send)send.before(select);else bottom.append(select);
  }

@@ -1,6 +1,11 @@
 """Tham chiếu nguồn dùng chung cho các thao tác AI."""
 
-from typing import Annotated
+import math
+import re
+import unicodedata
+from collections import Counter
+from collections.abc import Sequence
+from typing import Annotated, Any
 from uuid import UUID
 
 from pydantic import Field, ValidationError
@@ -67,7 +72,131 @@ def read_selected_sources(
     return tuple(selected)
 
 
-def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...], db):
+_TOKEN_RE = re.compile(r"[0-9a-z]+")
+
+
+def _strip_accents(value: str) -> str:
+    nfd = unicodedata.normalize("NFD", str(value or ""))
+    no_marks = "".join(ch for ch in nfd if unicodedata.category(ch) != "Mn")
+    return no_marks.replace("đ", "d").replace("Đ", "D").casefold()
+
+
+def _fragment_text(fragment: Any) -> str:
+    if isinstance(fragment, SourceFragment):
+        return fragment.text
+    if isinstance(fragment, dict):
+        parts: list[str] = []
+        for key in (
+            "name",
+            "title",
+            "topic",
+            "text",
+            "excerpt",
+            "content",
+            "passage",
+            "sourceText",
+        ):
+            val = fragment.get(key)
+            if isinstance(val, str) and val.strip():
+                parts.append(val)
+        return "\n".join(parts)
+    if isinstance(fragment, str):
+        return fragment
+    text = getattr(fragment, "text", None)
+    return str(text) if isinstance(text, str) else ""
+
+
+def _char_trigrams(normalized_text: str) -> Counter[str]:
+    compact = re.sub(r"\s+", " ", normalized_text).strip()
+    if not compact:
+        return Counter()
+    if len(compact) < 3:
+        return Counter({compact: 1})
+    return Counter(compact[i : i + 3] for i in range(len(compact) - 2))
+
+
+def _cosine_sim(a: Counter[str], b: Counter[str]) -> float:
+    if not a or not b:
+        return 0.0
+    dot = sum(val * b.get(key, 0) for key, val in a.items())
+    if dot <= 0:
+        return 0.0
+    norm_a = math.sqrt(sum(v * v for v in a.values()))
+    norm_b = math.sqrt(sum(v * v for v in b.values()))
+    if norm_a == 0.0 or norm_b == 0.0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+def rank_source_fragments(
+    query: str,
+    fragments: Sequence[Any],
+    top_k: int = 8,
+) -> list[Any]:
+    """Xếp hạng lai thuần Python: 0.6 BM25 không dấu + 0.4 cosine char-trigram."""
+    items = list(fragments)
+    limit = max(0, int(top_k))
+    if not items or limit == 0:
+        return []
+    q_norm = _strip_accents(query).strip()
+    if not q_norm:
+        return items[:limit]
+
+    q_tokens = _TOKEN_RE.findall(q_norm)
+    q_trigrams = _char_trigrams(q_norm)
+
+    doc_norms = [_strip_accents(_fragment_text(frag)) for frag in items]
+    doc_tokens = [_TOKEN_RE.findall(txt) for txt in doc_norms]
+    doc_trigrams = [_char_trigrams(txt) for txt in doc_norms]
+
+    n_docs = len(items)
+    avgdl = sum(len(toks) for toks in doc_tokens) / max(1, n_docs)
+    df: Counter[str] = Counter()
+    for toks in doc_tokens:
+        for tok in set(toks):
+            df[tok] += 1
+
+    k1 = 1.5
+    b = 0.75
+    bm25_scores: list[float] = []
+    for toks in doc_tokens:
+        if not q_tokens or not toks:
+            bm25_scores.append(0.0)
+            continue
+        tf = Counter(toks)
+        dl = len(toks)
+        score = 0.0
+        for tok in q_tokens:
+            freq = tf.get(tok, 0)
+            if freq <= 0:
+                continue
+            n_df = df.get(tok, 0)
+            idf = math.log((n_docs - n_df + 0.5) / (n_df + 0.5) + 1.0)
+            denom = freq + k1 * (1.0 - b + b * (dl / max(1.0, avgdl)))
+            score += idf * (freq * (k1 + 1.0)) / denom
+        bm25_scores.append(score)
+
+    max_bm25 = max(bm25_scores) if bm25_scores else 0.0
+    ranked_indices = list(range(n_docs))
+
+    def _hybrid_key(idx: int) -> tuple[float, int]:
+        bm25_norm = (bm25_scores[idx] / max_bm25) if max_bm25 > 0.0 else 0.0
+        tri_cos = _cosine_sim(q_trigrams, doc_trigrams[idx])
+        combined = 0.6 * bm25_norm + 0.4 * tri_cos
+        return (-combined, idx)
+
+    ranked_indices.sort(key=_hybrid_key)
+    return [items[idx] for idx in ranked_indices[:limit]]
+
+
+def workspace_page_sources(
+    exam,
+    owner_id: str,
+    keys: tuple[SourceKey, ...],
+    db,
+    *,
+    teacher_files_only: bool = False,
+):
     """Resolve selected pages from the current exam snapshot."""
     chosen = {
         (str(source_id), locator.index) for source_id, locator in keys if locator.kind == "page"
@@ -77,6 +206,10 @@ def workspace_page_sources(exam, owner_id: str, keys: tuple[SourceKey, ...], db)
     catalog = {collection["id"]: collection for collection in lesson_catalog()}
     sources = []
     for doc in exam.get("docs", []):
+        if teacher_files_only and (
+            doc.get("catalog") is True or doc.get("sourceOrigin") == "lesson_catalog"
+        ):
+            continue
         doc_id = doc.get("id")
         if not any(source_id == doc_id for source_id, _ in chosen):
             continue

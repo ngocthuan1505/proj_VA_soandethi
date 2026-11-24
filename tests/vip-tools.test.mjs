@@ -310,3 +310,59 @@ test('renderQuestionBankItemsHTML và renderAnalyticsModalHTML: render KaTeX và
   assert.ok(analyticsHtml.includes('&lt;img src=x onerror=alert(9)&gt;'));
   assert.ok(!analyticsHtml.includes('data-q-id="q"bad"'));
 });
+
+test('UV60: renderQuestionBankItemsHTML giữ điểm thập phân 0.4, ảnh an toàn; renderAnalyticsModalHTML chuẩn hóa severity warn và empty_selected_option', () => {
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const html = renderQuestionBankItemsHTML([
+    {
+      id: 'qb-dec',
+      subject: 'Toán',
+      grade: '9',
+      topic: 'Hàm số',
+      qtype: 'mcq',
+      level: 1,
+      points_q4: 2,
+      points: 0.4,
+      question: {
+        stem: 'Câu có ảnh và 0.4 điểm',
+        points: 0.4,
+        options: ['1', '2', '3', '4'],
+        images: [{data: png, caption: 'Hình minh họa'}],
+      },
+    },
+  ]);
+  assert.ok(html.includes('0.4 điểm'));
+  assert.ok(!html.includes('0.5 điểm'));
+  assert.ok(html.includes('<img class="qbank-thumb" src="' + png + '"'));
+
+  const badMcqExam = {
+    minutes: 45,
+    questions: [
+      {
+        id: 'q-empty-sel',
+        v: 1,
+        type: 'mcq',
+        stem: 'Chọn đáp án đúng?',
+        options: ['PA A', '', 'PA C', 'PA D'],
+        answer: 1,
+        answerKnown: true,
+        level: 0,
+        points: 1,
+      },
+    ],
+  };
+  const summary = computeClientAnalyticsSummary(badMcqExam);
+  const emptySel = summary.issues.find((x) => x.code === 'empty_selected_option');
+  assert.ok(emptySel);
+  assert.equal(emptySel.severity, 'error');
+
+  const warnHtml = renderAnalyticsModalHTML(
+    {
+      readinessScore: 80,
+      issues: [{severity: 'warn', code: 'x', message: 'Cảnh báo từ backend'}],
+    },
+    badMcqExam,
+  );
+  assert.ok(warnHtml.includes('analytics-issue is-warning'));
+  assert.ok(warnHtml.includes('>Cảnh báo<'));
+});

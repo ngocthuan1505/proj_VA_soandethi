@@ -149,6 +149,163 @@ async def propose_structure(request, call):
     }
 
 
+def _requested_types(request: PlanRequest) -> list[QuestionType] | None:
+    types = list(request.types) if request.types else None
+    if types is None:
+        for phrase, kind in (
+            ("tự luận", "essay"),
+            ("trắc nghiệm", "mcq"),
+            ("đúng.sai", "truefalse"),
+            ("trả lời ngắn", "short"),
+        ):
+            if re.search(r"(?:chỉ|toàn bộ|100%)\s*(?:câu\s*)?" + phrase, request.request, re.I):
+                return [kind]  # type: ignore[list-item]
+    return types
+
+
+def deterministic_exam_blueprint(request: PlanRequest) -> dict[str, Any]:
+    """Đề xuất cơ cấu dự phòng xác định tại máy (tổng 10 điểm) khi AI chưa khả dụng."""
+    if not request.consent:
+        raise AIError("consent_required", "Cho phép gửi yêu cầu đến AI trước khi đề xuất cơ cấu.")
+
+    types = _requested_types(request)
+    is_primary = request.grade <= 5
+    minutes = request.minutes
+    if minutes is None:
+        minutes = 40 if is_primary else (45 if request.grade <= 9 else 60)
+
+    if request.count is not None:
+        total_slots = request.count
+    elif minutes <= 15:
+        total_slots = 4
+    elif minutes <= 35:
+        total_slots = 6
+    elif minutes <= 50:
+        total_slots = 8
+    else:
+        total_slots = 10
+
+    chosen_types: list[QuestionType]
+    if types:
+        chosen_types = list(types)
+    elif is_primary:
+        chosen_types = ["mcq", "essay"]
+    elif total_slots >= 8:
+        chosen_types = ["mcq", "short", "essay"]
+    else:
+        chosen_types = ["mcq", "essay"]
+
+    topic_base = f"{request.subject.strip()} {request.grade}"
+    term_hint = request.term.strip()
+    topic_labels = (
+        f"{topic_base} — Kiến thức trọng tâm ({term_hint})"[:80],
+        f"{topic_base} — Luyện tập & vận dụng ({term_hint})"[:80],
+    )
+
+    slots: list[PlanningSlot] = []
+    if len(chosen_types) == 1:
+        kind = chosen_types[0]
+        level_cycle = (0, 1, 2) if is_primary else (0, 1, 2, 3)
+        for idx in range(total_slots):
+            slots.append(
+                PlanningSlot(
+                    topic=topic_labels[0 if idx < max(1, (total_slots + 1) // 2) else 1],
+                    type=kind,
+                    level=level_cycle[idx % len(level_cycle)],
+                )
+            )
+    elif (
+        set(chosen_types) <= {"mcq", "short", "essay"}
+        and "mcq" in chosen_types
+        and "essay" in chosen_types
+    ):
+        essay_count = max(1, round(total_slots * (0.3 if is_primary else 0.25)))
+        if total_slots == 1:
+            essay_count = 0
+        elif essay_count >= total_slots:
+            essay_count = max(1, total_slots - 1)
+        remaining = total_slots - essay_count
+        if "short" in chosen_types and remaining >= 3:
+            short_count = max(1, round(remaining * 0.25))
+            mcq_count = remaining - short_count
+        else:
+            short_count = 0
+            mcq_count = remaining
+
+        mcq_levels = (0, 0, 1, 1, 2) if is_primary else (0, 0, 1, 1, 2, 2)
+        for idx in range(mcq_count):
+            slots.append(
+                PlanningSlot(
+                    topic=topic_labels[0 if idx < max(1, (mcq_count + 1) // 2) else 1],
+                    type="mcq",
+                    level=mcq_levels[idx % len(mcq_levels)],
+                )
+            )
+        for idx in range(short_count):
+            slots.append(
+                PlanningSlot(
+                    topic=topic_labels[1],
+                    type="short",
+                    level=1 if idx % 2 == 0 else 2,
+                )
+            )
+        essay_levels = (1, 2) if is_primary else (2, 3)
+        for idx in range(essay_count):
+            slots.append(
+                PlanningSlot(
+                    topic=topic_labels[1],
+                    type="essay",
+                    level=essay_levels[min(idx, len(essay_levels) - 1)],
+                )
+            )
+    else:
+        level_cycle = (0, 1, 2) if is_primary else (0, 1, 2, 3)
+        for idx in range(total_slots):
+            kind = chosen_types[idx % len(chosen_types)]
+            slots.append(
+                PlanningSlot(
+                    topic=topic_labels[0 if idx < max(1, (total_slots + 1) // 2) else 1],
+                    type=kind,
+                    level=level_cycle[idx % len(level_cycle)],
+                )
+            )
+
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    for slot in slots:
+        key = (slot.topic.strip().casefold(), slot.type)
+        row = rows.setdefault(
+            key, {"topic": slot.topic.strip(), "type": slot.type, "targets": [0, 0, 0, 0]}
+        )
+        row["targets"][slot.level] += 1
+
+    plan = checked_matrix(
+        {
+            "matrix": list(rows.values()),
+            "notes": (
+                "Gợi ý cơ cấu dự phòng tại máy (chưa gửi tới AI do kênh AI tạm thời không sẵn sàng "
+                "hoặc hết thời gian chờ). Giáo viên vui lòng rà soát lại chủ đề, dạng câu và mức "
+                "nhận thức cho khớp chương trình của lớp trước khi xác nhận."
+            ),
+        }
+    )
+    return {
+        **plan,
+        "metadata": {
+            "subject": request.subject,
+            "grade": str(request.grade),
+            "minutes": minutes,
+            "title": f"Đề kiểm tra {request.term} · {request.subject} {request.grade}",
+        },
+        "sentToAI": False,
+        "fallbackLocal": True,
+        "suggested": {
+            "count": request.count is None,
+            "minutes": request.minutes is None,
+            "types": types is None,
+        },
+    }
+
+
 def _parse_question_points_dec(question: dict[str, Any]) -> Decimal | None:
     raw_pts = question.get("points")
     if raw_pts is not None and not isinstance(raw_pts, bool):

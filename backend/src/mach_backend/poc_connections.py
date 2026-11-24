@@ -73,9 +73,16 @@ def hydrate_provider_from_secrets_env(
     return hydrated
 
 
-def connection_config(provider: AgentGeneration):
+def connection_config(provider: AgentGeneration, *, mask_gateway_url: bool = False):
     extra_keys = getattr(provider, "gemini_extra_keys", ())
     extended = getattr(provider, "extended_policy", None) or ExtendedRunPolicy()
+    ds_url = getattr(provider, "deepseek_url", DEEPSEEK_BASE)
+    is_default_gateway = str(ds_url or DEEPSEEK_BASE).rstrip("/") == DEEPSEEK_BASE.rstrip("/")
+    exposed_ds_url = (
+        DEEPSEEK_BASE
+        if is_default_gateway
+        else ("[cổng riêng đã cấu hình]" if mask_gateway_url else ds_url)
+    )
     return {
         "localPoC": True,
         "ollama": {
@@ -104,7 +111,8 @@ def connection_config(provider: AgentGeneration):
             "autoFallback": provider.gemini_auto_fallback,
         },
         "deepseek": {
-            "url": getattr(provider, "deepseek_url", DEEPSEEK_BASE),
+            "url": exposed_ds_url,
+            "customGatewayConfigured": not is_default_gateway,
             "model": getattr(provider, "deepseek_model", "deepseek-chat"),
             "reasonerModel": getattr(provider, "deepseek_reasoner_model", "deepseek-reasoner"),
             "crossModel": getattr(provider, "deepseek_cross_model", ""),

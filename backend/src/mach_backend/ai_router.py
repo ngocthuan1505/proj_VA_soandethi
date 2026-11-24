@@ -328,7 +328,11 @@ class FixedTaskRouter:
             )
 
         last_error: AIError | None = None
+        attempted_providers: list[str] = []
+        fallback_from: str | None = None
+        fallback_reason: str | None = None
         for idx, family in enumerate(available):
+            attempted_providers.append(family)
             provider_fn = self.providers[family]
             try:
                 outcome = provider_fn(purpose, forwarded_body)
@@ -341,6 +345,10 @@ class FixedTaskRouter:
                     result = dict(result)
                     result["routedTask"] = task_code
                     result["providerFamily"] = family
+                    result["attemptedProviders"] = list(attempted_providers)
+                    if fallback_from is not None:
+                        result["fallbackFrom"] = fallback_from
+                        result["fallbackReason"] = fallback_reason
                 if self.log is not None:
                     self.log.emit(
                         "router_decision",
@@ -349,6 +357,7 @@ class FixedTaskRouter:
                         providerFamily=family,
                         attempt=idx + 1,
                         generatorFamily=generator_family or None,
+                        fallbackFrom=fallback_from,
                     )
                 return result
             except AIError as error:
@@ -358,6 +367,9 @@ class FixedTaskRouter:
                     raise sanitized_error from None
                 self.circuit_breaker.record_failure(family)
                 last_error = sanitized_error
+                if fallback_from is None:
+                    fallback_from = family
+                    fallback_reason = safe_msg
                 next_family = available[idx + 1] if idx + 1 < len(available) else None
                 if self.log is not None:
                     self.log.emit(
