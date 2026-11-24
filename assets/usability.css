@@ -918,3 +918,4 @@ body.view-teacher .marking-guide{border-top:2px solid var(--ui-accent);padding-t
 .source-strict-toggle{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:0 0 10px;background:#f4faf7;border:1px solid #cfe3da;border-radius:8px;font-size:13px;font-weight:500}
 .review-citations{margin:12px 0;padding:10px 12px;border-radius:10px;background:#f8faf9;border:1px solid var(--ui-line)}
 .review-citations h3{margin:0 0 8px;font-size:13px}
+.mach #lesson-picker label>input,.mach #lesson-picker label>select,#lesson-picker label>input,#lesson-picker label>select{margin-top:6px}

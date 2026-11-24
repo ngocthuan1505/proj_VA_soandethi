@@ -100,34 +100,81 @@ def build_sanitized_env(source_env: Mapping[str, str] | None = None) -> dict[str
     return sanitized
 
 
+def _decode_json_stream(text: str) -> list[dict[str, Any]]:
+    """Giải mã chuỗi chứa một hoặc nhiều JSON object nối tiếp nhau trên stdout."""
+    decoder = json.JSONDecoder()
+    best: list[dict[str, Any]] = []
+    for candidate in (text, sanitize_json_latex_escapes(text)):
+        parsed_list: list[dict[str, Any]] = []
+        pos = 0
+        n = len(candidate)
+        while pos < n:
+            while pos < n and candidate[pos].isspace():
+                pos += 1
+            if pos >= n:
+                break
+            try:
+                obj, next_pos = decoder.raw_decode(candidate, pos)
+            except ValueError:
+                next_brace = candidate.find("{", pos + 1)
+                if next_brace < 0:
+                    break
+                pos = next_brace
+                continue
+            pos = next_pos
+            if isinstance(obj, dict):
+                parsed_list.append(obj)
+        if len(parsed_list) > len(best):
+            best = parsed_list
+    return best
+
+
+def _score_domain_dict(obj: dict[str, Any], schema_keys: set[str]) -> tuple[int, int, int] | None:
+    domain_keys = schema_keys | _DOMAIN_PAYLOAD_KEYS
+    hits = len(domain_keys.intersection(obj.keys()))
+    if not hits:
+        return None
+    has_msg = 1 if isinstance(obj.get("message"), str) and bool(obj["message"].strip()) else 0
+    return (has_msg, hits, len(obj))
+
+
 def _unwrap_cli_envelope(text: str, expected_schema: dict[str, Any] | None) -> str:
     if not text.startswith("{"):
-        return text
-    parsed: Any = None
-    for candidate in (text, sanitize_json_latex_escapes(text)):
-        try:
-            parsed = json.loads(candidate)
-            break
-        except ValueError:
-            continue
-    if not isinstance(parsed, dict):
         return text
     schema_keys: set[str] = set()
     if isinstance(expected_schema, dict):
         props = expected_schema.get("properties")
         if isinstance(props, dict):
             schema_keys = set(props.keys())
-    if (
-        schema_keys and schema_keys.intersection(parsed.keys())
-    ) or _DOMAIN_PAYLOAD_KEYS.intersection(parsed.keys()):
+    objects = _decode_json_stream(text)
+    if not objects:
         return text
-    for key in _ENVELOPE_KEYS:
-        val = parsed.get(key)
-        if isinstance(val, str) and val.strip():
-            return val.strip()
-        if isinstance(val, (dict, list)):
-            return json.dumps(val, ensure_ascii=False)
-    return text
+    candidates: list[dict[str, Any]] = []
+    for obj in objects:
+        candidates.append(obj)
+        for key in _ENVELOPE_KEYS:
+            inner = obj.get(key)
+            if isinstance(inner, dict):
+                candidates.append(inner)
+            elif isinstance(inner, str) and "{" in inner:
+                candidates.extend(_decode_json_stream(inner))
+    best_obj: dict[str, Any] | None = None
+    best_score: tuple[int, int, int] | None = None
+    for item in candidates:
+        score = _score_domain_dict(item, schema_keys)
+        if score is not None and (best_score is None or score > best_score):
+            best_score = score
+            best_obj = item
+    if best_obj is not None:
+        return json.dumps(best_obj, ensure_ascii=False)
+    for obj in objects:
+        for key in _ENVELOPE_KEYS:
+            val = obj.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+            if isinstance(val, (dict, list)):
+                return json.dumps(val, ensure_ascii=False)
+    return json.dumps(objects[0], ensure_ascii=False) if len(objects) > 1 else text
 
 
 def _extract_output_content(
@@ -140,11 +187,14 @@ def _extract_output_content(
     fenced = _FENCED_JSON_RE.search(text)
     if fenced:
         text = fenced.group(1).strip()
+        text = _unwrap_cli_envelope(text, expected_schema)
     elif expect_json and not text.startswith(("{", "[")):
         start_obj = text.find("{")
         end_obj = text.rfind("}")
         if 0 <= start_obj < end_obj:
-            text = text[start_obj : end_obj + 1]
+            text = _unwrap_cli_envelope(text[start_obj : end_obj + 1], expected_schema)
+    if text.startswith("{"):
+        text = _unwrap_cli_envelope(text, expected_schema)
     if text.startswith(("{", "[")):
         text = sanitize_json_latex_escapes(text)
     return str(redact_secrets(text))

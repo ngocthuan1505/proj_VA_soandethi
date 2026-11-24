@@ -102,7 +102,7 @@ try {
  await phone.keyboard.type('khong-co-de-nay');
  assert.equal(await phone.locator('#library-status').textContent(),'Không tìm thấy đề phù hợp.');
  const createEmpty=phone.getByRole('button',{name:'Tạo đề mới',exact:true}).last();
- for(let i=0;i<5 && !(await createEmpty.evaluate(node=>node===document.activeElement));i++){
+ for(let i=0;i<20 && !(await createEmpty.evaluate(node=>node===document.activeElement));i++){
   await phone.keyboard.press('Tab');
  }
  assert(await createEmpty.evaluate(node=>node.matches(':focus-visible')));

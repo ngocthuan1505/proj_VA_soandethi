@@ -804,3 +804,236 @@ def test_chat_endpoint_derives_budget_timeout_from_time_preset(tmp_path, monkeyp
         (1200, "medium"),
         (3600, "high"),
     ]
+
+
+def test_agy_cli_multi_object_stdout_chat_returns_200(tmp_path):
+    fake_agy = tmp_path / "agy.exe"
+    fake_agy.write_bytes(b"MZ")
+    multi_stdout = (
+        '{"response": "{\\"message\\": \\"Bản nháp\\"}"}\n'
+        '{"message": "Mẹo 1: bám lỗi sai \\frac{1}{2}.", '
+        '"suggestedActions": [], "followUps": ["Thêm ví dụ"]}\n'
+    ).encode()
+
+    def fake_runner(_cmd, **_kwargs):
+        return SimpleNamespace(stdout=multi_stdout)
+
+    model = AgyCliModel(None, custom_path=str(fake_agy), runner=fake_runner, effort="low")
+    res = asyncio.run(
+        model(
+            "chat",
+            {
+                "messages": [{"role": "user", "content": "Gợi ý"}],
+                "format": {
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string"},
+                        "suggestedActions": {"type": "array"},
+                        "followUps": {"type": "array"},
+                    },
+                },
+            },
+        )
+    )
+    parsed = json.loads(res["content"])
+    assert "Mẹo 1:" in parsed["message"]
+    assert parsed["followUps"] == ["Thêm ví dụ"]
+
+
+def test_router_falls_back_on_incomplete_response():
+    async def truncated_deepseek(_purpose, _body):
+        raise AIError("incomplete_response", "DeepSeek chưa hoàn tất phản hồi.")
+
+    async def ok_agy(_purpose, _body):
+        return {"content": '{"edits": [], "message": "OK"}', "model": "agy-cli"}
+
+    router = FixedTaskRouter({"deepseek_chat": truncated_deepseek, "agy": ok_agy})
+    res = asyncio.run(router("M10_SCOPED_PATCH", {"messages": []}))
+    assert res["providerFamily"] == "agy"
+    assert res["fallbackFrom"] == "deepseek_chat"
+    assert res["attemptedProviders"] == ["deepseek_chat", "agy"]
+
+
+def test_deepseek_v4_model_uses_8192_max_tokens():
+    from mach_backend.deepseek_model import DeepSeekModel
+
+    captured_tokens: list[int | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content.decode("utf-8"))
+        captured_tokens.append(body.get("max_tokens"))
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {"finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}
+                ]
+            },
+        )
+
+    async def _run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            for model_name in ("deepseek-v4.1-flash", "gpt-custom-chat"):
+                ds = DeepSeekModel(
+                    client,
+                    "sk-test-token-0001",
+                    None,
+                    model=model_name,
+                    base_url="https://gateway.example.test/v1",
+                )
+                await ds("M10_SCOPED_PATCH", {"messages": [{"role": "user", "content": "Sửa"}]})
+
+    asyncio.run(_run())
+    assert captured_tokens == [8192, 4096]
+
+
+def test_scoped_patch_retries_once_when_missing_dependent_blocks(tmp_path, monkeypatch):
+    q = {
+        "id": str(uuid4()),
+        "v": 1,
+        "type": "mcq",
+        "stem": "Tìm x biết 2x + 4 = 10.",
+        "options": ["x = 2", "x = 3", "x = 4", "x = 5"],
+        "answer": 1,
+        "answerKnown": True,
+        "explanation": "Ta có 2x = 6 nên x = 3.",
+        "points": 0.4,
+        "rubric": [],
+        "blockIds": {f: str(uuid4()) for f in ("stem", "options", "answer", "explanation")},
+    }
+    exam = {"id": str(uuid4()), "revision": 1, "questions": [q], "docs": [], "assistantSources": []}
+    seen_purposes: list[str] = []
+    repair_missing: list[dict] = []
+
+    class FakeGemini:
+        def __init__(
+            self, _client, _key, _log, *, model, budget=None, key_pool=None, auto_fallback=True
+        ):
+            self.model = model
+
+        async def __call__(self, purpose, body):
+            data = json.loads(body["messages"][1]["content"])
+            seen_purposes.append((purpose, "missingDependentBlocks" in data))
+            if purpose == "M10_SCOPED_PATCH" and "missingDependentBlocks" not in data:
+                return {
+                    "content": json.dumps(
+                        {
+                            "edits": [
+                                {
+                                    "blockId": q["blockIds"]["stem"],
+                                    "op": "replace",
+                                    "content": "Mua 2 quyển vở hết 2x + 4 = 10 nghìn. Tìm x.",
+                                }
+                            ],
+                            "message": "Sửa tạm stem.",
+                        }
+                    ),
+                    "model": self.model,
+                }
+            if purpose == "M10_SCOPED_PATCH" and "missingDependentBlocks" in data:
+                repair_missing.extend(data["missingDependentBlocks"])
+                return {
+                    "content": json.dumps(
+                        {
+                            "edits": [
+                                {
+                                    "blockId": q["blockIds"]["stem"],
+                                    "op": "replace",
+                                    "content": "Mua 2 quyển vở hết 2x + 4 = 10 nghìn. Tìm x.",
+                                },
+                                {
+                                    "blockId": q["blockIds"]["options"],
+                                    "op": "replace",
+                                    "content": q["options"],
+                                },
+                                {
+                                    "blockId": q["blockIds"]["answer"],
+                                    "op": "replace",
+                                    "content": 1,
+                                },
+                                {
+                                    "blockId": q["blockIds"]["explanation"],
+                                    "op": "replace",
+                                    "content": q["explanation"],
+                                },
+                            ],
+                            "message": "Đã sửa đề kèm đủ phương án và lời giải.",
+                        }
+                    ),
+                    "model": self.model,
+                }
+            if purpose == "M07_DISTRACTOR_CHECK":
+                return {
+                    "content": json.dumps({"reviews": [{"ordinal": 0, "agrees": True}]}),
+                    "model": self.model,
+                }
+            return {
+                "content": json.dumps(
+                    {
+                        "reviews": [
+                            {
+                                "ordinal": 0,
+                                "answer": 1,
+                                "optionVerdicts": [
+                                    "incorrect",
+                                    "correct",
+                                    "incorrect",
+                                    "incorrect",
+                                ],
+                                "uncertain": False,
+                            }
+                        ]
+                    }
+                ),
+                "model": self.model,
+            }
+
+    class FakeDeepSeek:
+        def __init__(self, _client, _key, _log, *, model, base_url, backup_models, cost_tracker):
+            self.model = model
+
+        async def __call__(self, purpose, body):
+            return await FakeGemini(None, "", None, model=self.model)(purpose, body)
+
+    from mach_backend import local_workspace, poc_scoped_patch
+
+    monkeypatch.setattr(local_workspace, "GeminiModel", FakeGemini)
+    monkeypatch.setattr(local_workspace, "DeepSeekModel", FakeDeepSeek)
+    monkeypatch.setattr(poc_scoped_patch, "GeminiModel", FakeGemini)
+    monkeypatch.setattr(poc_scoped_patch, "DeepSeekModel", FakeDeepSeek)
+
+    app = create_app(tmp_path)
+    app.state.store.put("state", {"exams": [exam], "current": exam["id"]})
+    with TestClient(app, headers=ORIGIN) as client:
+        client.post(
+            "/api/config",
+            json={
+                "saveLocally": False,
+                "gemini": {"key": "AIzaFakeRepairKey000001", "freeTierConfirmed": True},
+                "deepseek": {"key": "sk-fake-repair-000001"},
+                "fixedRouter": {"enabled": True},
+            },
+        ).raise_for_status()
+        fp = client.get("/api/config").json()["fingerprint"]
+        res = client.post(
+            "/api/assistant/patch",
+            headers={"X-PoC-Config": fp},
+            json={
+                "exam": {"id": exam["id"], "revision": 1},
+                "consent": True,
+                "request": "Đổi sang tình huống mua vở giữ phương trình.",
+                "scopes": [
+                    {
+                        "id": q["id"],
+                        "version": 1,
+                        "field": "stem",
+                        "blockId": q["blockIds"]["stem"],
+                        "wholeField": True,
+                    }
+                ],
+            },
+        )
+        assert res.status_code == 200, res.text
+        assert seen_purposes[:2] == [("M10_SCOPED_PATCH", False), ("M10_SCOPED_PATCH", True)]
+        assert {m["field"] for m in repair_missing} == {"options", "answer", "explanation"}
+        assert len(res.json()["edits"]) >= 1

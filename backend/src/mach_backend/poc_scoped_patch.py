@@ -5,7 +5,7 @@ import copy
 import json
 import time
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
 import httpx
@@ -226,6 +226,31 @@ def keep_outside(before, after, scopes):
     return after.endswith(suffix) and cursor <= len(after) - len(suffix)
 
 
+def _dependent_fields(q_type: str) -> tuple[str, ...]:
+    if q_type == "mcq":
+        return ("options", "answer", "explanation")
+    return tuple(f for f in FIELDS_BY_TYPE[q_type] if f != "stem")
+
+
+def _missing_dependent_blocks(selected: dict[str, Any], draft: Draft) -> list[dict[str, str]]:
+    seen = {edit.blockId for edit in draft.edits}
+    stem_blocks = {
+        q["blockIds"]["stem"]: q["id"] for q in selected.values() if "stem" in q.get("blockIds", {})
+    }
+    edited_stems = {
+        stem_blocks[e.blockId]: e.content for e in draft.edits if e.blockId in stem_blocks
+    }
+    missing: list[dict[str, str]] = []
+    for qid, q in selected.items():
+        if qid not in edited_stems or edited_stems[qid] == q.get("stem"):
+            continue
+        for field in _dependent_fields(q["type"]):
+            bid = q.get("blockIds", {}).get(field)
+            if bid and bid not in seen:
+                missing.append({"questionId": qid, "field": field, "blockId": bid})
+    return missing
+
+
 def validate_draft(request, selected, draft):
     candidates = copy.deepcopy(selected)
     blocks = {
@@ -336,11 +361,7 @@ def validate_draft(request, selected, draft):
         if field in {"answer", "answerText", "truthValues"}:
             candidates[qid]["answerKnown"] = True
     for qid, q in candidates.items():
-        dependencies = (
-            ("options", "answer", "explanation")
-            if q["type"] == "mcq"
-            else tuple(f for f in FIELDS_BY_TYPE[q["type"]] if f != "stem")
-        )
+        dependencies = _dependent_fields(q["type"])
         if q["stem"] != selected[qid]["stem"] and any(
             q["blockIds"].get(f) not in seen for f in dependencies
         ):
@@ -740,11 +761,14 @@ def install_scoped_patch(
 
             try:
                 async with asyncio.timeout(300):
-                    draft = await ask(
-                        "scoped_patch",
-                        Draft,
+                    patch_instruction = (
                         "Sửa đúng yêu cầu và vùng chọn. Chỉ replace, content là TOÀN BỘ trường; "
                         "giữ chữ/ô ngoài vùng chọn. Không đổi ID, điểm, mức hay chủ đề. "
+                        "QUAN TRỌNG: Ngay cả khi scopes chỉ chọn stem hoặc các phần khác giữ "
+                        "nguyên nội dung cũ, khi stem thay đổi thì MỖI trường phụ thuộc bắt buộc "
+                        "vẫn PHẢI xuất hiện thành một phần tử riêng {op:'replace', "
+                        "blockId: questions[i].blockIds.<tên_trường>, content: ...} trong mảng "
+                        "edits (giữ nguyên thì chép lại đúng giá trị hiện có vào content). "
                         "Trắc nghiệm: đổi stem phải trả đủ stem/options/answer/explanation, "
                         "answer là index 0..3. "
                         "Tự luận: đổi stem phải trả stem/explanation/rubric, KHÔNG options/answer. "
@@ -753,18 +777,48 @@ def install_scoped_patch(
                         "stem/options/truthValues/explanation/rubric; truthValues là bốn boolean "
                         "theo thứ tự nhận định, không dùng chỉ số đáp án trắc nghiệm. "
                         "rubric gồm text và points bước 0,05, tổng bằng points câu. Giữ các "
-                        "giả định và điểm nếu không được yêu cầu đổi tình huống. "
-                        "Trả cả khối phụ thuộc giữ nguyên. Không thêm câu.",
-                        {
-                            "request": request.request,
-                            "scopes": [s.model_dump() for s in request.scopes],
-                            "questions": list(selected.values()),
-                            "sources": sources,
-                        },
+                        "giả định và điểm nếu không được yêu cầu đổi tình huống. Không thêm câu."
+                    )
+                    patch_data = {
+                        "request": request.request,
+                        "scopes": [s.model_dump() for s in request.scopes],
+                        "questions": list(selected.values()),
+                        "sources": sources,
+                    }
+                    draft = await ask(
+                        "scoped_patch",
+                        Draft,
+                        patch_instruction,
+                        patch_data,
                         router_task=M10_SCOPED_PATCH,
                     )
                     patch_generator_family = last_provider_family
-                    candidates = validate_draft(request, selected, draft)
+                    try:
+                        candidates = validate_draft(request, selected, draft)
+                    except AIError as draft_err:
+                        if fixture_call is not None or draft_err.code != "invalid_result":
+                            raise
+                        missing_deps = _missing_dependent_blocks(selected, draft)
+                        if not missing_deps:
+                            raise
+                        draft = await ask(
+                            "scoped_patch_repair",
+                            Draft,
+                            patch_instruction
+                            + " BỔ SUNG SỬA LỖI: Lượt trước bị từ chối vì thiếu khối phụ thuộc "
+                            "trong edits. Trả lại ĐẦY ĐỦ các phần tử {op:'replace', blockId, "
+                            "content} gồm cả phần đã sửa và toàn bộ blockId liệt kê trong "
+                            "missingDependentBlocks.",
+                            {
+                                **patch_data,
+                                "previousDraft": draft.model_dump(),
+                                "validationError": str(draft_err),
+                                "missingDependentBlocks": missing_deps,
+                            },
+                            router_task=M10_SCOPED_PATCH,
+                        )
+                        patch_generator_family = last_provider_family
+                        candidates = validate_draft(request, selected, draft)
                     questions = list(candidates.values())
                     blind = [
                         {

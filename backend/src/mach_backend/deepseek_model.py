@@ -181,11 +181,12 @@ class DeepSeekModel:
                     merged_messages.append(m)
             messages = merged_messages
 
+        lower_model = actual_model.lower()
         payload: dict[str, Any] = {
             "model": actual_model,
             "stream": False,
             "messages": messages,
-            "max_tokens": 8192 if actual_model == "deepseek-reasoner" else 4096,
+            "max_tokens": 8192 if ("reasoner" in lower_model or "v4" in lower_model) else 4096,
         }
         if actual_model != "deepseek-reasoner":
             payload["temperature"] = 0

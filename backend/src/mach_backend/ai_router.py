@@ -80,6 +80,7 @@ FALLBACK_ERROR_CODES = {
     "provider_quota",
     "provider_unavailable",
     "provider_timeout",
+    "incomplete_response",
     "cost_budget",
     "provider_unconfigured",
     "provider_auth",

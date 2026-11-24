@@ -225,4 +225,15 @@ test('UV60 M02-03/UX-05: studio.js tích hợp reconcileEditorRich để bảo t
   assert.ok(studioSrc.includes('reconcileEditorRich'));
   assert.ok(studioSrc.includes('preserveRich'));
   assert.ok(studioSrc.includes('replaceStringPreservingRich'));
+  assert.ok(studioSrc.includes('captureFindState'));
+  assert.ok(studioSrc.includes('restoreFindAfterChange'));
+  assert.ok(studioSrc.includes('if(!countEl||!resultsEl)return;'));
+});
+
+test('UV60 BUG-IT01-01: pages.js bảo vệ input/textarea/select trong .paper khỏi mất focus khi layoutPages', () => {
+  const pagesSrc = readText('pages.js');
+  assert.ok(pagesSrc.includes('.paper input, .paper textarea, .paper select'));
+  assert.ok(pagesSrc.includes('paper.contains(active)'));
+  assert.ok(pagesSrc.includes('setSelectionRange'));
+  assert.ok(pagesSrc.includes("document.fonts?.status!=='loaded'"));
 });
