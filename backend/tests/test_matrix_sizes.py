@@ -107,7 +107,7 @@ def test_matrix_slots_share_remaining_points_and_do_not_merge_same_topic_types()
 @pytest.mark.parametrize(
     "rows",
     [
-        [{"topic": "A", "targets": [31, 0, 0]}],
+        [{"topic": "A", "targets": [61, 0, 0]}],
         [{"topic": "A", "targets": [1, 0, 0], "pointsQ4": 39}],
         [
             {"topic": "A", "targets": [2, 0, 0], "pointsQ4": 20},

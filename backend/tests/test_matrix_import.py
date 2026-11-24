@@ -90,7 +90,7 @@ def test_status_matches_maximum_matrix_accepted_without_ai(tmp_path):
     app = create_app(tmp_path)
     with TestClient(app, headers={"Origin": "http://testserver"}) as client:
         limit = client.get("/api/status").json()["matrixImport"]["maxQuestions"]
-        assert limit == 30
+        assert limit == 60
 
         def load(n):
             csv = f"Chủ đề;Nhận biết;Thông hiểu;Vận dụng\nSố học;15;0;0\nĐại số;{n};0;0"
@@ -99,10 +99,10 @@ def test_status_matches_maximum_matrix_accepted_without_ai(tmp_path):
                 json={"name": "matrix.csv", "data": encoded(csv.encode()), "consent": False},
             )
 
-        accepted = load(15)
+        accepted = load(45)
         assert accepted.status_code == 200, accepted.text
         assert accepted.json()["count"] == limit and not accepted.json()["sentToAI"]
-        rejected = load(16)
+        rejected = load(46)
         assert not rejected.is_success
         assert client.get("/api/kv?key=state").json()["value"] is None
 
@@ -141,7 +141,7 @@ def test_pdf_image_require_consent_then_pass_real_mime_to_model(ext):
     assert base64.b64decode(calls[0][1]["document"]["data"]) == data
 
 
-@pytest.mark.parametrize("targets", [[28, 3, 0], [1.5, 1, 1], [-1, 2, 1], [0, 0, 0]])
+@pytest.mark.parametrize("targets", [[58, 3, 0], [1.5, 1, 1], [-1, 2, 1], [0, 0, 0]])
 def test_ai_cannot_silently_import_invalid_counts(targets):
     async def model(*_):
         return {

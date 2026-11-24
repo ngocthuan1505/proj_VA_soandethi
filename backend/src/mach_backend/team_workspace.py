@@ -2,6 +2,8 @@
 
 import asyncio
 import os
+import re
+import sqlite3
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -9,12 +11,15 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from mach_backend.ai_contract import AIError
+from mach_backend.exam_rooms import install_exam_rooms, is_public_room_path
 from mach_backend.local_credentials import LocalConnectionStore
 from mach_backend.local_workspace import ROOT, create_app
 from mach_backend.poc_connections import apply_config
 from mach_backend.team_accounts import SESSION_SECONDS, TeamAccounts, digest, identity
 from mach_backend.workspace_backup import BACKUP_PATHS, MAX_BACKUP
 from mach_backend.workspace_shares import install_shares
+from mach_backend.workspace_store import WorkspaceStore
 
 COOKIE = "soande_team_session"
 
@@ -79,11 +84,25 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
             raise HTTPException(403, "Chỉ quản trị viên được đổi cấu hình hoặc mời thành viên.")
         return current
 
+    def _team_lan_rooms_enabled() -> bool:
+        if os.environ.get("MACH_ALLOW_LAN_ROOMS") == "1":
+            return True
+        try:
+            with accounts.connect() as db:
+                row = db.execute(
+                    "SELECT 1 FROM exam_rooms "
+                    "WHERE allow_lan = 1 AND status IN ('open', 'closed') LIMIT 1"
+                ).fetchone()
+                return row is not None
+        except sqlite3.OperationalError:
+            return False
+
     @app.middleware("http")
     async def boundary(request, call_next):
         host, origin = request.headers.get("host", "").split(":")[0], request.headers.get("origin")
         if host not in {"127.0.0.1", "localhost", "testserver"}:
-            return JSONResponse({"error": "Chế độ nhóm này chỉ dùng tại máy."}, 403)
+            if not (is_public_room_path(request.url.path) and _team_lan_rooms_enabled()):
+                return JSONResponse({"error": "Chế độ nhóm này chỉ dùng tại máy."}, 403)
         if request.method not in {"GET", "HEAD", "OPTIONS"} and origin != str(
             request.base_url
         ).rstrip("/"):
@@ -200,7 +219,29 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
             raise HTTPException(401, "Đăng nhập trước khi chia sẻ.")
         return workspace(current).state.store.exam(exam_id)
 
+    def _team_read_file_bytes(req_owner: str, fid: str):
+        clean_fid = str(fid or "").strip()
+        if not clean_fid or re.fullmatch(r"[\w-]+", clean_fid) is None:
+            return None
+        ws = workspaces.get(req_owner)
+        try:
+            if ws is not None:
+                return ws.state.store.get("file:" + clean_fid)["value"]
+            return WorkspaceStore(directory / "users" / req_owner, owner=req_owner).get(
+                "file:" + clean_fid
+            )["value"]
+        except (HTTPException, AIError, KeyError, OSError):
+            return None
+
     install_shares(app, accounts.connect, share_owner, share_exam, clock=accounts.clock)
+    install_exam_rooms(
+        app,
+        accounts.connect,
+        share_owner,
+        share_exam,
+        read_file_bytes=_team_read_file_bytes,
+        clock=accounts.clock,
+    )
 
     class Dispatch:
         async def __call__(self, scope, receive, send):
@@ -249,10 +290,17 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
                 await response(scope, receive, send)
                 return
             child = workspace(current)
-            if path == "/api/config" and request.method != "GET" and current["role"] != "admin":
-                await JSONResponse({"error": "Chỉ quản trị viên được đổi kết nối AI."}, 403)(
-                    scope, receive, send
+            if (
+                (
+                    path in {"/api/config", "/api/test-provider"}
+                    or (path.startswith("/api/providers/") and path.endswith("/test"))
                 )
+                and request.method != "GET"
+                and current["role"] != "admin"
+            ):
+                await JSONResponse(
+                    {"error": "Chỉ quản trị viên được đổi hoặc thử kết nối AI."}, 403
+                )(scope, receive, send)
                 return
             changing = path == "/api/config" and request.method == "POST"
             starting = request.method == "POST" and (
@@ -261,6 +309,7 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
                 or path
                 in {
                     "/api/assistant/chat",
+                    "/api/assistant/chat/stream",
                     "/api/assistant/patch",
                     "/api/ai/matrix",
                     "/api/ai/exam-plan",
@@ -279,6 +328,7 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
                         and master.connection_stamp != provider.connection_stamp
                         and not child.state.ai_busy()
                     ):
+                        master_ext = getattr(master, "extended_policy", None)
                         apply_config(
                             provider,
                             {
@@ -289,12 +339,54 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
                                 "gemini": {
                                     "key": master.gemini_key,
                                     "backupKey": master.gemini_backup_key,
+                                    "extraKeys": list(getattr(master, "gemini_extra_keys", ())),
+                                    "clearExtraKeys": not bool(
+                                        getattr(master, "gemini_extra_keys", ())
+                                    ),
                                     "clearKey": not bool(master.gemini_key),
                                     "clearBackupKey": not bool(master.gemini_backup_key),
                                     "freeTierConfirmed": master.gemini_free_tier,
                                     "model": master.gemini_model,
                                     "autoFallback": master.gemini_auto_fallback,
                                     "checkModel": master.review_gemini_model,
+                                },
+                                "deepseek": {
+                                    "url": getattr(
+                                        master, "deepseek_url", "https://api.deepseek.com/v1"
+                                    ),
+                                    "key": getattr(master, "deepseek_key", ""),
+                                    "clearKey": not bool(getattr(master, "deepseek_key", "")),
+                                    "model": getattr(master, "deepseek_model", "deepseek-chat"),
+                                    "reasonerModel": getattr(
+                                        master, "deepseek_reasoner_model", "deepseek-reasoner"
+                                    ),
+                                    "crossModel": getattr(master, "deepseek_cross_model", ""),
+                                    "backupModels": list(
+                                        getattr(master, "deepseek_backup_models", ())
+                                    ),
+                                    "sessionLimitUsd": float(
+                                        getattr(master, "deepseek_session_limit_usd", 0.5)
+                                    ),
+                                    "totalLimitUsd": float(
+                                        getattr(master, "deepseek_total_limit_usd", 5.0)
+                                    ),
+                                },
+                                "fixedRouter": {
+                                    "enabled": bool(getattr(master, "fixed_router_enabled", True)),
+                                    "timePreset": (
+                                        master_ext.timePreset if master_ext else "standard"
+                                    ),
+                                    "timeoutSeconds": (
+                                        master_ext.timeoutSeconds if master_ext else 300
+                                    ),
+                                    "maxModelCalls": (
+                                        master_ext.maxModelCalls if master_ext else 30
+                                    ),
+                                    "maxRepairRounds": (
+                                        master_ext.maxRepairRounds if master_ext else 3
+                                    ),
+                                    "agyCustomPath": getattr(master, "agy_custom_path", ""),
+                                    "agyModel": getattr(master, "agy_model", ""),
                                 },
                                 "ollama": {
                                     "model": master.model,

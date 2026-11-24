@@ -55,7 +55,7 @@ def render_assets(math, figures, chrome):
             "--host-resolver-rules=MAP * ~NOTFOUND",
             "--no-proxy-server",
             "--user-data-dir=" + str(Path(temp) / "profile"),
-            "--virtual-time-budget=6000",
+            "--virtual-time-budget=8000",
             "--dump-dom",
             source.as_uri(),
         ]
@@ -64,7 +64,7 @@ def render_assets(math, figures, chrome):
                 output = subprocess.run(
                     base_args,
                     capture_output=True,
-                    timeout=40,
+                    timeout=60,
                     check=True,
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 )
@@ -81,7 +81,7 @@ def render_assets(math, figures, chrome):
                 output = subprocess.run(
                     retry_args,
                     capture_output=True,
-                    timeout=40,
+                    timeout=60,
                     check=True,
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 )

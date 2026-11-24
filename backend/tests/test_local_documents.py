@@ -539,9 +539,34 @@ def test_b4_variant_hardened_positional_phrases_and_multi_section_shuffle():
     }
     with pytest.raises(AIError, match="trước/sau"):
         exam_variant(exam, {"questionIds": ["m1", "m3"], "offset": 1})
+    # P1-3: Câu ngoài vùng trộn (m3 "câu trước") vẫn phải bị chặn nếu phần trước nó hoán đổi.
+    with pytest.raises(AIError, match="liền kề|trước/sau"):
+        exam_variant(
+            exam,
+            {
+                "offset": 1,
+                "sections": [
+                    {"questionIds": ["m1", "m2"], "shuffleOptions": True},
+                    {"questionIds": ["t1", "t2"], "shuffleOptions": False},
+                ],
+            },
+        )
 
+    safe_exam = {
+        "questions": [
+            *exam["questions"][:2],
+            {
+                "id": "m3",
+                "type": "mcq",
+                "stem": "MCQ 3 độc lập",
+                "options": ["a", "b", "c", "d"],
+                "answer": 0,
+            },
+            *exam["questions"][3:],
+        ]
+    }
     multi = exam_variant(
-        exam,
+        safe_exam,
         {
             "offset": 1,
             "sections": [

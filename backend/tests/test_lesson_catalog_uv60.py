@@ -139,8 +139,8 @@ def test_search_lesson_catalog_supports_tieng_viet_and_ngu_van_cross_alias():
 def test_matrix_import_error_messages_have_clean_vietnamese_spacing():
     with pytest.raises(AIError) as err_invalid:
         matrix_slots([{"topic": "Đại số", "targets": ["x", 0, 0]}])
-    assert "nguyên 0..30" in str(err_invalid.value)
-    assert "nguyên0..30" not in str(err_invalid.value)
+    assert "nguyên 0..60" in str(err_invalid.value)
+    assert "nguyên0..60" not in str(err_invalid.value)
 
     with pytest.raises(AIError) as err_dup:
         matrix_slots(
@@ -149,8 +149,8 @@ def test_matrix_import_error_messages_have_clean_vietnamese_spacing():
                 {"topic": "đại số", "type": "mcq", "targets": [1, 0, 0]},
             ]
         )
-    assert "Nhận 1–30 câu" in str(err_dup.value)
-    assert "Nhận1–30câu" not in str(err_dup.value)
+    assert "Nhận 1–60 câu" in str(err_dup.value)
+    assert "Nhận1–60câu" not in str(err_dup.value)
 
     with pytest.raises(AIError) as err_budget:
         matrix_slots([{"topic": "Đại số", "type": "mcq", "targets": [1, 0, 0], "pointsQ4": 39}])

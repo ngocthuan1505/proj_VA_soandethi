@@ -419,16 +419,14 @@ def test_chat_m11_accepts_60k_context_and_wraps_untrusted_sources(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "prompt_text,expected_kind",
+    "prompt_text",
     [
-        ("Thêm 2 câu hỏi vận dụng từ bài học này", "propose_questions"),
-        ("Sửa câu 2 cho ngắn gọn và rõ nghĩa hơn", "propose_patch"),
-        ("Lập ma trận đề kiểm tra 15 phút cho bài học này", "propose_matrix"),
+        "Thêm 2 câu hỏi vận dụng từ bài học này",
+        "Sửa câu 2 cho ngắn gọn và rõ nghĩa hơn",
+        "Lập ma trận đề kiểm tra 15 phút cho bài học này",
     ],
 )
-def test_chat_m11_deterministic_action_extractor_and_zero_autosave(
-    tmp_path, prompt_text, expected_kind
-):
+def test_chat_m11_never_fabricates_placeholder_actions_on_prose_reply(tmp_path, prompt_text):
     async def simple_model(_purpose, _body):
         msg = "Đây là phương án đề xuất chi tiết cho thầy cô."
         return {"content": json.dumps({"message": msg})}
@@ -461,13 +459,11 @@ def test_chat_m11_deterministic_action_extractor_and_zero_autosave(
         assert res.status_code == 200, res.text
         payload = res.json()
         assert payload["routedTask"] == "M11_FLEXIBLE_CHAT"
-        actions = payload["suggestedActions"]
-        assert len(actions) >= 1
-        assert actions[0]["kind"] == expected_kind
-        assert actions[0]["autoSave"] is False
-        assert actions[0]["title"]
+        # UV61: tuyệt đối không tự bịa thẻ câu hỏi giả ("Phương án A (đáp án đúng theo ngữ liệu)")
+        # khi LLM không trả về suggestedActions có cấu trúc hợp lệ.
+        assert payload["suggestedActions"] == []
+        assert "Phương án A (đáp án đúng" not in json.dumps(payload, ensure_ascii=False)
         assert 1 <= len(payload["followUps"]) <= 3
-        # Bất biến 0 auto-save: chat không bao giờ tự ghi vào workspace store
         assert client.get("/api/kv?key=state").json()["value"] is None
 
 
@@ -629,40 +625,50 @@ def test_chat_endpoint_routes_via_fixed_task_router_agy_gemini_deepseek_ollama(
             },
         ).raise_for_status()
 
-        # 1. Ưu tiên AGY CLI đầu tiên
-        r1 = client.post("/api/assistant/chat", json={"text": "Hỏi 1", "consent": True})
+        # 0. Mặc định standard chat ưu tiên API nhanh trước (DeepSeek Chat)
+        r_std = client.post("/api/assistant/chat", json={"text": "Hỏi nhanh", "consent": True})
+        assert r_std.status_code == 200, r_std.text
+        assert r_std.json()["providerUsed"] == "deepseek_chat"
+        assert order == ["gateway:deepseek-v4.1-flash"]
+
+        # 1. Ở chế độ deep, ưu tiên AGY CLI đầu tiên
+        order.clear()
+        r1 = client.post(
+            "/api/assistant/chat", json={"text": "Hỏi 1", "consent": True, "timePreset": "deep"}
+        )
         assert r1.status_code == 200, r1.text
         assert r1.json()["providerUsed"] == "agy"
         assert r1.json()["modelUsed"] == "agy-cli"
         assert order == ["agy"]
 
-        # 2. AGY lỗi -> tự rơi xuống Gemini
+        # 2. AGY lỗi ở chế độ deep -> tự rơi xuống DeepSeek Pro rồi Gemini Hydrogen
         order.clear()
         state["fail_agy"] = True
-        r2 = client.post("/api/assistant/chat", json={"text": "Hỏi 2", "consent": True})
+        r2 = client.post(
+            "/api/assistant/chat", json={"text": "Hỏi 2", "consent": True, "timePreset": "deep"}
+        )
         assert r2.status_code == 200, r2.text
-        assert r2.json()["providerUsed"] == "gemini_hydrogen"
-        assert r2.json()["modelUsed"] == "gemini-4-hydrogen"
-        assert order == ["agy", "gemini:gemini-4-hydrogen"]
+        assert r2.json()["providerUsed"] == "deepseek_reasoner"
+        assert r2.json()["modelUsed"] == "deepseek-v4-pro"
+        assert order == ["agy", "gateway:deepseek-v4-pro"]
 
-        # 3. AGY + Gemini lỗi -> tự rơi xuống Gateway (DeepSeek Pro)
-        order.clear()
-        state["fail_gemini"] = True
-        r3 = client.post("/api/assistant/chat", json={"text": "Hỏi 3", "consent": True})
-        assert r3.status_code == 200, r3.text
-        assert r3.json()["providerUsed"] == "deepseek_reasoner"
-        assert r3.json()["modelUsed"] == "deepseek-v4-pro"
-        assert order == [
-            "agy",
-            "gemini:gemini-4-hydrogen",
-            "gemini:gemini-3.8-flash",
-            "gateway:deepseek-v4-pro",
-        ]
-
-        # 4. AGY + Gemini + Gateway lỗi -> rơi xuống Ollama cuối cùng
+        # 3. AGY + Gateway lỗi -> rơi xuống Gemini Pro
         order.clear()
         state["fail_gateway"] = True
-        r4 = client.post("/api/assistant/chat", json={"text": "Hỏi 4", "consent": True})
+        r3 = client.post(
+            "/api/assistant/chat", json={"text": "Hỏi 3", "consent": True, "timePreset": "deep"}
+        )
+        assert r3.status_code == 200, r3.text
+        assert r3.json()["providerUsed"] == "gemini_pro"
+        assert r3.json()["modelUsed"] == "gemini-2.5-pro"
+        assert order == ["agy", "gateway:deepseek-v4-pro", "gemini:gemini-2.5-pro"]
+
+        # 4. AGY + Gateway + Gemini lỗi -> rơi xuống Ollama cuối cùng
+        order.clear()
+        state["fail_gemini"] = True
+        r4 = client.post(
+            "/api/assistant/chat", json={"text": "Hỏi 4", "consent": True, "timePreset": "deep"}
+        )
         assert r4.status_code == 200, r4.text
         assert r4.json()["providerUsed"] == "ollama"
         assert order[-1].startswith("ollama:")

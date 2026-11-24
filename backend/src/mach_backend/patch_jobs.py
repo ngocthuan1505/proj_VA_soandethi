@@ -229,9 +229,13 @@ class PatchJobRunner:
         run = self._owned(owner_id, exam_id, job_id)
 
         async def follow() -> AsyncIterator[PatchStreamFrame]:
-            # Nếu job đã ở trạng thái kết thúc, chỉ phát khung kết thúc id:2 khi after < 2
-            # để giữ nguyên giao thức replay Last-Event-ID: 1 / 2.
             if run.state.sequence == 2:
+                if after < 1:
+                    for prior_ev in list(run.progress_history):
+                        yield PatchStreamFrame(
+                            event="progress",
+                            data_json=json.dumps(prior_ev, ensure_ascii=False),
+                        )
                 if after < run.state.sequence:
                     yield PatchStreamFrame(
                         event="patch",

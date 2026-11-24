@@ -611,7 +611,7 @@ def test_generator_and_reviewer_route_to_distinct_models_with_one_budget(
         ).raise_for_status()
         base, result = generate(client, exam)
         assert result["status"] == "complete"
-        assert budgets[0] is budgets[1] and budgets[0].calls == 7
+        assert budgets[0] is budgets[1] and budgets[0].calls == 6
         assert pools[0] is pools[1]
         assert all(
             model == ("gemini-3.8-flash" if purpose == "agent" else "gemini-3.6-flash")

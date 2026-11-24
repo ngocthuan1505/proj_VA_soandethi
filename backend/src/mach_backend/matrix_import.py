@@ -246,7 +246,10 @@ def matrix_slots(rows):
             if _row_cell_p100(r, level) is None
         )
         remaining = 1000 - fixed
-        if (automatic and remaining < automatic * 25) or (not automatic and remaining != 0):
+        min_unit = 5 if count > 40 else 25
+        if (automatic and remaining < automatic * min_unit) or (not automatic and remaining != 0):
+            if count > 40 and automatic:
+                raise AIError("invalid_plan", "Tổng điểm cần đúng 10, mỗi câu ít nhất 0,05 điểm.")
             raise AIError("invalid_plan", "Tổng điểm cần đúng 10, mỗi câu ít nhất 0,25 điểm.")
 
     common_fixed = sum(

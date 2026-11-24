@@ -39,7 +39,7 @@ def build(name=NAME, out=OUT, guide="HUONG_DAN_BAN_THU_18_11.md"):
         "assets/*.js",
         "assets/*.css",
         "assets/*.mjs",
-        "assets/team-login.html",
+        "assets/*.html",
         "assets/exam-icon.svg",
         "assets/katex/**/*",
         "assets/mathlive/**/*",
