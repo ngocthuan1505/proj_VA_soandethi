@@ -1,0 +1,1345 @@
+{
+  "id": "63a78e9a-a4f4-5543-a017-87ee50c96f6d",
+  "title": "Đề kiểm tra cuối năm — Khoa học tự nhiên 9 (Liên môn Lý–Hóa–Sinh)",
+  "school": "TRƯỜNG THCS HÒA BÌNH (MẪU)",
+  "department": "Tổ Khoa học Tự nhiên",
+  "subject": "Khoa học tự nhiên",
+  "grade": "9",
+  "minutes": 90,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Học sinh làm 26 câu hỏi gồm 3 phân môn Vật lí, Hóa học và Sinh học.",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 2
+  },
+  "blockIds": {
+    "heading": "303c729d-586b-5150-9ae1-c0a79ee42d6e",
+    "general": "68be022f-f817-5c3e-b4a5-53c6b1cb9877",
+    "marking": "23acb9e2-4433-5143-8c1f-c7faaab6d79e"
+  },
+  "docs": [
+    {
+      "id": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+      "name": "Tu_lieu_KHTN_9_lien_mon.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "Tư liệu KHTN 9 tự biên soạn gồm 3 phân môn: Vật lí (Quang, Điện, Năng lượng), Hóa học (Kim loại, Phi kim, Hữu cơ), Sinh học (Di truyền Mendel, ADN).",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Năng lượng cơ học",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Quang học",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Điện học",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Điện từ",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Kim loại",
+      "type": "mcq",
+      "targets": [
+        2,
+        0,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Hợp chất hữu cơ",
+      "type": "mcq",
+      "targets": [
+        1,
+        2,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Di truyền Mendel",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Cơ sở vật chất di truyền",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Ứng dụng di truyền",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Điện học",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Kim loại",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Cơ sở vật chất di truyền",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Năng lượng cơ học",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Kim loại",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Hợp chất hữu cơ",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Di truyền Mendel",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Điện học",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.75
+    },
+    {
+      "topic": "Hợp chất hữu cơ",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.75
+    },
+    {
+      "topic": "Di truyền Mendel",
+      "type": "essay",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.5
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "b3d95e09-43e3-5de6-a9d2-dd1357bd4b50",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Năng lượng cơ học",
+      "lesson": "Lý 9 · Động năng và thế năng",
+      "competency": "Tính động năng của vật chuyển động",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Một vật khối lượng $m = 2{,}0\\text{ kg}$ chuyển động với tốc độ $v = 3{,}0\\text{ m/s}$. Động năng của vật bằng bao nhiêu?",
+      "options": [
+        "$9{,}0\\text{ J}$",
+        "$6{,}0\\text{ J}$",
+        "$18{,}0\\text{ J}$",
+        "$4{,}5\\text{ J}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "$W_{\\text{đ}} = \\frac{1}{2}mv^2 = 0{,}5 \\cdot 2 \\cdot 9 = 9{,}0\\text{ J}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "95c74722-94d4-57a8-91e6-8ca6520027ed",
+        "options": "30902ae7-5a77-54e2-aa1d-a69f57b184da",
+        "answer": "4d9cb98c-5e75-5403-b391-ab71cebb30d8",
+        "explanation": "3b77cdcb-9004-5c22-86ff-f755a98557dc",
+        "rubric": "47f02069-1a50-5f8a-8c42-758382832ffc",
+        "figure": "c1e29ed3-741c-52b0-ae4d-5bad09a956b6"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-vat-li"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "ce4a756e-294c-5e47-ae57-6e9e75c60143",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Quang học",
+      "lesson": "Lý 9 · Khúc xạ ánh sáng",
+      "competency": "Nhận biết chiết suất tuyệt đối",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Khi tia sáng truyền xiên góc từ không khí vào thủy tinh thì góc khúc xạ có đặc điểm nào so với góc tới?",
+      "options": [
+        "Lớn hơn góc tới",
+        "Nhỏ hơn góc tới",
+        "Luôn bằng $90^\\circ$",
+        "Bằng góc tới"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Do chiết suất thủy tinh lớn hơn không khí nên tia khúc xạ lệch gần pháp tuyến hơn.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "57f29cfc-768d-546f-9ce0-5902ccb546ad",
+        "options": "06279d6f-8aea-5fe4-80cd-2d72bc394476",
+        "answer": "74eea5a7-ceea-5c72-91d0-4b0b9a842a21",
+        "explanation": "62dff6d2-558e-5f44-8728-7144e760fca6",
+        "rubric": "71264ec2-75b4-51a4-99a4-9b6466173fb8",
+        "figure": "d30041e9-fea3-5562-af7d-779bcba7acf2"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-vat-li"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "25a9dbf5-012a-5eeb-9c8d-23f1b2b3b9c9",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Quang học",
+      "lesson": "Lý 9 · Thấu kính hội tụ",
+      "competency": "Nhận biết tính chất ảnh vật ngoài tiêu cự",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Đặt vật sáng nhỏ vuông góc với trục chính của thấu kính hội tụ tiêu cự $f = 15\\text{ cm}$, cách thấu kính $40\\text{ cm}$. Ảnh thu được có tính chất gì?",
+      "options": [
+        "Ảnh thật, ngược chiều, lớn hơn vật",
+        "Ảnh ảo, cùng chiều, lớn hơn vật",
+        "Ảnh thật, ngược chiều, nhỏ hơn vật",
+        "Ảnh ảo, ngược chiều, bằng vật"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Vì $d > 2f$ nên cho ảnh thật ngược chiều và nhỏ hơn vật.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2e3f6c45-3610-5609-ace0-af16072815fe",
+        "options": "4ba59349-fa08-516d-bd80-99c6de286e0a",
+        "answer": "ddf44546-0883-5c01-b785-cfc95456227d",
+        "explanation": "7b62d7c0-4669-535c-ac7e-b670effabf6f",
+        "rubric": "f5bd5a6e-0c90-5678-b1b7-0f93e7115931",
+        "figure": "dd75d7e4-ce76-5628-9eb3-545de2d21169"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-vat-li"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "bc11a426-c33d-576f-8996-acb376523aea",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Điện học",
+      "lesson": "Lý 9 · Định luật Ohm",
+      "competency": "Tính điện trở dây dẫn",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Đặt hiệu điện thế $U = 12\\text{ V}$ vào hai đầu điện trở $R$ thì dòng điện qua nó là $0{,}6\\text{ A}$. Giá trị của $R$ bằng bao nhiêu?",
+      "options": [
+        "$2\\,\\Omega$",
+        "$7{,}2\\,\\Omega$",
+        "$12\\,\\Omega$",
+        "$20\\,\\Omega$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$R = \\frac{U}{I} = \\frac{12}{0{,}6} = 20\\,\\Omega$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "089c3d82-86a1-5690-b951-b053e2758833",
+        "options": "bbe1e412-b0f1-5996-bf7b-a4cacfc016cd",
+        "answer": "2d35615f-58d2-5444-a4b5-bd9f83a4d5b5",
+        "explanation": "f2fa6c85-9c98-5c5b-af6d-afc0b69570aa",
+        "rubric": "d346f035-ef56-550d-93ab-a278b31646d8",
+        "figure": "31224cdf-406f-54da-b6a9-f98ee821445c"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-vat-li"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "1b63e225-00d3-527f-a09a-67c0a952da91",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Điện học",
+      "lesson": "Lý 9 · Đoạn mạch nối tiếp",
+      "competency": "Tính điện trở tương đương nối tiếp",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Hai điện trở $R_1 = 8\\,\\Omega$ và $R_2 = 12\\,\\Omega$ mắc nối tiếp với nhau. Điện trở tương đương của đoạn mạch bằng?",
+      "options": [
+        "$4{,}8\\,\\Omega$",
+        "$20\\,\\Omega$",
+        "$4\\,\\Omega$",
+        "$96\\,\\Omega$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "$R_{\\text{nt}} = R_1 + R_2 = 20\\,\\Omega$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "68b0c130-c4da-5848-9c98-10b814751a17",
+        "options": "a67bb23f-f297-5f1a-9b45-bc7ec1af3792",
+        "answer": "b905b42a-42c0-5086-9c22-a9164a43a67b",
+        "explanation": "a75f4538-dbe8-55af-8892-0a1413881129",
+        "rubric": "30ba90c9-e275-5e9a-8868-d223a2caf7da",
+        "figure": "127cc29f-5358-5a25-8b45-d45109174dc7"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-vat-li"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "5204986d-1820-5913-9160-37733fbbfca6",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Điện từ",
+      "lesson": "Lý 9 · Truyền tải điện năng",
+      "competency": "Giảm hao phí bằng tăng điện áp",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Khi tăng hiệu điện thế ở nơi phát điện lên $5$ lần (giữ nguyên công suất phát và điện trở dây), công suất hao phí do tỏa nhiệt trên đường dây thay đổi như thế nào?",
+      "options": [
+        "Tăng lên $5$ lần",
+        "Giảm đi $5$ lần",
+        "Tăng lên $25$ lần",
+        "Giảm đi $25$ lần"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$P_{\\text{hp}} = \\frac{P^2 R}{U^2}$ tỉ lệ nghịch với $U^2$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "fcef8748-193a-5a42-bed3-a68fe65dfcc0",
+        "options": "b59a77e1-32a4-5257-bb2f-842dc0d7b547",
+        "answer": "ad9e91b1-d260-56c8-b1e5-6d804219c1d3",
+        "explanation": "68cc6d1a-9c67-5674-a177-197969c5d078",
+        "rubric": "79f2bb27-14a1-5cef-a717-6807cab2ce17",
+        "figure": "da44cfac-9c3c-5d04-a85b-97a30219e41c"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-vat-li"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "b7ebe1b7-e95c-5678-9ba1-3df3b6f37e49",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Kim loại",
+      "lesson": "Hóa 9 · Dãy hoạt động hóa học",
+      "competency": "Phân biệt kim loại phản ứng được với HCl",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Kim loại nào sau đây không tác dụng với dung dịch $\\ce{HCl}$ loãng ở điều kiện thường?",
+      "options": [
+        "$\\ce{Cu}$",
+        "$\\ce{Zn}$",
+        "$\\ce{Fe}$",
+        "$\\ce{Mg}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Đồng đứng sau hiđro trong dãy hoạt động hóa học của kim loại.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3007af69-914f-5f7e-a011-42f74155f2eb",
+        "options": "45961191-30aa-544d-82db-f4819ef55a50",
+        "answer": "bc90962e-a0fb-5d04-933b-36f617fa98ac",
+        "explanation": "4385922e-4300-56b6-94a5-40b31806cfbc",
+        "rubric": "4a67ae93-7be7-5e0e-8281-313496a14435",
+        "figure": "be33b331-7cfa-537f-a64d-b5d17f49449b"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-hoa-hoc"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "c1ada575-f377-5d33-84c6-0fb49951300a",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Kim loại",
+      "lesson": "Hóa 9 · Tính chất vật lí kim loại",
+      "competency": "Nhận biết kim loại dẫn điện tốt nhất",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Trong các kim loại sau, kim loại nào dẫn điện tốt nhất ở nhiệt độ phòng?",
+      "options": [
+        "Chì ($\\ce{Pb}$)",
+        "Sắt ($\\ce{Fe}$)",
+        "Bạc ($\\ce{Ag}$)",
+        "Thủy ngân ($\\ce{Hg}$)"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Thứ tự dẫn điện tốt nhất là $\\ce{Ag} > \\ce{Cu} > \\ce{Au} > \\ce{Al} > \\ce{Fe}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "0a00f140-a38c-5f37-8f4a-e311526042a6",
+        "options": "e73cb4ca-2289-5583-b5ce-39dc5e078a02",
+        "answer": "f7365ca6-e020-5e68-98d4-ba006fd7250b",
+        "explanation": "9a5e7316-bcf6-5500-8369-ebf312218420",
+        "rubric": "3a835550-81d7-52db-86f0-63d5eb27f350",
+        "figure": "3e08f940-9fc2-5f3c-8b42-8528c00b89d1"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-hoa-hoc"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "d5981696-77cb-571d-950d-c43df3dbaaf9",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hợp chất hữu cơ",
+      "lesson": "Hóa 9 · Etilen và nhiên liệu",
+      "competency": "Nhận biết phản ứng trùng hợp etilen",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Sản phẩm thu được khi thực hiện phản ứng trùng hợp monome $\\ce{CH2=CH2}$ là polime nào?",
+      "options": [
+        "Polistiren (PS)",
+        "Polipropilen (PP)",
+        "Polietilen (PE)",
+        "Tinh bột"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "$n\\ce{CH2=CH2 ->[t^o, xt, p] (-CH2-CH2-)_n}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7304d720-c270-5623-b59d-f553402896ef",
+        "options": "f338f384-e64d-5592-abc9-63dd52befc76",
+        "answer": "57aeba41-3068-599f-ac4d-de6226e464e0",
+        "explanation": "771b42f9-4cc2-5b4e-83dd-0932a20c1665",
+        "rubric": "32ea561a-5572-5e71-9e5e-5a1be0b52f7f",
+        "figure": "f298c154-bd3b-5bd9-adde-e9171a62c822"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-hoa-hoc"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "4a723176-6aa9-5acd-b74e-182401af8b98",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hợp chất hữu cơ",
+      "lesson": "Hóa 9 · Rượu etylic",
+      "competency": "Xác định nhóm nguyên tử đặc trưng của etanol",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Độ rượu $40^\\circ$ có nghĩa là trong $100\\text{ mL}$ dung dịch rượu etylic có chứa bao nhiêu mL rượu etylic nguyên chất?",
+      "options": [
+        "$40\\text{ mL}$",
+        "$60\\text{ mL}$",
+        "$40\\text{ g}$",
+        "$20\\text{ mL}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Độ rượu là số mL etanol nguyên chất trong $100\\text{ mL}$ hỗn hợp rượu và nước.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "a54eeb15-9633-5d77-bb37-7ffd5ed638ba",
+        "options": "400ab288-fa2c-50da-ab2a-eae6f0f9e83c",
+        "answer": "5294059b-ae05-5c48-baaf-c235112959c5",
+        "explanation": "124b4dc1-083f-567c-b666-41fdf5958adc",
+        "rubric": "396ae727-81a1-52e5-b16c-45066ff355ff",
+        "figure": "77ee1dc7-222d-5010-969e-efc1f4da2514"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-hoa-hoc"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "8b5062b4-f8a4-54c9-9c50-dbd209da5fe7",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hợp chất hữu cơ",
+      "lesson": "Hóa 9 · Axit axetic",
+      "competency": "Phản ứng este hóa giữa CH3COOH và C2H5OH",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Đun nóng axit axetic với rượu etylic có mặt $\\ce{H2SO4}$ đặc làm xúc tác thu được este nào?",
+      "options": [
+        "$\\ce{CH3COOCH3}$",
+        "$\\ce{HCOOC2H5}$",
+        "$\\ce{C2H5COOCH3}$",
+        "$\\ce{CH3COOC2H5}$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$\\ce{CH3COOH + C2H5OH <=> CH3COOC2H5 + H2O}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "00164319-f5c0-5359-9b92-14ac8354a991",
+        "options": "5b089306-75b5-5516-ae72-a7ff615df143",
+        "answer": "857cd4e2-1bc8-5cb8-aef0-47d3ea647b9f",
+        "explanation": "f73d1564-37e6-5359-a687-bf11f3bf5337",
+        "rubric": "65ef7b80-19c8-5198-bea4-8842bad4ad7b",
+        "figure": "25dd6456-f318-5dde-b8fa-d8a483566687"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-hoa-hoc"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "03c6dd88-a814-5397-82c5-6647c1649cb0",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Di truyền Mendel",
+      "lesson": "Sinh 9 · Quy luật phân li",
+      "competency": "Xác định tỉ lệ kiểu hình F2 phép lai một cặp",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Theo quy luật phân li của Mendel, khi cho $F_1$ dị hợp một cặp gen ($Aa \\times Aa$, trội hoàn toàn) tự thụ phấn thì đời $F_2$ có tỉ lệ kiểu hình là?",
+      "options": [
+        "$1$ trội : $1$ lặn",
+        "$3$ trội : $1$ lặn",
+        "$1$ trội : $2$ trung gian : $1$ lặn",
+        "$9 : 3 : 3 : 1$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Tổ hợp kiểu gen $1AA : 2Aa : 1aa$ cho tỉ lệ kiểu hình $3$ trội : $1$ lặn.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7d9f08df-8bde-5273-8b28-79ec7db1ce0f",
+        "options": "1665bea1-3493-5546-8798-c890cdafa1dd",
+        "answer": "6044031c-a3fc-538c-8103-9b2def719ce6",
+        "explanation": "c7904379-691c-556b-9bb3-4d78d4b61cd2",
+        "rubric": "079f4502-8302-599b-841c-1fbb02f5617d",
+        "figure": "23bd6172-f3a5-52bd-9823-5aa587c72ed4"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-sinh-hoc"
+      },
+      "sectionId": "phan-sinh-hoc"
+    },
+    {
+      "id": "419026a1-c43a-538a-8edb-7c3f1ad84148",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cơ sở vật chất di truyền",
+      "lesson": "Sinh 9 · Cấu trúc ADN",
+      "competency": "Nguyên tắc bổ sung trong phân tử ADN",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Trong phân tử ADN mạch kép, các nuclêôtit giữa hai mạch liên kết với nhau theo nguyên tắc bổ sung như thế nào?",
+      "options": [
+        "$A$ liên kết $X$, $G$ liên kết $T$",
+        "$A$ liên kết $U$, $G$ liên kết $X$",
+        "$A$ liên kết $G$, $T$ liên kết $X$",
+        "$A$ liên kết $T$, $G$ liên kết $X$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Trên ADN mạch kép có $A=T$ và $G=X$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "29e7d531-eaf5-5014-944d-14e29471eded",
+        "options": "d2b0eb8d-66bb-5a0c-ad69-8ae66164e552",
+        "answer": "248efbf1-c934-5c8c-9dc7-a0173c7f6cc7",
+        "explanation": "6b441d85-2480-5935-abcf-9dcd55863248",
+        "rubric": "ce9733f3-d078-5269-bb52-776a4b2f9bfb",
+        "figure": "e6e4c866-f5f1-5214-9812-9521cb7d6e04"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-sinh-hoc"
+      },
+      "sectionId": "phan-sinh-hoc"
+    },
+    {
+      "id": "763d8a37-5f53-505e-8c88-14bab6d66f8d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cơ sở vật chất di truyền",
+      "lesson": "Sinh 9 · Phiên mã mARN",
+      "competency": "Nhận biết đơn phân cấu tạo ARN",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Loại đơn phân nào chỉ có ở phân tử ARN mà không có trong phân tử ADN?",
+      "options": [
+        "Ađênin ($A$)",
+        "Timin ($T$)",
+        "Uraxin ($U$)",
+        "Guanin ($G$)"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "ARN gồm $A, U, G, X$, thay $T$ bằng $U$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "71b7532e-7cb9-5978-9058-06985bf17617",
+        "options": "7fbf965c-ae5c-5fad-b263-90c9d71c01ef",
+        "answer": "169c2d2b-d5bf-516f-837c-1e900e4dfdb2",
+        "explanation": "db1b89dc-aacc-5bee-8628-2f07838783f2",
+        "rubric": "4ae8b5b0-2012-58f8-afe6-89d258a30a96",
+        "figure": "e3aecf02-a84c-5f40-866d-5cdb7d901db2"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-sinh-hoc"
+      },
+      "sectionId": "phan-sinh-hoc"
+    },
+    {
+      "id": "fc43da7a-9f86-5da5-98f4-c250fde5000d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Di truyền Mendel",
+      "lesson": "Sinh 9 · Lai hai cặp tính trạng",
+      "competency": "Đếm số loại kiểu hình phép lai phân li độc lập",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Cho phép lai hai cơ thể dị hợp hai cặp gen phân li độc lập $AaBb \\times AaBb$ (trội hoàn toàn). Số loại kiểu hình tối đa ở đời con là?",
+      "options": [
+        "$9$",
+        "$4$",
+        "$16$",
+        "$2$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Mỗi cặp tính trạng cho $2$ kiểu hình nên hai cặp cho $2 \\times 2 = 4$ kiểu hình.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "c89fad31-3de0-5961-b2cd-44a864817463",
+        "options": "cbec4432-7d95-5ffe-8a5b-0d0ada5d9472",
+        "answer": "0ffd59c9-4d0f-5469-b626-89a2738c3559",
+        "explanation": "6f7a84ce-f8b4-538d-951e-510d2fceee6f",
+        "rubric": "a254e9a2-0d61-5ce5-bae2-ca4d9dc927fc",
+        "figure": "497fc545-e283-5d03-b7df-a6ec67d25167"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-sinh-hoc"
+      },
+      "sectionId": "phan-sinh-hoc"
+    },
+    {
+      "id": "ec027a11-6153-5d0f-bfac-5a7040f5f365",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Ứng dụng di truyền",
+      "lesson": "Sinh 9 · Đột biến số lượng NST",
+      "competency": "Phân biệt thể dị bội và đa bội",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Tế bào sinh dưỡng của một loài thực vật có bộ nhiễm sắc thể lưỡng bội $2n = 14$. Thể ba ($2n + 1$) của loài này có số lượng nhiễm sắc thể là?",
+      "options": [
+        "$15$",
+        "$21$",
+        "$13$",
+        "$28$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Thể ba có $2n + 1 = 14 + 1 = 15$ nhiễm sắc thể.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "05e7663c-c58d-57a7-9d6c-4f296646e29e",
+        "options": "3747fe6f-9b6c-554e-adb6-a14f92d9e688",
+        "answer": "0d2f992f-88cd-5343-828b-03e4c75d2ec4",
+        "explanation": "30a6853d-e81c-5158-b23d-a5b07437f909",
+        "rubric": "f82c4378-6d92-51de-bf34-22866efe9d60",
+        "figure": "55951c64-c289-554f-9153-8c7aae8b7c41"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần I · phan-sinh-hoc"
+      },
+      "sectionId": "phan-sinh-hoc"
+    },
+    {
+      "id": "9b9c9e2e-e2ec-5640-84d2-4bb63899d615",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Điện học",
+      "lesson": "Lý 9 · Công suất điện",
+      "competency": "Tính điện năng tiêu thụ và cường độ định mức",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Một ấm điện ghi $220\\text{ V} - 1100\\text{ W}$ được sử dụng đúng hiệu điện thế $220\\text{ V}$ trong $10$ phút mỗi ngày. Xét các nhận định:",
+      "options": [
+        "a) Cường độ dòng điện chạy qua ấm khi hoạt động bình thường là $5\\text{ A}$.",
+        "b) Điện trở của dây nung trong ấm là $44\\,\\Omega$.",
+        "c) Điện năng ấm tiêu thụ trong $10$ phút là $660\\text{ kJ}$.",
+        "d) Trong $30$ ngày, số tiền điện phải trả ở mức $2000$ đồng/kWh là $20\\,000$ đồng."
+      ],
+      "truthValues": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) $I = 1100/220 = 5\\text{ A}$. b) $R = 220/5 = 44\\,\\Omega$. c) $A = 1100 \\cdot 600 = 660\\,000\\text{ J}$. d) $30$ ngày tiêu thụ $1{,}1 \\cdot \\frac{10}{60} \\cdot 30 = 5{,}5\\text{ kWh}$, tiền điện $11\\,000$ đồng.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3b6a60db-9fc6-5cce-ba71-2f9fd5fb5615",
+        "options": "f1daabf1-6397-5d99-bfe2-5531277594d6",
+        "answer": "acdf89ae-8bea-5763-ad58-85bb3b1e4ca3",
+        "explanation": "c39c5b3f-7cc8-560d-afc9-bfc02f28c230",
+        "rubric": "3f87b445-5e76-5e93-88ba-a3d1ea764bb7",
+        "figure": "99e61367-3df7-5f78-b06c-f201c3dacb0c"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần II · Vật lí"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "a62c1018-a3a4-5a3c-a4cc-2ddd638d672f",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Kim loại",
+      "lesson": "Hóa 9 · Sắt tác dụng muối đồng",
+      "competency": "Đánh giá phản ứng đẩy kim loại và tăng giảm khối lượng",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Ngâm một đinh sắt sạch nặng $10{,}0\\text{ g}$ vào dung dịch $\\ce{CuSO4}$ dư, sau một thời gian thấy có $0{,}05\\text{ mol}$ $\\ce{Fe}$ đã phản ứng. Xét các mệnh đề:",
+      "options": [
+        "a) Phương trình hóa học xảy ra là $\\ce{Fe + CuSO4 -> FeSO4 + Cu}$.",
+        "b) Khối lượng đồng sinh ra bám lên đinh sắt là $3{,}2\\text{ g}$.",
+        "c) Màu xanh của dung dịch nhạt dần trong quá trình phản ứng.",
+        "d) Khối lượng thanh kim loại lấy ra nặng nhỏ hơn $10{,}0\text{ g}$."
+      ],
+      "truthValues": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b, c) Đúng ($m_{\\ce{Cu}} = 0{,}05 \\cdot 64 = 3{,}2\\text{ g}$). d) Sai: thanh sắt tăng thêm $0{,}05 \\cdot (64 - 56) = 0{,}4\\text{ g}$ thành $10{,}4\\text{ g}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e58bacac-79b6-56b4-900a-3f774108ea37",
+        "options": "e323f739-fd73-53e0-93b2-ecdcdb79acb5",
+        "answer": "bcc55900-84c9-5d30-b615-2db28f66481e",
+        "explanation": "38a1f8c8-5b92-573c-9890-dca15802ff82",
+        "rubric": "fbef5c0d-988c-533d-ba54-aa2970f543b4",
+        "figure": "fc3ed2ff-3adf-5cc0-bc2e-9976d9e24162"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần II · Hóa học"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "f4ae397f-f8e7-5782-93a3-b912dc6b6401",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Cơ sở vật chất di truyền",
+      "lesson": "Sinh 9 · Bảng thành phần nuclêôtit ADN",
+      "competency": "Phân tích bảng số liệu nuclêôtit trong gen",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Một đoạn gen mạch kép có tổng số $2400$ nuclêôtit, kết quả phân tích một số loại nuclêôtit được ghi ở bảng kèm theo. Xét các khẳng định:",
+      "options": [
+        "a) Số nuclêôtit loại T của đoạn gen là $480$.",
+        "b) Số nuclêôtit loại G bằng $720$.",
+        "c) Chiều dài của đoạn gen trên bằng $4080\\text{ Å}$ ($408\\text{ nm}$).",
+        "d) Số liên kết hiđrô của đoạn gen trên bằng $2880$."
+      ],
+      "truthValues": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Tổng $N = 2400$: $A = T = 480$ ($20\\%$), $G = X = 720$ ($30\\%$). Chiều dài $L = \\frac{2400}{2} \\cdot 3{,}4 = 4080\\text{ Å}$. Số liên kết H là $2A + 3G = 960 + 2160 = 3120$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "cc17041b-104c-5ff2-8df8-065560e391be",
+        "options": "93b5cb09-7a27-55a7-849b-c8185cce4de6",
+        "answer": "ee7d46d0-a2e2-507f-8b08-43b8ec0694b7",
+        "explanation": "a08ddcf9-3b46-548f-ad04-f9c78c8f9705",
+        "rubric": "bf884c55-f07e-5d15-a60b-b9757d0bc772",
+        "figure": "4df08d95-4ad8-5345-93f5-244f9d1636ba"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần II · Sinh học"
+      },
+      "tables": [
+        {
+          "rows": [
+            [
+              "Loại nuclêôtit",
+              "A",
+              "T",
+              "G",
+              "X"
+            ],
+            [
+              "Tỉ lệ (%)",
+              "20%",
+              "?",
+              "?",
+              "30%"
+            ]
+          ]
+        }
+      ],
+      "sectionId": "phan-sinh-hoc"
+    },
+    {
+      "id": "4710fdbc-a4c5-51a6-8d72-a473d00f2e4c",
+      "v": 1,
+      "type": "short",
+      "topic": "Năng lượng cơ học",
+      "lesson": "Lý 9 · Thế năng trọng trường",
+      "competency": "Tính thế năng trọng trường",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Một quả cầu khối lượng $0{,}5\\text{ kg}$ được giữ ở độ cao $4\\text{ m}$ so với mặt đất ($g = 10\\text{ m/s}^2$). Thế năng trọng trường của quả cầu bằng bao nhiêu jun?",
+      "options": [],
+      "answer": null,
+      "answerText": "20",
+      "answerKnown": true,
+      "explanation": "$W_{\\text{t}} = mgh = 0{,}5 \\cdot 10 \\cdot 4 = 20\\text{ J}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5d8b9e95-d7b0-5375-b6ef-b9d1ca1d3938",
+        "options": "950db09e-5a16-5dc8-83c8-1d813bda5d1d",
+        "answer": "71465aa7-864f-5e15-98dd-54f8634c4643",
+        "explanation": "62143774-0e40-5eba-a01a-7fdc3899ee2d",
+        "rubric": "f8a18d37-1195-5357-8ace-008782847c83",
+        "figure": "981c4bb8-c7d2-52fa-b09e-2b521750c5be"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần III · phan-vat-li"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "0b4c13cb-d85b-57ac-b212-7acd4803efc6",
+      "v": 1,
+      "type": "short",
+      "topic": "Kim loại",
+      "lesson": "Hóa 9 · Nhôm tác dụng với axit",
+      "competency": "Tính thể tích khí H2 sinh ra",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Hòa tan $5{,}4\\text{ g}$ bột nhôm ($\\ce{Al} = 27$) trong dung dịch $\\ce{HCl}$ dư. Số mol khí $\\ce{H2}$ thu được bằng bao nhiêu?",
+      "options": [],
+      "answer": null,
+      "answerText": "0,3",
+      "answerKnown": true,
+      "explanation": "$n_{\\ce{Al}} = 0{,}2\\text{ mol} \\Rightarrow n_{\\ce{H2}} = 1{,}5 \\cdot 0{,}2 = 0{,}3\\text{ mol}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "90537597-cec3-5555-9b1c-cdea0a53f1bf",
+        "options": "3988aebb-f37b-5529-99c0-87a1689853ef",
+        "answer": "8d0ce74c-f31f-5951-850e-30f0f1e164d2",
+        "explanation": "add0505a-39e5-52dd-80bb-1e2cf8647025",
+        "rubric": "749657ca-2d55-5094-b7c2-529e63c63f2f",
+        "figure": "1fe56422-a187-5cc1-901d-9cb1508c9eb0"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần III · phan-hoa-hoc"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "5311ab7d-e12c-5abe-ae5b-ca0d8fdf5711",
+      "v": 1,
+      "type": "short",
+      "topic": "Hợp chất hữu cơ",
+      "lesson": "Hóa 9 · Đốt cháy rượu etylic",
+      "competency": "Tính số mol CO2 đốt cháy etanol",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Đốt cháy hoàn toàn $0{,}25\\text{ mol}$ $\\ce{C2H5OH}$ thu được bao nhiêu mol khí $\\ce{CO2}$?",
+      "options": [],
+      "answer": null,
+      "answerText": "0,5",
+      "answerKnown": true,
+      "explanation": "$\\ce{C2H5OH + 3O2 -> 2CO2 + 3H2O} \\Rightarrow n_{\\ce{CO2}} = 0{,}5\\text{ mol}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "67c5ea95-f02b-5bf1-9b0f-9d7639d7ef15",
+        "options": "913d981f-8140-5fc3-9c1e-ca357e22ed63",
+        "answer": "68e44a37-1049-52b3-899c-678a8f1a784e",
+        "explanation": "5334fd9e-f0b6-578b-9881-e9632a936c31",
+        "rubric": "f82f0733-eea5-59f2-85eb-ee4c00098098",
+        "figure": "03f31d66-fa1e-585f-8c2a-41ea93a48a2e"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần III · phan-hoa-hoc"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "21221df3-326d-5a14-9337-7783a9b00c68",
+      "v": 1,
+      "type": "short",
+      "topic": "Di truyền Mendel",
+      "lesson": "Sinh 9 · Xác suất di truyền",
+      "competency": "Tính tỉ lệ đồng hợp lặn",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Ở phép lai $Aa \\times Aa$ (trội hoàn toàn), tỉ lệ cây mang kiểu gen đồng hợp lặn ở đời con bằng bao nhiêu phần trăm?",
+      "options": [],
+      "answer": null,
+      "answerText": "25",
+      "answerKnown": true,
+      "explanation": "Kiểu gen $aa$ chiếm $\\frac{1}{4} = 25\\%$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "4f764cc4-6ff6-5fed-9db3-cd178be8c497",
+        "options": "b7b01fd8-826d-52f3-b400-811239807c9e",
+        "answer": "db9671e2-8a8e-56e9-8659-f415732b1c91",
+        "explanation": "cb54db39-373b-55ee-8dec-7c4d3a83d928",
+        "rubric": "c1638536-331a-5684-9dd3-ac12e43db0f4",
+        "figure": "d37d9220-ee51-5b5b-8b5a-968d78624400"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần III · phan-sinh-hoc"
+      },
+      "sectionId": "phan-sinh-hoc"
+    },
+    {
+      "id": "6d1953d5-3ad2-5766-9900-de778a1e1cab",
+      "v": 1,
+      "type": "essay",
+      "topic": "Điện học",
+      "lesson": "Lý 9 · Mạch điện hỗn hợp",
+      "competency": "Tính điện trở và công suất đoạn mạch song song",
+      "level": 2,
+      "points": 0.75,
+      "stem": "Cho hai điện trở $R_1 = 6\\,\\Omega$ và $R_2 = 12\\,\\Omega$ mắc song song vào nguồn có hiệu điện thế không đổi $U = 12\\text{ V}$. Tính điện trở tương đương của đoạn mạch và cường độ dòng điện qua mạch chính.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "$R_{\\text{ss}} = \\frac{6 \\cdot 12}{6 + 12} = 4\\,\\Omega$; $I = \\frac{U}{R_{\\text{ss}}} = \\frac{12}{4} = 3\\text{ A}$.",
+      "rubric": [
+        {
+          "text": "Tính đúng điện trở tương đương $R_{\\text{ss}} = \\frac{R_1 R_2}{R_1 + R_2} = 4\\,\\Omega$",
+          "points": 0.5
+        },
+        {
+          "text": "Tính đúng cường độ dòng điện mạch chính $I = \\frac{12}{4} = 3\\text{ A}$",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "449b6bbb-e6e9-520a-8ccf-1db870bf19aa",
+        "options": "ed3902b6-b766-50cb-ab2b-a1e63e5062d8",
+        "answer": "82875024-7ac8-5407-b7f9-c8f2938acbe3",
+        "explanation": "d70126f7-a3e1-52dd-b244-bbc6a54b3422",
+        "rubric": "ec6a90f6-cce2-5dac-bbc0-a098e8e9260b",
+        "figure": "7def4c90-6fb9-5b9b-b7b8-253b84233417"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần IV · Vật lí"
+      },
+      "sectionId": "phan-vat-li"
+    },
+    {
+      "id": "a86bc040-8b55-5262-98fc-24d8c1cc016a",
+      "v": 1,
+      "type": "essay",
+      "topic": "Hợp chất hữu cơ",
+      "lesson": "Hóa 9 · Axit axetic tác dụng muối cacbonat",
+      "competency": "Tính khối lượng muối và thể tích CO2",
+      "level": 2,
+      "points": 0.75,
+      "stem": "Cho $100\\text{ g}$ dung dịch $\\ce{CH3COOH}$ $12\\%$ tác dụng vừa đủ với bột $\\ce{CaCO3}$. Viết phương trình hóa học và tính khối lượng $\\ce{CaCO3}$ đã phản ứng.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "$n_{\\ce{CH3COOH}} = \\frac{12}{60} = 0{,}2\\text{ mol}$. Theo $\\ce{2CH3COOH + CaCO3 -> (CH3COO)2Ca + CO2 + H2O}$, $n_{\\ce{CaCO3}} = 0{,}1\\text{ mol} \\Rightarrow m = 10{,}0\\text{ g}$.",
+      "rubric": [
+        {
+          "text": "Viết đúng phương trình phản ứng và tính $n_{\\ce{CH3COOH}} = 0{,}2\\text{ mol}$",
+          "points": 0.5
+        },
+        {
+          "text": "Tính được $n_{\\ce{CaCO3}} = 0{,}1\\text{ mol}$ và $m = 10{,}0\\text{ g}$",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "98545f3a-c017-5a8f-9bab-38e898015f85",
+        "options": "daa63906-3cdf-5df0-acd0-57e9a2ae4dc9",
+        "answer": "c57745e0-69bd-51f6-8e82-246695545235",
+        "explanation": "172cb821-c169-5f15-ba7a-9ee23ce0d7b9",
+        "rubric": "922c2f9f-6bf4-5a91-9e5c-fd3ea6e3e47d",
+        "figure": "a670ec82-25f0-51f2-ad06-9c0fd8e87e50"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần IV · Hóa học"
+      },
+      "sectionId": "phan-hoa-hoc"
+    },
+    {
+      "id": "a52ff74a-f8f6-58c2-86cc-87cc7b14e2bf",
+      "v": 1,
+      "type": "essay",
+      "topic": "Di truyền Mendel",
+      "lesson": "Sinh 9 · Lai phân tích",
+      "competency": "Giải thích mục đích và kết quả phép lai phân tích",
+      "level": 1,
+      "points": 0.5,
+      "stem": "Trình bày khái niệm phép lai phân tích và viết sơ đồ lai khi cho cây đậu hoa đỏ dị hợp ($Aa$) lai phân tích.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Lai phân tích là phép lai giữa cá thể mang tính trạng trội cần xác định kiểu gen với cá thể đồng hợp lặn. P: $Aa$ (hoa đỏ) $\\times$ $aa$ (hoa trắng) $\\to F_1$: $1Aa : 1aa$ ($50\\%$ đỏ : $50\\%$ trắng).",
+      "rubric": [
+        {
+          "text": "Nêu đúng khái niệm và ý nghĩa của phép lai phân tích",
+          "points": 0.25
+        },
+        {
+          "text": "Viết đúng sơ đồ lai $Aa \\times aa \\to 1Aa : 1aa$ ($1$ đỏ : $1$ trắng)",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "d0c04ce1-3377-5c35-8eb4-822c4fd6cbee",
+        "options": "d7fcb3c7-0f34-5b6a-ada5-1a3a2689b2c0",
+        "answer": "3f31f04a-4e3b-58b3-91dd-5a5923e57514",
+        "explanation": "191c2f31-a37e-5543-b39d-1b01206411da",
+        "rubric": "38f26631-574d-5f05-a0e7-b1aecb75a3b9",
+        "figure": "d7f05e8c-03ad-53e4-961b-6818f1a87d98"
+      },
+      "source": {
+        "docId": "8a7cfef4-e3d9-5c6c-a6b9-403b4e4e1e28",
+        "page": 1,
+        "location": "Phần IV · Sinh học"
+      },
+      "sectionId": "phan-sinh-hoc"
+    }
+  ]
+}

@@ -1,0 +1,632 @@
+{
+  "id": "cf12cc1f-93de-55ea-9f89-2d623e091278",
+  "title": "Đề kiểm tra cuối năm — Toán lớp 5 (Tiểu học)",
+  "school": "TRƯỜNG TIỂU HỌC HOA SEN (MẪU)",
+  "department": "Tổ Chuyên môn Khối 5",
+  "subject": "Toán",
+  "grade": "5",
+  "minutes": 40,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Học sinh khoanh vào chữ đặt trước câu trả lời đúng ở Phần I và trình bày bài giải chi tiết ở Phần II.",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 2
+  },
+  "blockIds": {
+    "heading": "2efb476e-aa70-58b2-8b85-be495764e3d5",
+    "general": "b5930735-6c60-5a18-8a9a-4a59bc2b183f",
+    "marking": "d4406886-3a60-5396-8a19-407593ba6c50"
+  },
+  "docs": [
+    {
+      "id": "adf00469-31b5-51cf-a140-59492b052900",
+      "name": "Tu_lieu_Toan_5_tieu_hoc.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "Tư liệu Toán lớp 5 tự biên soạn: Phân số, hỗn số, số thập phân, tỉ số phần trăm, diện tích hình thang và thể tích hình hộp chữ nhật.",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Số thập phân",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Phân số và hỗn số",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Tỉ số và tỉ số phần trăm",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        1,
+        0
+      ],
+      "pointsByLevel": [
+        null,
+        0.5,
+        1.0,
+        null
+      ]
+    },
+    {
+      "topic": "Đo lường và đơn vị",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Phân số và phép tính",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Phân số và số thập phân",
+      "type": "essay",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Tỉ số và tỉ số phần trăm",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "points": 1.5
+    },
+    {
+      "topic": "Hình học trực quan",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 2.0
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "f13319f2-8f40-53de-90d6-ef6c843c1b2c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Số thập phân",
+      "lesson": "Bài 1: Đọc và viết số thập phân",
+      "competency": "Nhận biết giá trị chữ số theo hàng thập phân",
+      "level": 0,
+      "points": 0.5,
+      "stem": "Trong số thập phân $42{,}758$, chữ số $5$ thuộc hàng nào?",
+      "options": [
+        "Hàng phần trăm",
+        "Hàng phần mười",
+        "Hàng phần nghìn",
+        "Hàng chục"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Sau dấu phẩy lần lượt là hàng phần mười (7), hàng phần trăm (5), hàng phần nghìn (8).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "4306ab2b-a533-5f8e-b9cd-84834451a6f2",
+        "options": "37b23c0c-a5ae-58d4-b65a-2d9ac69f4ad3",
+        "answer": "5326a629-ebd9-52fe-a5ec-04f1dd3424f8",
+        "explanation": "c2a6c8c5-7a26-5f55-8b9e-e0dd96e55836",
+        "rubric": "2e5e0138-3b39-593d-b29c-3ec887022920",
+        "figure": "3311d88d-80a3-569e-b10a-3f0435ddb6a9"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "65582ebd-6049-5010-8ec3-43498213a47f",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Phân số và hỗn số",
+      "lesson": "Bài 2: Chuyển đổi phân số và hỗn số",
+      "competency": "Đổi hỗn số sang phân số",
+      "level": 0,
+      "points": 0.5,
+      "stem": "Hỗn số $3\\frac{2}{5}$ viết dưới dạng phân số là?",
+      "options": [
+        "$\\frac{13}{5}$",
+        "$\\frac{17}{5}$",
+        "$\\frac{15}{2}$",
+        "$\\frac{11}{5}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "$3\\frac{2}{5} = \\frac{3 \\cdot 5 + 2}{5} = \\frac{17}{5}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e3650c7b-e483-5989-a8da-53b59f0be27d",
+        "options": "ac750e0f-40c7-570d-a878-fec1ffa06efd",
+        "answer": "c130e1c3-6fe3-5183-8301-394a0a282485",
+        "explanation": "35ca9955-c2cf-548a-9fd6-32a3f5945839",
+        "rubric": "3f802dfc-ed0b-5ac8-a3b4-0707077d37a8",
+        "figure": "3506845f-ca51-5087-bfb5-f0aff1bcf225"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "5e7b9828-b730-5fa2-88c9-2c7cd743bf27",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Tỉ số và tỉ số phần trăm",
+      "lesson": "Bài 3: Tính tỉ số phần trăm của hai số",
+      "competency": "Viết tỉ số dưới dạng phần trăm",
+      "level": 1,
+      "points": 0.5,
+      "stem": "Lớp 5A có $18$ bạn nữ và tổng cộng $30$ học sinh. Tỉ số phần trăm của số bạn nữ so với số học sinh cả lớp là?",
+      "options": [
+        "$54\\%$",
+        "$40\\%$",
+        "$60\\%$",
+        "$18\\%$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "$\\frac{18}{30} = 0{,}6 = 60\\%$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "dbb708d1-8f8f-517f-bf7d-1c94078a7486",
+        "options": "3062a08f-6738-5769-94b4-73387dbee555",
+        "answer": "f63f8295-5195-53ca-bf36-d4c2906a1f86",
+        "explanation": "5a75be4c-8fb7-5428-91bb-44c20ae0f079",
+        "rubric": "5ebb85cb-2ead-52d2-9ff9-ddf1368071a2",
+        "figure": "8a8f9ee1-8e16-53c2-8933-a329a514e28a"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "23875809-3785-5795-9f04-98f82ef27d86",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Đo lường và đơn vị",
+      "lesson": "Bài 4: Đổi đơn vị diện tích và thể tích",
+      "competency": "Chuyển đổi đề-xi-mét khối sang lít",
+      "level": 0,
+      "points": 0.5,
+      "stem": "Số thích hợp điền vào chỗ chấm: $2\\text{ m}^3\\; 45\\text{ dm}^3 = \\dots \\text{ m}^3$ là?",
+      "options": [
+        "$2{,}0045$",
+        "$2{,}45$",
+        "$2045$",
+        "$2{,}045$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$45\\text{ dm}^3 = 0{,}045\\text{ m}^3$, nên $2\\text{ m}^3\\; 45\\text{ dm}^3 = 2{,}045\\text{ m}^3$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "da28d675-14fe-5301-bf5b-82c0107a1ca8",
+        "options": "1749c1cd-6c76-5b5b-9180-b5a198167acf",
+        "answer": "ee5ddbb2-a7ce-5fd7-853a-4f499f97f849",
+        "explanation": "e70442d8-1989-5f5b-adc8-0a6f183e58fe",
+        "rubric": "743f67c5-8ec9-545f-b5fd-85434f07fccc",
+        "figure": "95803441-5bb4-5666-88a1-6016b8fe45ac"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "f8dfccb5-ec9a-58c7-bc91-df6834ddf826",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Phân số và phép tính",
+      "lesson": "Bài 5: Phép nhân chia phân số",
+      "competency": "Tìm phân số của một số cho trước",
+      "level": 1,
+      "points": 1.0,
+      "stem": "Một cửa hàng có $120\\text{ kg}$ gạo, buổi sáng đã bán $\\frac{3}{5}$ số gạo đó. Số ki-lô-gam gạo còn lại sau buổi sáng là?",
+      "options": [
+        "$72\\text{ kg}$",
+        "$48\\text{ kg}$",
+        "$36\\text{ kg}$",
+        "$60\\text{ kg}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Số gạo đã bán là $120 \\cdot \\frac{3}{5} = 72\\text{ kg}$; số gạo còn lại là $120 - 72 = 48\\text{ kg}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7d99bb62-b11d-555b-a676-5f4497679efe",
+        "options": "22ff752f-9412-5e57-8459-bfc08ec9abc0",
+        "answer": "425ff80f-734e-5b95-af40-28d326bcdfad",
+        "explanation": "50192c52-8b62-526f-966c-bb9e5974fa46",
+        "rubric": "2e8a90a8-99c1-5ba0-8cac-358322e9b7d7",
+        "figure": "484b34b8-77af-56bc-9c23-439b16a4aab3"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "e280c8e2-ead7-5ebe-8cc1-98d18e7d48f9",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Tỉ số và tỉ số phần trăm",
+      "lesson": "Bài 6: Tìm một số biết giá trị phần trăm",
+      "competency": "Tìm giá gốc trước khi giảm giá",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Một chiếc cặp sách sau khi giảm giá $20\\%$ thì có giá bán là $160\\,000$ đồng. Giá ban đầu của chiếc cặp sách là?",
+      "options": [
+        "$180\\,000$ đồng",
+        "$192\\,000$ đồng",
+        "$128\\,000$ đồng",
+        "$200\\,000$ đồng"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$160\\,000$ đồng ứng với $100\\% - 20\\% = 80\\%$ giá ban đầu, nên giá gốc là $160\\,000 : 80 \\cdot 100 = 200\\,000$ đồng.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "c9fe7e0d-2d77-5c54-b9f1-a6ce97505350",
+        "options": "ce50533a-627e-5363-87d0-57b058a7bec4",
+        "answer": "5455abb4-7ca6-5af8-b61f-8bb4961caefb",
+        "explanation": "810cfb7f-4ab4-59d5-a597-092ba9220ee3",
+        "rubric": "57d1da8e-bd2d-50a8-9579-09861df05408",
+        "figure": "78a6884d-a692-531a-894c-f7e0dc03a1ba"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "4ef02c3d-7b74-5b4b-ba61-f404fc40b72a",
+      "v": 1,
+      "type": "essay",
+      "topic": "Phân số và số thập phân",
+      "lesson": "Bài 5: Đặt tính và tìm x",
+      "competency": "Tính giá trị biểu thức phân số và tìm thành phần chưa biết",
+      "level": 1,
+      "points": 1.0,
+      "stem": "a) Tính giá trị biểu thức: $\\left(\\frac{3}{4} + \\frac{5}{8}\\right) \\times \\frac{4}{11}$.\nb) Tìm $x$ biết: $x \\times 2{,}5 = 12{,}5 - 5$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) $\\frac{11}{8} \\times \\frac{4}{11} = \\frac{1}{2}$. b) $x \\times 2{,}5 = 7{,}5 \\Rightarrow x = 3$.",
+      "rubric": [
+        {
+          "text": "a) Cộng hai phân số $\\frac{3}{4} + \\frac{5}{8} = \\frac{11}{8}$ và nhân ra $\\frac{1}{2}$",
+          "points": 0.5
+        },
+        {
+          "text": "b) Tính $12{,}5 - 5 = 7{,}5$ và tìm đúng $x = 3$",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3dcaf303-cae0-5ee5-8b44-8c403c13dccb",
+        "options": "c973e667-9247-5f9b-9735-282ee1ef6c40",
+        "answer": "27600b76-b1ef-5e1d-afaa-54dc75d64371",
+        "explanation": "a00ad5d6-1183-5c52-b997-42b919d1e30d",
+        "rubric": "2b39a68f-028b-5647-8e94-675d333f2c88",
+        "figure": "8d08bfc4-bb73-56f7-a217-8bd7ac407d44"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần II · Bài 7"
+      },
+      "sectionId": "phan-2-essay"
+    },
+    {
+      "id": "41d2a614-1662-5134-b65b-af828aa8ec0c",
+      "v": 1,
+      "type": "essay",
+      "topic": "Tỉ số và tỉ số phần trăm",
+      "lesson": "Bài 6: Bài toán hiệu tỉ và phần trăm",
+      "competency": "Giải bài toán tìm hai số khi biết hiệu và tỉ số",
+      "level": 2,
+      "points": 1.5,
+      "stem": "Một mảnh vườn hình chữ nhật có chiều dài hơn chiều rộng $18\\text{ m}$ và chiều rộng bằng $\\frac{3}{5}$ chiều dài. Tính diện tích mảnh vườn đó bằng mét vuông.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Hiệu số phần bằng nhau: $5 - 3 = 2$ phần. Chiều rộng $18 : 2 \\times 3 = 27\\text{ m}$, chiều dài $27 + 18 = 45\\text{ m}$. Diện tích $45 \\times 27 = 1215\\text{ m}^2$.",
+      "rubric": [
+        {
+          "text": "Tìm đúng hiệu số phần bằng nhau: $5 - 3 = 2$ (phần) và tính chiều rộng $27\\text{ m}$",
+          "points": 0.5
+        },
+        {
+          "text": "Tính đúng chiều dài $45\\text{ m}$",
+          "points": 0.5
+        },
+        {
+          "text": "Tính đúng diện tích $45 \\times 27 = 1215\\text{ m}^2$ và ghi đáp số",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2d5fde6a-648a-50e7-a7f2-d4197013c6ce",
+        "options": "7d44c463-c08f-5b89-91af-781dc9663600",
+        "answer": "42f3ea06-1cd0-59c5-8976-01bbda1ce102",
+        "explanation": "78428aff-ef1a-5b96-b743-9658b3edbbfb",
+        "rubric": "382ee5d7-0918-5bd6-94d4-fc481b1b63fa",
+        "figure": "a3531780-ad63-57ba-8454-af9c0882f9bf"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần II · Bài 8"
+      },
+      "sectionId": "phan-2-essay"
+    },
+    {
+      "id": "89b42a10-9deb-53cb-a9a6-23588b826619",
+      "v": 1,
+      "type": "essay",
+      "topic": "Hình học trực quan",
+      "lesson": "Bài 7: Diện tích hình thang vuông",
+      "competency": "Tính diện tích hình thang kết hợp tỉ số phần trăm",
+      "level": 2,
+      "points": 2.0,
+      "stem": "Một thửa ruộng hình thang $ABCD$ có đáy nhỏ $AB = 24\\text{ m}$, đáy lớn $CD = 36\\text{ m}$ và chiều cao $AH = 15\\text{ m}$.\na) Tính diện tích thửa ruộng hình thang đó.\nb) Người ta dành $40\\%$ diện tích thửa ruộng để trồng hoa màu, phần còn lại trồng lúa. Tính diện tích trồng lúa.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) $S = \\frac{(24 + 36) \\times 15}{2} = 450\\text{ m}^2$. b) Tỉ lệ trồng lúa là $60\\%$, diện tích trồng lúa là $450 \\times 60 : 100 = 270\\text{ m}^2$.",
+      "rubric": [
+        {
+          "text": "a) Viết đúng công thức và tính diện tích hình thang $S = \\frac{(24+36) \\times 15}{2} = 450\\text{ m}^2$",
+          "points": 1.0
+        },
+        {
+          "text": "b) Tính đúng tỉ lệ phần trăm diện tích trồng lúa $100\\% - 40\\% = 60\\%$",
+          "points": 0.5
+        },
+        {
+          "text": "b) Tính đúng diện tích trồng lúa $450 \\times 60\\% = 270\\text{ m}^2$",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8bc02400-f255-5381-8e28-914ac6ea00ff",
+        "options": "debea0be-2276-5bbb-8917-965a8551cfcb",
+        "answer": "a089cb93-661d-561f-b3df-a2803df5d962",
+        "explanation": "b6cd3db8-4e33-54b1-9b26-45c4bb7c0d6a",
+        "rubric": "7236beec-8cf9-5bfa-b472-abf5fa585960",
+        "figure": "ff9e7be9-4ca8-54ad-990e-95c1924a2421"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần II · Bài 9"
+      },
+      "figure": {
+        "points": {
+          "A": {
+            "x": 1,
+            "y": 3
+          },
+          "B": {
+            "x": 5,
+            "y": 3
+          },
+          "C": {
+            "x": 6,
+            "y": 0
+          },
+          "D": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "constraints": [
+          "H=foot(A,D,C)"
+        ],
+        "objects": [
+          "segment(A,B)",
+          "segment(B,C)",
+          "segment(C,D)",
+          "segment(D,A)",
+          {
+            "type": "segment",
+            "points": [
+              "A",
+              "H"
+            ],
+            "dashed": true
+          },
+          "rightAngle(A,H,C)"
+        ],
+        "labels": {
+          "A": "above",
+          "B": "above",
+          "C": "right",
+          "D": "left",
+          "H": "below"
+        },
+        "caption": "Hình thang ABCD với đáy nhỏ AB, đáy lớn CD và đường cao AH",
+        "width": 460,
+        "align": "center"
+      },
+      "sectionId": "phan-2-essay"
+    },
+    {
+      "id": "972e225c-de97-51aa-a0e6-60841725a2e7",
+      "v": 1,
+      "type": "essay",
+      "topic": "Tỉ số và tỉ số phần trăm",
+      "lesson": "Bài 8: Bài toán chuyển động và phần trăm",
+      "competency": "Giải bài toán hai xe đi ngược chiều",
+      "level": 3,
+      "points": 1.5,
+      "stem": "Quãng đường từ tỉnh $A$ đến tỉnh $B$ dài $165\\text{ km}$. Lúc $7$ giờ sáng, một xe máy đi từ $A$ đến $B$ với vận tốc $35\\text{ km/h}$, cùng lúc đó một ô tô đi từ $B$ về $A$ với vận tốc $47{,}5\\text{ km/h}$. Hỏi hai xe gặp nhau lúc mấy giờ?",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Tổng vận tốc $35 + 47{,}5 = 82{,}5\\text{ km/h}$. Thời gian đi để gặp nhau: $165 : 82{,}5 = 2$ giờ. Hai xe gặp nhau lúc $7 + 2 = 9$ giờ.",
+      "rubric": [
+        {
+          "text": "Tính đúng tổng vận tốc hai xe: $35 + 47{,}5 = 82{,}5\\text{ km/h}$",
+          "points": 0.5
+        },
+        {
+          "text": "Tính thời gian hai xe đi đến khi gặp nhau: $165 : 82{,}5 = 2$ giờ",
+          "points": 0.5
+        },
+        {
+          "text": "Tính đúng thời điểm gặp nhau lúc $9$ giờ sáng và ghi đáp số",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "57a8d379-e2fa-5cc4-915d-128fa1ab8359",
+        "options": "aaec2254-df71-5712-b4a2-330406a044cb",
+        "answer": "20dc82b1-0106-5ab6-b081-d9794297105b",
+        "explanation": "e85d53a9-d304-5a0d-9657-08aec37bb455",
+        "rubric": "4f27621f-975c-553d-bc8a-7dffc3369427",
+        "figure": "df2b0662-e0bb-5eca-9277-8edb74536957"
+      },
+      "source": {
+        "docId": "adf00469-31b5-51cf-a140-59492b052900",
+        "page": 1,
+        "location": "Phần II · Bài 10"
+      },
+      "sectionId": "phan-2-essay"
+    }
+  ]
+}

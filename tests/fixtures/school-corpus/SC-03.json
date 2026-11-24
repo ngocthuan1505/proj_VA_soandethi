@@ -1,0 +1,477 @@
+{
+  "id": "41c9c1e5-0ad6-5d5b-8d4f-69ace2b23a82",
+  "title": "Đề kiểm tra cuối học kì II — Ngữ văn 9 (GDPT 2018)",
+  "school": "TRƯỜNG THCS ĐỒNG TIẾN",
+  "department": "Tổ Ngữ văn – KHXH",
+  "subject": "Ngữ văn",
+  "grade": "9",
+  "minutes": 120,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Học sinh đọc kĩ ngữ liệu tự biên soạn và làm đầy đủ cả hai phần Đọc hiểu (4,0 điểm) và Viết (6,0 điểm).",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 1
+  },
+  "blockIds": {
+    "heading": "97f5e48d-6720-5916-8bea-0fb1797ecf25",
+    "general": "6010dae2-8514-5f28-84a7-1fb3181afe12",
+    "marking": "972c9336-0817-5248-84a9-403c760e0918"
+  },
+  "docs": [
+    {
+      "id": "346c430f-b9f0-58a6-9ae4-60e20e858b27",
+      "name": "Ngu_lieu_tu_soan_Ngu_van_9.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "NGƯỜI ĐÓNG TÀU BÊN BẾN SÔNG CỬU\n(Ngữ liệu tự biên soạn)\n\nMỗi sáng tháng Chạp, gió chướng thổi qua bãi bồi làm mặt nước bến sông Cửu gợn từng lớp sóng bạc. Trong căn lán lợp lá dừa nước, ông Bảy Mộc vẫn cặm cụi dùng bào tay chuốt từng thanh gỗ sao vàng óng. Khác với những xưởng cơ khí đóng tàu sắt ồn ào phía thượng lưu, tiếng đục, tiếng bào ở đây đều nhịp như hơi thở của dòng sông.\n\nÔng Bảy bảo rằng một chiếc ghe tốt không chỉ nằm ở lớp sơn dầu bóng loáng bên ngoài, mà ở những mối ghép mộng âm dương kín khít nằm khuất dưới lườn tàu. Chỉ cần một khe hở nhỏ bằng sợi tóc bị bỏ qua, con nước mặn sẽ âm thầm ăn mòn suốt mấy mùa gió bấc. Thằng Minh — đứa cháu nội vừa học hết lớp chín — ngồi bên cạnh ghi chép từng thông số độ cong sườn ghe vào quyển sổ tay sờn gáy, ánh mắt sáng lên khi hiểu vì sao người thợ già luôn đo lại hai lần trước khi hạ lưỡi cưa.",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "NGƯỜI ĐÓNG TÀU BÊN BẾN SÔNG CỬU\n(Ngữ liệu tự biên soạn)\n\nMỗi sáng tháng Chạp, gió chướng thổi qua bãi bồi làm mặt nước bến sông Cửu gợn từng lớp sóng bạc. Trong căn lán lợp lá dừa nước, ông Bảy Mộc vẫn cặm cụi dùng bào tay chuốt từng thanh gỗ sao vàng óng. Khác với những xưởng cơ khí đóng tàu sắt ồn ào phía thượng lưu, tiếng đục, tiếng bào ở đây đều nhịp như hơi thở của dòng sông.\n\nÔng Bảy bảo rằng một chiếc ghe tốt không chỉ nằm ở lớp sơn dầu bóng loáng bên ngoài, mà ở những mối ghép mộng âm dương kín khít nằm khuất dưới lườn tàu. Chỉ cần một khe hở nhỏ bằng sợi tóc bị bỏ qua, con nước mặn sẽ âm thầm ăn mòn suốt mấy mùa gió bấc. Thằng Minh — đứa cháu nội vừa học hết lớp chín — ngồi bên cạnh ghi chép từng thông số độ cong sườn ghe vào quyển sổ tay sờn gáy, ánh mắt sáng lên khi hiểu vì sao người thợ già luôn đo lại hai lần trước khi hạ lưỡi cưa.",
+    "chosen": {
+      "id": "dd92a032-a62c-52d7-bac1-7096c929fe72",
+      "label": "Ngữ liệu tự biên soạn"
+    },
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Đọc hiểu văn bản truyện",
+      "type": "essay",
+      "targets": [
+        2,
+        1,
+        1,
+        0
+      ],
+      "pointsByLevel": [
+        0.5,
+        1.0,
+        1.0,
+        null
+      ]
+    },
+    {
+      "topic": "Thực hành tiếng Việt",
+      "type": "essay",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Viết nghị luận xã hội",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 2.0
+    },
+    {
+      "topic": "Viết nghị luận văn học",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "points": 4.0
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "4908732b-21cb-5527-9cf9-0c08e320f8b4",
+      "v": 1,
+      "type": "essay",
+      "topic": "Đọc hiểu văn bản truyện",
+      "lesson": "Bài 1: Ngôi kể và phương thức biểu đạt",
+      "competency": "Xác định ngôi kể trong đoạn trích tự sự",
+      "level": 0,
+      "points": 0.5,
+      "stem": "Xác định ngôi kể được sử dụng trong văn bản trên.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Văn bản sử dụng ngôi kể thứ ba (người kể giấu mặt gọi nhân vật là ông Bảy Mộc, thằng Minh).",
+      "rubric": [
+        {
+          "text": "Nêu đúng ngôi kể thứ ba",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5928052f-be4e-596d-9331-740063b1942d",
+        "options": "a630ea75-948d-518d-91e4-de2cafc377d0",
+        "answer": "4ac450e5-a36b-5cb6-9a6f-b5e2cba91d9e",
+        "explanation": "17aa3c2c-4d40-53aa-a933-7984b2f969cf",
+        "rubric": "186d0a6a-8739-5f8a-8a16-ba859c5c0d69",
+        "figure": "8b7e7d03-171b-5b16-aeda-4c8ac20f1e54"
+      },
+      "source": {
+        "docId": "346c430f-b9f0-58a6-9ae4-60e20e858b27",
+        "page": 1,
+        "location": "Đoạn 1–2"
+      },
+      "sectionId": "phan-1-doc-hieu",
+      "passageId": "nv9-passage-1",
+      "passageTitle": "Văn bản đọc hiểu: Người đóng tàu bên bến sông Cửu",
+      "passageText": "NGƯỜI ĐÓNG TÀU BÊN BẾN SÔNG CỬU\n(Ngữ liệu tự biên soạn)\n\nMỗi sáng tháng Chạp, gió chướng thổi qua bãi bồi làm mặt nước bến sông Cửu gợn từng lớp sóng bạc. Trong căn lán lợp lá dừa nước, ông Bảy Mộc vẫn cặm cụi dùng bào tay chuốt từng thanh gỗ sao vàng óng. Khác với những xưởng cơ khí đóng tàu sắt ồn ào phía thượng lưu, tiếng đục, tiếng bào ở đây đều nhịp như hơi thở của dòng sông.\n\nÔng Bảy bảo rằng một chiếc ghe tốt không chỉ nằm ở lớp sơn dầu bóng loáng bên ngoài, mà ở những mối ghép mộng âm dương kín khít nằm khuất dưới lườn tàu. Chỉ cần một khe hở nhỏ bằng sợi tóc bị bỏ qua, con nước mặn sẽ âm thầm ăn mòn suốt mấy mùa gió bấc. Thằng Minh — đứa cháu nội vừa học hết lớp chín — ngồi bên cạnh ghi chép từng thông số độ cong sườn ghe vào quyển sổ tay sờn gáy, ánh mắt sáng lên khi hiểu vì sao người thợ già luôn đo lại hai lần trước khi hạ lưỡi cưa."
+    },
+    {
+      "id": "24143e2a-eb96-58d6-bfc6-9117a5075523",
+      "v": 1,
+      "type": "essay",
+      "topic": "Đọc hiểu văn bản truyện",
+      "lesson": "Bài 1: Chi tiết nghệ thuật",
+      "competency": "Tìm chi tiết miêu tả thái độ lao động cẩn trọng",
+      "level": 0,
+      "points": 0.5,
+      "stem": "Chỉ ra hai chi tiết trong đoạn văn thứ hai cho thấy sự tỉ mỉ, nghiêm túc trong nghề của ông Bảy Mộc.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Hai chi tiết: chú trọng những mối ghép mộng âm dương kín khít dưới lườn tàu và luôn đo lại hai lần trước khi hạ lưỡi cưa.",
+      "rubric": [
+        {
+          "text": "Chỉ ra được chi tiết về mối ghép mộng âm dương kín khít dưới lườn tàu",
+          "points": 0.25
+        },
+        {
+          "text": "Chỉ ra được chi tiết luôn đo lại hai lần trước khi hạ lưỡi cưa",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "39ad9acf-4016-5ae1-8de1-dbe13f661192",
+        "options": "385a8c7a-36aa-59ae-837a-8d66fe6095a3",
+        "answer": "9da77e00-9e39-5dab-91ac-c97c1cc7ecf0",
+        "explanation": "2aa038e2-b005-5f75-85ed-1333886a87c1",
+        "rubric": "9eec4cec-11d8-5bb4-a44d-32e6ceafc2d7",
+        "figure": "1b24da63-b1b5-54ac-b579-025c67899036"
+      },
+      "source": {
+        "docId": "346c430f-b9f0-58a6-9ae4-60e20e858b27",
+        "page": 1,
+        "location": "Đoạn 2"
+      },
+      "sectionId": "phan-1-doc-hieu",
+      "passageId": "nv9-passage-1"
+    },
+    {
+      "id": "8ccf07c4-3ea9-55bf-a27e-6fc89770ac92",
+      "v": 1,
+      "type": "essay",
+      "topic": "Thực hành tiếng Việt",
+      "lesson": "Bài 2: Biện pháp tu từ so sánh",
+      "competency": "Phân tích tác dụng biện pháp tu từ so sánh trong câu văn",
+      "level": 1,
+      "points": 1.0,
+      "stem": "Phân tích tác dụng của biện pháp tu từ so sánh trong câu: “tiếng đục, tiếng bào ở đây đều nhịp như hơi thở của dòng sông”.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "So sánh tiếng đục, tiếng bào với hơi thở của dòng sông làm nổi bật sự gắn bó hài hòa giữa người thợ thủ công với thiên nhiên và nhịp sống bền bỉ của nghề truyền thống.",
+      "rubric": [
+        {
+          "text": "Chỉ ra đúng phép so sánh 'tiếng đục, tiếng bào ở đây đều nhịp như hơi thở của dòng sông'",
+          "points": 0.25
+        },
+        {
+          "text": "Phân tích giá trị gợi hình, gợi âm thanh êm đềm và sự gắn bó hài hòa giữa con người với dòng sông",
+          "points": 0.75
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "1fb97ec4-9e1c-59cb-a1d6-5a7d3e054e87",
+        "options": "022f3938-a1c5-538d-b391-535bc1e22bcf",
+        "answer": "83b988b0-5297-5394-ba32-5bb8c8c44025",
+        "explanation": "0efdd79b-7247-5985-b85a-e63223fead13",
+        "rubric": "5aea9643-cc7b-5625-8296-f169fb113eb1",
+        "figure": "e882427d-2e6f-5d97-94d0-981bb22963d9"
+      },
+      "source": {
+        "docId": "346c430f-b9f0-58a6-9ae4-60e20e858b27",
+        "page": 1,
+        "location": "Đoạn 1"
+      },
+      "richDoc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Phân tích tác dụng của biện pháp tu từ so sánh trong câu: "
+              },
+              {
+                "type": "text",
+                "text": "“tiếng đục, tiếng bào ở đây đều nhịp như hơi thở của dòng sông”",
+                "marks": [
+                  {
+                    "type": "italic"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      "sectionId": "phan-1-doc-hieu",
+      "passageId": "nv9-passage-1"
+    },
+    {
+      "id": "f86f6451-3bf0-53e2-bbb5-6b1caef4f10b",
+      "v": 1,
+      "type": "essay",
+      "topic": "Đọc hiểu văn bản truyện",
+      "lesson": "Bài 1: Ý nghĩa hình ảnh biểu tượng",
+      "competency": "Giải thích thông điệp từ chi tiết nghề đóng ghe",
+      "level": 1,
+      "points": 1.0,
+      "stem": "Theo em, lời dặn của ông Bảy về “những mối ghép mộng âm dương kín khít nằm khuất dưới lườn tàu” gửi gắm bài học gì về phẩm chất của người làm nghề?",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Chất lượng thực sự và đạo đức nghề nghiệp nằm ở phần cốt lõi âm thầm bên trong, không chạy theo hình thức hào nhoáng bên ngoài.",
+      "rubric": [
+        {
+          "text": "Giải thích nghĩa thực: độ bền con tàu phụ thuộc vào phần kỹ thuật ẩn bên dưới",
+          "points": 0.25
+        },
+        {
+          "text": "Rút ra nghĩa ẩn dụ: giá trị thật và chữ tín nghề nghiệp cần sự chỉn chu từ những việc thầm lặng nhất",
+          "points": 0.75
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "1ce8a993-2356-5c3c-9e5b-e1932d3cb744",
+        "options": "e7996005-4cd5-5b25-88e4-73fc2c2d067d",
+        "answer": "7f8ebd32-2e74-57ed-8a93-253c3f81319b",
+        "explanation": "3fad5de1-d260-5d66-b4c7-9a845299632d",
+        "rubric": "f3f4f1de-9cb5-5621-b082-ca672a1c243e",
+        "figure": "66ab76ec-84d6-5d43-abf5-c12062a78351"
+      },
+      "source": {
+        "docId": "346c430f-b9f0-58a6-9ae4-60e20e858b27",
+        "page": 1,
+        "location": "Đoạn 2"
+      },
+      "sectionId": "phan-1-doc-hieu",
+      "passageId": "nv9-passage-1"
+    },
+    {
+      "id": "b76b885b-71db-5501-b4ac-baf51494d434",
+      "v": 1,
+      "type": "essay",
+      "topic": "Đọc hiểu văn bản truyện",
+      "lesson": "Bài 1: Liên hệ tiếp nối giá trị",
+      "competency": "Nêu suy nghĩ về sự tiếp nối nghề truyền thống qua chi tiết nhân vật Minh",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Từ hình ảnh nhân vật Minh ghi chép thông số vào sổ tay, em rút ra thông điệp gì về cách thế hệ trẻ tiếp nhận tri thức từ thế hệ đi trước?",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Thế hệ trẻ cần biết lắng nghe, khiêm tốn quan sát và hệ thống hóa kinh nghiệm quý báu của lớp người đi trước bằng cách làm khoa học.",
+      "rubric": [
+        {
+          "text": "Nhận xét được thái độ trân trọng, cầu thị của Minh qua việc lắng nghe và ghi chép",
+          "points": 0.5
+        },
+        {
+          "text": "Nêu bài học thiết thực cho bản thân trong học tập và gìn giữ tri thức truyền thống",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "86b65429-3a3e-5af8-b73d-a46e2923e2c2",
+        "options": "4ba18482-92c9-5451-a494-c9644c4b4de7",
+        "answer": "908a469f-37f5-5ce8-bc89-9391fb227a9d",
+        "explanation": "28123b5c-c61b-5a3c-b365-94ae5ffd5299",
+        "rubric": "a94bdf8e-cb25-553d-b279-d748ae4e3663",
+        "figure": "d668be77-f88e-58a9-ba3d-e2e0bba8d300"
+      },
+      "source": {
+        "docId": "346c430f-b9f0-58a6-9ae4-60e20e858b27",
+        "page": 1,
+        "location": "Đoạn 2"
+      },
+      "sectionId": "phan-1-doc-hieu",
+      "passageId": "nv9-passage-1"
+    },
+    {
+      "id": "6120f528-cd2c-5c27-880f-4978f1e5e833",
+      "v": 1,
+      "type": "essay",
+      "topic": "Viết nghị luận xã hội",
+      "lesson": "Bài 3: Nghị luận về thái độ làm việc chỉn chu",
+      "competency": "Viết đoạn văn NLXH khoảng 200 chữ trình bày suy nghĩ về sự cẩn trọng",
+      "level": 2,
+      "points": 2.0,
+      "stem": "Viết một đoạn văn nghị luận (khoảng 200 chữ) trình bày suy nghĩ của em về ý nghĩa của sự cẩn trọng, làm việc đến nơi đến chốn trong học tập và cuộc sống.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Đoạn văn đảm bảo cấu trúc diễn dịch/quy nạp/tổng-phân-hợp, làm rõ vai trò của sự cẩn trọng giúp hạn chế sai sót, tạo dựng uy tín cá nhân và phản đề thái độ qua loa.",
+      "rubric": [
+        {
+          "text": "Đảm bảo hình thức đoạn văn nghị luận khoảng 200 chữ, lập luận mạch lạc",
+          "points": 0.25
+        },
+        {
+          "text": "Giải thích khái niệm cẩn trọng, làm việc đến nơi đến chốn",
+          "points": 0.5
+        },
+        {
+          "text": "Phân tích ý nghĩa và nêu dẫn chứng phù hợp, có chiều sâu",
+          "points": 0.75
+        },
+        {
+          "text": "Bàn luận mở rộng (phê phán thói cẩu thả) và rút ra bài học nhận thức, hành động",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "20eff565-847f-5386-9e55-3bdca86791f1",
+        "options": "af731eca-970c-5016-9680-75e9f660d143",
+        "answer": "e5236242-82ea-5099-a12c-9f7fd6215889",
+        "explanation": "600668a7-982b-5ab0-b0a1-06d8b547456f",
+        "rubric": "c2d4bf18-bab7-5af3-b398-530dba2e506e",
+        "figure": "80bbe1a1-d90e-597e-96c7-4e45f47925ae"
+      },
+      "source": {
+        "docId": "346c430f-b9f0-58a6-9ae4-60e20e858b27",
+        "page": 1,
+        "location": "Phần II · Câu 1"
+      },
+      "sectionId": "phan-2-viet"
+    },
+    {
+      "id": "216f3aa3-9325-5572-98e3-1a8eddc4669d",
+      "v": 1,
+      "type": "essay",
+      "topic": "Viết nghị luận văn học",
+      "lesson": "Bài 4: Phân tích tác phẩm truyện ngắn",
+      "competency": "Viết bài văn NLVH phân tích chủ đề và nghệ thuật xây dựng nhân vật",
+      "level": 3,
+      "points": 4.0,
+      "stem": "Viết bài văn nghị luận phân tích chủ đề và những nét đặc sắc nghệ thuật trong văn bản “Người đóng tàu bên bến sông Cửu” ở phần Đọc hiểu.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Bài văn đầy đủ bố cục 3 phần, phân tích được chủ đề tôn vinh đạo đức nghề nghiệp và sự tiếp nối thế hệ, kết hợp nghệ thuật miêu tả chi tiết giàu sức gợi và ngôn ngữ bình dị.",
+      "rubric": [
+        {
+          "text": "Đảm bảo cấu trúc bài văn nghị luận văn học (Mở bài, Thân bài, Kết bài)",
+          "points": 0.5
+        },
+        {
+          "text": "Xác định đúng vấn đề nghị luận: chủ đề và nghệ thuật của truyện ngắn",
+          "points": 0.5
+        },
+        {
+          "text": "Phân tích chủ đề về tình yêu nghề, đạo đức lao động thầm lặng và sự tiếp nối giữa hai thế hệ",
+          "points": 1.5
+        },
+        {
+          "text": "Phân tích đặc sắc nghệ thuật: ngôi kể thứ ba, bối cảnh sông nước, chi tiết biểu tượng và so sánh gợi cảm",
+          "points": 1.0
+        },
+        {
+          "text": "Diễn đạt chuẩn mực, liên kết chặt chẽ, có sáng tạo trong cảm thụ",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "af4b15ed-34e8-5145-8a5b-c0935c14324e",
+        "options": "65ddf5ed-e3cb-578a-bf1b-2bfc03025977",
+        "answer": "2af03ee2-b294-5e1b-a5c7-c182b289ecbb",
+        "explanation": "aa21c9c7-e3b9-57f1-8760-cf4bf71bb8b0",
+        "rubric": "357acdf1-e8b3-5e54-83cf-788a9f8a6fd5",
+        "figure": "6ba9db09-6cce-596c-87ef-5b15d777fdef"
+      },
+      "source": {
+        "docId": "346c430f-b9f0-58a6-9ae4-60e20e858b27",
+        "page": 1,
+        "location": "Phần II · Câu 2"
+      },
+      "sectionId": "phan-2-viet",
+      "lockPosition": true
+    }
+  ]
+}

@@ -1,0 +1,462 @@
+{
+  "id": "af1c68a4-e291-5532-a652-569be8da073d",
+  "title": "Đề thi thử tuyển sinh vào lớp 10 THPT — Môn Toán",
+  "school": "SỞ GD&ĐT TỈNH MINH HẢI (MẪU)",
+  "department": "Hội đồng Bộ môn Toán",
+  "subject": "Toán",
+  "grade": "9",
+  "minutes": 120,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": true,
+  "instructions": "Thí sinh trình bày lời giải chi tiết cho cả 5 bài tự luận (13 ý chấm). Không sử dụng tài liệu.",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 1
+  },
+  "blockIds": {
+    "heading": "022303ee-2de1-5125-b1fd-39b9a850ec9b",
+    "general": "f5c20dc2-ad28-584e-b854-d9681e88a54c",
+    "marking": "c784e221-77b8-536a-b416-a633d536d71a"
+  },
+  "docs": [
+    {
+      "id": "0d349f0f-ee9b-55ee-b41c-e47af744ed56",
+      "name": "De_cuong_tuyen_sinh_lop_10_Toan.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "Chuyên đề ôn thi tuyển sinh lớp 10 THPT: Biểu thức chứa căn, Giải bài toán lập phương trình, Parabol y = ax^2 và định lí Vi-ét, Hình học đường tròn tứ giác nội tiếp, Cực trị thực tế.",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Biểu thức đại số và căn thức",
+      "type": "essay",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "pointsByLevel": [
+        2.0,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "topic": "Bài toán thực tế và phương trình",
+      "type": "essay",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "pointsByLevel": [
+        null,
+        2.0,
+        null,
+        null
+      ]
+    },
+    {
+      "topic": "Hàm số y = ax^2 và định lí Vi-ét",
+      "type": "essay",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "pointsByLevel": [
+        null,
+        1.5,
+        null,
+        null
+      ]
+    },
+    {
+      "topic": "Đường tròn và tứ giác nội tiếp",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "pointsByLevel": [
+        null,
+        null,
+        3.5,
+        null
+      ]
+    },
+    {
+      "topic": "Bất đẳng thức và cực trị",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "pointsByLevel": [
+        null,
+        null,
+        null,
+        1.0
+      ]
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "5a7ed14f-1d49-5fce-846a-1828abc98859",
+      "v": 1,
+      "type": "essay",
+      "topic": "Biểu thức đại số và căn thức",
+      "lesson": "Chuyên đề 1: Rút gọn và câu hỏi phụ",
+      "competency": "Rút gọn biểu thức chứa căn, tính giá trị và giải bất phương trình liên quan",
+      "level": 0,
+      "points": 2.0,
+      "stem": "Cho hai biểu thức $A = \\frac{\\sqrt{x} + 2}{\\sqrt{x} - 3}$ và $B = \\frac{\\sqrt{x}}{\\sqrt{x} + 3} + \\frac{2\\sqrt{x}}{\\sqrt{x} - 3} - \\frac{3x + 9}{x - 9}$ với $x \\ge 0, x \\ne 9$.\na) Tính giá trị của biểu thức $A$ khi $x = 16$.\nb) Chứng minh $B = \\frac{3}{\\sqrt{x} + 3}$.\nc) Tìm tất cả các giá trị nguyên của $x$ để $B > \\frac{1}{2}$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) Tại $x = 16$: $A = \\frac{4+2}{4-3} = 6$. b) Quy đồng và rút gọn tử thức được $3(\\sqrt{x}-3)$, chia cho $(\\sqrt{x}-3)(\\sqrt{x}+3)$ ra $B = \\frac{3}{\\sqrt{x}+3}$. c) $\\frac{3}{\\sqrt{x}+3} > \\frac{1}{2} \\Leftrightarrow \\sqrt{x} < 3 \\Leftrightarrow 0 \\le x < 9$, nên $x \\in \\{0; 1; \\dots; 8\\}$.",
+      "rubric": [
+        {
+          "text": "a) Thay $x = 16$ thỏa mãn điều kiện vào $A$: $A = \\frac{4 + 2}{4 - 3} = 6$",
+          "points": 0.5
+        },
+        {
+          "text": "b) Quy đồng mẫu chung $(\\sqrt{x}+3)(\\sqrt{x}-3)$ với ba phân thức của $B$",
+          "points": 0.25
+        },
+        {
+          "text": "b) Khai triển tử thức thành $(x - 3\\sqrt{x}) + (2x + 6\\sqrt{x}) - (3x + 9) = 3(\\sqrt{x} - 3)$",
+          "points": 0.5
+        },
+        {
+          "text": "b) Rút gọn được $B = \\frac{3}{\\sqrt{x} + 3}$",
+          "points": 0.25
+        },
+        {
+          "text": "c) Giải bất phương trình $B > \\frac{1}{2} \\Leftrightarrow \\sqrt{x} < 3$, kết hợp $x \\in \\mathbb{Z}$ suy ra $x \\in \\{0;1;2;3;4;5;6;7;8\\}$",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3b7fd8fd-7911-5bbd-b444-3c4212d09a8e",
+        "options": "7a12c8b9-d1d3-50a9-90a4-f3c78759398c",
+        "answer": "5a3048c9-73c9-5c54-ad99-d9921de7bd6b",
+        "explanation": "43dfe48b-903b-55de-a93c-3b7c28b43b32",
+        "rubric": "6b0419c0-6392-5033-a13c-11f66e61d1fa",
+        "figure": "609bb318-7463-5c88-a411-82c44d77b060"
+      },
+      "source": {
+        "docId": "0d349f0f-ee9b-55ee-b41c-e47af744ed56",
+        "page": 1,
+        "location": "Bài 1 (3 ý chấm)"
+      }
+    },
+    {
+      "id": "a8378d76-ef08-52ff-a491-1efd276ebf65",
+      "v": 1,
+      "type": "essay",
+      "topic": "Bài toán thực tế và phương trình",
+      "lesson": "Chuyên đề 2: Lập phương trình/hệ phương trình",
+      "competency": "Giải bài toán chuyển động và bài toán hình học thực tế",
+      "level": 1,
+      "points": 2.0,
+      "stem": "a) Một ô tô dự định đi quãng đường $120\\text{ km}$ với vận tốc không đổi. Sau khi đi được nửa quãng đường, xe tăng vận tốc thêm $10\\text{ km/h}$ trên nửa đoạn đường còn lại nên đến nơi sớm hơn dự định $12$ phút. Tính vận tốc dự định ban đầu của ô tô.\nb) Một bồn chứa nước hình trụ đứng có bán kính đáy $R = 0{,}5\\text{ m}$ và chiều cao $h = 1{,}4\\text{ m}$. Tính thể tích nước tối đa bồn chứa được (lấy $\\pi \\approx 3{,}14$, làm tròn đến hai chữ số thập phân).",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) Gọi vận tốc dự định là $x > 0$ (km/h). Phương trình $\\frac{60}{x} - \\frac{60}{x+10} = \\frac{1}{5} \\Rightarrow x^2 + 10x - 3000 = 0 \\Rightarrow x = 50\\text{ km/h}$. b) $V = \\pi R^2 h = 3{,}14 \\cdot 0{,}25 \\cdot 1{,}4 \\approx 1{,}10\\text{ m}^3$.",
+      "rubric": [
+        {
+          "text": "a) Chọn ẩn $x > 0$ (km/h), biểu diễn thời gian dự định và thực tế nửa sau",
+          "points": 0.25
+        },
+        {
+          "text": "a) Lập phương trình $\\frac{60}{x} - \\frac{60}{x + 10} = \\frac{1}{5}$ và đưa về $x^2 + 10x - 3000 = 0$",
+          "points": 0.5
+        },
+        {
+          "text": "a) Giải ra $x = 50$ (nhận) hoặc $x = -60$ (loại), kết luận $50\\text{ km/h}$",
+          "points": 0.5
+        },
+        {
+          "text": "b) Áp dụng $V = \\pi R^2 h = 3{,}14 \\cdot 0{,}5^2 \\cdot 1{,}4 = 1{,}099 \\approx 1{,}10\\text{ m}^3$",
+          "points": 0.75
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "88656e3d-2ed8-5f1e-b7ee-62d2af688813",
+        "options": "1aac68bc-60d8-5eb9-8e1b-4bd7aaa09a49",
+        "answer": "5e8dca04-5365-5782-87ec-a9968ee807bc",
+        "explanation": "c1d2304a-67ef-555f-a31f-d6f56e68ef68",
+        "rubric": "05609b6f-1349-5120-b59c-4adbb9ce02b3",
+        "figure": "39efdf7c-0f31-56a3-82ec-5b70c10d71cb"
+      },
+      "source": {
+        "docId": "0d349f0f-ee9b-55ee-b41c-e47af744ed56",
+        "page": 1,
+        "location": "Bài 2 (2 ý chấm)"
+      }
+    },
+    {
+      "id": "cf82ec63-2ef8-5bf9-805a-45987baced77",
+      "v": 1,
+      "type": "essay",
+      "topic": "Hàm số y = ax^2 và định lí Vi-ét",
+      "lesson": "Chuyên đề 3: Parabol và phương trình bậc hai",
+      "competency": "Tìm giao điểm đường thẳng với parabol và biện luận theo tham số Vi-ét",
+      "level": 1,
+      "points": 1.5,
+      "stem": "Cho phương trình bậc hai $x^2 - 2(m - 1)x + m^2 - 3 = 0$ ($m$ là tham số).\na) Giải phương trình khi $m = 2$.\nb) Tìm tất cả các giá trị của $m$ để phương trình có hai nghiệm phân biệt $x_1, x_2$ thỏa mãn $x_1^2 + x_2^2 = 10$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) Với $m = 2$: $x^2 - 2x + 1 = 0 \\Rightarrow x = 1$. b) $\\Delta' = (m-1)^2 - (m^2-3) = 4 - 2m > 0 \\Leftrightarrow m < 2$. Ta có $(x_1+x_2)^2 - 2x_1x_2 = 4(m-1)^2 - 2(m^2-3) = 2m^2 - 8m + 10 = 10 \\Rightarrow m = 0$ (nhận) hoặc $m = 4$ (loại).",
+      "rubric": [
+        {
+          "text": "a) Thay $m = 2$ viết đúng $x^2 - 2x + 1 = 0$",
+          "points": 0.25
+        },
+        {
+          "text": "a) Giải được nghiệm kép $x_1 = x_2 = 1$",
+          "points": 0.25
+        },
+        {
+          "text": "b) Tính $\\Delta' = 4 - 2m > 0 \\Leftrightarrow m < 2$ và viết hệ thức Vi-ét",
+          "points": 0.5
+        },
+        {
+          "text": "b) Biến đổi $x_1^2 + x_2^2 = 2m^2 - 8m + 10 = 10$, đối chiếu $m < 2$ nhận $m = 0$",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "ffa11615-636c-5545-8b92-ea57d2a702ad",
+        "options": "038a87db-b9f1-5b7c-9498-c423a9e81a14",
+        "answer": "43f0c2ff-4dc7-540e-ad0e-570a81716bf6",
+        "explanation": "ca2ce644-14be-56d6-896e-d1b7fe580c4a",
+        "rubric": "cf500044-c871-505d-a1c1-bcbfad7958b5",
+        "figure": "b5ee27dd-b7a4-5878-9e42-4e74313c3d6d"
+      },
+      "source": {
+        "docId": "0d349f0f-ee9b-55ee-b41c-e47af744ed56",
+        "page": 1,
+        "location": "Bài 3 (2 ý chấm)"
+      }
+    },
+    {
+      "id": "8e8989cf-9509-5870-804d-d5ac65c9c066",
+      "v": 1,
+      "type": "essay",
+      "topic": "Đường tròn và tứ giác nội tiếp",
+      "lesson": "Chuyên đề 4: Hình học tổng hợp",
+      "competency": "Chứng minh tứ giác nội tiếp, góc bằng nhau và thẳng hàng trên đường tròn",
+      "level": 2,
+      "points": 3.5,
+      "stem": "Cho tam giác nhọn $ABC$ ($AB < AC$) nội tiếp đường tròn tâm $O$. Các đường cao $AD, BE, CF$ cắt nhau tại trực tâm $H$.\na) Chứng minh tứ giác $BFEC$ nội tiếp.\nb) Chứng minh tứ giác $AEHF$ nội tiếp và xác định tâm đường tròn ngoại tiếp tứ giác đó.\nc) Kẻ đường kính $AK$ của $(O)$. Chứng minh $AB \\cdot AC = AD \\cdot AK$.\nd) Gọi $M$ là trung điểm $BC$. Chứng minh ba điểm $H, M, K$ thẳng hàng.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) $\\widehat{BFC}=\\widehat{BEC}=90^\\circ$. b) $\\widehat{AFH}+\\widehat{AEH}=180^\\circ$, tâm là trung điểm $AH$. c) $\\triangle ABD \\sim \\triangle AKC$ (g.g). d) $BHCK$ là hình bình hành nên trung điểm $M$ của $BC$ cũng là trung điểm $HK$.",
+      "rubric": [
+        {
+          "text": "Vẽ hình đúng, chính xác đường tròn $(O)$, các đường cao và đường kính $AK$",
+          "points": 0.25
+        },
+        {
+          "text": "a) Chỉ ra $\\widehat{BFC} = \\widehat{BEC} = 90^\\circ$ cùng nhìn cạnh $BC$ suy ra $BFEC$ nội tiếp",
+          "points": 0.75
+        },
+        {
+          "text": "b) Chứng minh $\\widehat{AFH} + \\widehat{AEH} = 180^\\circ$, kết luận tâm là trung điểm $AH$",
+          "points": 0.75
+        },
+        {
+          "text": "c) Chứng minh $\\widehat{ABD} = \\widehat{AKC}$ (cùng chắn cung $AC$) và $\\widehat{ADB} = \\widehat{ACK} = 90^\\circ$",
+          "points": 0.5
+        },
+        {
+          "text": "c) Suy ra $\\triangle ABD \\sim \\triangle AKC \\Rightarrow AB \\cdot AC = AD \\cdot AK$",
+          "points": 0.5
+        },
+        {
+          "text": "d) Chứng minh $BH \\parallel KC$ và $CH \\parallel KB$ nên $BHCK$ là hình bình hành, suy ra $H, M, K$ thẳng hàng",
+          "points": 0.75
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "b037d4d6-650c-5cb2-a90a-65172dffbef2",
+        "options": "2bc1bb8b-ebbb-5b2f-9c6e-16e59fae7a1f",
+        "answer": "53a4c3c2-5a19-5f66-8f56-dc8370e43e59",
+        "explanation": "60fc879c-6349-5a3a-9c1c-958660dd01b2",
+        "rubric": "52accfd8-1521-5527-9f10-fd54358ca963",
+        "figure": "95bc2394-3b7a-5ecd-9895-0261b4a00629"
+      },
+      "source": {
+        "docId": "0d349f0f-ee9b-55ee-b41c-e47af744ed56",
+        "page": 1,
+        "location": "Bài 4 (4 ý chấm)"
+      },
+      "figure": {
+        "points": {
+          "A": "free",
+          "B": "free",
+          "C": "free"
+        },
+        "constraints": [
+          "D=foot(A,B,C)",
+          "E=foot(B,A,C)",
+          "F=foot(C,A,B)",
+          "O=circumcenter(A,B,C)",
+          "H=orthocenter(A,B,C)",
+          "M=midpoint(B,C)",
+          "K=opposite(A,O)"
+        ],
+        "objects": [
+          "segment(A,B)",
+          "segment(A,C)",
+          "segment(B,C)",
+          "segment(A,D)",
+          "segment(B,E)",
+          "segment(C,F)",
+          {
+            "type": "segment",
+            "points": [
+              "A",
+              "K"
+            ],
+            "dashed": true
+          },
+          "circle(O,A)",
+          "rightAngle(A,D,B)"
+        ],
+        "conditions": [
+          "AB<AC",
+          "acute(A,B,C)"
+        ],
+        "labels": {
+          "A": "above",
+          "B": "left",
+          "C": "right",
+          "D": "below",
+          "E": "right",
+          "F": "left",
+          "O": "right",
+          "H": "left",
+          "M": "below",
+          "K": "below"
+        },
+        "caption": "Tam giác nhọn ABC nội tiếp (O), trực tâm H và đường kính AK",
+        "width": 480,
+        "align": "center"
+      }
+    },
+    {
+      "id": "a0b55ec0-9bac-5df6-a06e-bf04cb702812",
+      "v": 1,
+      "type": "essay",
+      "topic": "Bất đẳng thức và cực trị",
+      "lesson": "Chuyên đề 5: Câu phân loại",
+      "competency": "Tìm cực trị bằng bất đẳng thức AM-GM và phương pháp đánh giá",
+      "level": 3,
+      "points": 1.0,
+      "stem": "Cho hai số thực dương $a, b$ thỏa mãn $a + b \\ge 4$.\na) Chứng minh $\\frac{1}{a} + \\frac{1}{b} \\ge \\frac{4}{a + b}$.\nb) Tìm giá trị nhỏ nhất của biểu thức $S = a + b + \\frac{1}{a} + \\frac{1}{b}$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) Quy đồng $(a + b)^2 \\ge 4ab \\Leftrightarrow (a - b)^2 \\ge 0$ (đúng). b) Tách điểm rơi tại $a = b = 2$: $S = \\left(\\frac{a}{4} + \\frac{1}{a}\\right) + \\left(\\frac{b}{4} + \\frac{1}{b}\\right) + \\frac{3}{4}(a + b) \\ge 1 + 1 + 3 = 5$.",
+      "rubric": [
+        {
+          "text": "a) Áp dụng bất đẳng thức $(a - b)^2 \\ge 0$ chứng minh $\\frac{1}{a} + \\frac{1}{b} \\ge \\frac{4}{a + b}$",
+          "points": 0.25
+        },
+        {
+          "text": "b) Tách điểm rơi $S = \\left(\\frac{a}{4} + \\frac{1}{a}\\right) + \\left(\\frac{b}{4} + \\frac{1}{b}\\right) + \\frac{3}{4}(a + b) \\ge 1 + 1 + 3 = 5$",
+          "points": 0.5
+        },
+        {
+          "text": "b) Chỉ ra dấu bằng xảy ra khi $a = b = 2$ và kết luận $\\min S = 5$",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "9fb2fba6-3d1e-5b35-a190-646896387720",
+        "options": "c0bab285-8d47-5741-a991-ebf1afc19cf8",
+        "answer": "8b65a53f-77a0-568a-828b-c3ae789b0723",
+        "explanation": "77c8d3d4-9004-574e-8d37-21153cfe03da",
+        "rubric": "c2aed0ef-342a-5e10-ba79-9af2fb5254cd",
+        "figure": "845da0ce-e6bd-5e29-a094-524deecf72af"
+      },
+      "source": {
+        "docId": "0d349f0f-ee9b-55ee-b41c-e47af744ed56",
+        "page": 1,
+        "location": "Bài 5 (2 ý chấm)"
+      },
+      "lockPosition": true
+    }
+  ],
+  "markingGuidance": "Học sinh có cách giải khác đúng về mặt toán học vẫn hưởng trọn số điểm của ý đó; làm tròn điểm toàn bài đến 0,25."
+}
