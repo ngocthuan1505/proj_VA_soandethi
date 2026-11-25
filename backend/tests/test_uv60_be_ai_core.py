@@ -759,9 +759,158 @@ def test_hybrid_retrieval_teacher_only_and_masked_status_gateway_url(tmp_path):
         assert "CHỈ BÁM TÀI LIỆU GIÁO VIÊN" in captured_payloads[-1]["messages"][0]["content"]
 
 
+def test_rag_stopwords_iy_fts5_single_chunk_and_page_filter(tmp_path):
+    import sqlite3
+
+    from fastapi.testclient import TestClient
+
+    from mach_backend.hybrid_retrieval import (
+        chunk_document_pages,
+        index_document_chunks,
+        normalize_vi_search,
+        search_hybrid_chunks,
+    )
+
+    # 1. Chuẩn hóa i/y mở rộng gồm âm tiết h ("hy vọng" == "hi vọng"), giữ nguyên "y" & "dy"
+    assert normalize_vi_search("hy vọng") == normalize_vi_search("hi vọng")
+    assert normalize_vi_search("y học") == "y hoc"
+    assert normalize_vi_search("dy") == "dy"
+    hy_frags = [
+        SourceFragment(
+            ownerId="local",
+            sourceId=uuid4(),
+            sourceVersion=1,
+            locator=Locator(kind="page", index=1),
+            text="Hi vọng vào kết quả học tập tốt.",
+        )
+    ]
+    assert len(rank_source_fragments("hy vọng", hy_frags, top_k=3)) == 1
+
+    # 2. Chặn dương tính giả từ Vietnamese stopwords trên cả 1 doc đơn lẫn nhiều doc
+    off_topic = "Chiến thắng Điện Biên Phủ năm 1954 diễn ra như thế nào?"
+    bio_only = [
+        SourceFragment(
+            ownerId="local",
+            sourceId=uuid4(),
+            sourceVersion=1,
+            locator=Locator(kind="page", index=1),
+            text="Quang hợp tạo ra tinh bột và oxi của thực vật dưới ánh sáng.",
+        )
+    ]
+    assert rank_source_fragments(off_topic, bio_only, top_k=5) == []
+
+    # 3. chunk_document_pages đọc key "number", lọc theo trang & FTS5 bm25 trên 1 chunk
+    chunks = chunk_document_pages(
+        [{"number": 2, "text": "Trang hai trình bày hệ phương trình."}],
+        doc_id="doc-num",
+        version=1,
+    )
+    assert chunks[0]["page_number"] == 2
+
+    conn = sqlite3.connect(":memory:")
+    index_document_chunks(
+        conn,
+        "local",
+        "doc-1",
+        [
+            {"number": 1, "text": "Quang hợp tạo ra glucozo và oxi của cây xanh."},
+            {"number": 2, "text": "Hô hấp tế bào diễn ra ở ti thể."},
+        ],
+        version=1,
+        title="Sinh học",
+    )
+    assert search_hybrid_chunks(conn, "local", off_topic, ["doc-1"]) == []
+    assert (
+        search_hybrid_chunks(
+            conn, "local", "hô hấp", [{"docId": "doc-1", "version": 1, "pages": [1]}]
+        )
+        == []
+    )
+    p2_hits = search_hybrid_chunks(conn, "local", "hô hấp", {"doc-1": {"pages": {2}}})
+    assert len(p2_hits) == 1 and p2_hits[0]["pageNumber"] == 2
+
+    one_conn = sqlite3.connect(":memory:")
+    index_document_chunks(
+        one_conn,
+        "local",
+        "doc-one",
+        [{"number": 1, "text": "Quang hợp tạo ra tinh bột và khí oxi của cây."}],
+        version=1,
+    )
+    assert search_hybrid_chunks(one_conn, "local", off_topic, ["doc-one"]) == []
+    one_hit = search_hybrid_chunks(one_conn, "local", "quang hợp", ["doc-one"])
+    assert len(one_hit) == 1 and one_hit[0]["lexicalScore"] > 0.55
+
+    # 4. Kiểm end-to-end /api/assistant/chat trên 1 doc đơn có "ra", "của", "và" -> 0-hit
+    doc_id = str(uuid4())
+    exam_id = str(uuid4())
+    captured: list[dict] = []
+
+    async def fake_call(_purpose, body):
+        captured.append(body)
+        return {"content": '{"message": "Không tìm thấy dữ kiện trong nguồn."}', "model": "fx"}
+
+    app = create_app(tmp_path / "rag-0hit", agent_call=fake_call)
+    with TestClient(app, headers=ORIGIN) as client:
+        client.put(
+            "/api/kv",
+            json={
+                "key": "state",
+                "value": {
+                    "exams": [
+                        {
+                            "id": exam_id,
+                            "revision": 1,
+                            "title": "Đề Sinh",
+                            "docs": [
+                                {
+                                    "id": doc_id,
+                                    "name": "Quang_hop.txt",
+                                    "version": 1,
+                                    "pages": [
+                                        {
+                                            "number": 1,
+                                            "text": (
+                                                "Quang hợp tạo ra glucozo và oxi của cây xanh."
+                                            ),
+                                        }
+                                    ],
+                                }
+                            ],
+                            "questions": [],
+                        }
+                    ],
+                    "current": exam_id,
+                    "prefs": [],
+                },
+            },
+            headers={**ORIGIN, "If-Match": "0"},
+        ).raise_for_status()
+        res = client.post(
+            "/api/assistant/chat",
+            json={"text": off_topic, "examId": exam_id, "consent": True},
+        )
+        assert res.status_code == 200, res.text
+        assert res.json()["noMatchingSourceFragments"] is True
+        assert "Quang hợp" not in captured[-1]["messages"][1]["content"]
+
+
 def test_chat_endpoint_derives_budget_timeout_from_time_preset(tmp_path, monkeypatch):
     from mach_backend import local_workspace
+    from mach_backend.ai_router import M11_FLEXIBLE_CHAT, FixedTaskRouter
     from mach_backend.poc_policy import ExtendedCallBudget
+
+    router = FixedTaskRouter(
+        {
+            "agy": lambda *_: {},
+            "deepseek_chat": lambda *_: {},
+            "gemini_flash": lambda *_: {},
+            "ollama": lambda *_: {},
+        }
+    )
+    assert router.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="standard")[0] == "agy"
+    fast_chain = router.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="fast")
+    assert fast_chain.index("agy") < fast_chain.index("ollama")
 
     fake_agy = tmp_path / "agy.exe"
     fake_agy.write_bytes(b"MZ")

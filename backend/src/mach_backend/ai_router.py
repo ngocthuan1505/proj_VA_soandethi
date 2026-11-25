@@ -398,15 +398,18 @@ class FixedTaskRouter:
         time_preset: str | None = None,
     ) -> list[str]:
         gen = str(generator_family or "").strip().casefold()
+        eff_preset = (
+            str(time_preset).strip().casefold() if time_preset is not None else self.time_preset
+        ) or "standard"
+        non_fast_mode = "deep" if eff_preset in {"deep", "extended"} else "standard"
         if fast_chat is not None:
-            prefer_deep = not bool(fast_chat)
+            m11_mode = "fast" if fast_chat else non_fast_mode
         elif time_preset is not None:
-            eff_preset = str(time_preset).strip().casefold() or "standard"
-            prefer_deep = eff_preset in {"deep", "extended"}
+            m11_mode = "fast" if eff_preset == "fast" else non_fast_mode
         elif self.fast_chat is not None:
-            prefer_deep = not bool(self.fast_chat)
+            m11_mode = "fast" if self.fast_chat else non_fast_mode
         else:
-            prefer_deep = self.time_preset in {"deep", "extended"}
+            m11_mode = "fast" if eff_preset == "fast" else non_fast_mode
         if task_code == M06_BLIND_SOLVE:
             if gen.startswith("deepseek"):
                 base = [
@@ -442,17 +445,29 @@ class FixedTaskRouter:
                     "ollama",
                 ]
         elif task_code == M11_FLEXIBLE_CHAT:
-            if not prefer_deep:
+            if m11_mode == "fast":
                 base = [
                     "deepseek_chat",
                     "gemini_flash",
-                    "ollama",
                     "agy",
+                    "ollama",
                     "gemini_pro",
                     "gemini_hydrogen",
                     "gemini",
                     "deepseek_reasoner",
                     "gateway_cross",
+                ]
+            elif m11_mode == "standard":
+                base = [
+                    "agy",
+                    "deepseek_chat",
+                    "gemini_flash",
+                    "deepseek_reasoner",
+                    "gemini_pro",
+                    "gemini_hydrogen",
+                    "gemini",
+                    "gateway_cross",
+                    "ollama",
                 ]
             else:
                 base = [

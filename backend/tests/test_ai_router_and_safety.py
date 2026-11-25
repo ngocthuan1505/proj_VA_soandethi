@@ -878,15 +878,28 @@ def test_fixed_task_router_includes_gateway_cross_in_m06_and_m11():
     assert m06_from_ds.index("gateway_cross") < m06_from_ds.index("deepseek_reasoner")
 
     m11 = router.candidate_chain("M11_FLEXIBLE_CHAT")
-    assert m11[:8] == [
+    assert m11[:9] == [
+        "agy",
         "deepseek_chat",
         "gemini_flash",
+        "deepseek_reasoner",
+        "gemini_pro",
+        "gemini_hydrogen",
+        "gemini",
+        "gateway_cross",
         "ollama",
+    ]
+    m11_fast = router.candidate_chain("M11_FLEXIBLE_CHAT", time_preset="fast")
+    assert m11_fast[:9] == [
+        "deepseek_chat",
+        "gemini_flash",
         "agy",
+        "ollama",
         "gemini_pro",
         "gemini_hydrogen",
         "gemini",
         "deepseek_reasoner",
+        "gateway_cross",
     ]
     assert "gateway_cross" in m11
     m11_deep = router.candidate_chain("M11_FLEXIBLE_CHAT", time_preset="deep")
@@ -1063,21 +1076,22 @@ def test_fixed_task_router_fast_chat_prioritizes_fast_models_and_keeps_default_m
             "ollama": mk("ollama"),
         }
     )
-    # UV61: standard/fast chat ưu tiên API nhanh (deepseek_chat -> ... -> gemini -> agy);
-    # deep/extended ưu tiên agy trước.
-    assert router.candidate_chain("M11_FLEXIBLE_CHAT")[0] == "deepseek_chat"
+    # standard & deep/extended ưu tiên agy đầu tiên; fast ưu tiên deepseek_chat -> gemini_flash
+    # -> agy -> ollama (luôn đẩy agy trước ollama).
+    assert router.candidate_chain("M11_FLEXIBLE_CHAT")[0] == "agy"
+    assert router.candidate_chain("M11_FLEXIBLE_CHAT", time_preset="standard")[0] == "agy"
     assert router.candidate_chain("M11_FLEXIBLE_CHAT", time_preset="deep")[0] == "agy"
     fast_chain = router.candidate_chain("M11_FLEXIBLE_CHAT", fast_chat=True)
     assert (
         fast_chain.index("deepseek_chat")
         < fast_chain.index("gemini_flash")
-        < fast_chain.index("ollama")
         < fast_chain.index("agy")
+        < fast_chain.index("ollama")
     )
 
     res = asyncio.run(router("chat", {"messages": [], "fast_chat": True}))
-    assert res["providerFamily"] == "ollama"
-    assert called == ["deepseek_chat", "ollama"]
+    assert res["providerFamily"] == "agy"
+    assert called == ["deepseek_chat", "agy"]
 
 
 def test_custom_gateway_merges_system_prompt_into_first_user_message(tmp_path):

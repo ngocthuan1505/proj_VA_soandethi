@@ -467,8 +467,10 @@ def test_shared_circuit_breaker_error_codes_and_m11_presets():
     chain_fast = router_std.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="fast")
     chain_std = router_std.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="standard")
     assert "deepseek_fast" not in chain_fast
-    assert chain_fast[:4] == ["deepseek_chat", "gemini_flash", "ollama", "agy"]
-    assert chain_std[:4] == ["deepseek_chat", "gemini_flash", "ollama", "agy"]
+    assert chain_fast[:4] == ["deepseek_chat", "gemini_flash", "agy", "ollama"]
+    assert chain_std[:4] == ["agy", "deepseek_chat", "gemini_flash", "deepseek_reasoner"]
+    assert chain_std.index("deepseek_chat") < chain_std.index("deepseek_reasoner")
+    assert chain_std[-1] == "ollama"
 
     chain_deep = router_std.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="deep")
     chain_ext = router_std.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="extended")
@@ -1093,6 +1095,48 @@ def test_real_sse_and_ndjson_token_streaming(tmp_path):
         assert "sk-secret-key-999" not in ds_events[-1]["text"]
         assert ds_events[-1]["type"] == "done" and ds_events[-1]["usage"]["completion_tokens"] == 4
 
+        # Cổng OpenAI-compatible: gộp system vào user đầu & stream reasoning_content
+        gw_payloads: list[dict] = []
+
+        def ds_gateway_sse(req: httpx.Request):
+            gw_payloads.append(json.loads(req.content))
+            body = (
+                'data: {"choices":[{"delta":{"reasoning_content":"Bước 1 sk-gw-secret-888 "}}]}\n\n'
+                'data: {"choices":[{"delta":{"reasoning_content":"tính nhẩm"}}]}\n\n'
+                'data: {"choices":[{"delta":{"content":"Đáp án là 42."}}]}\n\n'
+                "data: [DONE]\n\n"
+            ).encode()
+            return httpx.Response(200, content=body, headers={"content-type": "text/event-stream"})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(ds_gateway_sse)) as c1b:
+            ds_gw = DeepSeekModel(
+                c1b,
+                "sk-gw-secret-888",
+                RunLog(tmp_path / "ds-gw-stream"),
+                model="deepseek-r1-custom",
+                base_url="https://gateway.example.test/v1",
+            )
+            gw_events = [
+                ev
+                async for ev in ds_gw.stream_chat(
+                    [
+                        {"role": "system", "content": "Luôn trả lời ngắn gọn bằng tiếng Việt."},
+                        {"role": "user", "content": "Tính nhanh"},
+                    ]
+                )
+            ]
+        sent_gw_msgs = gw_payloads[0]["messages"]
+        assert all(m["role"] != "system" for m in sent_gw_msgs)
+        assert sent_gw_msgs[0]["role"] == "user"
+        assert "Luôn trả lời ngắn gọn bằng tiếng Việt." in sent_gw_msgs[0]["content"]
+        assert "Tính nhanh" in sent_gw_msgs[0]["content"]
+        status_events = [e for e in gw_events if e["type"] == "status"]
+        assert [e["phase"] for e in status_events] == ["reasoning", "reasoning"]
+        assert "sk-gw-secret-888" not in json.dumps(gw_events, ensure_ascii=False)
+        assert [e["text"] for e in gw_events if e["type"] == "delta"] == ["Đáp án là 42."]
+        assert gw_events[-1]["text"] == "Đáp án là 42."
+        assert "tính nhẩm" in gw_events[-1]["reasoning_content"]
+
         # Gemini SSE (:streamGenerateContent?alt=sse) skipping thought=True parts
         def gm_sse(_req: httpx.Request):
             chunk1 = (
@@ -1158,6 +1202,10 @@ def test_hybrid_retrieval_fts5_bm25_ollama_embed_and_vi_normalization(tmp_path):
     assert normalize_vi_search("Kỹ năng Mĩ thuật Bác sỹ") == normalize_vi_search(
         "Kĩ năng Mỹ thuật Bác sĩ"
     )
+    assert normalize_vi_search("hy vọng") == normalize_vi_search("hi vọng")
+    assert normalize_vi_search("quy định") == normalize_vi_search("qui định")
+    assert normalize_vi_search("y tế") == "y te"
+    assert normalize_vi_search("dy") == "dy"
     assert "python" in normalize_vi_search("Python và System")
 
     pages = [
@@ -1169,7 +1217,7 @@ def test_hybrid_retrieval_fts5_bm25_ollama_embed_and_vi_normalization(tmp_path):
             ),
         },
         {
-            "page": 2,
+            "number": 2,
             "text": (
                 "Hệ hai phương trình bậc nhất hai ẩn ax + by = c có thể giải bằng phương pháp thế. "
                 "Đạo hàm biểu thị tốc độ biến thiên tức thời; nguyên hàm ngược với vi phân."
@@ -1180,6 +1228,13 @@ def test_hybrid_retrieval_fts5_bm25_ollama_embed_and_vi_normalization(tmp_path):
     assert len(chunks) >= 3
     assert all(c["doc_id"] == "doc-math" and c["version"] == 2 for c in chunks)
     assert chunks[0]["page_number"] == 1 and chunks[0]["chunk_index"] == 0
+    assert any(c["page_number"] == 2 for c in chunks)
+    num_only_chunks = chunk_document_pages(
+        [{"number": 2, "text": "Nội dung trang hai giữ đúng số trang."}],
+        doc_id="doc-num",
+        version=1,
+    )
+    assert num_only_chunks[0]["page_number"] == 2
 
     conn = sqlite3.connect(":memory:")
     indexed = index_document_chunks(
@@ -1193,16 +1248,71 @@ def test_hybrid_retrieval_fts5_bm25_ollama_embed_and_vi_normalization(tmp_path):
         overlap=30,
     )
     assert len(indexed) >= 2
+    changes_after_first = conn.total_changes
+    indexed_again = index_document_chunks(
+        conn,
+        "teacher-1",
+        "doc-math",
+        pages,
+        version=2,
+        title="Toán 9 Chương 4",
+        chunk_size=180,
+        overlap=30,
+    )
+    assert indexed_again == indexed
+    assert conn.total_changes == changes_after_first
 
-    # (a) i/y equivalence via FTS5
+    # (a) i/y equivalence via FTS5 & page filtering (tuple / list-dict / mapping-dict)
     res_iy = search_hybrid_chunks(conn, "teacher-1", "ty so luong giac", ["doc-math"])
     assert res_iy and "Tỉ số lượng giác" in res_iy[0]["text"]
+    assert search_hybrid_chunks(conn, "teacher-1", "tỉ số lượng giác", [("doc-math", 2, 2)]) == []
+    res_page2_obj = search_hybrid_chunks(
+        conn, "teacher-1", "đạo hàm", [{"docId": "doc-math", "version": 2, "pages": [2]}]
+    )
+    assert res_page2_obj and all(r["pageNumber"] == 2 for r in res_page2_obj)
+    res_page2_dict = search_hybrid_chunks(
+        conn, "teacher-1", "đạo hàm", {"doc-math": {"pages": {2}}}
+    )
+    assert res_page2_dict and all(r["pageNumber"] == 2 for r in res_page2_dict)
 
     # (b) Synonym expansion + pure Python BM25 fallback (use_fts5=False)
     res_syn = search_hybrid_chunks(
         conn, "teacher-1", "giải hệ phương trình", ["doc-math"], use_fts5=False
     )
     assert res_syn and "Hệ hai phương trình bậc nhất hai ẩn" in res_syn[0]["text"]
+
+    # (c) Ollama /api/embed cosine reranking + 1-chunk FTS5 bm25 fallback + stopwords zero-hit
+    single_conn = sqlite3.connect(":memory:")
+    index_document_chunks(
+        single_conn,
+        "teacher-1",
+        "doc-bio",
+        [{"number": 1, "text": "Quang hợp tạo ra tinh bột và oxi của thực vật xanh."}],
+        version=1,
+        title="Sinh học",
+    )
+    res_single_hit = search_hybrid_chunks(
+        single_conn, "teacher-1", "quang hợp tinh bột", ["doc-bio"]
+    )
+    res_single_nof5 = search_hybrid_chunks(
+        single_conn, "teacher-1", "quang hợp tinh bột", ["doc-bio"], use_fts5=False
+    )
+    assert len(res_single_hit) == 1
+    assert res_single_hit[0]["lexicalScore"] == res_single_nof5[0]["lexicalScore"] > 0.43
+    res_single_phrase = search_hybrid_chunks(single_conn, "teacher-1", "quang hợp", ["doc-bio"])
+    assert len(res_single_phrase) == 1 and res_single_phrase[0]["lexicalScore"] > 0.55
+    assert (
+        search_hybrid_chunks(
+            single_conn,
+            "teacher-1",
+            "Chiến thắng Điện Biên Phủ năm 1954 diễn ra như thế nào?",
+            ["doc-bio"],
+        )
+        == []
+    )
+    assert (
+        search_hybrid_chunks(single_conn, "teacher-1", "của và là như thế nào", ["doc-bio"]) == []
+    )
 
     # (c) Ollama /api/embed cosine reranking
     def fake_embed(texts: list[str]) -> list[list[float]]:

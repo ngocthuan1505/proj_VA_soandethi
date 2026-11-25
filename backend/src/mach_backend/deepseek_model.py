@@ -99,6 +99,36 @@ class DeepSeekModel:
         self.cost_tracker = cost_tracker
         self.auto_fallback = auto_fallback
 
+    def _merge_system_messages_for_gateway(
+        self, messages: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Gộp role='system' vào tin nhắn user đầu khi dùng cổng OpenAI-compatible tùy chỉnh."""
+        if (
+            self.base_url == DEEPSEEK_BASE_URL
+            or not any(m.get("role") == "system" for m in messages)
+            or not any(m.get("role") == "user" for m in messages)
+        ):
+            return messages
+        system_parts = [
+            str(m.get("content", "")).strip()
+            for m in messages
+            if m.get("role") == "system" and str(m.get("content", "")).strip()
+        ]
+        merged_messages: list[dict[str, Any]] = []
+        merged_prefix = "[Hướng dẫn hệ thống]\n" + "\n\n".join(system_parts) + "\n\n"
+        injected = False
+        for m in messages:
+            if m.get("role") == "system":
+                continue
+            if not injected and m.get("role") == "user":
+                item = dict(m)
+                item["content"] = merged_prefix + str(item.get("content", ""))
+                merged_messages.append(item)
+                injected = True
+            else:
+                merged_messages.append(m)
+        return merged_messages
+
     async def __call__(self, purpose: str, body: dict[str, Any]) -> dict[str, Any]:
         if self.auto_fallback:
             ordered = [self.model, *self.backup_models]
@@ -171,30 +201,7 @@ class DeepSeekModel:
 
         # Một số cổng OpenAI-compatible bỏ qua role="system"; gộp vào user đầu
         # để bảo toàn chỉ dẫn tiếng Việt và JSON schema.
-        if (
-            self.base_url != DEEPSEEK_BASE_URL
-            and any(m.get("role") == "system" for m in messages)
-            and any(m.get("role") == "user" for m in messages)
-        ):
-            system_parts = [
-                str(m.get("content", "")).strip()
-                for m in messages
-                if m.get("role") == "system" and str(m.get("content", "")).strip()
-            ]
-            merged_messages: list[dict[str, Any]] = []
-            merged_prefix = "[Hướng dẫn hệ thống]\n" + "\n\n".join(system_parts) + "\n\n"
-            injected = False
-            for m in messages:
-                if m.get("role") == "system":
-                    continue
-                if not injected and m.get("role") == "user":
-                    item = dict(m)
-                    item["content"] = merged_prefix + str(item.get("content", ""))
-                    merged_messages.append(item)
-                    injected = True
-                else:
-                    merged_messages.append(m)
-            messages = merged_messages
+        messages = self._merge_system_messages_for_gateway(messages)
 
         lower_model = actual_model.lower()
         schema_props = (
@@ -450,10 +457,11 @@ class DeepSeekModel:
 
         actual_model = str(kwargs.get("model") or self.model).strip() or self.model
         lower_model = actual_model.lower()
+        prepared_messages = self._merge_system_messages_for_gateway(gemini_messages(list(messages)))
         payload: dict[str, Any] = {
             "model": actual_model,
             "stream": True,
-            "messages": gemini_messages(list(messages)),
+            "messages": prepared_messages,
             "max_tokens": int(
                 kwargs.get(
                     "max_tokens",
@@ -466,6 +474,7 @@ class DeepSeekModel:
         headers = {"Authorization": "Bearer " + self.key}
 
         full_parts: list[str] = []
+        reasoning_parts: list[str] = []
         usage: dict[str, Any] = {}
         try:
             async with self.client.stream(
@@ -540,6 +549,15 @@ class DeepSeekModel:
                         delta = choice.get("delta") or {}
                         if not isinstance(delta, dict):
                             continue
+                        reasoning_text = delta.get("reasoning_content")
+                        if isinstance(reasoning_text, str) and reasoning_text:
+                            safe_reasoning = str(redact_secrets(reasoning_text, [self.key]))
+                            reasoning_parts.append(safe_reasoning)
+                            yield {
+                                "type": "status",
+                                "phase": "reasoning",
+                                "text": safe_reasoning,
+                            }
                         token_text = delta.get("content")
                         if isinstance(token_text, str) and token_text:
                             safe_delta = str(redact_secrets(token_text, [self.key]))
@@ -559,10 +577,15 @@ class DeepSeekModel:
                 int(usage.get("prompt_tokens", 0) or 0),
                 int(usage.get("completion_tokens", 0) or 0),
             )
-        yield {
+        done_event: dict[str, Any] = {
             "type": "done",
-            "text": "".join(full_parts),
+            "text": str(redact_secrets("".join(full_parts), [self.key])),
             "provider": "deepseek",
             "model": actual_model,
             "usage": usage,
         }
+        if reasoning_parts:
+            done_event["reasoning_content"] = str(
+                redact_secrets("".join(reasoning_parts), [self.key])
+            )[:600]
+        yield done_event

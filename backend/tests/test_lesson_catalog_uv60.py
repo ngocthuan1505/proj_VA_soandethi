@@ -23,6 +23,7 @@ from mach_backend.exam_spec_export import (
 )
 from mach_backend.lesson_catalog import (
     lesson_catalog,
+    normalize_nfd_text,
     search_lesson_catalog,
     to_curriculum_source_payload,
 )
@@ -134,6 +135,15 @@ def test_search_lesson_catalog_supports_tieng_viet_and_ngu_van_cross_alias():
     # Giữ nguyên hợp đồng test_rich_sample_catalog.py:270
     van_col = search_lesson_catalog("tram khi tuong", subject="Ngữ văn")[0]
     assert van_col["name"] == "Ngữ văn 9 · Ngữ liệu Đọc hiểu THCS · Tập 1"
+
+    # Chuẩn hóa i/y với âm tiết h ("hy vọng" == "hi vọng") và đồng nghĩa giải hệ bằng phép thế
+    assert normalize_nfd_text("hy vọng") == normalize_nfd_text("hi vọng")
+    assert normalize_nfd_text("y tế") == "y te"
+    assert normalize_nfd_text("dy") == "dy"
+    sys_hits = search_lesson_catalog("hệ phương trình bậc nhất hai ẩn", subject="Toán", grade=9)
+    sys_titles = [lesson["title"] for col in sys_hits for lesson in col["lessons"]]
+    assert "Giải hệ bằng phép thế" in sys_titles
+    assert "Lập hệ từ bảng định mức vận chuyển" in sys_titles
 
 
 def test_matrix_import_error_messages_have_clean_vietnamese_spacing():

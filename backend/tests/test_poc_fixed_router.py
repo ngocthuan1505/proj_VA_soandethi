@@ -627,7 +627,21 @@ def test_chat_endpoint_routes_via_fixed_task_router_agy_gemini_deepseek_ollama(
                 },
             ).raise_for_status()
 
-            # 0. Mặc định standard chat ưu tiên API nhanh trước (DeepSeek Chat)
+            # 0. Ở cấp router standard ưu tiên AGY & fast đẩy AGY trước Ollama;
+            # HTTP mặc định tạm giữ deepseek_chat tới khi Bước 2 nối local_workspace.py:1347.
+            from mach_backend.ai_router import FixedTaskRouter
+
+            router_m11 = FixedTaskRouter(
+                {
+                    "agy": lambda *_: {},
+                    "deepseek_chat": lambda *_: {},
+                    "gemini_flash": lambda *_: {},
+                    "ollama": lambda *_: {},
+                }
+            )
+            assert router_m11.candidate_chain("M11_FLEXIBLE_CHAT")[0] == "agy"
+            fast_m11 = router_m11.candidate_chain("M11_FLEXIBLE_CHAT", time_preset="fast")
+            assert fast_m11.index("agy") < fast_m11.index("ollama")
             r_std = client.post("/api/assistant/chat", json={"text": "Hỏi nhanh", "consent": True})
             assert r_std.status_code == 200, r_std.text
             assert r_std.json()["providerUsed"] == "deepseek_chat"

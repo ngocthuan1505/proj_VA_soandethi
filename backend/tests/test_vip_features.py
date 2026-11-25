@@ -173,7 +173,22 @@ def test_fast_chat_routes_deepseek_and_gemini_ahead_of_agy_and_returns_latency_m
             },
         ).raise_for_status()
 
-        # 1. timePreset='standard' -> ưu tiên API nhanh (deepseek_chat) và trả latencyMs
+        # 1. timePreset='standard': ở cấp router M11 chuẩn ưu tiên AGY và fast đẩy AGY trước Ollama
+        from mach_backend.ai_router import M11_FLEXIBLE_CHAT, FixedTaskRouter
+
+        router_check = FixedTaskRouter(
+            {
+                "agy": lambda *_: {},
+                "deepseek_chat": lambda *_: {},
+                "gemini_flash": lambda *_: {},
+                "ollama": lambda *_: {},
+            }
+        )
+        assert router_check.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="standard")[0] == "agy"
+        fast_chain = router_check.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="fast")
+        assert fast_chain.index("agy") < fast_chain.index("ollama")
+
+        # Tạm giữ deepseek_chat trên route HTTP tới khi Bước 2 nối local_workspace.py:1347
         r_std = client.post(
             "/api/assistant/chat",
             json={"text": "hello", "consent": True, "timePreset": "standard"},

@@ -2,7 +2,6 @@
 
 import math
 import re
-import unicodedata
 from collections import Counter
 from collections.abc import Sequence
 from typing import Annotated, Any
@@ -19,6 +18,11 @@ from mach_backend.ai_contract import (
     validate_locator,
 )
 from mach_backend.curriculum_sources import read_usable_curriculum_source
+from mach_backend.hybrid_retrieval import (
+    extract_vi_content_tokens,
+    normalize_vi_search,
+    strip_vi_light_collocations,
+)
 from mach_backend.lesson_catalog import lesson_catalog
 
 type WireUUID = Annotated[UUID, Field(strict=False)]
@@ -73,9 +77,8 @@ def read_selected_sources(
 
 
 _TOKEN_RE = re.compile(r"[0-9a-z]+")
-_IY_TOKEN_RE = re.compile(r"\b([klmst])y\b")
 _MIN_BM25_SCORE = 1e-6
-_MIN_TRIGRAM_COSINE = 0.14
+_MIN_TRIGRAM_HIGH = 0.45
 
 
 def is_teacher_owned_source(doc: dict[str, Any]) -> bool:
@@ -90,14 +93,8 @@ def is_teacher_owned_source(doc: dict[str, Any]) -> bool:
     )
 
 
-def _strip_accents(value: str) -> str:
-    nfd = unicodedata.normalize("NFD", str(value or ""))
-    no_marks = "".join(ch for ch in nfd if unicodedata.category(ch) != "Mn")
-    return no_marks.replace("đ", "d").replace("Đ", "D").casefold()
-
-
 def _normalize_search_text(value: str) -> str:
-    return _IY_TOKEN_RE.sub(r"\1i", _strip_accents(value))
+    return normalize_vi_search(value)
 
 
 def _fragment_text(fragment: Any) -> str:
@@ -161,11 +158,19 @@ def rank_source_fragments(
     if not q_norm:
         return items[:limit]
 
-    q_tokens = _TOKEN_RE.findall(q_norm)
+    q_tokens = extract_vi_content_tokens(
+        _TOKEN_RE.findall(_normalize_search_text(strip_vi_light_collocations(query)))
+    )
+    if not q_tokens:
+        return []
     q_trigrams = _char_trigrams(q_norm)
 
-    doc_norms = [_normalize_search_text(_fragment_text(frag)) for frag in items]
-    doc_tokens = [_TOKEN_RE.findall(txt) for txt in doc_norms]
+    raw_frags = [_fragment_text(frag) for frag in items]
+    doc_norms = [_normalize_search_text(txt) for txt in raw_frags]
+    doc_tokens = [
+        _TOKEN_RE.findall(_normalize_search_text(strip_vi_light_collocations(txt)))
+        for txt in raw_frags
+    ]
     doc_trigrams = [_char_trigrams(txt) for txt in doc_norms]
 
     n_docs = len(items)
@@ -200,7 +205,11 @@ def rank_source_fragments(
     eligible = [
         idx
         for idx in range(n_docs)
-        if bm25_scores[idx] >= _MIN_BM25_SCORE or tri_scores[idx] >= _MIN_TRIGRAM_COSINE
+        if (
+            bm25_scores[idx] >= _MIN_BM25_SCORE
+            or q_norm in doc_norms[idx]
+            or tri_scores[idx] >= _MIN_TRIGRAM_HIGH
+        )
     ]
     if not eligible:
         return []
