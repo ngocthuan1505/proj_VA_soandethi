@@ -2578,10 +2578,14 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         if not candidate.is_relative_to(ROOT) or not candidate.is_file():
             raise HTTPException(404)
         relative = candidate.relative_to(ROOT)
-        allowed = (len(relative.parts) == 1 and candidate.suffix in {".html", ".js", ".css"}) or (
-            relative.parts[0] == "assets"
-            and candidate.suffix
-            in {".js", ".mjs", ".css", ".svg", ".woff", ".woff2", ".ttf", ".png", ".json"}
+        allowed = (
+            (len(relative.parts) == 1 and candidate.suffix in {".html", ".js", ".css"})
+            or (
+                relative.parts[0] == "assets"
+                and candidate.suffix
+                in {".js", ".mjs", ".css", ".svg", ".woff", ".woff2", ".ttf", ".png", ".json"}
+            )
+            or relative.as_posix() == "assets/exam-room.html"
         )
         if not allowed:
             raise HTTPException(404)

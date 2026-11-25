@@ -281,6 +281,7 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
                             ".json",
                         }
                     )
+                    or relative.as_posix() == "assets/exam-room.html"
                 )
                 response = (
                     FileResponse(candidate)

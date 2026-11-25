@@ -970,3 +970,14 @@ def test_analytics_max_score_not_shadowed_and_top_level_exam_audio(tmp_path: Pat
     assert data["minScoreP100"] == 100
     assert data["avgScoreP100"] == 200
     assert data["medianScoreP100"] == 200
+
+
+def test_local_workspace_serves_exam_room_html_only_among_assets_html(tmp_path: Path) -> None:
+    from mach_backend.local_workspace import create_app
+
+    client = TestClient(create_app(tmp_path))
+    room_html = client.get("/assets/exam-room.html")
+    assert room_html.status_code == 200
+    assert "/assets/exam-room.js" in room_html.text
+    assert "student-room-app" in room_html.text
+    assert client.get("/assets/team-login.html").status_code == 404
