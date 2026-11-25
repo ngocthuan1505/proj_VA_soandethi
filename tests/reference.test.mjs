@@ -335,6 +335,7 @@ test('Blue Whale additions: chatMetaBadgeText modelUsed, emptyCanvasHTML, lesson
  assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Hệ thức lượng',title:'Tỉ số lượng giác của góc nhọn',outcome:'',text:''},'ty so'),true);
  assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Hệ phương trình',title:'Giải hệ hai phương trình bậc nhất hai ẩn',outcome:'',text:''},'giai he phuong trinh'),true);
  assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Hệ phương trình',title:'Giải hệ phương trình bằng phương pháp thế',outcome:'',text:''},'giai he bang phep the'),true);
+ assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Phương trình và hệ phương trình',title:'Lập hệ từ bài toán thực tế',outcome:'Đặt hai ẩn, chọn điều kiện và giải thích kết quả theo ngữ cảnh.',text:''},'giai he bang phep the'),false);
  assert.equal(lessonMatchesSearch({name:'Toán 11',subject:'Toán'},{chapter:'Đạo hàm',title:'Đạo hàm',outcome:'Quy tắc tính đạo hàm',text:''},'dao ham'),true);
  assert.equal(lessonMatchesSearch({name:'Toán 12',subject:'Toán'},{chapter:'Nguyên hàm',title:'Nguyên hàm của hàm số',outcome:'',text:'Nội dung nguyên hàm'}),true);
  assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Chương 1',title:'Quy tắc đếm',outcome:'',text:''},'qui tac'),true);

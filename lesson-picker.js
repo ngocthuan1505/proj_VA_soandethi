@@ -21,7 +21,6 @@ export function expandLessonSearchVariants(query){
  for(const item of [...out]){
   if(/\bphep the\b/.test(item)){
    out.add(item.replace(/\bphep the\b/g,'phuong phap the'));
-   out.add(item.replace(/\bbang phep the\b/g,'the').replace(/\bphep the\b/g,'the'));
   }
   if(/\bphuong phap the\b/.test(item))out.add(item.replace(/\bphuong phap the\b/g,'phep the'));
   if(/\bgiai he phuong trinh\b/.test(item))out.add('giai he');
@@ -36,10 +35,11 @@ export function lessonMatchesSearch(collection,lesson,query){
  const rawHay=[collection?.name,collection?.subject,collection?.book,collection?.volume,lesson?.chapter,lesson?.title,lesson?.outcome,lesson?.text].filter(Boolean).join(' ');
  const hay=foldVietnameseOrthography(normalizeLessonSearch(rawHay));
  if(!hay)return false;
+ const hayWords=hay.split(' ');
  return variants.some(v=>{
   if(hay.includes(v))return true;
   const toks=v.split(' ').filter(Boolean);
-  return toks.length>=2&&toks.every(t=>hay.includes(t));
+  return toks.length>=2&&toks.every(t=>hayWords.includes(t)||(t.length>=4&&hayWords.some(w=>w.startsWith(t))));
  });
 }
 const isLiteratureSubject=v=>['ngu van','tieng viet'].includes(normSubject(v));
