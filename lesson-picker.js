@@ -1,6 +1,7 @@
 import {esc,touch,check} from './core.js';
 import {selectedDocumentPages} from './assistant-sources.js';
 import {workspaceHeaders} from './storage.js';
+import {mergeAssistantSourceDraft} from './reference.js';
 
 const personalRoute='/api/lesson-catalog/sources';
 const usable=record=>['allowed','teacher_owned'].includes(record.license_status);
@@ -22,9 +23,11 @@ const asCollection=record=>({
 
 export async function openLessonPicker(context) {
  const examId=context.exam().id;
- const dialog=document.querySelector('#dialog');
+ const baseDialog=document.querySelector('#dialog');
  const returnFocusEl=document.activeElement instanceof HTMLElement?document.activeElement:null;
- const origin=dialog.querySelector('#assistant-source-form');
+ const origin=baseDialog?.open&&baseDialog.querySelector('#assistant-source-form');
+ const useLayer2=Boolean(origin&&document.querySelector('#dialog-layer2'));
+ const dialog=useLayer2?document.querySelector('#dialog-layer2'):baseDialog;
  const headers=workspaceHeaders();
  const [response,personal]=await Promise.all([
   fetch('/api/lesson-catalog',{headers}),
@@ -33,7 +36,7 @@ export async function openLessonPicker(context) {
  if(!response.ok)throw Error('Chưa mở được học liệu theo bài.');
  const {collections}=await response.json();
  collections.push(...(personal?.sources||[]).map(asCollection));
- if(context.exam().id!==examId||(origin&&(!origin.isConnected||!dialog.open)))return;
+ if(context.exam().id!==examId||(origin&&(!origin.isConnected||!baseDialog.open)))return;
  const exam=context.exam(), choices=new Map(), changed=new Set();
  const editedCopy=doc=>doc?.catalog===true&&doc.version>1&&doc.pages?.some(page=>page.method==='manual');
  const editedDocs=new Map(exam.docs.filter(editedCopy).map(doc=>[doc.id,doc]));
@@ -79,7 +82,7 @@ export async function openLessonPicker(context) {
  <button type="submit" class="primary">Lưu học liệu</button>
  </form></details>`:'<p class="hint">Chưa tải được kho học liệu cá nhân.</p>'}
  <form id="lesson-picker"><p class="hint">Chọn học liệu mẫu của dự án hoặc bài trong kho cá nhân.</p><div class="grid2">
- <label>Kho<select name="library"><option value="">Tất cả</option><option value="sample">Học liệu mẫu</option><option value="personal">Kho cá nhân</option></select></label>${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,initialSubject)}${select('Bộ học liệu','book',[])}${select('Tập','volume',[])}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div class="modal-foot"><button type="button" data-action="assistant-sources">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`);
+ <label>Kho<select name="library"><option value="">Tất cả</option><option value="sample">Học liệu mẫu</option><option value="personal">Kho cá nhân</option></select></label>${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,initialSubject)}${select('Bộ học liệu','book',[])}${select('Tập','volume',[])}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div class="modal-foot"><button type="button" data-action="${useLayer2?'close-top-modal':'assistant-sources'}">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`,'',{layer:useLayer2?2:1});
  const form=dialog.querySelector('#lesson-picker'),list=form.querySelector('[data-lesson-list]');
  const editor=dialog.querySelector('[data-personal-editor]'),personalForm=editor?.querySelector('form');
  let editing=null, importSequence=0, imported=null, sourceOrigin='';
@@ -294,10 +297,11 @@ export async function openLessonPicker(context) {
   changed.add(id);
   updateCheckboxes();
  });
- form.addEventListener('submit',event=>{
+ form.addEventListener('submit',async event=>{
   event.preventDefault();
   event.stopPropagation();
   if(context.exam().id!==examId)return;
+  const addedIds=[],removedIds=[],addedPages={};
   context.change('Chọn học liệu theo bài',current=>{
    const attached=new Set(current.assistantSources||[]);
    current.assistantSourcePages??={};
@@ -306,6 +310,7 @@ export async function openLessonPicker(context) {
     if(!numbers.length){
      attached.delete(collection.id);
      delete current.assistantSourcePages[collection.id];
+     removedIds.push(collection.id);
      continue;
     }
     const saved=current.docs.find(d=>d.id===collection.id);
@@ -328,10 +333,14 @@ export async function openLessonPicker(context) {
     }
     attached.add(collection.id);
     current.assistantSourcePages[collection.id]=numbers;
+    addedIds.push(collection.id);
+    addedPages[collection.id]=numbers;
    }
    current.assistantSources=[...attached];
   });
+  mergeAssistantSourceDraft(examId,addedIds,addedPages,removedIds);
   dialog.close();
+  if(useLayer2)await context.act('assistant-sources');
  });
  render();
  form.elements.query?.focus();

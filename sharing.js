@@ -1,4 +1,5 @@
 import {esc,uid} from './core.js';
+import {mergeAssistantSourceDraft} from './reference.js';
 
 function linkRow(item){
  return '<article class="shared-link-row"><div><b>Bản '+item.revision+' · '+(item.answers?'Có đáp án':'Bản học sinh')+(item.community?' · Kho cộng đồng':'')+'</b><small>'+esc(new Date(item.created).toLocaleString('vi-VN'))+'</small></div>'+
@@ -62,8 +63,11 @@ export async function createSharing(c,api,form){
 }
 
 export async function openCommunity(c,api){
- c.modal('Kho đề cộng đồng',`<form id="community-filter"><label>Tìm kiếm (không dấu · tiêu đề & thân câu)<input name="q" type="search" maxlength="120" placeholder="Ví dụ: giua hoc ki, phan so..."></label><label class="source-choice"><input name="scope" type="checkbox" value="content" checked> Tìm cả trong nội dung câu hỏi & phương án</label><div class="grid2"><label>Môn<input name="subject" maxlength="80" placeholder="Ví dụ: Toán"></label><label>Lớp<select name="grade"><option value="">Tất cả</option>${Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join('')}</select></label><label>Bộ sách<input name="series" maxlength="150" placeholder="Kết nối tri thức"></label><label>Chương<input name="chapter" maxlength="200"></label></div><button type="submit">Tìm đề</button><p data-community-status role="status"></p><div data-community-results></div><div class="row"><button type="button" data-community-page="prev">Trang trước</button><button type="button" data-community-page="next">Trang sau</button></div></form>`);
- const form=document.querySelector('#community-filter'),results=form.querySelector('[data-community-results]');
+ const layer1=document.querySelector('#dialog');
+ const useLayer2=Boolean(layer1?.open&&layer1.querySelector('#assistant-source-form')&&document.querySelector('#dialog-layer2'));
+ const dlg=useLayer2?document.querySelector('#dialog-layer2'):layer1;
+ c.modal('Kho đề cộng đồng',`<form id="community-filter" data-layer2="${useLayer2?'1':'0'}"><label>Tìm kiếm (không dấu · tiêu đề &amp; thân câu)<input name="q" type="search" maxlength="120" placeholder="Ví dụ: giua hoc ki, phan so..."></label><label class="source-choice"><input name="scope" type="checkbox" value="content" checked> Tìm cả trong nội dung câu hỏi &amp; phương án</label><div class="grid2"><label>Môn<input name="subject" maxlength="80" placeholder="Ví dụ: Toán"></label><label>Lớp<select name="grade"><option value="">Tất cả</option>${Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join('')}</select></label><label>Bộ sách<input name="series" maxlength="150" placeholder="Kết nối tri thức"></label><label>Chương<input name="chapter" maxlength="200"></label></div><button type="submit">Tìm đề</button><p data-community-status role="status"></p><div data-community-results></div><div class="row"><button type="button" data-community-page="prev">Trang trước</button><button type="button" data-community-page="next">Trang sau</button></div></form>`,'',{layer:useLayer2?2:1});
+ const form=dlg.querySelector('#community-filter'),results=form.querySelector('[data-community-results]');
  const status=form.querySelector('[data-community-status]');
  const prev=form.querySelector('[data-community-page=prev]'),next=form.querySelector('[data-community-page=next]');
  let page=1, request=0, filters=new URLSearchParams(new FormData(form));
@@ -105,6 +109,7 @@ export async function cloneCommunityExam(c,api,button){
  if(!cloned?.id)throw Error('Không tạo được bản sao độc lập.');
  c.getState().exams.push(cloned);
  c.getState().current=cloned.id;
+ document.querySelector('#dialog-layer2')?.close();
  document.querySelector('#dialog')?.close();
  await c.persist();
  c.render();
@@ -113,23 +118,29 @@ export async function cloneCommunityExam(c,api,button){
 
 export async function attachCommunitySource(c,api,button){
  const form=button.closest('#community-filter'),examId=c.exam().id;
+ const dlg=form?.closest('dialog')||document.querySelector('#dialog');
+ const isLayer2=dlg?.id==='dialog-layer2';
  const token=button.dataset.token;
  const result=await api('/api/share/read/'+encodeURIComponent(token));
  if(!result.allowCopy||!result.exam)throw Error('Đề hiện chỉ cho xem hoặc đã thu hồi.');
- if(!form?.isConnected||!document.querySelector('#dialog').open||c.exam().id!==examId)return;
+ if(!form?.isConnected||!dlg?.open||c.exam().id!==examId)return;
  const exam=result.exam;
  const text=[exam.quote?.text,...exam.questions.map((q,i)=>
   ['Câu '+(i+1)+'. '+q.stem,...q.options.map((option,j)=>String.fromCharCode(65+j)+'. '+option)].join('\n')
  )].filter(Boolean).join('\n\n');
  if(!text.trim()||text.length>12000)throw Error('Nguồn trống hoặc vượt 12.000 ký tự.');
+ let addedDocId=null;
  c.change('Gắn đề cộng đồng làm nguồn',current=>{
   const existing=current.docs.find(doc=>doc.communityToken===token);
   const id=existing?.id||uid();
+  addedDocId=id;
   if(!existing)current.docs.push({id,kind:'text',name:exam.title+' · Đề cộng đồng',
    version:1,text,pages:[{number:1,text}],communityToken:token});
   current.assistantSources=[...new Set([...(current.assistantSources||[]),id])];
   (current.assistantSourcePages??={})[id]=[1];
  });
- document.querySelector('#dialog').close();
+ if(addedDocId)mergeAssistantSourceDraft(examId,[addedDocId],{[addedDocId]:[1]});
+ dlg.close();
+ if(isLayer2)await c.act('assistant-sources');
  c.toast('Đã gắn đề cộng đồng làm nguồn.');
 }

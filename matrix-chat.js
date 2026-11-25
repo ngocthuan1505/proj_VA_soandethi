@@ -249,6 +249,7 @@ export function mountMatrixChat(c){
 
 function placeChatControls(c,flow){
  const assistant=document.querySelector('.assistant'),compose=assistant?.querySelector('.chat-compose');if(!compose)return;
+ assistant.classList.toggle('is-matrix-wide',Boolean(flow));
  assistant.querySelectorAll('.matrix-decision-dock').forEach(node=>{if(node!==flow?.dock)node.remove();});
  if(flow?.dock){
   flow.dock.classList.add('matrix-decision-dock');flow.dock.hidden=flow.phase!=='review';

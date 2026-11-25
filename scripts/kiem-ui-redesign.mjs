@@ -595,9 +595,9 @@ async function main() {
         return {badges, tabLabels};
       });
 
-      // Switch to SGK / Bài học picker
+      // Switch to SGK / Bài học picker (Modal Layer 2 trên nền Modal Layer 1)
       await page.locator('#dialog [data-action="lesson-sources"]').first().click();
-      await page.waitForSelector('#dialog[open] #lesson-picker', {timeout: 8000});
+      await page.waitForSelector('dialog[open] #lesson-picker', {timeout: 8000});
 
       // Clear grade/subject filters so multi-subject catalog shows across subjects & grades
       const gradeSelect = page.locator('#lesson-picker select[name="grade"]');
@@ -624,9 +624,13 @@ async function main() {
       const searchMatches = await page.locator('#lesson-picker [data-lesson-list] input[name="lesson"]').count();
       assert(searchMatches >= 1, `Tìm kiếm không dấu "${firstTwoWords}" phải khớp bài "${sampleLesson.title}"`);
 
-      // Select first visible lesson & submit
+      // Select first visible lesson & submit Layer 2, then close/submit Layer 1 if still open
       await page.locator('#lesson-picker [data-lesson-list] input[name="lesson"]').first().check();
       await page.locator('#lesson-picker button[type="submit"]').click();
+      await page.waitForFunction(() => !document.querySelector('#dialog-layer2')?.open, {timeout: 8000});
+      if (await page.locator('#dialog[open] #assistant-source-form').count()) {
+        await page.locator('#dialog[open] #assistant-source-form button[type="submit"]').click();
+      }
       await page.waitForFunction(() => !document.querySelector('#dialog')?.open, {timeout: 8000});
       await page.waitForTimeout(200);
 

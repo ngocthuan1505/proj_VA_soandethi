@@ -68,8 +68,8 @@ test('UV60 BUG-P1-05: Nhãn preset AGY đồng nhất và CSS matrix-live-steps 
   assert.ok(workbenchSrc.includes('teacherFilesOnly:Boolean(e.strictTeacherOnly)'));
   assert.ok(workbenchSrc.includes('fallbackFrom:result.fallbackFrom'));
 
-  const css = readText('assets/usability.css');
-  assert.match(css, /#matrix-live-steps[^}]*list-style:\s*none\s*!important/);
+  const css = readText('assets/layout.css');
+  assert.match(css, /#matrix-live-steps[^}]*list-style:\s*none/);
 });
 
 test('UV60 BUG-P1-06: shouldDeferPageLayout hoãn layout khi đang gõ trong editor chưa tràn +80px và app.js có beforeunload', () => {
@@ -120,12 +120,14 @@ test('UV60 BUG-P2-01: shouldConfirmStudentExport bảo vệ khi xuất Bản h�
 });
 
 test('UV60 BUG-P2-02 & P2-04 CSS: save-warning nổi trên footer, responsive mobile giữ .wf-mode-pill & menubar, hiện .q-status cần rà', () => {
-  const css = readText('assets/usability.css');
-  assert.match(css, /\[data-save-warning\]:not\(\[hidden\]\)[^}]*position:\s*absolute\s*!important/);
-  assert.match(css, /\.mach\s+\.main-footer\s+\.wf-mode-pill\{display:\s*inline-flex\s*!important/);
-  assert.match(css, /\.mach\s+\.menubar\s*\{display:\s*flex\s*!important;[^}]*overflow-x:\s*auto\s*!important/);
-  assert.match(css, /\.mach\s+\.q-status\.review[^}]*display:\s*inline-flex\s*!important/);
-  assert.ok(!readText('studio.css').includes('.studio .menubar button:nth-child(n+5){display:none}'));
+  const layoutCss = readText('assets/layout.css');
+  const paperCss = readText('assets/paper.css');
+  const html = readText('index.html');
+  assert.match(layoutCss, /\[data-save-warning\]:not\(\[hidden\]\)[^}]*position:\s*absolute/);
+  assert.match(layoutCss, /\.wf-mode-pill\s*\{[^}]*display:\s*inline-flex/);
+  assert.match(layoutCss, /\.menubar\s*\{[^}]*display:\s*flex;[^}]*overflow-x:\s*auto/);
+  assert.match(paperCss, /\.q-status\.review,\s*\.q-status\.is-stale-source\s*\{[^}]*display:\s*inline-flex/);
+  assert.ok(!html.includes('studio.css') && !layoutCss.includes('.menubar button:nth-child(n+5){display:none}'));
 });
 
 test('UV60 BUG-P2-05: Quy tắc phạm vi Toán 9 không rò sang Ngữ văn 7C và blank() kế thừa teacherProfile', () => {

@@ -1,5 +1,17 @@
 import {check, touch, uid} from './core.js';
 
+export function createSketchHistory(){
+ const strokes=[],redoStack=[];
+ return {
+  get strokes(){return strokes;},
+  get canUndo(){return strokes.length>0;},
+  get canRedo(){return redoStack.length>0;},
+  push(stroke){strokes.push(stroke);redoStack.length=0;},
+  undo(){if(!strokes.length)return null;const s=strokes.pop();redoStack.push(s);return s;},
+  redo(){if(!redoStack.length)return null;const s=redoStack.pop();strokes.push(s);return s;},
+ };
+}
+
 export function openSketchBoard(context) {
  const selected=context.qget(context.getSelected());
  if(!selected){context.toast('Thêm hoặc chọn một câu để chèn hình.');return;}
@@ -13,9 +25,14 @@ export function openSketchBoard(context) {
      <option value="#9e3b32">Đỏ</option>
     </select></label>
     <button type="button" data-sketch-undo disabled>Hoàn tác nét</button>
+    <button type="button" data-sketch-redo disabled>Làm lại nét</button>
+   </div>
+   <div class="sketch-confirm-bar" data-sketch-confirm-close hidden role="alert">
+    <span>Bạn đã vẽ hình trên bảng. Đóng cửa sổ sẽ bỏ các nét chưa lưu?</span>
+    <span class="buttons"><button type="button" data-sketch-keep>Tiếp tục vẽ</button><button type="button" class="danger" data-sketch-discard>Thoát &amp; bỏ nét</button></span>
    </div>
    <canvas width="960" height="540" tabindex="0" aria-label="Bảng vẽ phác" aria-describedby="sketch-help"></canvas>
-   <p id="sketch-help" class="hint">Dùng chuột hoặc chạm để vẽ. Với bàn phím, dùng phím mũi tên để di chuyển, nhấn Space để hạ hoặc nhấc bút.</p>
+   <p id="sketch-help" class="hint">Dùng chuột hoặc chạm để vẽ. Với bàn phím, dùng phím mũi tên để di chuyển, nhấn Space để hạ hoặc nhấc bút. Ctrl+Z / Ctrl+Y để hoàn tác hoặc làm lại.</p>
    <label>Chú thích hình<input name="caption" maxlength="120" placeholder="Ví dụ: Sơ đồ mạch điện"></label>
    <p data-sketch-status role="status"></p>
    <div class="modal-foot"><button type="submit" class="primary" disabled>Chèn hình vào câu</button></div>
@@ -23,11 +40,13 @@ export function openSketchBoard(context) {
  const form=document.querySelector('#sketch-board'),canvas=form.querySelector('canvas');
  const surface=canvas.getContext('2d');
  if(!surface){form.querySelector('[data-sketch-status]').textContent='Trình duyệt chưa mở được bảng vẽ.';return;}
- const undo=form.querySelector('[data-sketch-undo]'),submit=form.querySelector('[type=submit]');
+ const undo=form.querySelector('[data-sketch-undo]'),redoBtn=form.querySelector('[data-sketch-redo]'),submit=form.querySelector('[type=submit]');
+ const confirmBar=form.querySelector('[data-sketch-confirm-close]'),keepBtn=form.querySelector('[data-sketch-keep]'),discardBtn=form.querySelector('[data-sketch-discard]');
  const status=form.querySelector('[data-sketch-status]');
- const strokes=[];
+ const history=createSketchHistory();
+ const strokes=history.strokes;
  const cursor={x:canvas.width/2,y:canvas.height/2};
- let active=null,pointerId=null,showCursor=false,frame=null;
+ let active=null,pointerId=null,showCursor=false,frame=null,allowDiscardClose=false;
 
  function paint(displayCursor=showCursor){
   const target=surface;
@@ -55,15 +74,17 @@ export function openSketchBoard(context) {
    target.moveTo(cursor.x,cursor.y-8);target.lineTo(cursor.x,cursor.y+8);
    target.stroke();
   }
-  undo.disabled=submit.disabled=strokes.length===0;
+  undo.disabled=submit.disabled=!history.canUndo;
+  redoBtn.disabled=!history.canRedo;
  }
  function schedulePaint(){
   if(frame===null)frame=requestAnimationFrame(()=>{frame=null;if(canvas.isConnected)paint();});
  }
  function start(point){
   if(strokes.length===120){status.textContent='Đã đủ 120 nét. Hoàn tác một nét hoặc chèn hình hiện tại.';return;}
+  confirmBar.hidden=true;
   active={ink:form.elements.ink.value,points:[point]};
-  strokes.push(active);
+  history.push(active);
   schedulePaint();
  }
  function append(point){
@@ -117,10 +138,52 @@ export function openSketchBoard(context) {
  });
  undo.addEventListener('click',()=>{
   active=null;
-  strokes.pop();
+  history.undo();
+  confirmBar.hidden=true;
   status.textContent='';
   schedulePaint();
  });
+ redoBtn.addEventListener('click',()=>{
+  active=null;
+  history.redo();
+  confirmBar.hidden=true;
+  status.textContent='';
+  schedulePaint();
+ });
+ const dlg=document.querySelector('#dialog');
+ const onCancel=event=>{
+  if(strokes.length&&!allowDiscardClose){
+   event.preventDefault();
+   confirmBar.hidden=false;
+   keepBtn.focus();
+  }
+ };
+ dlg?.addEventListener('cancel',onCancel);
+ keepBtn?.addEventListener('click',()=>{
+  confirmBar.hidden=true;
+  canvas.focus();
+ });
+ discardBtn?.addEventListener('click',()=>{
+  allowDiscardClose=true;
+  dlg?.removeEventListener('cancel',onCancel);
+  dlg?.close();
+ });
+ form.addEventListener('keydown',event=>{
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'){
+   event.preventDefault();
+   if(event.shiftKey)redoBtn.click();
+   else undo.click();
+  }else if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='y'){
+   event.preventDefault();
+   redoBtn.click();
+  }else if(event.key==='Escape'&&strokes.length&&!allowDiscardClose){
+   event.preventDefault();
+   event.stopPropagation();
+   confirmBar.hidden=false;
+   keepBtn.focus();
+  }
+ });
+ dlg?.addEventListener('close',()=>dlg.removeEventListener('cancel',onCancel),{once:true});
  form.addEventListener('submit',event=>{
   event.preventDefault();
   event.stopPropagation();
@@ -145,12 +208,13 @@ export function openSketchBoard(context) {
   cropped.height=bottom-top;
   cropped.getContext('2d').drawImage(canvas,left,top,cropped.width,cropped.height,0,0,cropped.width,cropped.height);
   const data=cropped.toDataURL('image/png'),caption=form.elements.caption.value.trim()||'Hình vẽ phác';
+  allowDiscardClose=true;
   context.change('Chèn hình vẽ phác vào câu',()=>{
    (question.images??=[]).push({id:uid(),data,caption});
    touch(question);
    check(current,question);
   });
-  document.querySelector('#dialog').close();
+  dlg?.close();
   context.toast('Đã chèn hình vào câu.');
  });
 }
