@@ -181,11 +181,11 @@ def test_chat_stream_sse_and_pre_first_token_failover(tmp_path, monkeypatch):
             },
         ).raise_for_status()
 
-        # 1. Stream thành công từ deepseek_chat
+        # 1. Stream thành công từ deepseek_chat ở preset fast
         with client.stream(
             "POST",
             "/api/assistant/chat/stream",
-            json={"text": "Chào trợ lý", "consent": True, "timePreset": "standard"},
+            json={"text": "Chào trợ lý", "consent": True, "timePreset": "fast"},
         ) as resp:
             assert resp.status_code == 200
             raw = resp.read().decode("utf-8")
@@ -197,7 +197,42 @@ def test_chat_stream_sse_and_pre_first_token_failover(tmp_path, monkeypatch):
         assert done["attemptedProviders"] == ["deepseek_chat"]
         assert done["fallbackFrom"] is None
 
-        # 2. Failover trước token đầu khi DeepSeek trả 429 -> chuyển sang gemini_flash
+        # 2. timePreset='standard' ưu tiên AGY đầu tiên khi khả dụng
+        fake_agy = tmp_path / "agy.cmd"
+        fake_agy.write_text("@echo off\n", encoding="utf-8")
+        client.post(
+            "/api/config",
+            json={"fixedRouter": {"enabled": True, "agyCustomPath": str(fake_agy)}},
+        ).raise_for_status()
+
+        class FakeAgy:
+            def __init__(self, _log, **_kwargs):
+                pass
+
+            async def __call__(self, _purpose, _body):
+                calls.append("agy:agy-cli")
+                return {
+                    "content": json.dumps({"message": "AGY standard sẵn sàng"}),
+                    "provider": "agy",
+                    "model": "agy-cli",
+                }
+
+        monkeypatch.setattr(local_workspace, "AgyCliModel", FakeAgy)
+        monkeypatch.setattr(local_workspace, "DeepSeekModel", FakeDeepSeek)
+        with client.stream(
+            "POST",
+            "/api/assistant/chat/stream",
+            json={"text": "Chào AGY chuẩn", "consent": True, "timePreset": "standard"},
+        ) as resp_std:
+            assert resp_std.status_code == 200
+            raw_std = resp_std.read().decode("utf-8")
+        events_std = _parse_sse(raw_std)
+        done_std = next(ev[1] for ev in events_std if ev[0] == "done")
+        assert done_std["providerUsed"] == "agy"
+        assert done_std["modelUsed"] == "agy-cli"
+        assert "AGY standard" in done_std["message"]
+
+        # 3. Failover trước token đầu khi DeepSeek trả 429 -> chuyển sang gemini_flash
         calls.clear()
         fail_mode["deepseek"] = True
         with client.stream(
@@ -404,6 +439,94 @@ def test_strict_teacher_only_and_zero_hit_rag_on_approve_and_chat(tmp_path):
         assert "Quang hợp" not in json.dumps(sent_user["context"], ensure_ascii=False)
         assert "Không tìm thấy đoạn khớp" in captured[-1]["messages"][0]["content"]
 
+        # 4. strictTeacherOnly + chỉ chọn trang 2 + payload cố nhét trang 1 & catalog -> giữ trang 2
+        captured.clear()
+        exam_pages = dict(exam)
+        exam_pages["revision"] = 2
+        exam_pages["assistantSources"] = [doc_teacher_id]
+        exam_pages["assistantSourcePages"] = {doc_teacher_id: [2]}
+        exam_pages["docs"] = [
+            {
+                "id": doc_teacher_id,
+                "name": "Tai_lieu_2_trang.txt",
+                "version": 1,
+                "pages": [
+                    {"number": 1, "text": "BÍ MẬT TRANG 1 KHÔNG ĐƯỢC GỬI QUANG HỢP."},
+                    {"number": 2, "text": "NỘI DUNG TRANG 2 ĐƯỢC CHỌN VỀ HÔ HẤP TẾ BÀO."},
+                ],
+            },
+            exam["docs"][1],
+        ]
+        client.put(
+            "/api/kv",
+            json={"key": "state", "value": {"exams": [exam_pages], "prefs": []}},
+        ).raise_for_status()
+        r_p2 = client.post(
+            "/api/assistant/chat",
+            json={
+                "text": "Tóm tắt nội dung hô hấp tế bào ở trang đã chọn",
+                "examId": exam["id"],
+                "consent": True,
+                "teacherFilesOnly": True,
+                "context": [
+                    {
+                        "kind": "attached-source",
+                        "id": doc_teacher_id,
+                        "sourceId": doc_teacher_id,
+                        "pageNumber": 1,
+                        "excerpt": "BÍ MẬT TRANG 1 KHÔNG ĐƯỢC GỬI QUANG HỢP.",
+                    },
+                    {
+                        "kind": "attached-source",
+                        "id": doc_catalog_id,
+                        "sourceId": doc_catalog_id,
+                        "pageNumber": 1,
+                        "excerpt": "NGUỒN CATALOG BỊ CẤM TRONG CONTEXT",
+                    },
+                    {
+                        "kind": "attached-source",
+                        "id": doc_teacher_id,
+                        "sourceId": doc_teacher_id,
+                        "pageNumber": 2,
+                        "excerpt": "NỘI DUNG TRANG 2 ĐƯỢC CHỌN VỀ HÔ HẤP TẾ BÀO.",
+                    },
+                ],
+            },
+        )
+        assert r_p2.status_code == 200, r_p2.text
+        assert r_p2.json()["noMatchingSourceFragments"] is False
+        sent_p2 = json.dumps(
+            json.loads(captured[-1]["messages"][1]["content"])["context"], ensure_ascii=False
+        )
+        assert "NỘI DUNG TRANG 2" in sent_p2
+        assert "BÍ MẬT TRANG 1" not in sent_p2
+        assert "CATALOG BỊ CẤM" not in sent_p2
+
+        # 5. 1 tệp duy nhất gắn trực tiếp trong context + truy vấn lạc đề -> phải bật 0-hit cutoff
+        captured.clear()
+        r_single_zero = client.post(
+            "/api/assistant/chat",
+            json={
+                "text": "Chiến thắng Điện Biên Phủ năm 1954 diễn ra như thế nào?",
+                "examId": exam["id"],
+                "consent": True,
+                "teacherFilesOnly": True,
+                "context": [
+                    {
+                        "kind": "attached-source",
+                        "id": doc_teacher_id,
+                        "sourceId": doc_teacher_id,
+                        "pageNumber": 2,
+                        "excerpt": "Quang hợp tổng hợp tinh bột xảy ra tại lục lạp của cây xanh.",
+                    }
+                ],
+            },
+        )
+        assert r_single_zero.status_code == 200, r_single_zero.text
+        assert r_single_zero.json()["noMatchingSourceFragments"] is True
+        sent_single = json.loads(captured[-1]["messages"][1]["content"])
+        assert "lục lạp" not in json.dumps(sent_single["context"], ensure_ascii=False)
+
 
 def test_exam_exports_returns_url_and_is_draft(tmp_path):
     app = create_app(tmp_path)
@@ -424,15 +547,44 @@ def test_exam_exports_returns_url_and_is_draft(tmp_path):
         )
         assert r2.status_code == 200, r2.text
 
+        # Đề lỗi preflight thiếu đáp án: 409 nếu thiếu allowDraft, 200 & banner GV khi đồng ý nháp
+        bad_exam = _sample_exam(draft_exam["id"])
+        bad_exam["revision"] = 3
+        bad_exam["questions"][0]["answerKnown"] = False
+        r_block = client.post(
+            "/api/save-export",
+            json={"type": "exam", "exam": bad_exam, "format": "html", "teacher": True},
+        )
+        assert r_block.status_code == 409, r_block.text
+        assert r_block.json()["code"] == "export_preflight_blocked"
+        assert r_block.json()["requiresDraftConfirmation"] is True
+
+        r_allow = client.post(
+            "/api/save-export",
+            json={
+                "type": "exam",
+                "exam": bad_exam,
+                "format": "html",
+                "teacher": True,
+                "allowDraft": True,
+                "classLabel": "10A3",
+            },
+        )
+        assert r_allow.status_code == 200, r_allow.text
+        assert r_allow.json()["isDraft"] is True
+        exported_html = client.get(r_allow.json()["url"]).text
+        assert "BẢN NHÁP" in exported_html
+
         hist = client.get(f"/api/exams/{draft_exam['id']}/exports")
         assert hist.status_code == 200, hist.text
         rows = hist.json()["exports"]
-        assert len(rows) == 2
+        assert len(rows) == 3
         by_class = {row["classLabel"]: row for row in rows}
         assert by_class["10A1"]["isDraft"] is True
         assert by_class["10A1"]["url"] == by_class["10A1"]["downloadUrl"]
         assert by_class["10A2"]["isDraft"] is False
         assert by_class["10A2"]["url"] == by_class["10A2"]["downloadUrl"]
+        assert by_class["10A3"]["isDraft"] is True
 
 
 def test_team_workspace_exam_rooms_and_config_sync(tmp_path):

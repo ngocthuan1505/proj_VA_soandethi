@@ -220,7 +220,8 @@ def test_two_users_have_private_state_files_exports_and_admin_settings(team, tmp
             != 200
         )
         output = first.post(
-            "/api/save-export", json={"type": "exam", "format": "html", "exam": exam}
+            "/api/save-export",
+            json={"type": "exam", "format": "html", "exam": exam, "allowDraft": True},
         )
         output.raise_for_status()
         url = output.json()["url"]

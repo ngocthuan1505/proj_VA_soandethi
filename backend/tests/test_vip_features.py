@@ -188,19 +188,20 @@ def test_fast_chat_routes_deepseek_and_gemini_ahead_of_agy_and_returns_latency_m
         fast_chain = router_check.candidate_chain(M11_FLEXIBLE_CHAT, time_preset="fast")
         assert fast_chain.index("agy") < fast_chain.index("ollama")
 
-        # Tạm giữ deepseek_chat trên route HTTP tới khi Bước 2 nối local_workspace.py:1347
+        # 1. timePreset='standard' -> ưu tiên AGY đầu tiên với effort='low'
         r_std = client.post(
             "/api/assistant/chat",
             json={"text": "hello", "consent": True, "timePreset": "standard"},
         )
         assert r_std.status_code == 200, r_std.text
         data_std = r_std.json()
-        assert data_std["providerUsed"] == "deepseek_chat"
-        assert data_std["modelUsed"] == "deepseek-v4.1-flash"
-        assert data_std["attemptedProviders"] == ["deepseek_chat"]
+        assert data_std["providerUsed"] == "agy"
+        assert data_std["modelUsed"] == "agy-cli"
+        assert data_std["attemptedProviders"] == ["agy"]
         assert data_std["fallbackFrom"] is None
+        assert captured_efforts[-1] == "low"
         assert isinstance(data_std["latencyMs"], int) and data_std["latencyMs"] >= 0
-        assert order == ["deepseek:deepseek-v4.1-flash"]
+        assert order == ["agy"]
         assert "propose_questions" in captured_prompts[-1]
         assert "propose_patch" in captured_prompts[-1]
         assert "propose_matrix" in captured_prompts[-1]

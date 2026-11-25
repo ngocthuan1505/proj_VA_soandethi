@@ -733,7 +733,7 @@ def test_hybrid_retrieval_teacher_only_and_masked_status_gateway_url(tmp_path):
         chat_res = client.post(
             "/api/assistant/chat",
             json={
-                "text": "Hỏi về tài liệu",
+                "text": "Hỏi về tài liệu NGUON_RIENG_GV",
                 "consent": True,
                 "teacherFilesOnly": True,
                 "context": [

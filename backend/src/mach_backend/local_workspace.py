@@ -57,7 +57,7 @@ from mach_backend.exam_planning import (
 )
 from mach_backend.exam_rooms import install_exam_rooms, is_public_room_path
 from mach_backend.exam_spec_export import install_extended_exports
-from mach_backend.export_preflight import install_export_preflight
+from mach_backend.export_preflight import audit_export_preflight, install_export_preflight
 from mach_backend.gemini_model import GeminiModel, is_vertex_express_key
 from mach_backend.generation_submission import GenerationInputs
 from mach_backend.hybrid_retrieval import (
@@ -1249,27 +1249,91 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             request.teacherFilesOnly
             or (isinstance(exam_obj, dict) and exam_obj.get("strictTeacherOnly"))
         )
-        raw_context: list[JsonValue] = list(request.context)
-        if strict_teacher:
-            raw_context = [item for item in raw_context if not _is_non_teacher_source_item(item)]
+        exam_docs_by_id: dict[str, dict[str, Any]] = {}
+        selected_doc_ids: set[str] = set()
+        selected_pages_map: dict[str, set[int]] = {}
+        if isinstance(exam_obj, dict):
+            for doc in exam_obj.get("docs") or []:
+                if not isinstance(doc, dict):
+                    continue
+                for key_field in ("id", "sourceId"):
+                    val = str(doc.get(key_field) or "").strip()
+                    if val:
+                        exam_docs_by_id[val] = doc
+            raw_selected = exam_obj.get("assistantSources")
+            if isinstance(raw_selected, list):
+                selected_doc_ids = {str(s).strip() for s in raw_selected if str(s or "").strip()}
+            raw_page_map = exam_obj.get("assistantSourcePages")
+            if isinstance(raw_page_map, dict):
+                for raw_sid, raw_plist in raw_page_map.items():
+                    sid = str(raw_sid or "").strip()
+                    if not sid or not isinstance(raw_plist, (list, tuple, set)):
+                        continue
+                    parsed_pages = {
+                        int(p)
+                        for p in raw_plist
+                        if isinstance(p, (int, float, str)) and str(p).strip().isdigit()
+                    }
+                    if parsed_pages:
+                        selected_pages_map[sid] = parsed_pages
 
-        source_ctx: list[JsonValue] = [
-            item
-            for item in raw_context
-            if isinstance(item, dict)
-            and (
+        def _is_source_dict(item: Any) -> bool:
+            return isinstance(item, dict) and (
                 item.get("kind") in {"attached-source", "source-fragment"}
                 or any(k in item for k in ("excerpt", "sourceText", "passage"))
             )
-        ]
-        other_ctx: list[JsonValue] = [item for item in raw_context if item not in source_ctx]
+
+        raw_context: list[JsonValue] = list(request.context)
+        filtered_context: list[JsonValue] = []
+        had_requested_sources = False
+        for item in raw_context:
+            if _is_source_dict(item) or (
+                isinstance(item, dict)
+                and any(k in item for k in ("catalog", "sample", "sourceOrigin", "communityToken"))
+            ):
+                had_requested_sources = True
+                assert isinstance(item, dict)
+                sid = str(item.get("sourceId") or item.get("id") or "").strip()
+                server_doc = exam_docs_by_id.get(sid) if sid else None
+                if strict_teacher:
+                    if server_doc is not None and not is_teacher_owned_source(server_doc):
+                        continue
+                    if _is_non_teacher_source_item(item):
+                        continue
+                if selected_doc_ids and server_doc is not None and sid not in selected_doc_ids:
+                    continue
+                if sid and sid in selected_pages_map and _is_source_dict(item):
+                    allowed_pages = selected_pages_map[sid]
+                    raw_pno = item.get("pageNumber") or item.get("page_number") or item.get("page")
+                    if isinstance(raw_pno, (int, float, str)) and str(raw_pno).strip().isdigit():
+                        if int(raw_pno) not in allowed_pages:
+                            continue
+                    elif isinstance(server_doc, dict) and isinstance(server_doc.get("pages"), list):
+                        chosen_texts = [
+                            str(p.get("text") or "").strip()
+                            for p_idx, p in enumerate(server_doc["pages"], start=1)
+                            if isinstance(p, dict)
+                            and int(p.get("number") or p_idx) in allowed_pages
+                            and str(p.get("text") or "").strip()
+                        ]
+                        if not chosen_texts:
+                            continue
+                        copied_item = dict(item)
+                        copied_item["excerpt"] = "\n\n".join(chosen_texts)
+                        item = copied_item
+                filtered_context.append(item)
+            else:
+                filtered_context.append(item)
+
+        source_ctx: list[JsonValue] = [item for item in filtered_context if _is_source_dict(item)]
+        other_ctx: list[JsonValue] = [item for item in filtered_context if item not in source_ctx]
         no_matching_fragments = False
-        if len(source_ctx) > 1:
+        if source_ctx:
             source_ctx = list(rank_source_fragments(request.text, source_ctx, top_k=8))
             if not source_ctx:
                 no_matching_fragments = True
-        elif not source_ctx and isinstance(exam_obj, dict) and exam_obj.get("docs"):
-            allowed_docs: list[tuple[str, int]] = []
+        elif isinstance(exam_obj, dict) and exam_obj.get("docs") and not had_requested_sources:
+            allowed_docs: list[tuple[str, int] | tuple[str, int, int]] = []
             with store.connect() as db:
                 for doc in exam_obj.get("docs", []):
                     if not isinstance(doc, dict):
@@ -1278,6 +1342,8 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                         continue
                     doc_id = str(doc.get("id") or doc.get("sourceId") or "").strip()
                     if not doc_id:
+                        continue
+                    if selected_doc_ids and doc_id not in selected_doc_ids:
                         continue
                     version = int(doc.get("version") or 1)
                     title = str(doc.get("name") or doc.get("title") or "")
@@ -1299,7 +1365,14 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                     index_document_chunks(
                         db, owner_id, doc_id, pages_input, version=version, title=title
                     )
-                    allowed_docs.append((doc_id, version))
+                    allowed_pages = selected_pages_map.get(doc_id)
+                    if allowed_pages:
+                        for p in pages_input:
+                            pno = int(p["number"])
+                            if pno in allowed_pages:
+                                allowed_docs.append((doc_id, version, pno))
+                    else:
+                        allowed_docs.append((doc_id, version))
                 if allowed_docs:
                     hits = search_hybrid_chunks(db, owner_id, request.text, allowed_docs, top_k=6)
                     if hits:
@@ -1316,6 +1389,8 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                         ]
                     else:
                         no_matching_fragments = True
+        elif had_requested_sources and strict_teacher:
+            no_matching_fragments = True
 
         ordered_context: list[JsonValue] = [*other_ctx, *source_ctx]
         safe_context = _sanitize_chat_context(ordered_context)
@@ -1344,7 +1419,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         if request.fastChat is not None:
             use_fast_chat = bool(request.fastChat)
         else:
-            use_fast_chat = effective_preset in {"fast", "standard"}
+            use_fast_chat = effective_preset == "fast"
 
         if effective_preset == "extended" or (request.effort is not None and request.effort >= 3):
             agy_effort = "high"
@@ -1625,6 +1700,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                         {
                             "routedTask": "M11_FLEXIBLE_CHAT",
                             "provider": "fixture" if agent_call else "ollama",
+                            "model": fallback_name,
                             "strictTeacherOnly": prepared["strictTeacher"],
                             "noMatchingSourceFragments": prepared["noMatchingFragments"],
                         },
@@ -1783,7 +1859,17 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                                         model=target_model,
                                         max_tokens=2048,
                                     ):
-                                        if ev.get("type") == "delta" and ev.get("text"):
+                                        if ev.get("type") == "status" and ev.get("text"):
+                                            yield _sse_frame(
+                                                "status",
+                                                {
+                                                    "provider": family,
+                                                    "model": target_model,
+                                                    "phase": str(ev.get("phase") or "reasoning"),
+                                                    "text": _sanitize_output_text(str(ev["text"])),
+                                                },
+                                            )
+                                        elif ev.get("type") == "delta" and ev.get("text"):
                                             emitted_any = True
                                             piece = _sanitize_output_text(str(ev["text"]))
                                             chunks.append(piece)
@@ -1854,7 +1940,17 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                                         model=target_model,
                                         max_tokens=2048,
                                     ):
-                                        if ev.get("type") == "delta" and ev.get("text"):
+                                        if ev.get("type") == "status" and ev.get("text"):
+                                            yield _sse_frame(
+                                                "status",
+                                                {
+                                                    "provider": family,
+                                                    "model": target_model,
+                                                    "phase": str(ev.get("phase") or "reasoning"),
+                                                    "text": _sanitize_output_text(str(ev["text"])),
+                                                },
+                                            )
+                                        elif ev.get("type") == "delta" and ev.get("text"):
                                             emitted_any = True
                                             piece = _sanitize_output_text(str(ev["text"]))
                                             chunks.append(piece)
@@ -1902,9 +1998,30 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                                         ],
                                     },
                                 )
-                                resp = await AgyCliModel(log, **agy_kwargs)(
-                                    "chat", prepared["structuredBody"]
+                                agy_task = asyncio.create_task(
+                                    AgyCliModel(log, **agy_kwargs)(
+                                        "chat", prepared["structuredBody"]
+                                    )
                                 )
+                                try:
+                                    while not agy_task.done():
+                                        done_set, _ = await asyncio.wait({agy_task}, timeout=10.0)
+                                        if not agy_task.done() and not done_set:
+                                            yield _sse_frame(
+                                                "status",
+                                                {
+                                                    "provider": "agy",
+                                                    "model": used_model,
+                                                    "phase": "waiting",
+                                                    "elapsedMs": int(
+                                                        (time.perf_counter() - started) * 1000
+                                                    ),
+                                                },
+                                            )
+                                    resp = await agy_task
+                                finally:
+                                    if not agy_task.done():
+                                        agy_task.cancel()
                                 parsed_payload, text_msg = _parse_chat_payload(
                                     str(resp.get("content") or "")
                                 )
@@ -2075,6 +2192,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         filename: str,
         download_url: str,
         size_bytes: int,
+        is_draft_override: bool | None = None,
     ) -> None:
         if not isinstance(exam, dict):
             return
@@ -2083,7 +2201,15 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             return
         raw_rev = exam.get("revision")
         revision = int(raw_rev) if type(raw_rev) is int and raw_rev >= 0 else 0
-        is_draft = 1 if (exam.get("isDraft") is True or exam.get("saved") is False) else 0
+        is_draft = (
+            1
+            if (
+                is_draft_override
+                if is_draft_override is not None
+                else (exam.get("isDraft") is True or exam.get("saved") is False)
+            )
+            else 0
+        )
         clean_label = str(class_label or "").strip()[:80]
         with store.connect() as db:
             _ensure_exam_exports_schema(db)
@@ -2119,14 +2245,57 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         payload = await request.json()
         if not isinstance(payload, dict):
             raise HTTPException(400, "Dữ liệu xuất không hợp lệ.")
+        kind = payload.get("type")
+        exam_payload = payload.get("exam")
+        export_payload = payload
+        is_draft_export: bool | None = None
+        draft_warnings: list[dict[str, Any]] = []
+        if kind in {"exam", "variant-pack"} and isinstance(exam_payload, dict):
+            preflight = audit_export_preflight(exam_payload)
+            allow_draft = payload.get("allowDraft") is True
+            blocking_issues = [
+                w for w in (preflight.get("blockingIssues") or []) if isinstance(w, dict)
+            ]
+            stale_warnings = [
+                w
+                for w in (preflight.get("warnings") or [])
+                if isinstance(w, dict) and w.get("code") == "stale_quote_evidence"
+            ]
+            if not preflight.get("ready") and not allow_draft:
+                first_msg = (
+                    str(blocking_issues[0].get("message") or "").strip() if blocking_issues else ""
+                )
+                return JSONResponse(
+                    status_code=409,
+                    content={
+                        "code": "export_preflight_blocked",
+                        "error": first_msg
+                        or "Đề còn lỗi kiểm tra khổ in/đáp án. Xác nhận nếu vẫn muốn tải bản nháp.",
+                        "blockingIssues": blocking_issues,
+                        "warnings": list(preflight.get("warnings") or []),
+                        "requiresDraftConfirmation": True,
+                    },
+                )
+            is_draft_export = bool(
+                exam_payload.get("isDraft") is True
+                or exam_payload.get("saved") is False
+                or allow_draft
+                or not preflight.get("ready")
+                or stale_warnings
+            )
+            draft_warnings = [*blocking_issues, *stale_warnings]
+            export_payload = {
+                **payload,
+                "isDraft": is_draft_export,
+                "draftWarnings": draft_warnings,
+            }
         async with export_slot:
             result = await asyncio.to_thread(
-                export_file, payload, directory / "exports", str(request.base_url)
+                export_file, export_payload, directory / "exports", str(request.base_url)
             )
-        kind = payload.get("type")
         if kind in {"exam", "variant-pack"}:
             _record_exam_export(
-                exam=payload.get("exam"),
+                exam=exam_payload,
                 class_label=str(payload.get("classLabel") or payload.get("class_label") or ""),
                 audience="bundle"
                 if kind == "variant-pack"
@@ -2135,7 +2304,13 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                 filename=str(result["filename"]),
                 download_url=str(result["url"]),
                 size_bytes=int(result.get("bytes", 0)),
+                is_draft_override=is_draft_export,
             )
+            if isinstance(result, dict):
+                if is_draft_export is not None:
+                    result["isDraft"] = is_draft_export
+                if draft_warnings:
+                    result["preflightWarnings"] = draft_warnings
         return result
 
     @app.post("/api/exports/tnmaker-pack")

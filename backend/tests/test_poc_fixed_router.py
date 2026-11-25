@@ -644,8 +644,9 @@ def test_chat_endpoint_routes_via_fixed_task_router_agy_gemini_deepseek_ollama(
             assert fast_m11.index("agy") < fast_m11.index("ollama")
             r_std = client.post("/api/assistant/chat", json={"text": "Hỏi nhanh", "consent": True})
             assert r_std.status_code == 200, r_std.text
-            assert r_std.json()["providerUsed"] == "deepseek_chat"
-            assert order == ["gateway:deepseek-v4.1-flash"]
+            assert r_std.json()["providerUsed"] == "agy"
+            assert r_std.json()["modelUsed"] == "agy-cli"
+            assert order == ["agy"]
 
             # 1. Ở chế độ deep, ưu tiên AGY CLI đầu tiên
             order.clear()
