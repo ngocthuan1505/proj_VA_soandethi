@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 
 from mach_backend.exam_rooms import (
     ROOM_CODE_RE,
+    _safe_math_truncate,
     install_exam_rooms,
     is_public_room_path,
 )
@@ -729,10 +730,13 @@ def test_release_results_after_close_and_result_policies(tmp_path: Path) -> None
         headers=_student_headers(tok),
     ).json()
     assert after_close["resultsAvailable"] is True
+    assert after_close["resultPolicy"] == "score_only"
     assert after_close["autoScoreP100"] == 100
-    for q in after_close["questions"]:
-        assert "correctAnswer" not in q
-        assert "explanation" not in q
+    assert after_close["manualScoreP100"] == 0
+    assert after_close["totalScoreP100"] == 100
+    assert after_close["totalPointsP100"] == 550
+    assert after_close["gradingStatus"] == "needs_manual"
+    assert after_close["questions"] == []
 
     # Policy 'hidden' stays hidden even after room close
     client.patch(
@@ -981,3 +985,163 @@ def test_local_workspace_serves_exam_room_html_only_among_assets_html(tmp_path: 
     assert "/assets/exam-room.js" in room_html.text
     assert "student-room-app" in room_html.text
     assert client.get("/assets/team-login.html").status_code == 404
+
+
+def test_room_open_blocks_incomplete_or_disagreeing_exams_with_422(tmp_path: Path) -> None:
+    missing_ans_exam = _sample_exam()
+    missing_ans_exam["questions"][0]["answerKnown"] = False
+
+    disagree_exam = _sample_exam()
+    disagree_exam["questions"][0]["v"] = 1
+    disagree_exam["questions"][0]["check"] = {
+        "version": 1,
+        "status": "review",
+        "comparison": "disagrees",
+        "problems": ["Bất đồng: đáp án lưu C, phép tính cho A."],
+    }
+
+    problem_only_disagree_exam = _sample_exam()
+    problem_only_disagree_exam["questions"][0]["v"] = 2
+    problem_only_disagree_exam["questions"][0]["check"] = {
+        "version": 2,
+        "status": "review",
+        "problems": ["Bất đồng: đáp án lưu C, lời giải lại cho B."],
+    }
+
+    linked_mismatch_exam = _sample_exam()
+    linked_mismatch_exam["data"] = [
+        {"label": "Nhóm A", "value": 100},
+        {"label": "Nhóm B", "value": 300},
+    ]
+    linked_mismatch_exam["questions"][0]["dataLinked"] = True
+    linked_mismatch_exam["questions"][0]["rule"] = "max"
+    linked_mismatch_exam["questions"][0]["options"] = ["Nhóm A", "Nhóm B", "Nhóm C", "Nhóm D"]
+    linked_mismatch_exam["questions"][0]["answer"] = 0  # lệch với max=Nhóm B
+
+    # Cảnh báo "Chưa gắn tài liệu nguồn." hoặc check phiên bản cũ (v=1 != 2) KHÔNG được chặn.
+    allowed_warn_exam = _sample_exam()
+    allowed_warn_exam["questions"][0]["v"] = 2
+    allowed_warn_exam["questions"][0]["check"] = {
+        "version": 1,
+        "status": "review",
+        "comparison": "disagrees",
+        "problems": ["Bất đồng: lỗi từ bản cũ."],
+    }
+    allowed_warn_exam["questions"][1]["v"] = 1
+    allowed_warn_exam["questions"][1]["check"] = {
+        "version": 1,
+        "status": "review",
+        "problems": ["Chưa gắn tài liệu nguồn."],
+    }
+
+    harness = _build_test_harness(
+        tmp_path,
+        exams_by_owner={
+            "teacher-a": {
+                "exam-missing": missing_ans_exam,
+                "exam-disagree": disagree_exam,
+                "exam-prob-disagree": problem_only_disagree_exam,
+                "exam-linked-bad": linked_mismatch_exam,
+                "exam-warn-ok": allowed_warn_exam,
+            }
+        },
+    )
+    client: TestClient = harness["client"]
+
+    for eid in ("exam-missing", "exam-disagree", "exam-prob-disagree", "exam-linked-bad"):
+        resp = client.post(
+            "/api/rooms",
+            headers=_teacher_headers(),
+            json={"examId": eid, "status": "open"},
+        )
+        assert resp.status_code == 422, resp.text
+        detail = resp.json()["detail"]
+        assert detail["code"] == "room_preflight_failed"
+        assert len(detail["blockingIssues"]) >= 1
+
+    # Tạo bản nháp (status='draft') vẫn cho phép, nhưng PATCH chuyển sang 'open' phải bị chặn 422.
+    draft_resp = client.post(
+        "/api/rooms",
+        headers=_teacher_headers(),
+        json={"examId": "exam-disagree", "status": "draft"},
+    )
+    assert draft_resp.status_code == 201, draft_resp.text
+    draft_id = draft_resp.json()["id"]
+
+    open_patch = client.patch(
+        f"/api/rooms/{draft_id}",
+        headers=_teacher_headers(),
+        json={"status": "open"},
+    )
+    assert open_patch.status_code == 422
+    assert open_patch.json()["detail"]["code"] == "room_preflight_failed"
+
+    ok_resp = client.post(
+        "/api/rooms",
+        headers=_teacher_headers(),
+        json={"examId": "exam-warn-ok", "status": "open"},
+    )
+    assert ok_resp.status_code == 201, ok_resp.text
+
+
+def test_patch_room_preserves_attempt_counts_and_analytics_safe_math_truncate(
+    tmp_path: Path,
+) -> None:
+    # Kiểm tra unit helper _safe_math_truncate với $...$, $$...$$, công thức dài và \$
+    near_inline = ("a " * 78) + "$x^2 + 1 = 0$ sau đó thêm chữ"
+    trunc_inline = _safe_math_truncate(near_inline, 160)
+    assert trunc_inline.endswith("$x^2 + 1 = 0$")
+    assert trunc_inline.count("$") == 2
+
+    near_display = ("b " * 77) + "$$\\frac{a}{b} = 2$$ thêm văn bản dài"
+    trunc_display = _safe_math_truncate(near_display, 160)
+    assert trunc_display.endswith("$$\\frac{a}{b} = 2$$")
+
+    too_long_formula = ("c " * 75) + "$" + ("x + " * 40) + "1 = 0$ phần cuối"
+    trunc_long = _safe_math_truncate(too_long_formula, 160)
+    assert "$" not in trunc_long
+    assert len(trunc_long) <= 150
+
+    escaped_dollar = ("d " * 78) + r"\$ 5000 " + ("e " * 20)
+    trunc_esc = _safe_math_truncate(escaped_dollar, 160)
+    assert len(trunc_esc) == 160
+
+    exam = _sample_exam()
+    exam["questions"][0]["stem"] = near_inline
+    harness = _build_test_harness(
+        tmp_path,
+        exams_by_owner={"teacher-a": {"exam-demo-1": exam}},
+    )
+    client: TestClient = harness["client"]
+
+    room = client.post(
+        "/api/rooms",
+        headers=_teacher_headers(),
+        json={"examId": "exam-demo-1"},
+    ).json()
+    room_id = room["id"]
+    code = room["roomCode"]
+
+    # HS1 nộp bài (có câu tự luận -> needs_manual); HS2 đang làm (in_progress)
+    s1 = client.post(f"/api/rooms/public/{code}/join", json={"studentName": "An"}).json()
+    client.post(
+        f"/api/rooms/public/attempts/{s1['attemptId']}/submit",
+        headers=_student_headers(s1["attemptToken"]),
+        json={"answers": {"q-mcq-1": 2}},
+    ).raise_for_status()
+    client.post(f"/api/rooms/public/{code}/join", json={"studentName": "Bình"}).raise_for_status()
+
+    patched = client.patch(
+        f"/api/rooms/{room_id}",
+        headers=_teacher_headers(),
+        json={"title": "Phòng sau cập nhật", "allowLan": True},
+    )
+    assert patched.status_code == 200, patched.text
+    patched_room = patched.json()["room"]
+    assert patched_room["attemptCount"] == 2
+    assert patched_room["needsManualCount"] == 1
+
+    analytics = client.get(f"/api/rooms/{room_id}/analytics", headers=_teacher_headers()).json()
+    stem0 = analytics["questionStats"][0]["stem"]
+    assert stem0.endswith("$x^2 + 1 = 0$")
+    assert stem0.count("$") % 2 == 0

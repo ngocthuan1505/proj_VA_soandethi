@@ -25,14 +25,19 @@ from pypdf.errors import PyPdfError
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import saved_answer, saved_answer_label
 from mach_backend.export_assets import render_assets
+from mach_backend.export_preflight import audit_export_preflight
 from mach_backend.matrix_import import validate_raster
 from mach_backend.presentation import PRESENTATION_CONTROLS, PRESENTATION_CSS, PRESENTATION_SCRIPT
 from mach_backend.word_export import (
+    DRAFT_BANNER_TITLE,
     export_docx,
     export_inputs,
     field_document,
+    format_draft_warning,
     image_bytes,
+    match_question_warnings,
     math_parts,
+    normalize_draft_warnings,
     recipient_line,
     uses_table,
     watermark_image_bytes,
@@ -422,7 +427,16 @@ def field(text, document=None, runs=None):
     return rich(field_document(text, document, runs))
 
 
-def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
+def exam_html(
+    exam,
+    teacher,
+    origin,
+    figures=None,
+    *,
+    rendered_math=None,
+    is_draft: bool = False,
+    draft_warnings: list[dict[str, Any]] | None = None,
+):
     figures = list(figures or [])
     if (
         not isinstance(exam, dict)
@@ -430,8 +444,36 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         or any(not isinstance(question, dict) for question in exam["questions"])
     ):
         raise AIError("invalid_exam", "Đề xuất chưa hợp lệ.")
+    normalized_warnings = normalize_draft_warnings(draft_warnings)
+    show_draft_banner = bool(teacher) and (bool(is_draft) or bool(normalized_warnings))
+    banner_html = ""
+    if show_draft_banner:
+        if normalized_warnings:
+            items_html_parts: list[str] = []
+            for w in normalized_warnings:
+                raw_code = str(w.get("code") or "").strip()
+                w_attr = (
+                    f' data-warning-code="{html.escape(raw_code, quote=True)}"' if raw_code else ""
+                )
+                items_html_parts.append(f"<li{w_attr}>{plain(format_draft_warning(w))}</li>")
+            items_html = "".join(items_html_parts)
+            summary_html = (
+                f"<p>Phát hiện {len(normalized_warnings)} cảnh báo cần kiểm tra trước khi phát:</p>"
+                f"<ul>{items_html}</ul>"
+            )
+        else:
+            summary_html = (
+                "<p>Đề thi đang ở trạng thái bản nháp; cần rà soát nội dung và đáp án "
+                "trước khi phát.</p>"
+            )
+        banner_html = (
+            '<div class="draft-banner" role="alert">'
+            f'<p class="draft-banner-title">{plain(DRAFT_BANNER_TITLE)}</p>'
+            f"{summary_html}</div>"
+        )
     body = (
-        f"<h1>{inline_html(exam.get('title'))}</h1><p>{inline_html(exam.get('school'))}</p>"
+        banner_html
+        + f"<h1>{inline_html(exam.get('title'))}</h1><p>{inline_html(exam.get('school'))}</p>"
         f"<p>Môn {plain(exam.get('subject'))} · Lớp {plain(exam.get('grade'))}"
         f" · {plain(exam.get('minutes'))} phút</p>"
     )
@@ -573,6 +615,15 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
                 )
                 + "</small>"
             )
+            if show_draft_banner:
+                for warn in match_question_warnings(q, i + 1, normalized_warnings):
+                    w_code = html.escape(str(warn.get("code") or "").strip(), quote=True)
+                    code_attr = f' data-warning-code="{w_code}"' if w_code else ""
+                    body += (
+                        f'<div class="question-draft-note"{code_attr}>'
+                        f"<strong>Lưu ý rà soát:</strong> {plain(format_draft_warning(warn))}"
+                        "</div>"
+                    )
         body += "</section>"
     origin = html.escape(origin.rstrip("/"), quote=True)
     math_css, math_script = "", ""
@@ -658,6 +709,16 @@ def exam_html(exam, teacher, origin, figures=None, *, rendered_math=None):
         ".page-break{break-before:page}"
         "@media print{body{margin:0}section,ol,ul{break-inside:avoid}"
         ".rubric-title{break-after:avoid}}"
+        + (
+            ".draft-banner{border:2px solid #b45309;background:#fffbeb;color:#78350f;"
+            "padding:10px 14px;margin:12px 0;border-radius:6px}"
+            ".draft-banner-title{font-weight:700;margin:0 0 6px}"
+            ".draft-banner ul{margin:4px 0 0 18px;padding:0}"
+            ".question-draft-note{border-left:3px solid #d97706;background:#fffbeb;"
+            "color:#78350f;padding:6px 10px;margin:8px 0;font-size:11pt}"
+            if show_draft_banner
+            else ""
+        )
         + (PRESENTATION_CSS if presenting else "")
         + "</style><body>"
         + watermark_html
@@ -698,11 +759,102 @@ _RELATIVE_FORWARD_REF = re.compile(
     r"\b(?:câu|bài)\s*(?:sau|dưới)\b",
     re.IGNORECASE,
 )
+_PLURAL_RELATIVE_BACKWARD_REF = re.compile(
+    r"\b(?:các|những|tất\s+cả(?:\s+(?:các|những))?)\s+(?:câu|bài)\s*"
+    r"(?:trước|trên|kế\s*trước|vừa\s*rồi)\b",
+    re.IGNORECASE,
+)
+_PLURAL_RELATIVE_FORWARD_REF = re.compile(
+    r"\b(?:các|những|tất\s+cả(?:\s+(?:các|những))?)\s+(?:câu|bài)\s*(?:sau|dưới)\b",
+    re.IGNORECASE,
+)
 _RELATIVE_QUESTION_REF = re.compile(
     r"\b(?:câu|bài)\s*(?:trước|sau|trên|dưới|kế\s*trước|vừa\s*rồi)\b",
     re.IGNORECASE,
 )
 _OPTION_LABELS = ("A", "B", "C", "D")
+
+
+def _extract_rich_doc_text(node: Any, depth: int = 0) -> str:
+    if not isinstance(node, dict) or depth > 64:
+        return ""
+    kind = node.get("type")
+    if kind == "text":
+        text = node.get("text")
+        return text if isinstance(text, str) else ""
+    if kind == "hardBreak":
+        return "\n"
+    if kind == "mathInline":
+        attrs = node.get("attrs")
+        if isinstance(attrs, dict):
+            latex = attrs.get("latex")
+            if isinstance(latex, str) and latex:
+                return f"${latex}$"
+        return ""
+    children = node.get("content")
+    if not isinstance(children, list):
+        return ""
+    parts = [_extract_rich_doc_text(child, depth + 1) for child in children]
+    sep = (
+        " | "
+        if kind == "tableRow"
+        else (
+            "\n"
+            if kind
+            in {
+                "doc",
+                "bulletList",
+                "orderedList",
+                "listItem",
+                "blockquote",
+                "table",
+                "tableCell",
+                "tableHeader",
+            }
+            else ""
+        )
+    )
+    return sep.join(part for part in parts if part)
+
+
+def _question_reference_texts(question: Any) -> list[str]:
+    """Thu thập văn bản câu hỏi phục vụ phát hiện tham chiếu vị trí khi trộn mã đề."""
+    if not isinstance(question, dict):
+        return []
+    texts: list[str] = []
+    for key in ("stem", "answerText", "explanation", "solution"):
+        val = question.get(key)
+        if isinstance(val, str) and val:
+            texts.append(val)
+    options = question.get("options")
+    if isinstance(options, list):
+        for opt in options:
+            if isinstance(opt, str) and opt:
+                texts.append(opt)
+    for doc_key in ("richDoc", "explanationDoc"):
+        doc_text = _extract_rich_doc_text(question.get(doc_key))
+        if doc_text:
+            texts.append(doc_text)
+    option_docs = question.get("optionDocs")
+    if isinstance(option_docs, list):
+        for doc in option_docs:
+            doc_text = _extract_rich_doc_text(doc)
+            if doc_text:
+                texts.append(doc_text)
+    rubric = question.get("rubric")
+    if isinstance(rubric, list):
+        for step in rubric:
+            if isinstance(step, str) and step:
+                texts.append(step)
+            elif isinstance(step, dict):
+                for rkey in ("text", "criterion", "content", "step"):
+                    rval = step.get(rkey)
+                    if isinstance(rval, str) and rval:
+                        texts.append(rval)
+                rdoc_text = _extract_rich_doc_text(step.get("richDoc"))
+                if rdoc_text:
+                    texts.append(rdoc_text)
+    return texts
 
 
 def _normalize_block_token(value):
@@ -840,6 +992,7 @@ def _validate_relative_question_refs(
     mode = plan["mode"]
     positions = plan["positions"]
     units = plan["units"]
+    unit_of: dict[int, int] = {}
     if mode in ("standalone", "intra_block"):
         unlocked = [i for i in positions if questions[i].get("lockPosition") is not True]
         moving = set(unlocked) if len(unlocked) >= 2 else set()
@@ -856,35 +1009,47 @@ def _validate_relative_question_refs(
             moving = {idx for unit in unlocked_units for idx in unit}
         else:
             moving = set()
+        for unit_idx, unit in enumerate(units):
+            for idx in unit:
+                unit_of[idx] = unit_idx
 
     if not moving:
         return
 
+    def _pair_broken(a: int, b: int) -> bool:
+        if a not in moving and b not in moving:
+            return False
+        if a in moving and b in moving:
+            return not (mode == "multi_block" and a in unit_of and unit_of.get(a) == unit_of.get(b))
+        return True
+
     for idx in range(len(questions)):
-        q = questions[idx]
-        texts = [
-            text
-            for text in (
-                q.get("stem"),
-                *(q["options"] if isinstance(q.get("options"), list) else []),
-                q.get("explanation"),
-            )
-            if isinstance(text, str)
-        ]
+        texts = _question_reference_texts(questions[idx])
         if not texts:
             continue
+        has_plural_backward = any(_PLURAL_RELATIVE_BACKWARD_REF.search(text) for text in texts)
+        has_plural_forward = any(_PLURAL_RELATIVE_FORWARD_REF.search(text) for text in texts)
         has_backward = any(_RELATIVE_BACKWARD_REF.search(text) for text in texts)
         has_forward = any(_RELATIVE_FORWARD_REF.search(text) for text in texts)
-        if not has_backward and not has_forward:
+        if not (has_plural_backward or has_plural_forward or has_backward or has_forward):
             continue
-        if has_backward and (any(m < idx for m in moving) or idx in moving):
-            raise AIError(
-                "invalid_variant",
-                f"Câu {idx + 1} có tham chiếu tương đối tới câu liền kề trước/sau trong vùng trộn. "
-                "Hãy giữ cố định hoặc bỏ chọn câu liên quan.",
-                http_status=400,
-            )
-        if has_forward and (any(m > idx for m in moving) or idx in moving):
+
+        broken = False
+        if has_plural_backward and (any(m < idx for m in moving) or idx in moving):
+            broken = True
+        if has_plural_forward and (any(m > idx for m in moving) or idx in moving):
+            broken = True
+        if has_backward and (
+            (idx == 0 and idx in moving) or (idx > 0 and _pair_broken(idx - 1, idx))
+        ):
+            broken = True
+        if has_forward and (
+            (idx == len(questions) - 1 and idx in moving)
+            or (idx + 1 < len(questions) and _pair_broken(idx, idx + 1))
+        ):
+            broken = True
+
+        if broken:
             raise AIError(
                 "invalid_variant",
                 f"Câu {idx + 1} có tham chiếu tương đối tới câu liền kề trước/sau trong vùng trộn. "
@@ -906,12 +1071,7 @@ def _plan_variant_units(questions, ids):
     if any(
         selected_numbers.intersection(_QUESTION_REFERENCE.findall(text))
         for question in questions
-        for text in (
-            question.get("stem"),
-            *(question["options"] if isinstance(question.get("options"), list) else []),
-            question.get("explanation"),
-        )
-        if isinstance(text, str)
+        for text in _question_reference_texts(question)
     ):
         raise AIError(
             "invalid_variant",
@@ -1494,9 +1654,33 @@ def export_variant_pack(payload, directory, origin):
     return {"filename": name, "bytes": target.stat().st_size, "url": "/api/exports/" + name}
 
 
+_DRAFT_PREFLIGHT_CODES = frozenset(
+    {
+        "linked_data_explanation_stale",
+        "linked_data_mismatch",
+        "stale_quote_evidence",
+    }
+)
+
+
+def _collect_uc8_uc9_draft_warnings(exam: dict[str, Any]) -> list[dict[str, Any]]:
+    try:
+        report = audit_export_preflight(exam)
+    except AIError:
+        return []
+    return [
+        dict(item)
+        for item in (*report.get("blockingIssues", []), *report.get("warnings", []))
+        if isinstance(item, dict) and item.get("code") in _DRAFT_PREFLIGHT_CODES
+    ]
+
+
 def export_file(payload, directory, origin):
     kind = payload.get("type")
     format_ = payload.get("format", "html")
+    is_teacher = payload.get("teacher") is True
+    is_draft = False
+    draft_warnings: list[dict[str, Any]] | None = None
     if kind == "variant-pack":
         return export_variant_pack(payload, directory, origin)
     if kind == "exam":
@@ -1507,17 +1691,36 @@ def export_file(payload, directory, origin):
             raise AIError("invalid_exam", "Đề cần danh sách câu để xuất.")
         if "variant" in payload:
             exam = exam_variant(exam, payload["variant"])
+        raw_is_draft = payload.get("isDraft") if "isDraft" in payload else payload.get("is_draft")
+        is_draft = (
+            bool(raw_is_draft)
+            if raw_is_draft is not None
+            else bool(exam.get("isDraft") is True or exam.get("saved") is False)
+        )
+        raw_warnings = (
+            payload.get("draftWarnings")
+            if "draftWarnings" in payload
+            else payload.get("draft_warnings")
+        )
+        if raw_warnings is None and isinstance(exam.get("draftWarnings"), list):
+            raw_warnings = exam.get("draftWarnings")
+        if raw_warnings is not None:
+            draft_warnings = normalize_draft_warnings(raw_warnings)
+        elif is_teacher:
+            draft_warnings = _collect_uc8_uc9_draft_warnings(exam)
         rendered = {"figures": [], "math": {}}
         if format_ != "docx":
-            formulas, figures = export_inputs(exam, payload.get("teacher") is True)
+            formulas, figures = export_inputs(exam, is_teacher)
             rendered = render_assets(formulas, figures, chrome_path())
         content = (
             exam_html(
                 exam,
-                payload.get("teacher") is True,
+                is_teacher,
                 Path(__file__).resolve().parents[3].as_uri() if format_ == "pdf" else origin,
                 rendered["figures"],
                 rendered_math=rendered["math"] if format_ == "html" else None,
+                is_draft=is_draft,
+                draft_warnings=draft_warnings,
             )
             if format_ != "docx"
             else ""
@@ -1602,7 +1805,15 @@ def export_file(payload, directory, origin):
         if not target.is_file() or not target.read_bytes().startswith(b"%PDF-"):
             raise AIError("export_failed", "Chưa tạo được PDF. Bản đề được giữ nguyên.")
     elif format_ == "docx":
-        target.write_bytes(export_docx(exam, payload.get("teacher") is True, chrome_path()))
+        target.write_bytes(
+            export_docx(
+                exam,
+                is_teacher,
+                chrome_path(),
+                is_draft=is_draft,
+                draft_warnings=draft_warnings,
+            )
+        )
     else:
         raise AIError("unsupported_export", "Định dạng xuất chưa được hỗ trợ.")
     return {"filename": name, "bytes": target.stat().st_size, "url": "/api/exports/" + name}

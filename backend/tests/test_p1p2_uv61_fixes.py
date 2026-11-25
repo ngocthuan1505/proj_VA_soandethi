@@ -34,7 +34,12 @@ from mach_backend.ai_sources import (
 )
 from mach_backend.exam_spec_export import validate_and_normalize_answer_key
 from mach_backend.export_preflight import audit_export_preflight, data_snapshot_hash
-from mach_backend.local_documents import exam_variant
+from mach_backend.local_documents import (
+    exam_html,
+    exam_variant,
+    export_file,
+    shuffle_variant_question,
+)
 from mach_backend.local_workspace import create_app
 from mach_backend.matrix_import import (
     MAX_MATRIX_QUESTIONS as MATRIX_IMPORT_MAX,
@@ -735,6 +740,151 @@ def test_variant_relative_refs_scan_all_questions_fields_and_directionality():
     assert err_half.value.code == "invalid_variant"
 
 
+def test_m07_04_rubric_rich_docs_distant_region_and_multi_block_relative_refs():
+    def q(qid: str, stem: str = "Hỏi", **extra):
+        return {
+            "id": qid,
+            "type": "mcq",
+            "stem": stem,
+            "options": ["1", "2", "3", "4"],
+            "answer": 0,
+            "explanation": "",
+            **extra,
+        }
+
+    # 1. Quét cả rubric (text/criterion/content/step/richDoc), answerText, solution, richDoc.
+    rubric_num_exam = {
+        "title": "Tham chiếu trong barem",
+        "questions": [
+            q("q1", "Hỏi một"),
+            q("q2", "Hỏi hai"),
+            {
+                "id": "q3",
+                "type": "essay",
+                "stem": "Bài tự luận",
+                "rubric": [{"criterion": "Dựa vào kết quả câu 1", "points": 1.0}],
+            },
+        ],
+    }
+    with pytest.raises(AIError) as err_rub_num:
+        exam_variant(rubric_num_exam, {"questionIds": ["q1", "q2"], "offset": 1})
+    assert err_rub_num.value.code == "invalid_variant"
+
+    rubric_rel_exam = {
+        "title": "Tham chiếu tương đối trong richDoc barem",
+        "questions": [
+            q("q1", "Hỏi một"),
+            q("q2", "Hỏi hai"),
+            {
+                "id": "q3",
+                "type": "essay",
+                "stem": "Bài tự luận",
+                "rubric": [
+                    {
+                        "step": "Ý một",
+                        "richDoc": {
+                            "type": "doc",
+                            "content": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [{"type": "text", "text": "Từ câu trên suy ra."}],
+                                }
+                            ],
+                        },
+                        "points": 1.0,
+                    }
+                ],
+            },
+        ],
+    }
+    with pytest.raises(AIError) as err_rub_rel:
+        exam_variant(rubric_rel_exam, {"questionIds": ["q1", "q2"], "offset": 1})
+    assert err_rub_rel.value.code == "invalid_variant"
+
+    # shuffle_variant_question KHÔNG quét rubric để tránh khóa nhầm phương án A/B/C/D.
+    mcq_with_rubric = q(
+        "q-shuf",
+        "Chọn đáp án đúng:",
+        rubric=[{"text": "Chọn A được 0.25đ; hai ý đầu giải thích rõ.", "points": 0.25}],
+    )
+    shuffled_q = shuffle_variant_question(mcq_with_rubric, 1)
+    assert shuffled_q["options"] != mcq_with_rubric["options"]
+
+    # 2. Vùng trộn ở xa không làm vỡ cặp (idx-1, idx) hoặc (idx, idx+1) -> cho phép!
+    ok_distant_tail = exam_variant(
+        {
+            "title": "Vùng trộn xa đuôi",
+            "questions": [
+                q("q1", "Theo câu sau để tính."),
+                q("q2", "Hỏi hai"),
+                q("q3", "Hỏi ba"),
+                q("q4", "Hỏi bốn"),
+            ],
+        },
+        {"questionIds": ["q3", "q4"], "offset": 1},
+    )
+    assert [item["id"] for item in ok_distant_tail["questions"]] == ["q1", "q2", "q4", "q3"]
+
+    ok_distant_head = exam_variant(
+        {
+            "title": "Vùng trộn xa đầu",
+            "questions": [
+                q("q1", "Hỏi một"),
+                q("q2", "Hỏi hai"),
+                q("q3", "Hỏi ba"),
+                q("q4", "Suy ra từ câu trước."),
+            ],
+        },
+        {"questionIds": ["q1", "q2"], "offset": 1},
+    )
+    assert [item["id"] for item in ok_distant_head["questions"]] == ["q2", "q1", "q3", "q4"]
+
+    # 3. Tham chiếu số nhiều ("các/những/tất cả câu trên|trước|sau|dưới") kiểm toàn tiền/hậu tố.
+    plural_exam = {
+        "title": "Số nhiều",
+        "questions": [
+            q("q1", "Hỏi một"),
+            q("q2", "Hỏi hai"),
+            q("q3", "Hỏi ba"),
+            q("q4", "Tổng hợp tất cả các câu trên."),
+        ],
+    }
+    with pytest.raises(AIError) as err_plural:
+        exam_variant(plural_exam, {"questionIds": ["q1", "q2"], "offset": 1})
+    assert err_plural.value.code == "invalid_variant"
+
+    # 4. multi_block giữ nguyên cặp liền kề trong cùng khối ngữ liệu, nhưng chặn qua ranh giới khối.
+    multi_block_ok = {
+        "title": "Đọc hiểu 2 khối",
+        "questions": [
+            q("p1a", "Đoạn thứ nhất ý đầu", passageId="p1"),
+            q("p1b", "Dựa vào câu trên của đoạn thứ nhất", passageId="p1"),
+            q("p2a", "Đoạn thứ hai ý đầu", passageId="p2"),
+            q("p2b", "Đoạn thứ hai ý sau", passageId="p2"),
+        ],
+    }
+    swapped_blocks = exam_variant(
+        multi_block_ok, {"questionIds": ["p1a", "p1b", "p2a", "p2b"], "offset": 1}
+    )
+    assert [item["id"] for item in swapped_blocks["questions"]] == ["p2a", "p2b", "p1a", "p1b"]
+
+    multi_block_cross_err = {
+        "title": "Đọc hiểu lệch khối",
+        "questions": [
+            q("p1a", "Đoạn thứ nhất ý đầu", passageId="p1"),
+            q("p1b", "Đoạn thứ nhất ý tiếp", passageId="p1"),
+            q("p2a", "Tiếp nối câu trước", passageId="p2"),
+            q("p2b", "Đoạn thứ hai ý tiếp", passageId="p2"),
+        ],
+    }
+    with pytest.raises(AIError) as err_cross:
+        exam_variant(
+            multi_block_cross_err,
+            {"questionIds": ["p1a", "p1b", "p2a", "p2b"], "offset": 1},
+        )
+    assert err_cross.value.code == "invalid_variant"
+
+
 # ---------------------------------------------------------------------------
 # 4. P1-4: Empty Selected Option, QR V2_indexed & Multi-sheet build_xlsx_workbook
 # ---------------------------------------------------------------------------
@@ -1114,6 +1264,141 @@ def test_uc8_linked_data_and_uc9_stale_evidence_preflight():
     assert len(stale_warns) == 1
     assert stale_warns[0]["requiresReverification"] is True
     assert rep_uc9["needsAttention"] is True
+
+    # UC9 mở rộng: đổi docId khác, chuyển bản nhập tay, lệch questionVersion, và quote thay đổi.
+    uc9_doc_changed = {
+        **clean_exam,
+        "questions": [
+            {
+                **clean_exam["questions"][0],
+                "source": {"docId": "doc-2", "page": 1},
+            },
+            clean_exam["questions"][1],
+        ],
+    }
+    assert any(
+        w["code"] == "stale_quote_evidence"
+        for w in audit_export_preflight(uc9_doc_changed)["warnings"]
+    )
+
+    uc9_manual = {
+        **clean_exam,
+        "questions": [
+            {
+                **clean_exam["questions"][0],
+                "source": {"location": "Bản nhập tay"},
+            },
+            clean_exam["questions"][1],
+        ],
+    }
+    assert any(
+        w["code"] == "stale_quote_evidence" for w in audit_export_preflight(uc9_manual)["warnings"]
+    )
+
+    uc9_ver_mismatch = {
+        **clean_exam,
+        "questions": [
+            {
+                **clean_exam["questions"][0],
+                "v": 2,
+                "evidence": [{**clean_exam["questions"][0]["evidence"][0], "questionVersion": 1}],
+            },
+            clean_exam["questions"][1],
+        ],
+    }
+    assert any(
+        w["code"] == "stale_quote_evidence"
+        for w in audit_export_preflight(uc9_ver_mismatch)["warnings"]
+    )
+
+    uc9_quote_stale = {
+        **clean_exam,
+        "quote": {"text": "Ngữ liệu mới đã sửa khác trước."},
+        "questions": [
+            {
+                **clean_exam["questions"][0],
+                "quote": True,
+            },
+            clean_exam["questions"][1],
+        ],
+    }
+    assert any(
+        w["code"] == "stale_quote_evidence"
+        for w in audit_export_preflight(uc9_quote_stale)["warnings"]
+    )
+
+
+def test_uc8_uc9_draft_banner_on_teacher_html_and_docx_but_not_student(tmp_path):
+    current_data = [{"label": "A", "value": 100}, {"label": "B", "value": 300}]
+    stale_exam = {
+        "id": "exam-draft-1",
+        "title": "Đề có cảnh báo UC8 UC9",
+        "subject": "Toán",
+        "grade": "9",
+        "minutes": 45,
+        "data": current_data,
+        "quote": {"text": "Ngữ liệu mới đã thay đổi."},
+        "questions": [
+            {
+                "id": "q1",
+                "v": 2,
+                "type": "mcq",
+                "points": 5.0,
+                "rule": "max",
+                "dataLinked": True,
+                "dataSnapshotHash": "old-hash",
+                "stem": "Mục nào lớn nhất?",
+                "options": ["A", "B", "C", "D"],
+                "answer": 1,
+                "explanation": "Giá trị cũ là 240.",
+                "approval": {"version": 2, "status": "approved"},
+            },
+            {
+                "id": "q2",
+                "v": 2,
+                "type": "mcq",
+                "points": 5.0,
+                "quote": True,
+                "stem": "Dựa vào ngữ liệu:",
+                "options": ["1", "2", "3", "4"],
+                "answer": 0,
+                "source": {"docId": "doc-1", "page": 1},
+                "evidence": [
+                    {
+                        "sourceId": "doc-1",
+                        "questionVersion": 1,
+                        "locator": {"kind": "page", "index": 1},
+                        "quote": "Trích đoạn cũ không còn trong ngữ liệu",
+                    }
+                ],
+                "approval": {"version": 2, "status": "approved"},
+            },
+        ],
+    }
+
+    # export_file tự động nhặt cảnh báo UC8/UC9 trên bản GV và chèn banner + ghi chú từng câu.
+    html_res = export_file(
+        {"type": "exam", "format": "html", "teacher": True, "exam": stale_exam},
+        tmp_path,
+        "http://localhost",
+    )
+    html_text = (tmp_path / html_res["filename"]).read_text(encoding="utf-8")
+    assert "BẢN NHÁP — CẦN RÀ SOÁT TRƯỚC KHI PHÁT" in html_text
+    assert 'data-warning-code="linked_data_explanation_stale"' in html_text
+    assert 'data-warning-code="stale_quote_evidence"' in html_text
+    assert "question-draft-note" in html_text
+
+    # Xuất trực tiếp exam_html bản học sinh dù is_draft=True vẫn không được lộ banner/cảnh báo GV.
+    student_html = exam_html(
+        stale_exam,
+        False,
+        "http://localhost",
+        [{"svg": "<svg/>"}],
+        is_draft=True,
+        draft_warnings=[{"code": "stale_quote_evidence", "questionId": "q2", "message": "Ẩn"}],
+    )
+    assert "BẢN NHÁP — CẦN RÀ SOÁT TRƯỚC KHI PHÁT" not in student_html
+    assert "question-draft-note" not in student_html
 
 
 # ---------------------------------------------------------------------------

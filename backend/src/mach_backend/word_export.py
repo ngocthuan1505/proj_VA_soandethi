@@ -32,6 +32,51 @@ ALIGN = {
     "right": WD_ALIGN_PARAGRAPH.RIGHT,
     "justify": WD_ALIGN_PARAGRAPH.JUSTIFY,
 }
+DRAFT_BANNER_TITLE = "BẢN NHÁP — CẦN RÀ SOÁT TRƯỚC KHI PHÁT"
+DRAFT_WARNING_CODE_LABELS: dict[str, str] = {
+    "linked_data_explanation_stale": "Số liệu lời giải liên kết Bảng 1 cần cập nhật",
+    "linked_data_mismatch": "Đáp án hoặc phương án lệch dữ kiện Bảng 1",
+    "stale_quote_evidence": "Trích dẫn nguồn cần rà lại",
+}
+
+
+def normalize_draft_warnings(
+    draft_warnings: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    if not isinstance(draft_warnings, list):
+        return []
+    return [dict(item) for item in draft_warnings if isinstance(item, dict)]
+
+
+def format_draft_warning(item: dict[str, Any]) -> str:
+    code = str(item.get("code") or "").strip()
+    label = DRAFT_WARNING_CODE_LABELS.get(code, "")
+    raw_msg = str(item.get("message") or "").strip()
+    ordinal = item.get("ordinal")
+    prefix = f"Câu {ordinal}: " if type(ordinal) is int and ordinal >= 1 else ""
+    if raw_msg:
+        return f"{label} — {raw_msg}" if label else raw_msg
+    if label:
+        return f"{prefix}{label}."
+    return f"{prefix}Cần rà soát nội dung trước khi phát."
+
+
+def match_question_warnings(
+    question: dict[str, Any],
+    ordinal: int,
+    draft_warnings: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    qid = str(question.get("id") or "").strip()
+    matched: list[dict[str, Any]] = []
+    for item in draft_warnings:
+        w_qid = str(item.get("questionId") or "").strip()
+        w_ord = item.get("ordinal")
+        if qid and w_qid:
+            if w_qid == qid:
+                matched.append(item)
+        elif type(w_ord) is int and w_ord == ordinal:
+            matched.append(item)
+    return matched
 
 
 def recipient_line(teacher):
@@ -207,8 +252,17 @@ def export_inputs(exam, teacher):
 
 
 class WordWriter:
-    def __init__(self, exam, teacher, chrome):
+    def __init__(
+        self,
+        exam,
+        teacher,
+        chrome,
+        is_draft: bool = False,
+        draft_warnings: list[dict[str, Any]] | None = None,
+    ):
         self.exam, self.teacher = exam, teacher
+        self.is_draft = bool(is_draft)
+        self.draft_warnings = normalize_draft_warnings(draft_warnings)
         formulas, figures = export_inputs(exam, teacher)
         self.assets = render_assets(formulas, figures, chrome)
         self.figure_at = 0
@@ -605,8 +659,43 @@ class WordWriter:
             if len(cell._tc) == 0 or cell._tc[-1].tag != qn("w:p"):
                 cell.add_paragraph()
 
+    def _add_draft_paragraph(self, prefix: str, body: str = "") -> None:
+        p = self.doc.add_paragraph()
+        p_pr = p._p.get_or_add_pPr()
+        p_bdr = parse_xml(
+            '<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            '<w:left w:val="single" w:sz="18" w:space="6" w:color="D97706"/>'
+            "</w:pBdr>"
+        )
+        shd = parse_xml(
+            '<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+            'w:val="clear" w:color="auto" w:fill="FFFBEB"/>'
+        )
+        p_pr.append(p_bdr)
+        p_pr.append(shd)
+        r_head = p.add_run(prefix)
+        r_head.bold = True
+        r_head.font.color.rgb = RGBColor(146, 64, 14)
+        if body:
+            r_body = p.add_run(body)
+            r_body.font.color.rgb = RGBColor(120, 53, 15)
+
     def write(self):
         e = self.exam
+        if bool(self.teacher) and (self.is_draft or self.draft_warnings):
+            self._add_draft_paragraph(DRAFT_BANNER_TITLE)
+            if self.draft_warnings:
+                self._add_draft_paragraph(
+                    f"Tóm tắt cảnh báo ({len(self.draft_warnings)} mục):",
+                    " rà soát trước khi phát cho học sinh.",
+                )
+                for item in self.draft_warnings:
+                    self._add_draft_paragraph("• ", format_draft_warning(item))
+            else:
+                self._add_draft_paragraph(
+                    "Ghi chú: ",
+                    "Đề thi đang ở trạng thái bản nháp; cần kiểm tra lại trước khi phát.",
+                )
         self.doc.add_paragraph(str(e.get("school", ""))).alignment = WD_ALIGN_PARAGRAPH.CENTER
         self.doc.add_paragraph(
             str(e.get("title", "Đề thi")), style="Title"
@@ -759,6 +848,8 @@ class WordWriter:
                             cell.width = Mm(width)
                 for evidence in q.get("evidence", []):
                     self.field(evidence.get("quote", ""))
+                for warn in match_question_warnings(q, i, self.draft_warnings):
+                    self._add_draft_paragraph("Lưu ý rà soát: ", format_draft_warning(warn))
         self.doc.add_paragraph("— Hết —").alignment = WD_ALIGN_PARAGRAPH.CENTER
         output = io.BytesIO()
         self.doc.save(output)
@@ -767,9 +858,21 @@ class WordWriter:
         return output.getvalue()
 
 
-def export_docx(exam, teacher, chrome):
+def export_docx(
+    exam,
+    teacher,
+    chrome,
+    is_draft: bool = False,
+    draft_warnings: list[dict[str, Any]] | None = None,
+):
     try:
-        return WordWriter(exam, teacher, chrome).write()
+        return WordWriter(
+            exam,
+            teacher,
+            chrome,
+            is_draft=is_draft,
+            draft_warnings=draft_warnings,
+        ).write()
     except AIError:
         raise
     except (ValueError, TypeError, KeyError, IndexError):

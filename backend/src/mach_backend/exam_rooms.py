@@ -35,6 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import saved_answer
 from mach_backend.exam_spec_export import redact_exam_for_student
+from mach_backend.export_preflight import audit_export_preflight
 from mach_backend.local_documents import _plan_variant_units, exam_variant, shuffle_variant_question
 from mach_backend.tnmaker_export import _build_qr_matrix, _col_ref
 from mach_backend.word_export import uses_table
@@ -1369,6 +1370,175 @@ def _room_to_dict(
     }
 
 
+def _room_attempt_counts(db: sqlite3.Connection, room_id: str) -> tuple[int, int]:
+    row = db.execute(
+        """
+        SELECT COUNT(id),
+               COALESCE(
+                   SUM(
+                       CASE WHEN grading_status = 'needs_manual' AND status != 'in_progress'
+                            THEN 1 ELSE 0 END
+                   ),
+                   0
+               )
+        FROM room_attempts
+        WHERE room_id = ?
+        """,
+        (room_id,),
+    ).fetchone()
+    if row is None:
+        return 0, 0
+    return int(row[0] or 0), int(row[1] or 0)
+
+
+def _is_unescaped_dollar(text: str, idx: int) -> bool:
+    backslashes = 0
+    pos = idx - 1
+    while pos >= 0 and text[pos] == "\\":
+        backslashes += 1
+        pos -= 1
+    return backslashes % 2 == 0
+
+
+def _safe_math_truncate(text: str, limit: int = 160) -> str:
+    """Cắt ngắn văn bản mà không cắt ngang giữa cặp công thức `$...$` hoặc `$$...$$`."""
+    if limit <= 0:
+        return ""
+    if len(text) <= limit:
+        return text
+
+    spans: list[tuple[int, int]] = []
+    open_delim: str | None = None
+    open_start = -1
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == "$" and _is_unescaped_dollar(text, i):
+            if open_delim is None:
+                if i + 1 < n and text[i + 1] == "$":
+                    open_delim = "$$"
+                    open_start = i
+                    i += 2
+                else:
+                    open_delim = "$"
+                    open_start = i
+                    i += 1
+            elif open_delim == "$":
+                spans.append((open_start, i + 1))
+                open_delim = None
+                open_start = -1
+                i += 1
+            else:
+                if i + 1 < n and text[i + 1] == "$":
+                    spans.append((open_start, i + 2))
+                    open_delim = None
+                    open_start = -1
+                    i += 2
+                else:
+                    i += 1
+        else:
+            i += 1
+
+    unclosed_start = open_start if open_delim is not None else None
+    max_extend = max(60, limit // 2)
+
+    for span_start, span_end in spans:
+        if span_start < limit < span_end:
+            if span_end - limit <= max_extend:
+                return text[:span_end]
+            return text[:span_start].rstrip()
+
+    if unclosed_start is not None and unclosed_start < limit:
+        return text[:unclosed_start].rstrip()
+
+    return text[:limit]
+
+
+def _validate_room_exam_ready(snap: dict[str, Any]) -> dict[str, Any]:
+    """Kiểm đề trước khi mở phòng bằng preflight và chặn câu bất đồng đáp án hiện tại."""
+    try:
+        report = audit_export_preflight(snap)
+    except AIError as err:
+        issue = {
+            "code": err.code,
+            "severity": "blocking",
+            "questionId": None,
+            "ordinal": None,
+            "field": "exam",
+            "message": str(err),
+        }
+        raise HTTPException(
+            422,
+            detail={
+                "code": "room_preflight_failed",
+                "message": f"Đề thi chưa sẵn sàng để mở phòng: {err}",
+                "blockingIssues": [issue],
+            },
+        ) from None
+
+    blocking_issues: list[dict[str, Any]] = list(report.get("blockingIssues") or [])
+    for ordinal, q in enumerate(snap.get("questions") or [], 1):
+        if not isinstance(q, dict):
+            continue
+        chk = q.get("check")
+        if not isinstance(chk, dict):
+            continue
+        q_version = q.get("v")
+        chk_version = chk.get("version")
+        if q_version is not None and chk_version is not None and chk_version != q_version:
+            continue
+
+        raw_problems = chk.get("problems")
+        problems = raw_problems if isinstance(raw_problems, list) else []
+        disagree_msgs = [
+            p.strip() for p in problems if isinstance(p, str) and p.strip().startswith("Bất đồng:")
+        ]
+        solver = chk.get("solver")
+        has_disagreement = (
+            chk.get("comparison") == "disagrees"
+            or chk.get("status") == "disagrees"
+            or (isinstance(solver, dict) and solver.get("comparison") == "disagrees")
+            or bool(disagree_msgs)
+        )
+        if not has_disagreement:
+            continue
+
+        q_id = str(q.get("id") or f"q-{ordinal}").strip() or f"q-{ordinal}"
+        msg = (
+            f"Câu {ordinal}: {disagree_msgs[0]}"
+            if disagree_msgs
+            else f"Câu {ordinal}: đáp án lưu đang bất đồng với kết quả kiểm tra độc lập."
+        )
+        blocking_issues.append(
+            {
+                "code": "answer_disagreement",
+                "severity": "blocking",
+                "questionId": q_id,
+                "ordinal": ordinal,
+                "field": "answer",
+                "message": msg,
+            }
+        )
+
+    report["blockingIssues"] = blocking_issues
+    if blocking_issues:
+        first_msg = str(blocking_issues[0].get("message") or "").strip()
+        summary_msg = (
+            f"Đề thi chưa sẵn sàng để mở phòng ({len(blocking_issues)} lỗi chặn): {first_msg}"
+            if first_msg
+            else "Đề thi chưa sẵn sàng để mở phòng; hãy kiểm tra lại câu hỏi và đáp án."
+        )
+        raise HTTPException(
+            422,
+            detail={
+                "code": "room_preflight_failed",
+                "message": summary_msg,
+                "blockingIssues": blocking_issues[:10],
+            },
+        )
+    return report
+
+
 def _public_room_metadata(row: tuple[Any, ...]) -> dict[str, Any]:
     (
         _room_id,
@@ -1695,7 +1865,7 @@ def install_exam_rooms(
                     "order": idx,
                     "questionId": qid,
                     "type": qtype,
-                    "stem": str(q.get("stem") or "")[:160],
+                    "stem": _safe_math_truncate(str(q.get("stem") or ""), 160),
                     "maxPointsP100": q_max_p100,
                     "attemptCount": len(q_entries),
                     "gradedCount": len(graded_entries),
@@ -1748,6 +1918,8 @@ def install_exam_rooms(
             raise HTTPException(422, "Thời điểm mở phòng phải trước hạn nộp bài.")
 
         snap, total_points_p100 = _snapshot_exam_for_room(exam)
+        if body.status == "open":
+            _validate_room_exam_ready(snap)
         title = (body.title or "").strip() or str(snap.get("title") or "Phòng thi").strip()
         duration = body.durationMinutes
         if duration is None:
@@ -1934,6 +2106,8 @@ def install_exam_rooms(
             row = _load_owned_room(db, room_id, owner_id)
             updates: dict[str, Any] = {"updated_at": now_ms}
             if body.status is not None:
+                if body.status == "open" and str(row[10]) != "open":
+                    _validate_room_exam_ready(json.loads(row[23]))
                 updates["status"] = body.status
             if body.mode is not None:
                 updates["mode"] = body.mode
@@ -1978,7 +2152,15 @@ def install_exam_rooms(
                 [*updates.values(), room_id, owner_id],
             )
             refreshed = _load_owned_room(db, room_id, owner_id)
-        return {"room": _room_to_dict(refreshed, base_url=str(request.base_url))}
+            attempt_count, needs_manual_count = _room_attempt_counts(db, room_id)
+        return {
+            "room": _room_to_dict(
+                refreshed,
+                base_url=str(request.base_url),
+                attempt_count=attempt_count,
+                needs_manual_count=needs_manual_count,
+            )
+        }
 
     @app.delete("/api/rooms/{room_id}")
     def delete_room(room_id: str, request: Request) -> dict[str, Any]:
@@ -2964,77 +3146,83 @@ def install_exam_rooms(
                     headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
                 )
 
-            ans_rows = db.execute(
-                "SELECT question_id, question_type, max_points_p100, response_json, "
-                "is_auto_graded, earned_points_p100, grader_note "
-                "FROM attempt_answers WHERE attempt_id = ?",
-                (attempt_id,),
-            ).fetchall()
-
-        ans_by_qid = {r[0]: r for r in ans_rows}
-        snap = json.loads(room_row[23])
-        dmap = json.loads(attempt_row[9])
-        q_order = dmap.get("questionOrder") or [str(q["id"]) for q in snap.get("questions") or []]
-        option_order_map = dmap.get("optionOrder") or {}
-        orig_by_id = {str(q["id"]): q for q in snap.get("questions") or []}
+            if result_policy == "score_only":
+                ans_rows = []
+            else:
+                ans_rows = db.execute(
+                    "SELECT question_id, question_type, max_points_p100, response_json, "
+                    "is_auto_graded, earned_points_p100, grader_note "
+                    "FROM attempt_answers WHERE attempt_id = ?",
+                    (attempt_id,),
+                ).fetchall()
 
         question_results: list[dict[str, Any]] = []
-        for idx, qid in enumerate(q_order, 1):
-            orig_q = orig_by_id.get(qid)
-            if orig_q is None:
-                continue
-            qtype = _normalize_qtype(orig_q.get("type"))
-            a_row = ans_by_qid.get(qid)
-            max_p100 = (
-                int(a_row[2])
-                if a_row is not None
-                else int(orig_q.get("_maxPointsP100", _question_points_p100(orig_q)))
-            )
-            student_resp = json.loads(a_row[3]) if a_row is not None else None
-            earned_p100 = a_row[5] if a_row is not None else None
-            grader_note = a_row[6] if a_row is not None else ""
+        if result_policy != "score_only":
+            ans_by_qid = {r[0]: r for r in ans_rows}
+            snap = json.loads(room_row[23])
+            dmap = json.loads(attempt_row[9])
+            q_order = dmap.get("questionOrder") or [
+                str(q["id"]) for q in snap.get("questions") or []
+            ]
+            option_order_map = dmap.get("optionOrder") or {}
+            orig_by_id = {str(q["id"]): q for q in snap.get("questions") or []}
 
-            item: dict[str, Any] = {
-                "order": idx,
-                "questionId": qid,
-                "type": qtype,
-                "maxPointsP100": max_p100,
-                "earnedPointsP100": earned_p100,
-                "studentResponse": student_resp,
-            }
+            for idx, qid in enumerate(q_order, 1):
+                orig_q = orig_by_id.get(qid)
+                if orig_q is None:
+                    continue
+                qtype = _normalize_qtype(orig_q.get("type"))
+                a_row = ans_by_qid.get(qid)
+                max_p100 = (
+                    int(a_row[2])
+                    if a_row is not None
+                    else int(orig_q.get("_maxPointsP100", _question_points_p100(orig_q)))
+                )
+                student_resp = json.loads(a_row[3]) if a_row is not None else None
+                earned_p100 = a_row[5] if a_row is not None else None
+                grader_note = a_row[6] if a_row is not None else ""
 
-            if result_policy in ("score_and_answers", "full_explanation"):
-                item["stem"] = str(orig_q.get("stem") or "")
-                opt_order = option_order_map.get(qid)
-                orig_opts = orig_q.get("options") or []
-                if qtype == "mcq" and opt_order and len(opt_order) == len(orig_opts):
-                    item["options"] = [orig_opts[o_idx] for o_idx in opt_order]
-                    orig_ans = _parse_mcq_answer(orig_q)
-                    item["correctAnswer"] = (
-                        opt_order.index(orig_ans)
-                        if orig_ans is not None and orig_ans in opt_order
-                        else orig_ans
-                    )
-                elif qtype == "mcq":
-                    item["options"] = orig_opts
-                    item["correctAnswer"] = _parse_mcq_answer(orig_q)
-                elif qtype == "truefalse":
-                    item["options"] = orig_opts
-                    tf = _parse_truefalse_key(orig_q)
-                    item["correctAnswer"] = list(tf) if tf is not None else None
-                elif qtype == "short":
-                    item["correctAnswer"] = (
-                        orig_q.get("answerText") or orig_q.get("answer") or saved_answer(orig_q)
-                    )
-                else:
-                    item["correctAnswer"] = None
+                item: dict[str, Any] = {
+                    "order": idx,
+                    "questionId": qid,
+                    "type": qtype,
+                    "maxPointsP100": max_p100,
+                    "earnedPointsP100": earned_p100,
+                    "studentResponse": student_resp,
+                }
 
-            if result_policy == "full_explanation":
-                item["explanation"] = str(orig_q.get("explanation") or "")
-                item["rubric"] = orig_q.get("rubric") or []
-                item["graderNote"] = grader_note
+                if result_policy in ("score_and_answers", "full_explanation"):
+                    item["stem"] = str(orig_q.get("stem") or "")
+                    opt_order = option_order_map.get(qid)
+                    orig_opts = orig_q.get("options") or []
+                    if qtype == "mcq" and opt_order and len(opt_order) == len(orig_opts):
+                        item["options"] = [orig_opts[o_idx] for o_idx in opt_order]
+                        orig_ans = _parse_mcq_answer(orig_q)
+                        item["correctAnswer"] = (
+                            opt_order.index(orig_ans)
+                            if orig_ans is not None and orig_ans in opt_order
+                            else orig_ans
+                        )
+                    elif qtype == "mcq":
+                        item["options"] = orig_opts
+                        item["correctAnswer"] = _parse_mcq_answer(orig_q)
+                    elif qtype == "truefalse":
+                        item["options"] = orig_opts
+                        tf = _parse_truefalse_key(orig_q)
+                        item["correctAnswer"] = list(tf) if tf is not None else None
+                    elif qtype == "short":
+                        item["correctAnswer"] = (
+                            orig_q.get("answerText") or orig_q.get("answer") or saved_answer(orig_q)
+                        )
+                    else:
+                        item["correctAnswer"] = None
 
-            question_results.append(item)
+                if result_policy == "full_explanation":
+                    item["explanation"] = str(orig_q.get("explanation") or "")
+                    item["rubric"] = orig_q.get("rubric") or []
+                    item["graderNote"] = grader_note
+
+                question_results.append(item)
 
         return JSONResponse(
             {

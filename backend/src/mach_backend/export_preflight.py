@@ -637,8 +637,9 @@ def _audit_question_evidence_staleness(
     question: dict[str, Any],
     ordinal: int,
     q_id: str,
+    exam: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
-    """UC9: kiểm tra chứng cứ bị đánh dấu stale hoặc lệch trang nguồn cùng docId."""
+    """UC9: kiểm tra chứng cứ bị đánh dấu stale hoặc lệch nguồn/trang/phiên bản/ngữ liệu."""
     evidence_list = question.get("evidence")
     if not isinstance(evidence_list, list) or not evidence_list:
         return None
@@ -667,6 +668,12 @@ def _audit_question_evidence_staleness(
     if src_page is None and type(question.get("sourcePage")) is int and question["sourcePage"] >= 1:
         src_page = question["sourcePage"]
 
+    q_version = question.get("v")
+    is_quote_question = question.get("quote") is True
+    exam_quote_obj = exam.get("quote") if isinstance(exam, dict) else None
+    raw_exam_quote = exam_quote_obj.get("text") if isinstance(exam_quote_obj, dict) else None
+    norm_exam_quote = " ".join(raw_exam_quote.split()) if isinstance(raw_exam_quote, str) else ""
+
     reasons: list[str] = []
     for ev in evidence_list:
         if not isinstance(ev, dict):
@@ -686,10 +693,21 @@ def _audit_question_evidence_staleness(
         elif type(ev.get("page")) is int and ev["page"] >= 1:
             ev_page = ev["page"]
 
-        if (
+        if ev_doc_id != src_doc_id:
+            if src_doc_id is None:
+                _add_unique(
+                    reasons,
+                    "tài liệu nguồn đã gỡ hoặc chuyển sang bản nhập tay",
+                )
+            else:
+                _add_unique(
+                    reasons,
+                    f"nguồn trích dẫn ({ev_doc_id or 'không rõ'}) "
+                    f"lệch với tài liệu nguồn ({src_doc_id})",
+                )
+        elif (
             src_doc_id is not None
             and src_page is not None
-            and ev_doc_id == src_doc_id
             and ev_page is not None
             and ev_page != src_page
         ):
@@ -697,6 +715,22 @@ def _audit_question_evidence_staleness(
                 reasons,
                 f"trang trích dẫn ({ev_page}) lệch với trang nguồn ({src_page})",
             )
+
+        ev_q_ver = ev.get("questionVersion")
+        if ev_q_ver is not None and q_version is not None and ev_q_ver != q_version:
+            _add_unique(
+                reasons,
+                f"trích dẫn thuộc phiên bản v{ev_q_ver} (câu hiện tại v{q_version})",
+            )
+
+        if is_quote_question and isinstance(exam, dict):
+            raw_ev_quote = ev.get("quote")
+            norm_ev_quote = " ".join(raw_ev_quote.split()) if isinstance(raw_ev_quote, str) else ""
+            if norm_ev_quote and (not norm_exam_quote or norm_ev_quote not in norm_exam_quote):
+                _add_unique(
+                    reasons,
+                    "đoạn trích dẫn không còn xuất hiện trong ngữ liệu hiện tại của đề",
+                )
 
     if not reasons:
         return None
@@ -1376,7 +1410,7 @@ def audit_export_preflight(
 
         # 2f-bis. UC8 (dữ kiện liên kết Bảng 1) và UC9 (trích dẫn nguồn cũ/lệch trang).
         blocking_issues.extend(_audit_linked_data_question(q, ordinal, q_id, exam))
-        stale_evidence_warn = _audit_question_evidence_staleness(q, ordinal, q_id)
+        stale_evidence_warn = _audit_question_evidence_staleness(q, ordinal, q_id, exam)
         if stale_evidence_warn is not None:
             warnings.append(stale_evidence_warn)
 

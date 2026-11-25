@@ -600,3 +600,50 @@ def test_fastapi_preflight_route_enforces_extra_forbid_401_guest_and_workspace_c
         )
         assert authed.status_code == 200
         assert authed.json()["ownerId"] == "gv-team-02"
+
+
+def test_uc9_stale_evidence_detects_doc_change_manual_version_and_quote():
+    base_ev = {
+        "sourceId": "doc-clean",
+        "sourceVersion": 1,
+        "questionVersion": 1,
+        "locator": {"kind": "page", "index": 1},
+        "quote": "Hàm số bậc nhất y = 2x + 1",
+    }
+
+    # 1. Nguồn khớp hoàn toàn (kể cả khi q.quote=True với khoảng trắng chuẩn hóa) -> không cảnh báo.
+    ok_exam = _make_clean_exam()
+    ok_exam["quote"] = {"text": "Hàm   số bậc nhất\n  y = 2x + 1 xác định trên R."}
+    ok_exam["questions"][0]["quote"] = True
+    ok_exam["questions"][0]["evidence"] = [deepcopy(base_ev)]
+    ok_rep = audit_export_preflight(ok_exam)
+    assert not [w for w in ok_rep["warnings"] if w["code"] == "stale_quote_evidence"]
+
+    # 2. Đổi tệp nguồn sang docId khác -> stale_quote_evidence.
+    changed_doc_exam = deepcopy(ok_exam)
+    changed_doc_exam["questions"][0]["source"] = {"docId": "doc-other", "page": 1}
+    rep_doc = audit_export_preflight(changed_doc_exam)
+    warns_doc = [w for w in rep_doc["warnings"] if w["code"] == "stale_quote_evidence"]
+    assert len(warns_doc) == 1
+    assert warns_doc[0]["requiresReverification"] is True
+
+    # 3. Gỡ tệp nguồn (chuyển bản nhập tay, src_doc_id is None) -> stale_quote_evidence.
+    manual_exam = deepcopy(ok_exam)
+    manual_exam["questions"][0]["source"] = {"docId": None, "location": "Bản nhập tay"}
+    rep_manual = audit_export_preflight(manual_exam)
+    warns_manual = [w for w in rep_manual["warnings"] if w["code"] == "stale_quote_evidence"]
+    assert len(warns_manual) == 1
+
+    # 4. evidence.questionVersion != question.v -> stale_quote_evidence.
+    ver_exam = deepcopy(ok_exam)
+    ver_exam["questions"][0]["v"] = 2
+    rep_ver = audit_export_preflight(ver_exam)
+    warns_ver = [w for w in rep_ver["warnings"] if w["code"] == "stale_quote_evidence"]
+    assert len(warns_ver) == 1
+
+    # 5. question.quote=True nhưng trích dẫn không có trong exam.quote.text -> stale_quote_evidence.
+    quote_changed_exam = deepcopy(ok_exam)
+    quote_changed_exam["quote"] = {"text": "Ngữ liệu mới hoàn toàn khác với đoạn cũ."}
+    rep_quote = audit_export_preflight(quote_changed_exam)
+    warns_quote = [w for w in rep_quote["warnings"] if w["code"] == "stale_quote_evidence"]
+    assert len(warns_quote) == 1

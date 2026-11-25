@@ -576,3 +576,126 @@ def test_b4_variant_hardened_positional_phrases_and_multi_section_shuffle():
         },
     )
     assert [q["id"] for q in multi["questions"]] == ["m2", "m1", "m3", "t2", "t1"]
+
+
+def test_m07_04_extended_reference_fields_and_uc8_uc9_draft_banners(exam, tmp_path):
+    from mach_backend.local_documents import shuffle_variant_question
+    from mach_backend.word_export import export_docx
+
+    # 1. M07-04: answerText / solution / optionDocs / rubric kích hoạt phát hiện tham chiếu vị trí.
+    opt_doc_exam = {
+        "title": "Kiểm tra optionDocs và solution",
+        "questions": [
+            {**exam["questions"][0], "id": "q1"},
+            {
+                **exam["questions"][0],
+                "id": "q2",
+                "solution": "Xem đáp án câu 1.",
+            },
+            {
+                **exam["questions"][0],
+                "id": "q3",
+                "optionDocs": [
+                    {
+                        "type": "doc",
+                        "content": [
+                            {
+                                "type": "paragraph",
+                                "content": [{"type": "text", "text": "Theo câu sau"}],
+                            }
+                        ],
+                    }
+                ],
+            },
+            {**exam["questions"][0], "id": "q4"},
+        ],
+    }
+    with pytest.raises(AIError, match="số hoặc vị trí"):
+        exam_variant(opt_doc_exam, {"questionIds": ["q1", "q2"], "offset": 1})
+    with pytest.raises(AIError, match="liền kề"):
+        exam_variant(opt_doc_exam, {"questionIds": ["q3", "q4"], "offset": 1})
+
+    # Rubric chứa chữ cái A/B/C/D không khóa nhầm shuffle_variant_question.
+    q_rubric = {
+        **exam["questions"][0],
+        "id": "q-mcq",
+        "rubric": [{"text": "Chọn A được đủ điểm; lưu ý hai ý đầu.", "points": 1.0}],
+    }
+    assert shuffle_variant_question(q_rubric, 1)["options"] != q_rubric["options"]
+
+    # 2. Banner bản nháp HTML & DOCX cho GV (kể cả cảnh báo có công thức $...$ và không có message).
+    warnings = [
+        {
+            "code": "linked_data_mismatch",
+            "questionId": "q1",
+            "ordinal": 1,
+            "message": "Câu 1: giá trị $x = 5$ chưa khớp Bảng 1.",
+        },
+        {
+            "code": "stale_quote_evidence",
+            "ordinal": 1,
+        },
+    ]
+    draft_exam = {
+        "title": "Đề kiểm tra bản nháp",
+        "subject": "Toán",
+        "grade": "9",
+        "questions": [{**exam["questions"][0], "id": "q1"}],
+    }
+
+    teacher_html = exam_html(
+        draft_exam,
+        True,
+        "http://localhost",
+        is_draft=True,
+        draft_warnings=warnings,
+    )
+    assert "BẢN NHÁP — CẦN RÀ SOÁT TRƯỚC KHI PHÁT" in teacher_html
+    assert "question-draft-note" in teacher_html
+    assert 'data-warning-code="linked_data_mismatch"' in teacher_html
+    assert 'data-warning-code="stale_quote_evidence"' in teacher_html
+    assert "Lưu ý rà soát:" in teacher_html
+
+    teacher_docx = export_docx(
+        draft_exam,
+        True,
+        None,
+        is_draft=True,
+        draft_warnings=warnings,
+    )
+    with zipfile.ZipFile(io.BytesIO(teacher_docx)) as zf:
+        doc_xml = zf.read("word/document.xml").decode("utf-8")
+    assert "BẢN NHÁP — CẦN RÀ SOÁT TRƯỚC KHI PHÁT" in doc_xml
+    assert "Lưu ý rà soát:" in doc_xml
+    assert "Trích dẫn nguồn cần rà lại" in doc_xml
+
+    # Bản học sinh không bao giờ chứa banner bản nháp dù is_draft=True.
+    student_docx = export_docx(
+        draft_exam,
+        False,
+        None,
+        is_draft=True,
+        draft_warnings=warnings,
+    )
+    with zipfile.ZipFile(io.BytesIO(student_docx)) as zf:
+        student_xml = zf.read("word/document.xml").decode("utf-8")
+    assert "BẢN NHÁP — CẦN RÀ SOÁT TRƯỚC KHI PHÁT" not in student_xml
+    assert "Lưu ý rà soát:" not in student_xml
+
+    # export_file truyền isDraft & draftWarnings sang DOCX GV an toàn.
+    exported = export_file(
+        {
+            "type": "exam",
+            "format": "docx",
+            "teacher": True,
+            "exam": draft_exam,
+            "isDraft": True,
+            "draftWarnings": warnings,
+        },
+        tmp_path,
+        "http://localhost",
+    )
+    with zipfile.ZipFile(tmp_path / exported["filename"]) as zf:
+        exported_xml = zf.read("word/document.xml").decode("utf-8")
+    assert "BẢN NHÁP — CẦN RÀ SOÁT TRƯỚC KHI PHÁT" in exported_xml
+    assert "Lưu ý rà soát:" in exported_xml
