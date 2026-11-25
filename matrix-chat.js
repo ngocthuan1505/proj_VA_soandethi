@@ -210,7 +210,7 @@ async function startSession(c,flow){
   clearPreview:()=>clearPreview(flow),
   find:id=>flow.paper?.querySelector('#'+id)||flow.dock?.querySelector('#'+id),
   editMatrix:()=>matrixForm(c,flow),
-  viewPreview:()=>{if(innerWidth<=760)document.querySelector('.assistant')?.classList.remove('open');document.querySelector('.paper-scroll')?.scrollTo({top:0});},
+  viewPreview:()=>{if(innerWidth<=760){document.querySelector('.workspace')?.classList.remove('mobile-ai-view');document.querySelector('.assistant')?.classList.remove('open');document.querySelector('[data-ux-action="mobile-show-editor"]')?.classList.add('active');document.querySelector('.ux-view-tabs [data-action="toggle-ai"]')?.classList.remove('active');}document.querySelector('.paper-scroll')?.scrollTo({top:0});},
   finish:kind=>finish(c,flow,kind),
  });
 }
@@ -221,6 +221,7 @@ export async function openMatrixChat(c,options={}){
  const exam=c.exam();
  document.querySelector('.workspace')?.classList.remove('chat-hidden');
  document.querySelector('.assistant')?.classList.add('open');
+ if(innerWidth<=760){document.querySelector('.workspace')?.classList.add('mobile-ai-view');document.querySelector('[data-ux-action="mobile-show-editor"]')?.classList.remove('active');document.querySelector('.ux-view-tabs [data-action="toggle-ai"]')?.classList.add('active');}
  if(flows.has(exam.id)){mountMatrixChat(c);flows.get(exam.id).root.scrollIntoView({block:'nearest'});return;}
  const root=document.createElement('section');root.className='matrix-chat-session';root.setAttribute('aria-label','Soạn theo ma trận');
  const flow={examId:exam.id,root,paper:null,controller:null,request:options.request||''};flows.set(exam.id,flow);

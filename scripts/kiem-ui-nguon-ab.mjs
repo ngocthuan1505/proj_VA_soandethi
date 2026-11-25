@@ -90,7 +90,8 @@ try {
  await page.locator('[data-ux-action="attach"]').click();
  await page.locator('.ux-attach-menu [data-action="assistant-sources"]').click();
  await dialog.getByRole('button',{name:'SGK / Bài học',exact:true}).click();
- const picker=dialog.locator('#lesson-picker');
+ const layer2=page.locator('#dialog-layer2');
+ const picker=layer2.locator('#lesson-picker');
  await picker.locator('[name=subject]').selectOption('Toán');
  await picker.locator('[name=grade]').selectOption('9');
  await picker.locator('[name=book]').selectOption('Đại số THCS');
@@ -127,8 +128,8 @@ try {
  await page.locator('[data-ux-action="attach"]').click();
  await page.locator('.ux-attach-menu [data-action="assistant-sources"]').click();
  await dialog.getByRole('button',{name:'SGK / Bài học',exact:true}).click();
- const personal=dialog.locator('#personal-lesson-form');
- await dialog.getByText('Thêm học liệu cá nhân',{exact:true}).click();
+ const personal=layer2.locator('#personal-lesson-form');
+ await layer2.getByText('Thêm học liệu cá nhân',{exact:true}).click();
  for(const [field,value] of Object.entries({
   grade:'8',subject:'Ngữ văn',series:'Ngữ liệu lớp học',volume:'Tập 2',
   chapter:'Đọc hiểu',lesson:'Thư viện',title:'Nhật ký đọc sách QA',
@@ -207,6 +208,11 @@ try {
  assert.match(await privateCard.locator('details[open]').innerText(),/Học liệu trích từ slide QA/);
  await page.screenshot({path:path.join(out,'kho-hoc-lieu-ca-nhan.png')});
  await Promise.all([write(),picker.getByRole('button',{name:'Dùng bài đã chọn'}).click()]);
+ await layer2.waitFor({state:'hidden'});
+ if(await dialog.locator('#assistant-source-form').isVisible()){
+  await dialog.locator('#assistant-source-form button[type="submit"]').click();
+  await dialog.waitFor({state:'hidden'});
+ }
  const withPrivate=(await saved()).value.exams[0];
  const privateDoc=withPrivate.docs.find(d=>d.personalLesson);
  const recordResponse=await page.request.get(base+'/api/lesson-catalog/sources/'+privateDoc.id);

@@ -316,6 +316,7 @@ function initAudioEntries() {
       error: '',
     };
   };
+  seed(appState.exam?.audio);
   for (const q of appState.exam?.questions || []) {
     seed(q?.audio);
   }
@@ -786,6 +787,11 @@ function renderExamScreenHTML() {
             ? `<div class="sr-passage-box"><strong>Ngữ liệu tham khảo</strong><div style="margin-top:4px;">${esc(quoteText).replace(/\n/g, '<br>')}</div></div>`
             : ''
         }
+        ${(() => {
+          const examAud = appState.exam?.audio || passageMap.get('exam-listening')?.audio;
+          if (!examAud || !examAud.fileId) return '';
+          return `<div class="sr-passage-box"><strong>Phần nghe chung của đề thi</strong><div style="margin-top:8px;">${renderAudioCardHTML(examAud)}</div></div>`;
+        })()}
 
         ${shownQuestions}
       </main>

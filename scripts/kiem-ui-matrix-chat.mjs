@@ -29,7 +29,7 @@ try{
  page.on('pageerror',e=>errors.push(e.message));
  page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/proposals/generate'))generations++;if(r.method()==='POST'&&r.url().endsWith('/confirm'))confirmations++;if(r.url().endsWith('/api/assistant/chat'))chats++;});
  const send=async()=>{await page.locator('#chat-input').fill('Soạn đề theo ma trận này');await page.locator('#chat-form button[type=submit]').click();};
- const generate=async()=>{await page.locator('#matrix-request-settings').evaluate(n=>n.open=true);await page.locator('#matrix-inputs').evaluate(n=>n.open=true);await page.locator('#matrix-consent').check();await page.locator('#matrix-start').click();await page.locator('.matrix-document-preview [data-matrix-question]').first().waitFor();await page.waitForFunction(()=>!document.querySelector('#matrix-confirm-save')?.disabled);};
+ const generate=async()=>{await page.locator('#matrix-request-settings').evaluate(n=>n.open=true);await page.locator('#matrix-inputs').evaluate(n=>n.open=true);await page.locator('#matrix-consent').check();await page.locator('#matrix-start').click();const previewHiddenMobile=await page.evaluate(()=>Boolean(document.querySelector('.workspace')?.classList.contains('mobile-ai-view')));await page.locator('.matrix-document-preview [data-matrix-question]').first().waitFor({state:previewHiddenMobile?'attached':'visible'});await page.waitForFunction(()=>!document.querySelector('#matrix-confirm-save')?.disabled);};
  const state=async()=>(await api('/api/kv?key=state')).value.exams.find(e=>e.id===exam.id);
  await page.goto(base);await page.waitForLoadState('networkidle');
  const attached=page.locator('[data-ux-action="attach"]');

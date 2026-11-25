@@ -882,3 +882,91 @@ def test_timer_expiration_xlsx_export_and_qr_svg(tmp_path: Path) -> None:
     _, qr_size = _build_qr_matrix(f"https://school.local/phong-thi/{code}")
     assert qr_size >= 21
     assert f"0 0 {qr_size + 8} {qr_size + 8}" == svg_root.attrib["viewBox"]
+
+
+def test_analytics_max_score_not_shadowed_and_top_level_exam_audio(tmp_path: Path) -> None:
+    exam = _sample_exam()
+    exam["audio"] = {
+        "fileId": "aud-top-1",
+        "filename": "nghe-chung.mp3",
+        "maxPlays": 2,
+    }
+    harness = _build_test_harness(
+        tmp_path,
+        exams_by_owner={"teacher-a": {"exam-demo-1": exam}},
+        file_store={
+            "aud-top-1": (b"ID3\x03\x00\x00\x00\x00\x00\x00TOP_MP3", "audio/mpeg"),
+            "aud-cb-1": (b"ID3\x03\x00\x00\x00\x00\x00\x00FAKE_MP3", "audio/mpeg"),
+        },
+    )
+    client: TestClient = harness["client"]
+
+    room = client.post(
+        "/api/rooms",
+        headers=_teacher_headers(),
+        json={"examId": "exam-demo-1", "durationMinutes": 30},
+    ).json()
+    room_id = room["id"]
+    code = room["roomCode"]
+
+    # HS1 đạt 300 p100 (> câu cuối q-essay-1 200 p100) để chắc chắn maxScoreP100 không bị ghi đè
+    s1 = client.post(
+        f"/api/rooms/public/{code}/join",
+        json={"studentName": "An", "studentCode": "HS01", "studentClass": "9A"},
+    ).json()
+    assert s1["exam"]["audio"]["fileId"] == "aud-top-1"
+    assert s1["exam"]["audio"]["maxPlays"] == 2
+    assert s1["exam"]["audio"]["playsUsed"] == 0
+
+    for _ in range(2):
+        play = client.get(
+            f"/api/rooms/public/attempts/{s1['attemptId']}/audio/aud-top-1",
+            headers=_student_headers(s1["attemptToken"]),
+        )
+        assert play.status_code == 200
+    assert (
+        client.get(
+            f"/api/rooms/public/attempts/{s1['attemptId']}/audio/aud-top-1",
+            headers=_student_headers(s1["attemptToken"]),
+        ).status_code
+        == 403
+    )
+
+    client.put(
+        f"/api/rooms/public/attempts/{s1['attemptId']}/answers",
+        headers=_student_headers(s1["attemptToken"]),
+        json={
+            "answers": {
+                "q-mcq-1": 2,
+                "q-tf-1": [True, False, True, False],
+                "q-short-1": "1,5",
+            }
+        },
+    )
+    client.post(
+        f"/api/rooms/public/attempts/{s1['attemptId']}/submit",
+        headers=_student_headers(s1["attemptToken"]),
+    )
+
+    # HS2 đạt 100 p100
+    s2 = client.post(
+        f"/api/rooms/public/{code}/join",
+        json={"studentName": "Bình", "studentCode": "HS02", "studentClass": "9A"},
+    ).json()
+    client.put(
+        f"/api/rooms/public/attempts/{s2['attemptId']}/answers",
+        headers=_student_headers(s2["attemptToken"]),
+        json={"answers": {"q-mcq-1": 2}},
+    )
+    client.post(
+        f"/api/rooms/public/attempts/{s2['attemptId']}/submit",
+        headers=_student_headers(s2["attemptToken"]),
+    )
+
+    analytics = client.get(f"/api/rooms/{room_id}/analytics", headers=_teacher_headers())
+    assert analytics.status_code == 200
+    data = analytics.json()
+    assert data["maxScoreP100"] == 300
+    assert data["minScoreP100"] == 100
+    assert data["avgScoreP100"] == 200
+    assert data["medianScoreP100"] == 200

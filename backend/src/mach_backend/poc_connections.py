@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from mach_backend.agy_cli_model import build_sanitized_env, detect_agy_cli
 from mach_backend.ai_contract import AIError
+from mach_backend.ai_router import reset_shared_circuit_breaker
 from mach_backend.ai_safety import (
     extract_api_key_token,
     load_local_secrets_env,
@@ -620,6 +621,7 @@ def apply_config(provider, body, store, *, persist=True):
     provider.review_gemini_model = check_gemini_model
     provider.review_model = check_local_model
     provider.run_policy = policy
+    reset_shared_circuit_breaker()
     return connection_config(provider)
 
 

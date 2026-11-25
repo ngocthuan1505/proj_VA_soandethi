@@ -380,6 +380,9 @@ def _snapshot_exam_for_room(exam: dict[str, Any]) -> tuple[dict[str, Any], int]:
         questions.append(q)
     snap["questions"] = questions
 
+    if isinstance(snap.get("audio"), dict):
+        snap["audio"] = _normalize_audio_entry(snap["audio"])
+
     raw_passages = snap.get("passages")
     if isinstance(raw_passages, list):
         for p in raw_passages:
@@ -398,6 +401,11 @@ def _snapshot_exam_for_room(exam: dict[str, Any]) -> tuple[dict[str, Any], int]:
 
 def _collect_audio_entries(exam_snapshot: dict[str, Any]) -> dict[str, dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
+    if isinstance(exam_snapshot.get("audio"), dict):
+        aud = exam_snapshot["audio"]
+        fid = str(aud.get("fileId") or "").strip()
+        if fid:
+            found[fid] = aud
     for q in exam_snapshot.get("questions") or []:
         if isinstance(q, dict) and isinstance(q.get("audio"), dict):
             aud = q["audio"]
@@ -594,6 +602,9 @@ def _scrub_student_exam(exam: dict[str, Any]) -> None:
         if isinstance(q.get("audio"), dict):
             q["audio"] = _scrub_audio_dict(q["audio"])
 
+    if isinstance(exam.get("audio"), dict):
+        exam["audio"] = _scrub_audio_dict(exam["audio"])
+
     raw_passages = exam.get("passages")
     if isinstance(raw_passages, list):
         for p in raw_passages:
@@ -628,6 +639,8 @@ def _attach_audio_play_counts(
     for q in exam.get("questions") or []:
         if isinstance(q, dict):
             enrich(q.get("audio"))
+    enrich(exam.get("audio"))
+
     raw_passages = exam.get("passages")
     passage_items = (
         raw_passages
@@ -1661,11 +1674,13 @@ def install_exam_rooms(
         for idx, q in enumerate(snap.get("questions") or [], 1):
             qid = str(q["id"])
             qtype = _normalize_qtype(q.get("type"))
-            max_p100 = int(q.get("_maxPointsP100", _question_points_p100(q)))
+            q_max_p100 = int(q.get("_maxPointsP100", _question_points_p100(q)))
             q_entries = answers_by_qid.get(qid, [])
             graded_entries = [e for e in q_entries if e[2] is not None]
-            correct_cnt = sum(1 for e in graded_entries if e[2] == max_p100 and max_p100 > 0)
-            partial_cnt = sum(1 for e in graded_entries if e[2] is not None and 0 < e[2] < max_p100)
+            correct_cnt = sum(1 for e in graded_entries if e[2] == q_max_p100 and q_max_p100 > 0)
+            partial_cnt = sum(
+                1 for e in graded_entries if e[2] is not None and 0 < e[2] < q_max_p100
+            )
             wrong_cnt = sum(1 for e in graded_entries if e[2] == 0)
             avg_q_p100 = (
                 round(sum(int(e[2] or 0) for e in graded_entries) / len(graded_entries))
@@ -1681,7 +1696,7 @@ def install_exam_rooms(
                     "questionId": qid,
                     "type": qtype,
                     "stem": str(q.get("stem") or "")[:160],
-                    "maxPointsP100": max_p100,
+                    "maxPointsP100": q_max_p100,
                     "attemptCount": len(q_entries),
                     "gradedCount": len(graded_entries),
                     "correctCount": correct_cnt,

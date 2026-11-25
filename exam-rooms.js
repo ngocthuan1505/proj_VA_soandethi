@@ -1100,7 +1100,7 @@ function buildGradingTabHTML() {
                           <div class="er-grid-2">
                             <div class="er-field">
                               <label>Điểm chấm (0 – ${esc(maxPtsNum)})</label>
-                              <input class="er-score-input" name="earnedPoints" type="number" min="0" max="${esc(maxPtsNum)}" step="0.05" value="${esc(curVal)}" required>
+                              <input class="er-score-input" name="earnedPoints" type="number" min="0" max="${esc(maxPtsNum)}" step="0.01" value="${esc(curVal)}" required>
                             </div>
                             <div class="er-field">
                               <label>Chấm nhanh</label>

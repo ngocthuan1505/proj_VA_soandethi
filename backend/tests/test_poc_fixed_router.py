@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from mach_backend.ai_contract import AIError
+from mach_backend.ai_router import reset_shared_circuit_breaker
 from mach_backend.local_credentials import LocalConnectionStore
 from mach_backend.local_workspace import create_app
 from mach_backend.poc_policy import (
@@ -605,70 +606,73 @@ def test_chat_endpoint_routes_via_fixed_task_router_agy_gemini_deepseek_ollama(
 
     app = create_app(tmp_path)
     state = {"fail_agy": False, "fail_gemini": False, "fail_gateway": False}
-    with TestClient(app, headers={"Origin": "http://testserver"}) as client:
-        client.post(
-            "/api/config",
-            json={
-                "saveLocally": False,
-                "gemini": {
-                    "key": "AQ.fake_chat_router_key_123456",
-                    "freeTierConfirmed": True,
+    try:
+        with TestClient(app, headers={"Origin": "http://testserver"}) as client:
+            client.post(
+                "/api/config",
+                json={
+                    "saveLocally": False,
+                    "gemini": {
+                        "key": "AQ.fake_chat_router_key_123456",
+                        "freeTierConfirmed": True,
+                    },
+                    "deepseek": {
+                        "url": "https://gateway.example.test",
+                        "key": DS_KEY,
+                        "model": "deepseek-v4.1-flash",
+                        "reasonerModel": "deepseek-v4-pro",
+                        "crossModel": "qwen3.8-max",
+                    },
+                    "fixedRouter": {"enabled": True, "agyCustomPath": str(fake_agy)},
                 },
-                "deepseek": {
-                    "url": "https://gateway.example.test",
-                    "key": DS_KEY,
-                    "model": "deepseek-v4.1-flash",
-                    "reasonerModel": "deepseek-v4-pro",
-                    "crossModel": "qwen3.8-max",
-                },
-                "fixedRouter": {"enabled": True, "agyCustomPath": str(fake_agy)},
-            },
-        ).raise_for_status()
+            ).raise_for_status()
 
-        # 0. Mặc định standard chat ưu tiên API nhanh trước (DeepSeek Chat)
-        r_std = client.post("/api/assistant/chat", json={"text": "Hỏi nhanh", "consent": True})
-        assert r_std.status_code == 200, r_std.text
-        assert r_std.json()["providerUsed"] == "deepseek_chat"
-        assert order == ["gateway:deepseek-v4.1-flash"]
+            # 0. Mặc định standard chat ưu tiên API nhanh trước (DeepSeek Chat)
+            r_std = client.post("/api/assistant/chat", json={"text": "Hỏi nhanh", "consent": True})
+            assert r_std.status_code == 200, r_std.text
+            assert r_std.json()["providerUsed"] == "deepseek_chat"
+            assert order == ["gateway:deepseek-v4.1-flash"]
 
-        # 1. Ở chế độ deep, ưu tiên AGY CLI đầu tiên
-        order.clear()
-        r1 = client.post(
-            "/api/assistant/chat", json={"text": "Hỏi 1", "consent": True, "timePreset": "deep"}
-        )
-        assert r1.status_code == 200, r1.text
-        assert r1.json()["providerUsed"] == "agy"
-        assert r1.json()["modelUsed"] == "agy-cli"
-        assert order == ["agy"]
+            # 1. Ở chế độ deep, ưu tiên AGY CLI đầu tiên
+            order.clear()
+            r1 = client.post(
+                "/api/assistant/chat", json={"text": "Hỏi 1", "consent": True, "timePreset": "deep"}
+            )
+            assert r1.status_code == 200, r1.text
+            assert r1.json()["providerUsed"] == "agy"
+            assert r1.json()["modelUsed"] == "agy-cli"
+            assert order == ["agy"]
 
-        # 2. AGY lỗi ở chế độ deep -> tự rơi xuống DeepSeek Pro rồi Gemini Hydrogen
-        order.clear()
-        state["fail_agy"] = True
-        r2 = client.post(
-            "/api/assistant/chat", json={"text": "Hỏi 2", "consent": True, "timePreset": "deep"}
-        )
-        assert r2.status_code == 200, r2.text
-        assert r2.json()["providerUsed"] == "deepseek_reasoner"
-        assert r2.json()["modelUsed"] == "deepseek-v4-pro"
-        assert order == ["agy", "gateway:deepseek-v4-pro"]
+            # 2. AGY lỗi ở chế độ deep -> tự rơi xuống DeepSeek Pro rồi Gemini Hydrogen
+            order.clear()
+            state["fail_agy"] = True
+            r2 = client.post(
+                "/api/assistant/chat", json={"text": "Hỏi 2", "consent": True, "timePreset": "deep"}
+            )
+            assert r2.status_code == 200, r2.text
+            assert r2.json()["providerUsed"] == "deepseek_reasoner"
+            assert r2.json()["modelUsed"] == "deepseek-v4-pro"
+            assert order == ["agy", "gateway:deepseek-v4-pro"]
 
-        # 3. AGY + Gateway lỗi -> rơi xuống Gemini Pro
-        order.clear()
-        state["fail_gateway"] = True
-        r3 = client.post(
-            "/api/assistant/chat", json={"text": "Hỏi 3", "consent": True, "timePreset": "deep"}
-        )
-        assert r3.status_code == 200, r3.text
-        assert r3.json()["providerUsed"] == "gemini_pro"
-        assert r3.json()["modelUsed"] == "gemini-2.5-pro"
-        assert order == ["agy", "gateway:deepseek-v4-pro", "gemini:gemini-2.5-pro"]
+            # 3. AGY + Gateway lỗi -> rơi xuống Gemini Pro
+            order.clear()
+            state["fail_gateway"] = True
+            r3 = client.post(
+                "/api/assistant/chat", json={"text": "Hỏi 3", "consent": True, "timePreset": "deep"}
+            )
+            assert r3.status_code == 200, r3.text
+            assert r3.json()["providerUsed"] == "gemini_pro"
+            assert r3.json()["modelUsed"] == "gemini-2.5-pro"
+            assert order == ["agy", "gateway:deepseek-v4-pro", "gemini:gemini-2.5-pro"]
 
-        # 4. AGY + Gateway + Gemini lỗi -> rơi xuống Ollama cuối cùng
-        order.clear()
-        state["fail_gemini"] = True
-        r4 = client.post(
-            "/api/assistant/chat", json={"text": "Hỏi 4", "consent": True, "timePreset": "deep"}
-        )
-        assert r4.status_code == 200, r4.text
-        assert r4.json()["providerUsed"] == "ollama"
-        assert order[-1].startswith("ollama:")
+            # 4. AGY + Gateway + Gemini lỗi -> rơi xuống Ollama cuối cùng
+            order.clear()
+            state["fail_gemini"] = True
+            r4 = client.post(
+                "/api/assistant/chat", json={"text": "Hỏi 4", "consent": True, "timePreset": "deep"}
+            )
+            assert r4.status_code == 200, r4.text
+            assert r4.json()["providerUsed"] == "ollama"
+            assert order[-1].startswith("ollama:")
+    finally:
+        reset_shared_circuit_breaker()
