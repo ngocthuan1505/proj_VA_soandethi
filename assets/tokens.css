@@ -1,28 +1,28 @@
-/* Hệ thống biến thiết kế dùng chung (tokens) — giao diện soạn đề sạch sẽ, trang nhã. */
+/* Hệ thống biến thiết kế dùng chung (tokens) — Blue Whale Academic Ocean. */
 :root {
   /* Màu nền & bề mặt */
-  --bg-canvas: #f5f7f6;
+  --bg-canvas: #f3f7fb;
   --bg-surface: #ffffff;
-  --bg-subtle: #f1f5f3;
-  --bg-elevated: #fbfdfb;
-  --bg-tint: #ebf5f1;
-  --bg-hover: #f1f4f6;
+  --bg-subtle: #edf3fa;
+  --bg-elevated: #fafcff;
+  --bg-tint: #e5eff9;
+  --bg-hover: #edf3fa;
 
   /* Chữ & độ tương phản */
-  --ink: #1f2937;
-  --ink-strong: #111827;
-  --ink-muted: #52606d;
-  --ink-faint: #6b7280;
+  --ink: #1a2b3c;
+  --ink-strong: #0f1e2e;
+  --ink-muted: #4b6075;
+  --ink-faint: #687c91;
 
   /* Màu chủ đạo & ngữ nghĩa */
-  --brand: #11695b;
-  --brand-hover: #0d5347;
-  --brand-soft: #e6f4ee;
-  --brand-border: #b8ddd0;
+  --brand: #0f4c81;
+  --brand-hover: #0b3a63;
+  --brand-soft: #e8f2fc;
+  --brand-border: #b6d4f0;
 
-  --accent: #2563eb;
-  --accent-soft: #eef4ff;
-  --accent-border: #c7d9fd;
+  --accent: #1e78c8;
+  --accent-soft: #edf6ff;
+  --accent-border: #bedbfd;
 
   --ok: #15803d;
   --ok-bg: #f0fdf4;
@@ -37,18 +37,19 @@
   --danger-border: #fecaca;
 
   /* Đường viền & bóng đổ */
-  --line: #e2e8f0;
-  --line-soft: #eef2f6;
-  --line-strong: #cbd5e1;
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.07);
-  --shadow-md: 0 10px 28px rgba(15, 29, 25, 0.12);
-  --shadow-lg: 0 24px 64px rgba(15, 29, 25, 0.18);
+  --line: #dbe6f2;
+  --line-soft: #ecf2f8;
+  --line-strong: #c2d4e8;
+  --shadow-xs: 0 1px 2px rgba(15, 30, 46, 0.05);
+  --shadow-sm: 0 2px 8px rgba(15, 30, 46, 0.07);
+  --shadow-md: 0 10px 28px rgba(15, 30, 46, 0.12);
+  --shadow-lg: 0 24px 64px rgba(15, 30, 46, 0.18);
 
-  /* Phông chữ */
+  /* Phông chữ & chuyển động */
   --font-ui: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   --font-paper: "Times New Roman", Times, serif;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
   /* Kích thước khung làm việc */
   --header-h: 56px;
@@ -80,7 +81,6 @@
   --ui-line: var(--line);
   --ui-muted: var(--ink-muted);
   --green: var(--brand);
-  --line: #e2e8f0;
   --muted: var(--ink-muted);
   --mach-ink: var(--ink);
   --mach-teal: var(--brand);
