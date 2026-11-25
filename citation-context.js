@@ -54,6 +54,40 @@ function highlightContextHTML(content, range) {
  return `${esc(text.slice(0, range.start))}<mark>${esc(text.slice(range.start, range.end))}</mark>${esc(text.slice(range.end))}`;
 }
 
+function detectStaleNotice(evidence, options, quote, sourceId, kind, index) {
+ if (evidence?.stale === true) {
+  if (evidence?.staleReason === 'quote_variant_changed') {
+   return 'Câu hỏi đã chuyển sang bản ngữ liệu hoặc nguồn mới; trích dẫn của lượt sinh trước được giữ lại để đối chiếu lịch sử.';
+  }
+  return 'Trích dẫn này đã lỗi thời so với nội dung hoặc nguồn hiện tại của câu hỏi.';
+ }
+ if (options && 'currentSource' in options) {
+  const cur = options.currentSource;
+  if (cur === null) {
+   return 'Câu hỏi không còn gắn với tài liệu nguồn của trích dẫn này.';
+  }
+  if (cur && typeof cur === 'object') {
+   if (('docId' in cur && cur.docId === null && sourceId) || (cur.docId !== undefined && cur.docId !== sourceId)) {
+    return 'Nguồn gắn với câu hỏi hiện tại đã đổi sang tài liệu khác với trích dẫn đã lưu.';
+   }
+   if (kind === 'page' && cur.page != null && cur.page !== '' && Number(cur.page) !== Number(index)) {
+    return 'Trang nguồn gắn với câu hỏi đã thay đổi so với trích dẫn đã lưu.';
+   }
+  }
+ }
+ if (evidence?.questionVersion != null && options?.questionVersion != null && Number(evidence.questionVersion) !== Number(options.questionVersion)) {
+  return 'Câu hỏi đã được chỉnh sửa sang phiên bản mới; trích dẫn cũ chỉ giữ lại để đối chiếu.';
+ }
+ if (typeof options?.currentQuoteText === 'string') {
+  const curQuote = normalizeCitationText(options.currentQuoteText);
+  const evQuote = normalizeCitationText(quote);
+  if (!curQuote || (evQuote && !curQuote.includes(evQuote))) {
+   return 'Ngữ liệu hiện tại của câu hỏi không còn chứa đoạn trích dẫn đã lưu.';
+  }
+ }
+ return '';
+}
+
 export function resolveCitationContext(evidence, docs = [], options = {}) {
  const docList = Array.isArray(docs) ? docs.filter(Boolean) : [];
  const sourceId = String(evidence?.sourceId ?? '');
@@ -67,10 +101,32 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
   ...(rawLocator.regionId !== undefined ? {regionId: rawLocator.regionId} : {}),
  };
  const quote = String(evidence?.quote ?? '');
+ const staleNotice = detectStaleNotice(evidence, options, quote, sourceId, kind, index);
 
  if (kind === 'passage') {
   const pastedRefs = Array.isArray(options?.pastedRefs) ? options.pastedRefs.filter(Boolean) : [];
   const sameIdRefs = pastedRefs.filter(ref => ref.sourceId === sourceId && ref.locator?.kind === 'passage');
+  const sameVersionRefs = sameIdRefs.filter(ref => (ref.sourceVersion ?? 1) === sourceVersion);
+  const refForLabel = sameVersionRefs[0] || sameIdRefs[0];
+  const pastedName = String(refForLabel?.name ?? options?.pastedName ?? '').trim() || 'Ngữ liệu đã dán';
+  const label = refForLabel ? `${pastedName} · Đoạn ${index}` : `Nguồn của lượt sinh · Đoạn ${index}`;
+
+  if (staleNotice) {
+   return {
+    status: 'stale',
+    canOpen: false,
+    hasSourceDoc: false,
+    sourceId,
+    sourceVersion,
+    currentVersion: refForLabel ? (refForLabel.sourceVersion ?? 1) : null,
+    locator,
+    quote,
+    label,
+    contextHtml: '',
+    notice: staleNotice,
+   };
+  }
+
   if (!sameIdRefs.length) {
    return {
     status: 'source_missing',
@@ -81,16 +137,11 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
     currentVersion: null,
     locator,
     quote,
-    label: `Nguồn của lượt sinh · Đoạn ${index}`,
+    label,
     contextHtml: '',
     notice: `Nguồn gốc không còn trong đề hoặc phiên soạn (đã bị gỡ hoặc thay thế); trích dẫn đã lưu ở bản v${sourceVersion} vẫn được giữ để truy vết.`,
    };
   }
-
-  const sameVersionRefs = sameIdRefs.filter(ref => (ref.sourceVersion ?? 1) === sourceVersion);
-  const refForLabel = sameVersionRefs[0] || sameIdRefs[0];
-  const pastedName = String(refForLabel.name ?? options?.pastedName ?? '').trim() || 'Ngữ liệu đã dán';
-  const label = `${pastedName} · Đoạn ${index}`;
 
   if (!sameVersionRefs.length) {
    const currentVersion = refForLabel.sourceVersion ?? 1;
@@ -148,8 +199,29 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
  }
 
  const doc = docList.find(item => item.id === sourceId) || null;
+ const unit = kind === 'region' ? 'Vùng ' : 'Trang ';
+ const docName = doc ? (String(doc.name ?? '').trim() || 'Tài liệu nguồn') : '';
+ const locationLabel = doc ? (kind === 'page' ? sourcePageLabel(doc, index) : `Vùng ${index}`) : `${unit}${index}`;
+ const label = doc ? `${docName} · ${locationLabel}` : `Nguồn của lượt sinh · ${unit}${index}`;
+ const currentVersion = doc ? (doc.version || 1) : null;
+
+ if (staleNotice) {
+  return {
+   status: 'stale',
+   canOpen: false,
+   hasSourceDoc: Boolean(doc),
+   sourceId,
+   sourceVersion,
+   currentVersion,
+   locator,
+   quote,
+   label,
+   contextHtml: '',
+   notice: staleNotice,
+  };
+ }
+
  if (!doc) {
-  const unit = kind === 'region' ? 'Vùng ' : 'Trang ';
   return {
    status: 'source_missing',
    canOpen: false,
@@ -159,16 +231,11 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
    currentVersion: null,
    locator,
    quote,
-   label: `Nguồn của lượt sinh · ${unit}${index}`,
+   label,
    contextHtml: '',
    notice: `Nguồn gốc không còn trong đề (đã bị gỡ hoặc thay thế); trích dẫn đã lưu ở bản v${sourceVersion} vẫn được giữ để truy vết.`,
   };
  }
-
- const docName = String(doc.name ?? '').trim() || 'Tài liệu nguồn';
- const locationLabel = kind === 'page' ? sourcePageLabel(doc, index) : `Vùng ${index}`;
- const label = `${docName} · ${locationLabel}`;
- const currentVersion = doc.version || 1;
 
  if (currentVersion !== sourceVersion) {
   return {

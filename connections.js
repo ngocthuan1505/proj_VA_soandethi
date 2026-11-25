@@ -72,6 +72,18 @@ export function connectionFormData(form){
  };
 }
 
+export function translateProviderErrorMessage(provider,raw){
+ const msg=String(raw||'').trim();
+ if(!msg)return '';
+ if(provider==='ollama'&&/All connection attempts failed|Connection refused|ECONNREFUSED|WinError 10061/i.test(msg)){
+  return 'Chưa bật dịch vụ Ollama tại máy (127.0.0.1:11434)';
+ }
+ if(/All connection attempts failed|ECONNREFUSED/i.test(msg)){
+  return 'Chưa kết nối được tới dịch vụ tại máy (127.0.0.1:11434)';
+ }
+ return msg;
+}
+
 export function renderProvidersHealthHTML(health,fallback={config:{}}){
  if(!health||typeof health!=='object'){
   return '<p class="hint">Đang kiểm tra trạng thái các kênh AI trực tiếp…</p>';
@@ -82,7 +94,7 @@ export function renderProvidersHealthHTML(health,fallback={config:{}}){
    id:'agy',
    title:'AGY CLI tại máy',
    ok:Boolean(agy.available||agy.detected),
-   status:agy.available?`Sẵn sàng${agy.version?' · '+agy.version:''}`:(agy.error||'Chưa phát hiện trên máy'),
+   status:agy.available?`Sẵn sàng${agy.version?' · '+agy.version:''}`:(translateProviderErrorMessage('agy',agy.error)||'Chưa phát hiện trên máy'),
    detail:agy.agyModel?`Mô hình: ${agy.agyModel}`:'Tự động dùng cho tác vụ soạn & kiểm tra sâu',
   },
   {
@@ -96,14 +108,14 @@ export function renderProvidersHealthHTML(health,fallback={config:{}}){
    id:'deepseek',
    title:'DeepSeek / Cổng API riêng',
    ok:Boolean(ds.configured&&(ds.reachable!==false||ds.ok)),
-   status:ds.ok?'Kết nối ổn định':ds.configured?(ds.message||'Đã nạp khóa · sẵn sàng'):'Chưa nạp khóa',
+   status:ds.ok?'Kết nối ổn định':ds.configured?(translateProviderErrorMessage('deepseek',ds.message)||'Đã nạp khóa · sẵn sàng'):'Chưa nạp khóa',
    detail:ds.model?`${ds.model}${Number.isFinite(Number(ds.spentSessionUsd))?` · Đã dùng $${Number(ds.spentSessionUsd).toFixed(2)}`:''}`:'Tương thích chuẩn OpenAI',
   },
   {
    id:'ollama',
    title:'Ollama ngoại tuyến',
    ok:Boolean(oll.reachable),
-   status:oll.reachable?`Đang chạy (${(oll.models||[]).length} mô hình)`:(oll.error||'Chưa bật dịch vụ tại máy'),
+   status:oll.reachable?`Đang chạy (${(oll.models||[]).length} mô hình)`:(translateProviderErrorMessage('ollama',oll.error)||'Chưa bật dịch vụ Ollama tại máy (127.0.0.1:11434)'),
    detail:(oll.chatModels||[]).length?`Gợi ý: ${oll.chatModels.slice(0,3).join(', ')}`:`Dự phòng (${fallback?.config?.ollama?.model||'qwen3:4b'})`,
   },
  ];
@@ -112,7 +124,8 @@ export function renderProvidersHealthHTML(health,fallback={config:{}}){
 
 export function formatProviderTestResultHTML(provider,result){
  const ok=Boolean(result?.ok||result?.reachable||result?.available);
- const msg=String(result?.message||result?.error||(ok?'Kết nối thành công':'Chưa kết nối được'));
+ const rawMsg=String(result?.message||result?.error||(ok?'Kết nối thành công':'Chưa kết nối được'));
+ const msg=ok?rawMsg:(translateProviderErrorMessage(provider,rawMsg)||rawMsg);
  const models=Array.isArray(result?.models)?result.models.map(m=>typeof m==='string'?m:m?.name).filter(Boolean):(Array.isArray(result?.chatModels)?result.chatModels:[]);
  const modelNote=models.length?` · Tìm thấy ${models.length} mô hình`:'';
  return {ok,text:`${ok?'✓':'⚠'} ${msg}${modelNote}`,models};
@@ -138,21 +151,21 @@ function pocConnectionSettings(config){
   <div class="time-preset-grid" role="radiogroup" aria-label="Chế độ thời gian và độ kỹ">${presets.map(([id,title,desc])=>`<label class="time-preset-card ${timePreset===id?'is-active':''}"><input type="radio" name="fixed-time-preset" value="${id}" ${timePreset===id?'checked':''}><div><b>${esc(title)}</b><small>${esc(desc)}</small></div></label>`).join('')}</div>
   <label class="fixed-timeout-label">Thời gian chờ tối đa (giây · tối đa 7200s)<input type="number" name="fixed-timeout-seconds" min="30" max="7200" value="${timeoutSeconds}"></label>
   <div id="providers-health-strip" class="fixed-router-status-strip" role="status" aria-label="Trạng thái 4 kênh AI">
-   <div class="router-tier-badge"><b>AGY CLI Local</b><span>${fr.agyAvailable?'Sẵn sàng (Ưu tiên việc khó & chat sâu)':'Tự động bật khi có AGY CLI'}</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="agy">Thử kênh</button><span id="provider-test-status-agy" class="hint"></span></div></div>
+   <div class="router-tier-badge"><b>AGY CLI tại máy</b><span>${fr.agyAvailable?'Sẵn sàng (Ưu tiên việc khó & chat sâu)':'Tự động bật khi có AGY CLI'}</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="agy">Thử kênh</button><span id="provider-test-status-agy" class="hint"></span></div></div>
    <div class="router-tier-badge"><b>Gemini xoay vòng</b><span>${totalGeminiKeys} khóa xoay vòng</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="gemini">Thử kênh</button><span id="provider-test-status-gemini" class="hint"></span></div></div>
    <div class="router-tier-badge"><b>DeepSeek / Cổng API riêng</b><span>${d.hasKey?'Đã nạp khóa':'Chưa nạp khóa'} · Trần $${d.sessionLimitUsd??0.50}/phiên · $${d.totalLimitUsd??5.00}/tổng</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="deepseek">Thử kênh</button><span id="provider-test-status-deepseek" class="hint"></span></div></div>
    <div class="router-tier-badge"><b>Ollama trên máy</b><span>Dự phòng ngoại tuyến (${esc(config.ollama?.model||'qwen3:4b')})</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="ollama">Khám phá &amp; thử</button><span id="provider-test-status-ollama" class="hint"></span></div></div>
   </div>
  </section>
- <details class="poc-key-vault" ${fr.vaultOpen?'open':''}><summary>Tầng 2 · Quản lý khóa xoay vòng, Cổng riêng, AGY CLI &amp; Ollama (Thu gọn)</summary>
+ <details class="poc-key-vault" ${fr.vaultOpen?'open':''}><summary>Tầng 2 · Quản lý khóa xoay vòng, Cổng riêng, AGY CLI &amp; Ollama</summary>
   <p class="hint">Cài một lần, mã hóa an toàn trên Windows. Thầy cô có thể chọn kênh ưu tiên và thử từng kết nối riêng biệt.</p>
   <div class="grid2 poc-routes"><label>Kênh soạn và sửa đề<select name="route-generate">${providers(selected)}</select></label><label>Kênh kiểm tra lại<select name="route-check">${providers(check)}</select></label></div>
-  <section class="settings-section" data-poc-provider="ollama" ${selected!=='ollama'&&check!=='ollama'?'hidden':''}><div class="row space"><h3>Ollama trên máy (tự khám phá model)</h3><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="ollama">Tự khám phá mô hình</button></div><p class="hint">Dùng mô hình chạy ngoại tuyến tại máy. Dữ liệu không rời khỏi máy tính.</p><input type="hidden" name="ollama-url" value="http://127.0.0.1:11434"><div class="grid2"><label>Model soạn đề<input name="ollama-model" list="ollama-models-list" value="${esc(config.ollama?.model||'')}" spellcheck="false" autocomplete="off"></label><label>Model kiểm đề<input name="ollama-check-model" list="ollama-models-list" value="${esc(config.ollama?.checkModel||config.ollama?.model||'')}" spellcheck="false" autocomplete="off"></label></div><datalist id="ollama-models-list"></datalist><div id="ollama-discovered-models" class="buttons" style="margin-top:6px"></div></section>
+  <section class="settings-section" data-poc-provider="ollama" ${selected!=='ollama'&&check!=='ollama'?'hidden':''}><div class="row space"><h3>Ollama trên máy (tự khám phá mô hình)</h3><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="ollama">Tự khám phá mô hình</button></div><p class="hint">Dùng mô hình chạy ngoại tuyến tại máy. Dữ liệu không rời khỏi máy tính.</p><input type="hidden" name="ollama-url" value="http://127.0.0.1:11434"><div class="grid2"><label>Mô hình soạn đề<input name="ollama-model" list="ollama-models-list" value="${esc(config.ollama?.model||'')}" spellcheck="false" autocomplete="off"></label><label>Mô hình kiểm đề<input name="ollama-check-model" list="ollama-models-list" value="${esc(config.ollama?.checkModel||config.ollama?.model||'')}" spellcheck="false" autocomplete="off"></label></div><datalist id="ollama-models-list"></datalist><div id="ollama-discovered-models" class="buttons" style="margin-top:6px"></div></section>
   <section class="settings-section" data-poc-provider="gemini" ${selected!=='gemini'&&check!=='gemini'?'hidden':''}><div class="row space"><h3>Gemini API · Cụm khóa xoay vòng</h3><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="gemini">Thử kênh Gemini</button></div><p class="hint">Ngữ liệu sẽ được gửi đến Google. Chọn nguồn tự soạn hoặc tài liệu được phép chia sẻ.</p><input type="hidden" name="gemini-url" value="https://generativelanguage.googleapis.com/v1beta">
-  <div class="grid2"><label>Model soạn đề<select name="gemini-model">${models(g.model)}</select></label><label>Model kiểm đề<select name="gemini-check-model">${models(g.checkModel||g.model)}</select></label></div>
+  <div class="grid2"><label>Mô hình soạn đề<select name="gemini-model">${models(g.model)}</select></label><label>Mô hình kiểm đề<select name="gemini-check-model">${models(g.checkModel||g.model)}</select></label></div>
   <label>Khóa Gemini chính (AI Studio AIza... hoặc Vertex AI Express AQ....)<input name="gemini-key" type="password" autocomplete="off" placeholder="${g.hasKey?(config.persistence?.saved?'Đã lưu mã hóa trên máy — để trống để giữ':'Đã có khóa trong phiên — để trống để giữ'):'Nhập khóa Google AI Studio (AIza...) hoặc Vertex Express (AQ....)…'}"></label>
-  <details class="poc-backup" ${g.hasBackupKey||extraCount?'open':''}><summary>${g.hasBackupKey?'Key dự phòng đã kết nối':'Thêm API key dự phòng &amp; cụm khóa xoay vòng'} <span>Không bắt buộc</span></summary><label>API key dự phòng<input name="gemini-backup-key" type="password" autocomplete="off" placeholder="${g.hasBackupKey?'Đã có key dự phòng — để trống để giữ':'Nhập key của project thứ hai…'}"></label><label>Cụm khóa Gemini xoay vòng bổ sung (AIza... hoặc Vertex AI Express AQ...., mỗi dòng: ten_acc : AQ....)<textarea name="gemini-extra-keys" rows="3" spellcheck="false" autocomplete="off" placeholder="${extraCount?`Đã có ${extraCount} khóa bổ sung — để trống để giữ`:'Dán thêm khóa Vertex AI Express (AQ.... hoặc ten_acc : AQ....) hoặc Google AI Studio (AIza...), mỗi dòng 1 khóa'}"></textarea></label><label class="consent"><input type="checkbox" name="gemini-clear-extra-keys"> Xóa các khóa Gemini bổ sung</label><p class="hint">Hỗ trợ nhiều khóa Vertex AI Express (<code>AQ....</code>, dạng <code>ten_acc : AQ....</code>) và Google AI Studio (<code>AIza...</code>). Hệ thống tự luân phiên khóa còn hạn mức.</p></details>
-  <label class="consent"><input type="checkbox" name="gemini-auto-fallback" ${g.autoFallback!==false?'checked':''}> Tự đổi model khi hết hạn mức</label><label class="consent"><input type="checkbox" name="gemini-free-tier" ${g.freeTierConfirmed?'checked':''}> Tôi xác nhận các khóa đang dùng ở mức miễn phí hợp lệ.</label>
+  <details class="poc-backup" ${g.hasBackupKey||extraCount?'open':''}><summary>${g.hasBackupKey?'Khóa dự phòng đã kết nối':'Thêm khóa API dự phòng &amp; cụm khóa xoay vòng'} <span>Không bắt buộc</span></summary><label>Khóa API dự phòng<input name="gemini-backup-key" type="password" autocomplete="off" placeholder="${g.hasBackupKey?'Đã có key dự phòng — để trống để giữ':'Nhập khóa của dự án thứ hai…'}"></label><label>Cụm khóa Gemini xoay vòng bổ sung (AIza... hoặc Vertex AI Express AQ...., mỗi dòng: ten_acc : AQ....)<textarea name="gemini-extra-keys" rows="3" spellcheck="false" autocomplete="off" placeholder="${extraCount?`Đã có ${extraCount} khóa bổ sung — để trống để giữ`:'Dán thêm khóa Vertex AI Express (AQ.... hoặc ten_acc : AQ....) hoặc Google AI Studio (AIza...), mỗi dòng 1 khóa'}"></textarea></label><label class="consent"><input type="checkbox" name="gemini-clear-extra-keys"> Xóa các khóa Gemini bổ sung</label><p class="hint">Hỗ trợ nhiều khóa Vertex AI Express (<code>AQ....</code>, dạng <code>ten_acc : AQ....</code>) và Google AI Studio (<code>AIza...</code>). Hệ thống tự luân phiên khóa còn hạn mức.</p></details>
+  <label class="consent"><input type="checkbox" name="gemini-auto-fallback" ${g.autoFallback!==false?'checked':''}> Tự đổi mô hình khi hết hạn mức</label><label class="consent"><input type="checkbox" name="gemini-free-tier" ${g.freeTierConfirmed?'checked':''}> Tôi xác nhận các khóa đang dùng ở mức miễn phí hợp lệ.</label>
   <a class="poc-key-link" href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">Lấy khóa tại Google AI Studio</a></section>
   <section class="settings-section poc-deepseek-agy-section">
    <div class="row space"><h3>DeepSeek / Cổng API riêng &amp; AGY CLI tại máy</h3><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="deepseek">Thử Cổng riêng</button><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="agy">Thử AGY CLI</button></div></div>
@@ -161,11 +174,11 @@ function pocConnectionSettings(config){
     <label>Khóa API Cổng / DeepSeek<input type="password" name="deepseek-key" autocomplete="off" placeholder="${d.hasKey?'Đã có khóa DeepSeek — để trống để giữ':'Nhập khóa cổng API / DeepSeek…'}"></label>
    </div>
    <div class="grid2">
-    <label>Model chính (soạn / nhanh)<input name="deepseek-model" value="${esc(d.model||'deepseek-v4.1-flash')}" spellcheck="false" autocomplete="off" placeholder="deepseek-v4.1-flash / deepseek-chat"></label>
-    <label>Model suy luận<input name="deepseek-reasoner-model" value="${esc(d.reasonerModel||'deepseek-v4-pro')}" spellcheck="false" autocomplete="off" placeholder="deepseek-v4-pro / deepseek-reasoner"></label>
+    <label>Mô hình chính (soạn / nhanh)<input name="deepseek-model" value="${esc(d.model||'deepseek-v4.1-flash')}" spellcheck="false" autocomplete="off" placeholder="deepseek-v4.1-flash / deepseek-chat"></label>
+    <label>Mô hình suy luận<input name="deepseek-reasoner-model" value="${esc(d.reasonerModel||'deepseek-v4-pro')}" spellcheck="false" autocomplete="off" placeholder="deepseek-v4-pro / deepseek-reasoner"></label>
    </div>
    <div class="grid2">
-    <label>Model đối chiếu chéo<input name="deepseek-cross-model" value="${esc(d.crossModel||'qwen3.8-max')}" spellcheck="false" autocomplete="off" placeholder="qwen3.8-max"></label>
+    <label>Mô hình đối chiếu chéo<input name="deepseek-cross-model" value="${esc(d.crossModel||'qwen3.8-max')}" spellcheck="false" autocomplete="off" placeholder="qwen3.8-max"></label>
     <label>Đường dẫn AGY CLI (tùy chọn)<input name="agy-custom-path" value="${esc(fr.agyCustomPath||'')}" spellcheck="false" autocomplete="off" placeholder="Tự động tìm agy trên máy"></label>
    </div>
    <div class="grid2">
@@ -174,7 +187,7 @@ function pocConnectionSettings(config){
    </div>
    <label class="consent"><input type="checkbox" name="deepseek-clear-key"> Xóa khóa DeepSeek / Cổng riêng</label>
   </section>
-  <details class="poc-advanced"><summary>Giới hạn lượt gọi &amp; Xóa khóa nhanh</summary><div class="grid2"><label>Số lượt gọi tối đa<input type="number" name="max-model-calls" min="4" max="64" required value="${config.runBudget?.maxModelCalls||24}"></label><label>Thời gian tối đa (giây)<input type="number" name="run-timeout" min="30" max="900" required value="${config.runBudget?.timeoutSeconds||900}"></label></div><div data-poc-provider="gemini" ${selected!=='gemini'&&check!=='gemini'?'hidden':''}><label class="consent"><input type="checkbox" name="gemini-clear-backup-key"> Xóa key dự phòng</label><label class="consent"><input type="checkbox" name="gemini-clear-key"> Xóa key chính</label></div></details>
+  <details class="poc-advanced"><summary>Giới hạn lượt gọi &amp; Xóa khóa nhanh</summary><div class="grid2"><label>Số lượt gọi tối đa<input type="number" name="max-model-calls" min="4" max="64" required value="${config.runBudget?.maxModelCalls||24}"></label><label>Thời gian tối đa (giây)<input type="number" name="run-timeout" min="30" max="900" required value="${config.runBudget?.timeoutSeconds||900}"></label></div><div data-poc-provider="gemini" ${selected!=='gemini'&&check!=='gemini'?'hidden':''}><label class="consent"><input type="checkbox" name="gemini-clear-backup-key"> Xóa khóa dự phòng</label><label class="consent"><input type="checkbox" name="gemini-clear-key"> Xóa khóa chính</label></div></details>
  </details>
  <label class="consent poc-remember"><input type="checkbox" name="poc-save-local" ${config.saveLocally?'checked':''} ${config.persistence?.available?'':'disabled'}> Ghi nhớ cấu hình mã hóa trên máy này</label><p class="hint">${config.persistence?.available?'Windows mã hóa an toàn cho tài khoản hiện tại. Khóa không nằm trong đề thi hoặc tệp sao lưu.':'Máy chưa bật kho mã hóa; khóa chỉ giữ trong phiên làm việc hiện tại.'}</p>${config.persistence?.warning?`<p role="alert">${esc(config.persistence.warning)}</p>`:''}
  <div class="modal-foot"><span class="poc-save-note">Lưu xong có thể bấm Thử kênh để kiểm tra kết nối thật.</span><button class="primary" type="submit">Lưu kết nối</button></div></form>`;

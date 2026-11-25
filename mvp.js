@@ -8,7 +8,7 @@ import {esc,uid,clone,touch,check,LEVELS,usesTable,commit,blank,isApproved,isCon
 import {mountEditor,initEditor,flushEditor,format,equationHTML,newFormula} from './editor.js';
 import katex from './assets/katex/katex.mjs';
 import * as db from './storage.js';
-let c,status=null,prepared=null,config=null,zoom=100,hideChat=false,activeSourcePage=1,activeSourceDoc=null,ocrAbortController=null,lastExportClassLabel='';
+let c,status=null,prepared=null,config=null,zoom=100,hideChat=false,activeSourcePage=1,activeSourceDoc=null,ocrAbortController=null,lastExportClassLabel='',latestExportPreflight=null;
 const SAFE_LAYOUT_IMAGE_RE=/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i;
 const $=s=>document.querySelector(s),btn=(a,t,cls='',attrs='')=>`<button data-action="${a}" class="${cls}" ${attrs}>${t}</button>`;
 const foot=s=>`<div class="modal-foot">${s}</div>`;
@@ -17,10 +17,14 @@ const note=s=>`<p class="hint">${s}</p>`;
 const consent=id=>`<label class="consent"><input type="checkbox" id="${id}"> Cho phép gửi nội dung đã chọn đến dịch vụ ngoài nếu tác vụ dùng API hoặc máy chủ ngoài máy.</label>`;
 async function api(path,data,signal){
  const response=await fetch(path,{signal,headers:{...db.workspaceHeaders(),...(data===undefined?{}:{'Content-Type':'application/json'})},...(data===undefined?{}:{method:'POST',body:JSON.stringify(data)})});
- const result=await response.json();
+ let result={};
+ try{result=await response.json();}catch{}
  if(!response.ok){
-  const error=await aiRequestError(path,result.error||'Tác vụ chưa thực hiện được.',()=>api('/api/status'));
-  error.code=result.code;throw error;
+  const error=await aiRequestError(path,result.error||result.detail?.message||'Tác vụ chưa thực hiện được.',()=>api('/api/status'));
+  error.status=response.status;
+  error.code=result.code||result.detail?.code;
+  error.data=result;
+  throw error;
  }
  return result;
 }
@@ -32,16 +36,25 @@ async function computeFileSha256(file){
   return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
  }catch{return null;}
 }
+export const WORKFLOW_STATUS_LABELS={draft:'Dự thảo',reviewed:'Đã rà soát',approved:'Bản duyệt',printed:'Bản đã in'};
+export function normalizeWorkflowStatus(wf){
+ return Object.prototype.hasOwnProperty.call(WORKFLOW_STATUS_LABELS,wf)?wf:'draft';
+}
 export function shouldConfirmStudentExport({batch=false,teacher=false,confirmed=false,classLabel='',workflowStatus='draft',unapprovedCount=0,preflightFailed=false}={}){
  if(batch||teacher||confirmed)return false;
- const officialContext=Boolean(String(classLabel||'').trim())||['approved','printed'].includes(workflowStatus);
+ const officialContext=Boolean(String(classLabel||'').trim())||['approved','printed'].includes(normalizeWorkflowStatus(workflowStatus));
  return officialContext&&(unapprovedCount>0||preflightFailed);
+}
+export function shouldRequireDraftConfirmation({batch=false,teacher=false,confirmed=false,classLabel='',workflowStatus='draft',unapprovedCount=0,preflightFailed=false}={}){
+ if(confirmed)return false;
+ if(preflightFailed)return true;
+ return shouldConfirmStudentExport({batch,teacher,confirmed,classLabel,workflowStatus,unapprovedCount,preflightFailed});
 }
 const current=()=>c.exam();
 function pagesOf(d){return d.pages?.length?d.pages:d.text?[{number:1,text:d.text,method:'text'}]:[];}
 function sourcePageNeedsReview(d,p){return p.needsReview??Boolean(d.needsReview||p.uncertain===true||p.uncertain?.length);}
 function sourcesFor(e,onlyDoc=null){return e.docs.filter(d=>!onlyDoc||d.id===onlyDoc).flatMap(d=>pagesOf(d).filter(p=>p.text?.trim()).map(p=>({docId:d.id,page:p.number,text:p.text,location:d.kind==='slides'?'Slide '+p.number:d.kind==='pdf'?'Trang '+p.number:'Văn bản • '+d.name})));}
-async function refreshStatus(){status=await api('/api/status');config=status.config;document.querySelectorAll('.mode-notice').forEach(n=>n.innerHTML=`<span class="connection-dot"></span>${status.localPoC?(status.aiProvider==='gemini'?'Gemini API đã chọn: ':'Model trên máy đã chọn: ')+esc(status.model):AI_PROVIDERS.some(p=>config[p]?.model)?'Đã cấu hình đường xử lý · kiểm tra kết nối trong cài đặt':'Chọn kết nối AI để sinh & sửa đề'}<br><small>Tài liệu được đọc và lưu tại máy.</small>`);return status;}
+async function refreshStatus(){status=await api('/api/status');config=status.config;document.querySelectorAll('.mode-notice').forEach(n=>n.innerHTML=`<span class="connection-dot"></span>${status.localPoC?(status.aiProvider==='gemini'?'Gemini API đã chọn: ':'Mô hình trên máy đã chọn: ')+esc(status.model):AI_PROVIDERS.some(p=>config[p]?.model)?'Đã cấu hình đường xử lý · kiểm tra kết nối trong cài đặt':'Chọn kết nối AI để sinh & sửa đề'}<br><small>Tài liệu được đọc và lưu tại máy.</small>`);return status;}
 export function renderExportHistoryHTML(rows){
  if(!Array.isArray(rows)||!rows.length)return '<p class="hint">Chưa có bản xuất nào được lưu cho đề này.</p>';
  return rows.slice(0,15).map(item=>{
@@ -127,7 +140,7 @@ function renderQuestionAssets(){
 }
 function syncWorkflowStrip(){if(!c)return;const strip=$('.main-footer .workflow-strip')||$('.workflow-strip');if(!strip)return;strip.outerHTML=workflowStripHTML(current());}
 export async function initMVP(context){c=context;initEditor(c);try{await refreshStatus();await c.persist();}catch(error){c.toast(error.message);}}
-export function mountMVP(context){c=context;c.importDroppedFile=(file,opts)=>importFile(file,opts);const e=current();const header=$('header.top');const unified=header?.dataset.unifiedHeader==='1';if(!unified&&header){header.innerHTML=`<div class="mvp-document"><button class="doc-emblem" data-action="new" title="Đề mới">${c.icon('file')}</button><div><div class="document-title-line"><button class="header-title" data-action="metadata">${esc(e.title)}</button><span class="saved"><span data-save-status>Đã lưu trên máy</span></span><select id="workflow-status-select" class="workflow-status-select" data-wf="${esc(e.workflowStatus||'draft')}" aria-label="Trạng thái quy trình đề"><option value="draft" ${(e.workflowStatus||'draft')==='draft'?'selected':''}>Dự thảo</option><option value="approved" ${e.workflowStatus==='approved'?'selected':''}>Bản duyệt</option><option value="printed" ${e.workflowStatus==='printed'?'selected':''}>Bản đã in</option></select></div><div class="menubar">${[['file','Tệp'],['edit','Chỉnh sửa'],['view','Xem'],['insert','Chèn'],['format','Định dạng'],['tools','Công cụ']].map(([id,name])=>btn('menu',name,'menu-button',`data-menu="${id}"`)).join('')}</div></div></div><div class="header-actions">${btn('share',c.icon('globe')+'Chia sẻ','quiet')}${btn('library',c.icon('folder')+'Xem kho đề của tôi','quiet')}${btn('toggle-ai',c.icon('chat')+'Hỏi AI','ai-button')}<span class="avatar" title="Nguyễn Hữu Ngọc Thuận">NT</span></div>`;}
+export function mountMVP(context){c=context;c.importDroppedFile=(file,opts)=>importFile(file,opts);const e=current();const wf=normalizeWorkflowStatus(e.workflowStatus);const header=$('header.top');const unified=header?.dataset.unifiedHeader==='1';if(!unified&&header){header.innerHTML=`<div class="mvp-document"><button class="doc-emblem" data-action="new" title="Đề mới">${c.icon('file')}</button><div><div class="document-title-line"><button class="header-title" data-action="metadata">${esc(e.title)}</button><span class="saved"><span data-save-status>Đã lưu trên máy</span></span><select id="workflow-status-select" class="workflow-status-select" data-wf="${esc(wf)}" aria-label="Trạng thái quy trình đề">${Object.entries(WORKFLOW_STATUS_LABELS).map(([k,lbl])=>`<option value="${k}" ${wf===k?'selected':''}>${lbl}</option>`).join('')}</select></div><div class="menubar">${[['file','Tệp'],['edit','Chỉnh sửa'],['view','Xem'],['insert','Chèn'],['format','Định dạng'],['tools','Công cụ']].map(([id,name])=>btn('menu',name,'menu-button',`data-menu="${id}"`)).join('')}</div></div></div><div class="header-actions">${btn('share',c.icon('globe')+'Chia sẻ','quiet')}${btn('library',c.icon('folder')+'Xem kho đề của tôi','quiet')}${btn('toggle-ai',c.icon('chat')+'Hỏi AI','ai-button')}<span class="avatar" title="Nguyễn Hữu Ngọc Thuận">NT</span></div>`;}
  const mainFooter=$('.main-footer');
  if(mainFooter&&!mainFooter.querySelector('.workflow-strip')){
   const legacySpan=mainFooter.querySelector(':scope > span:first-child');
@@ -142,7 +155,7 @@ export function mountMVP(context){c=context;c.importDroppedFile=(file,opts)=>imp
   if($('.editing-bar'))$('.editing-bar').innerHTML=`<div class="editor-toolbar">${btn('toggle-left',c.icon('list'),'tool mobile-nav','aria-label="Mở mục lục"')}<div class="toolgroup">${btn('undo',c.icon('undo'),'tool',`title="Hoàn tác" aria-label="Hoàn tác" ${e.undo.length?'':'disabled'}`)}${btn('redo',c.icon('redo'),'tool',`title="Làm lại" aria-label="Làm lại" ${e.redo.length?'':'disabled'}`)}${btn('export',c.icon('print'),'tool','title="In / Xuất Word, PDF"')}<select id="zoom" aria-label="Độ thu phóng"><option value="75" ${zoom===75?'selected':''}>75%</option><option value="85" ${zoom===85?'selected':''}>85%</option><option value="90" ${zoom===90?'selected':''}>90%</option><option value="100" ${zoom===100?'selected':''}>100%</option><option value="110" ${zoom===110?'selected':''}>110%</option></select></div><span class="toolbar-divider"></span><select id="doc-font" aria-label="Phông chữ"><option ${e.layout?.font!=='Arial'?'selected':''}>Times New Roman</option><option ${e.layout?.font==='Arial'?'selected':''}>Arial</option></select><input id="doc-fontsize" aria-label="Cỡ chữ" type="number" min="10" max="22" value="${e.layout?.fontSize||15}"><span class="toolbar-divider"></span>${btn('format','<b>B</b>','tool','data-command="bold" title="In đậm" aria-label="In đậm"')}${btn('format','<i>I</i>','tool','data-command="italic" title="In nghiêng" aria-label="In nghiêng"')}${btn('format','<u>U</u>','tool','data-command="underline" title="Gạch chân" aria-label="Gạch chân"')}<span class="toolbar-divider"></span>${btn('formula','∑','tool formula-tool','title="Chèn công thức" aria-label="Chèn công thức"')}${btn('chemistry',c.icon('chemistry'),'tool','title="Công thức hóa học" aria-label="Công thức hóa học"')}${btn('subject-library','<span class="formula-tool-symbol">ƒ</span>','tool design-library-open','aria-label="Chèn nội dung theo môn" title="Thư viện công thức & mẫu theo môn"')}${btn('menu','⋮','tool','data-menu="insert" title="Thêm công cụ"')}<span class="toolbar-spacer"></span>${btn('view-student','Đề',!c.isTeacher()?'view-tab active':'view-tab')}${btn('view-teacher','Đáp án',c.isTeacher()?'view-tab active':'view-tab')}</div>`;
  }
  const zoomSel=$('#zoom');if(zoomSel)zoomSel.value=String(zoom);
- const wfSel=$('#workflow-status-select');if(wfSel){wfSel.value=e.workflowStatus||'draft';wfSel.dataset.wf=e.workflowStatus||'draft';}
+ const wfSel=$('#workflow-status-select');if(wfSel){wfSel.value=wf;wfSel.dataset.wf=wf;}
  if(!workflowBound){workflowBound=true;document.addEventListener('studio-refreshed',syncWorkflowStrip);}
  const paper=$('.paper');
  if(paper){
@@ -164,7 +177,7 @@ export function mountMVP(context){c=context;c.importDroppedFile=(file,opts)=>imp
 }
 function refreshMode(){const model=config?.[config?.routes?.generate]?.model;const notice=$('.mode-notice');if(notice)notice.innerHTML=`<span class="connection-dot ${model?'configured':''}"></span>${model?'Đường tạo đề: '+esc(config.routes.generate==='api'&&/127\.0\.0\.1|localhost/.test(config.api.url)?'Cục bộ':PROVIDER_INFO[config.routes.generate]?.label||config.routes.generate)+' · '+esc(model):'Chưa chọn mô hình AI'}<br><small>${config?.localPoC&&config.routes.generate==='gemini'?'Khi sinh đề, ngữ liệu đã chọn được gửi tới Google.':'Tài liệu được đọc và lưu tại máy.'}</small>`;}
 function menu(id){const items={file:[['new','Tạo đề mới'],['generate','Tạo đề từ tài liệu'],['library','Mở kho đề'],['import-doc','Thêm tài liệu'],['exam-audio','Gắn Audio nghe cho đề'],['export','Xuất Word / PDF'],['backup-local','Tải bản sao toàn bộ'],['import-backup','Khôi phục bản sao JSON']],edit:[['undo','Hoàn tác'],['redo','Làm lại'],['studio-replace','Tìm và thay thế (Ctrl+H)'],['replace','Thay đoạn đã chọn'],['question-meta','Thuộc tính câu'],['history','Lịch sử phiên bản']],view:[['scroll-marking','Đến hướng dẫn chấm'],['view-student','Xem đề học sinh'],['view-teacher','Xem đáp án'],['matrix','Ma trận'],['toggle-ai','Ẩn / hiện trợ lý']],insert:[['add-question','Thêm câu trắc nghiệm'],['add-essay','Thêm bài tự luận'],['insert-audio','Gắn Audio nghe cho câu'],['formula','Chèn công thức'],['insert-image','Chèn ảnh'],['geometry','Chèn hình hình học'],['insert-table','Chèn bảng'],['page-break','Ngắt trang trước câu']],format:[['align-left','Căn trái'],['align-center','Căn giữa'],['align-justify','Căn đều'],['bullet-list','Danh sách dấu đầu dòng'],['number-list','Danh sách đánh số'],['metadata','Thông tin & đầu đề'],['layout','Định dạng trang']],tools:[['question-bank','Ngân hàng câu hỏi'],['exam-rooms','Phòng thi & giao bài'],['exam-analytics','Phân tích chất lượng đề'],['export-omr-student','Xuất phiếu tô OMR (Bộ GD&ĐT 2025)'],['check-all','Kiểm tra bằng phép tính'],['ai-check','Giải lại câu bằng AI'],['quotes','Đối chiếu đoạn trích'],['extract','Rút trích đề thi'],['memory','Cách ra đề của thầy cô'],['connections','Kết nối AI & tìm nguồn']]};const anchor=document.querySelector(`[data-action="menu"][data-menu="${id}"]`);showDropdown(anchor,`<div class="menu-list" role="menu">${items[id].map(([a,t])=>btn(a,t,'menu-item','role="menuitem"')).join('')}</div>`,'document-menu');}
-function showConfig(){if(status?.localPoC&&!config?.gemini){c.modal('AI trên máy',`<p>Hệ thống đang dùng Ollama cục bộ với model <b>${esc(status.model)}</b>. Bật app bằng tệp khởi động để chuẩn bị kết nối.</p><p class="hint">Chế độ cục bộ này chưa cấu hình API Gemini, GPT hoặc Claude trong giao diện. Nội dung nguồn chỉ được gửi khi bạn xác nhận.</p>`);return;}c.modal(status?.localPoC?'Kết nối AI':'Kết nối AI & tìm nguồn',connectionSettings(config||{}));void loadProvidersHealth();}
+function showConfig(){if(status?.localPoC&&!config?.gemini){c.modal('AI trên máy',`<p>Hệ thống đang dùng Ollama cục bộ với mô hình <b>${esc(status.model)}</b>. Bật ứng dụng bằng tệp khởi động để chuẩn bị kết nối.</p><p class="hint">Chế độ cục bộ này chưa cấu hình API Gemini, GPT hoặc Claude trong giao diện. Nội dung nguồn chỉ được gửi khi bạn xác nhận.</p>`);return;}c.modal(status?.localPoC?'Kết nối AI':'Kết nối AI & tìm nguồn',connectionSettings(config||{}));void loadProvidersHealth();}
 async function saveConfig(){const f=$('#connections-form'),input=connectionFormData(f),changed=AI_PROVIDERS.filter(p=>input[p].url!==config[p]?.url||input[p].model!==config[p]?.model||input[p].key||input[p].clearKey);config=await api('/api/config',input);for(const p of changed){const result=$('#'+p+'-result');if(result)result.textContent='Cấu hình đã đổi. Kiểm tra lại kết nối.';const list=$('#'+p+'-models');if(list)list.innerHTML='';}for(const p of AI_PROVIDERS){const input=f.elements.namedItem(p+'-key');if(input){input.value='';input.placeholder=config[p]?.hasKey?(config.localPoC&&config.persistence?.saved?'Đã lưu mã hóa trên máy — để trống để giữ':'Đã có khóa trong phiên — để trống để giữ'):p==='greennode'?'Để trống nếu Jupyter không yêu cầu token':'Chưa nhập khóa';}const clear=f.elements.namedItem(p+'-clear-key');if(clear)clear.checked=false;}if(config.localPoC){const backup=f.elements.namedItem('gemini-backup-key');if(backup){backup.value='';backup.placeholder=config.gemini?.hasBackupKey?'Đã có key dự phòng — để trống để giữ':'Nhập key của project thứ hai';}const clearBackup=f.elements.namedItem('gemini-clear-backup-key');if(clearBackup)clearBackup.checked=false;const extra=f.elements.namedItem('gemini-extra-keys');if(extra){extra.value='';if(config.gemini?.extraKeysCount)extra.placeholder=`Đã có ${config.gemini.extraKeysCount} khóa bổ sung — để trống để giữ`;}const clearExtra=f.elements.namedItem('gemini-clear-extra-keys');if(clearExtra)clearExtra.checked=false;const dsKey=f.elements.namedItem('deepseek-key');if(dsKey){dsKey.value='';dsKey.placeholder=config.deepseek?.hasKey?'Đã có khóa DeepSeek — để trống để giữ':'Nhập khóa DeepSeek API…';}const clearDs=f.elements.namedItem('deepseek-clear-key');if(clearDs)clearDs.checked=false;if(config.fixedRouter?.timePreset&&c?.exam()){c.exam().aiTimePreset=config.fixedRouter.timePreset;c.refreshInline?.();}}const searchKey=f.elements.namedItem('search-key');if(searchKey)searchKey.value='';refreshMode();return config;}
 function showGenerate(){const e=current(),sources=sourcesFor(e);c.modal('Tạo đề từ tài liệu',`<form id="generate-form">${note('Chọn nội dung căn cứ và xác nhận ma trận trước khi tạo. Câu sinh ra được xem trước, chưa tự thay đề hiện tại.')}<div class="generation-summary"><span>${esc(e.subject)} · Lớp ${esc(e.grade)}</span><span>${e.matrix.flatMap(r=>r.targets).reduce((s,n)=>s+n,0)} câu theo ma trận</span>${btn('matrix','Xem / xác nhận ma trận','tiny-btn')}</div>${!e.matrixConfirmed?'<div class="alert">Ma trận chưa xác nhận. Mở ma trận, xem cơ cấu và đánh dấu xác nhận trước khi tạo.</div>':''}<h3>Trang / đoạn được dùng làm nguồn</h3><div class="source-picker">${sources.length?sources.map((s,i)=>`<label class="source-choice"><input name="source" type="checkbox" value="${i}" ${!e.assistantSources?.length||e.assistantSources.includes(s.docId)?'checked':''}><span><b>${esc(e.docs.find(d=>d.id===s.docId)?.name)}</b><small>${esc(s.location)} · ${s.text.length.toLocaleString('vi-VN')} ký tự</small><p>${esc(s.text.slice(0,160))}…</p></span></label>`).join(''):note('Chưa có văn bản đọc được. Thêm tài liệu hoặc chạy rút trích trước.')}</div>${btn('import-doc','Thêm tài liệu','ghost','type="button"')}${field('Dạng câu hỏi',`<select name="questionType"><option value="mcq">Trắc nghiệm nhiều lựa chọn</option><option value="essay" ${e.questions.some(q=>q.type==='essay')?'selected':''}>Tự luận · lời giải và thang điểm</option></select>`)}${field('Yêu cầu cho đề',`<textarea name="request" rows="3" placeholder="Ví dụ: câu hỏi rõ ràng, bám nội dung đã chọn"></textarea>`)}${note('Yêu cầu đã nhớ: '+(e.appliedPrefs.filter(isConfirmedPreference).map(p=>esc(p.text)).join(' · ')||'Chưa có'))}${field('Cách đưa vào đề',`<select name="mode"><option value="append">Thêm câu vào đề hiện tại</option><option value="replace">Thay danh sách câu hiện tại (có hoàn tác)</option></select>`)}<label class="consent"><input type="checkbox" id="auto-check" checked> Tự giải lại câu vừa tạo bằng đường kiểm tra đã cấu hình. Nếu chưa nối, chỉ rà soát tại máy.</label>${consent('generate-consent')}${foot(btn('connections','Kết nối AI','','type="button"')+'<button type="submit" class="primary">Tạo & xem đề xuất</button>')}</form>`);prepared={type:'generation-form',sources,examId:e.id,revision:e.revision};}
 function sourceBundleForQuestion(q){return sourcesFor(current(),q.source?.docId).map(s=>({...s,text:s.text.slice(0,14000)}));}
@@ -264,6 +277,7 @@ async function loadExportPreflight(examSnapshot){
  try{
   const report=await api('/api/exports/preflight',{exam:examSnapshot,editorPages:collectEditorPages()});
   if(!panel.isConnected||!$('#dialog').open||current().id!==examSnapshot.id||current().revision!==examSnapshot.revision)return;
+  latestExportPreflight={examId:examSnapshot.id,revision:examSnapshot.revision,report};
   const align=report.pageBreakAlignment||{},ocr=report.ocrReviewItems||[],blocking=report.blockingIssues||[],warnings=report.warnings||[];
   const statusClass=!report.ready?'preflight-status-block':report.needsAttention?'preflight-status-warn':'preflight-status-ok';
   const statusLabel=!report.ready?`Có ${blocking.length} lỗi cần sửa trước khi in`:report.needsAttention?'Cần rà soát ngắt trang / OCR trước khi in':'Bản in đạt kiểm tra cơ bản';
@@ -301,7 +315,7 @@ async function loadExportHistory(examId){
    if(box.isConnected)box.innerHTML='<p class="hint">Chưa tải được lịch sử bản đã xuất.</p>';
   }
  }
-function showExport(){const e=current(),snapshot=clone(e);c.modal('Xuất đề & Mã đề',`${note('Xuất Word, PDF hoặc HTML. Bản Word giữ công thức sửa được; hình học được nhúng dưới dạng ảnh.')}<section id="export-preflight-panel" class="small-card export-preflight-panel" aria-live="polite" data-preflight-loaded="false"><p class="hint">Đang đối chiếu ngắt trang bàn soạn ↔ A4 và thành phần OCR…</p></section>${status?.matrixPython&&e.questions.length>=2?`<details id="export-variants"><summary>Tạo nhiều mã đề (trộn câu &amp; phương án)</summary><fieldset><legend>Câu được đổi thứ tự</legend><p>Chọn ít nhất hai câu độc lập, cùng dạng. Thứ tự phương án và đáp án từng câu được giữ.</p>${e.questions.map((q,i)=>`<label class="consent"><input type="checkbox" value="${esc(q.id)}" data-kind="${esc(q.type||'mcq')}"> Câu ${i+1} · ${esc((q.stem||'').slice(0,90))}</label>`).join('')}</fieldset><label for="export-variant-code">Bản xuất</label><select id="export-variant-code"></select><p data-variant-status role="status"></p></details>`:''}<h3 class="export-section-title">2. Tách bản Học sinh &amp; Giáo viên</h3><div class="export-class-row"><label for="export-class-label">Lớp / đợt thi (tùy chọn)</label><input id="export-class-label" maxlength="80" placeholder="Ví dụ: Lớp 9A · Giữa kỳ I" value="${esc(lastExportClassLabel)}"></div><div class="grid2 export-cards-grid">${[false,true].map(t=>`<div class="choice-card export-choice-card ${t?'is-teacher':'is-student'}"><span class="pill ${t?'export-badge-teacher':'export-badge-student'}">${t?'GIÁO VIÊN · ĐỦ ĐÁP ÁN &amp; BAREM':'HỌC SINH · SẠCH 100% ĐÁP ÁN'}</span><h3>${t?'Bản giáo viên':'Bản học sinh'}</h3><p>${t?'Có đáp án, lời giải, nguồn căn cứ và trạng thái rà soát.':'Chỉ chứa câu hỏi và ngữ liệu; không lộ đáp án hay hội thoại.'}</p><div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-file',format==='docx'?'Word (.docx)':format==='pdf'?'PDF':'HTML',format==='docx'?'primary':'',`data-teacher="${t}" data-format="${format}"`)).join('')}</div></div>`).join('')}</div><details id="export-extended-a4"><summary>3. Đáp án/Barem, Ma trận/Đặc tả A4 &amp; Gói khóa QR</summary><label class="consent"><input type="checkbox" id="export-matrix-landscape"> Khổ A4 ngang (landscape) cho Ma trận &amp; Đặc tả</label><div class="export-formats">${btn('export-extended','Đáp án &amp; Barem (HTML A4)','','data-kind="answer-key-rubric" data-format="html"')}${btn('export-extended','Đáp án &amp; Barem (Word)','','data-kind="answer-key-rubric" data-format="docx"')}${btn('export-extended','Ma trận &amp; Đặc tả (HTML A4)','','data-kind="matrix-specification" data-format="html"')}${btn('export-extended','Ma trận &amp; Đặc tả (Word)','','data-kind="matrix-specification" data-format="docx"')}${btn('export-tnmaker','Gói khóa đáp án &amp; QR (.zip)','','type="button"')}</div><p class="hint">Gói khóa đáp án &amp; QR xuất bảng <code>DapAn.xlsx</code> và ảnh <code>QR_DapAn.png</code> theo định dạng chuẩn chung (chưa xác minh tương thích trực tiếp app TNMaker bên thứ ba).</p></details><section id="export-omr-panel" class="small-card export-omr-panel"><div class="export-omr-head"><b>4. Phiếu trả lời trắc nghiệm OMR (Bộ GD&amp;ĐT 2025)</b><span class="pill export-badge-student">CHUẨN A4 2025</span></div><p class="hint">Xuất phiếu tô đáp án chuẩn Bộ GD&amp;ĐT 2025 (Phần I Trắc nghiệm, Phần II Đúng–Sai, Phần III Trả lời ngắn) sẵn sàng in A4 hoặc PDF.</p><div class="export-formats">${btn('export-omr-student','Phiếu OMR Học sinh (A4)','primary','type="button"')}${btn('export-omr-pdf','Phiếu OMR Học sinh (PDF)','','type="button"')}${btn('export-omr-teacher','Phiếu OMR Đáp án GV','','type="button"')}</div></section><section id="export-history-panel" class="small-card export-history-panel" aria-live="polite"><div class="export-history-head"><b>5. Lịch sử bản đã xuất</b></div><div id="export-history-list"><p class="hint">Đang tải lịch sử bản đã xuất…</p></div></section><div class="alert">${e.questions.filter(q=>!isApproved(q)).length} câu chưa được giáo viên duyệt.</div>${foot(btn('backup-local','Sao lưu toàn bộ đề (.json)'))}`);
+function showExport(){latestExportPreflight=null;const e=current(),snapshot=clone(e);c.modal('Xuất đề & Mã đề',`${note('Xuất Word, PDF hoặc HTML. Bản Word giữ công thức sửa được; hình học được nhúng dưới dạng ảnh.')}<section id="export-preflight-panel" class="small-card export-preflight-panel" aria-live="polite" data-preflight-loaded="false"><p class="hint">Đang đối chiếu ngắt trang bàn soạn ↔ A4 và thành phần OCR…</p></section>${status?.matrixPython&&e.questions.length>=2?`<details id="export-variants"><summary>Tạo nhiều mã đề (trộn câu &amp; phương án)</summary><fieldset><legend>Câu được đổi thứ tự</legend><p>Chọn ít nhất hai câu độc lập, cùng dạng. Thứ tự phương án và đáp án từng câu được giữ.</p>${e.questions.map((q,i)=>`<label class="consent"><input type="checkbox" value="${esc(q.id)}" data-kind="${esc(q.type||'mcq')}"> Câu ${i+1} · ${esc((q.stem||'').slice(0,90))}</label>`).join('')}</fieldset><label for="export-variant-code">Bản xuất</label><select id="export-variant-code"></select><p data-variant-status role="status"></p></details>`:''}<h3 class="export-section-title">2. Tách bản Học sinh &amp; Giáo viên</h3><div class="export-class-row"><label for="export-class-label">Lớp / đợt thi (tùy chọn)</label><input id="export-class-label" maxlength="80" placeholder="Ví dụ: Lớp 9A · Giữa kỳ I" value="${esc(lastExportClassLabel)}"></div><div class="grid2 export-cards-grid">${[false,true].map(t=>`<div class="choice-card export-choice-card ${t?'is-teacher':'is-student'}"><span class="pill ${t?'export-badge-teacher':'export-badge-student'}">${t?'GIÁO VIÊN · ĐỦ ĐÁP ÁN &amp; BAREM':'HỌC SINH · SẠCH 100% ĐÁP ÁN'}</span><h3>${t?'Bản giáo viên':'Bản học sinh'}</h3><p>${t?'Có đáp án, lời giải, nguồn căn cứ và trạng thái rà soát.':'Chỉ chứa câu hỏi và ngữ liệu; không lộ đáp án hay hội thoại.'}</p><div class="export-formats">${['docx','pdf','html'].map(format=>btn('export-file',format==='docx'?'Word (.docx)':format==='pdf'?'PDF':'HTML',format==='docx'?'primary':'',`data-teacher="${t}" data-format="${format}"`)).join('')}</div></div>`).join('')}</div><details id="export-extended-a4"><summary>3. Đáp án/Barem, Ma trận/Đặc tả A4 &amp; Gói khóa QR</summary><label class="consent"><input type="checkbox" id="export-matrix-landscape"> Khổ A4 ngang (landscape) cho Ma trận &amp; Đặc tả</label><div class="export-formats">${btn('export-extended','Đáp án &amp; Barem (HTML A4)','','data-kind="answer-key-rubric" data-format="html"')}${btn('export-extended','Đáp án &amp; Barem (Word)','','data-kind="answer-key-rubric" data-format="docx"')}${btn('export-extended','Ma trận &amp; Đặc tả (HTML A4)','','data-kind="matrix-specification" data-format="html"')}${btn('export-extended','Ma trận &amp; Đặc tả (Word)','','data-kind="matrix-specification" data-format="docx"')}${btn('export-tnmaker','Gói khóa đáp án &amp; QR (.zip)','','type="button"')}</div><p class="hint">Gói khóa đáp án &amp; QR xuất bảng <code>DapAn.xlsx</code> và ảnh <code>QR_DapAn.png</code> theo định dạng chuẩn chung (chưa xác minh tương thích trực tiếp phần mềm TNMaker bên thứ ba).</p></details><section id="export-omr-panel" class="small-card export-omr-panel"><div class="export-omr-head"><b>4. Phiếu trả lời trắc nghiệm OMR (Bộ GD&amp;ĐT 2025)</b><span class="pill export-badge-student">CHUẨN A4 2025</span></div><p class="hint">Xuất phiếu tô đáp án chuẩn Bộ GD&amp;ĐT 2025 (Phần I Trắc nghiệm, Phần II Đúng–Sai, Phần III Trả lời ngắn) sẵn sàng in A4 hoặc PDF.</p><div class="export-formats">${btn('export-omr-student','Phiếu OMR Học sinh (A4)','primary','type="button"')}${btn('export-omr-pdf','Phiếu OMR Học sinh (PDF)','','type="button"')}${btn('export-omr-teacher','Phiếu OMR Đáp án GV','','type="button"')}</div></section><section id="export-history-panel" class="small-card export-history-panel" aria-live="polite"><div class="export-history-head"><b>5. Lịch sử bản đã xuất</b></div><div id="export-history-list"><p class="hint">Đang tải lịch sử bản đã xuất…</p></div></section><div class="alert">${e.questions.filter(q=>!isApproved(q)).length} câu chưa được giáo viên duyệt.</div>${foot(btn('backup-local','Sao lưu toàn bộ đề (.json)'))}`);
  void loadExportPreflight(snapshot);
  void loadExportHistory(snapshot.id);
  const variants=$('#export-variants');
@@ -383,36 +397,77 @@ async function exportExtended(node){
  document.body.append(link);link.click();link.remove();
  setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
+function resolveExportDraftSettings(exam){
+ const hasDomVariants=Boolean($('#export-variants'));
+ const codeEl=$('#export-variant-code');
+ if(hasDomVariants||codeEl){
+  const settings=exportVariantSettings();
+  const code=codeEl?.value;
+  exportVariantSelection={examId:exam.id,...settings,code};
+  return {settings,code};
+ }
+ if(exportVariantSelection?.examId===exam.id){
+  return {
+   settings:{
+    questionIds:Array.isArray(exportVariantSelection.questionIds)?[...exportVariantSelection.questionIds]:[],
+    shuffleOptions:Boolean(exportVariantSelection.shuffleOptions),
+   },
+   code:exportVariantSelection.code,
+  };
+ }
+ return {settings:exportVariantSettings(),code:undefined};
+}
+function showDraftExportConfirmationModal({format,isBatch,teacher,classLabel,unapprovedCount,preflightFailed,blockingIssues=[],extraMessage=''}){
+ const title=isBatch?'Xác nhận xuất Bộ mã đề':teacher?'Xác nhận xuất Bản giáo viên':'Xác nhận xuất Bản học sinh';
+ const heading=isBatch?'Cần lưu ý trước khi xuất Bộ mã đề':teacher?'Cần lưu ý trước khi xuất Bản giáo viên':'Cần lưu ý trước khi phát đề cho học sinh';
+ const issues=Array.isArray(blockingIssues)?blockingIssues.map(item=>typeof item==='string'?item:(item?.message||'')).filter(Boolean):[];
+ const issuesHTML=issues.length?`<ul class="preflight-list">${issues.slice(0,10).map(msg=>`<li>${esc(msg)}</li>`).join('')}</ul>`:'';
+ c.modal(title,`<div class="alert" role="alert"><b>${heading}</b><p>${unapprovedCount?`Còn ${unapprovedCount} câu chưa được giáo viên duyệt. `:''}${preflightFailed?'Kiểm tra bản in vẫn còn lỗi chặn cần rà soát. ':''}${classLabel?`Đợt/lớp: <b>${esc(classLabel)}</b>.`:''}</p>${extraMessage?`<p>${esc(extraMessage)}</p>`:''}${issuesHTML}</div>${foot(btn('review-first-unapproved','Quay lại duyệt câu')+btn('export-file','Vẫn tải bản nháp','primary',`data-teacher="${teacher}" data-batch="${isBatch}" data-format="${esc(format)}" data-confirmed="true" data-class-label="${esc(classLabel)}"`)+btn('export','Quay lại phần xuất'))}`);
+}
 async function exportFile(node,batch=false){
  if(!flushEditor())throw Error('Gõ xong chữ đang nhập rồi thử lại.');
- const exam=clone(current()),format=node.dataset.format,code=$('#export-variant-code')?.value;
+ const exam=clone(current()),format=node.dataset.format;
+ const isBatch=Boolean(batch||node.dataset.batch==='true');
+ const confirmed=node.dataset.confirmed==='true';
+ const teacher=node.dataset.teacher==='true';
  const classLabel=($('#export-class-label')?.value??node.dataset.classLabel??'').trim();
  if(classLabel)lastExportClassLabel=classLabel;
+ const {settings,code}=resolveExportDraftSettings(exam);
+ const {questionIds}=settings;
+ const cachedPreflight=latestExportPreflight&&latestExportPreflight.examId===exam.id&&latestExportPreflight.revision===exam.revision?latestExportPreflight.report:null;
  const preflightPanel=$('#export-preflight-panel');
- const preflightFailed=preflightPanel?.dataset.preflightLoaded==='true'&&preflightPanel?.dataset.preflightReady==='false';
+ const preflightFailed=cachedPreflight?cachedPreflight.ready===false:(preflightPanel?.dataset.preflightLoaded==='true'&&preflightPanel?.dataset.preflightReady==='false');
+ const blockingIssues=Array.isArray(cachedPreflight?.blockingIssues)?cachedPreflight.blockingIssues:[];
  const unapprovedCount=exam.questions.filter(q=>!isApproved(q)).length;
- const teacher=node.dataset.teacher==='true';
- if(shouldConfirmStudentExport({batch,teacher,confirmed:node.dataset.confirmed==='true',classLabel,workflowStatus:exam.workflowStatus||'draft',unapprovedCount,preflightFailed})){
-  c.modal('Xác nhận xuất Bản học sinh',`<div class="alert" role="alert"><b>Cần lưu ý trước khi phát đề cho học sinh</b><p>${unapprovedCount?`Còn ${unapprovedCount} câu chưa được giáo viên duyệt. `:''}${preflightFailed?'Kiểm tra bản in (preflight) vẫn còn cảnh báo lỗi. ':''}${classLabel?`Đợt/lớp: <b>${esc(classLabel)}</b>.`:''}</p></div>${foot(btn('review-first-unapproved','Quay lại duyệt câu')+btn('export-file','Vẫn tải bản nháp','primary',`data-teacher="false" data-format="${esc(format)}" data-confirmed="true" data-class-label="${esc(classLabel)}"`))}`);
+ if(shouldRequireDraftConfirmation({batch:isBatch,teacher,confirmed,classLabel,workflowStatus:normalizeWorkflowStatus(exam.workflowStatus),unapprovedCount,preflightFailed})){
+  showDraftExportConfirmationModal({format,isBatch,teacher,classLabel,unapprovedCount,preflightFailed,blockingIssues});
   return;
  }
- const settings=exportVariantSettings(),{questionIds}=settings;
- exportVariantSelection={examId:exam.id,...settings,code};
  const variant=code?{...settings,offset:Number(code)}:null;
  c.modal('Đang xuất tệp',`<div class="busy"><span class="spinner"></span><span role="status">Đang tạo ${format.toUpperCase()} từ đề hiện tại…</span></div>`);
  const pendingExport=document.querySelector('#dialog .busy');
  try{
-  const result=await api('/api/save-export',batch
-   ?{type:'variant-pack',exam,format,...settings,...(classLabel?{classLabel}:{})}
-   :{type:'exam',exam,format,teacher,...(variant?{variant}:{}),...(classLabel?{classLabel}:{})});
+  const allowDraft=confirmed?{allowDraft:true}:{};
+  const result=await api('/api/save-export',isBatch
+   ?{type:'variant-pack',exam,format,...settings,...(classLabel?{classLabel}:{}),...allowDraft}
+   :{type:'exam',exam,format,teacher,...(variant?{variant}:{}),...(classLabel?{classLabel}:{}),...allowDraft});
   if(!pendingExport.isConnected||!$('#dialog').open){c.toast('Đã tạo tệp '+result.filename);return;}
-  if(batch){
+  if(isBatch){
    c.modal('Bộ mã đề đã sẵn sàng',`<p>${Math.min(6,questionIds.length)} mã đề · ${format.toUpperCase()} · ${result.bytes.toLocaleString('vi-VN')} byte</p><a class="saved-export-link" href="${esc(result.url)}" download>Tải bộ mã đề (.zip)</a>${foot(btn('export','Quay lại phần xuất'))}`);
    return;
   }
   const extraNote=exportConfirmationNote(format);
   c.modal('Tệp đã lưu tại máy',`<div class="alert success">${esc(result.filename)}<br>${result.bytes.toLocaleString('vi-VN')} byte · Tệp ${format.toUpperCase()} thật</div><a class="saved-export-link" href="${esc(result.url)}" target="_blank" rel="noopener" ${format==='docx'?'download':''}>Mở / tải tệp vừa xuất</a>${note('Bản xuất: '+esc(exam.title)+(variant?' · Mã đề '+(101+variant.offset):'')+' · bản '+exam.revision)}${extraNote?note(extraNote):''}${foot(btn('export','Xuất bản khác'))}`);
  }catch(error){
+  if(error?.status===409&&(error?.data?.requiresDraftConfirmation===true||Array.isArray(error?.data?.blockingIssues)||Array.isArray(error?.data?.preflight?.blockingIssues))){
+   const serverReport=error.data.preflight||null;
+   if(serverReport)latestExportPreflight={examId:exam.id,revision:exam.revision,report:serverReport};
+   const serverIssues=Array.isArray(error.data.blockingIssues)?error.data.blockingIssues:(Array.isArray(serverReport?.blockingIssues)?serverReport.blockingIssues:blockingIssues);
+   if($('#dialog').open){
+    showDraftExportConfirmationModal({format,isBatch,teacher,classLabel,unapprovedCount,preflightFailed:true,blockingIssues:serverIssues,extraMessage:error.message});
+    return;
+   }
+  }
   if(!pendingExport.isConnected||!$('#dialog').open){c.toast(error.message);return;}
   c.modal('Chưa xuất được tệp',`<p class="alert" role="alert">${esc(error.message)}</p>${note('Nội dung đề được giữ nguyên. Sửa nội dung được báo lỗi hoặc chọn định dạng khác rồi thử lại.')}${foot(btn('export','Quay lại phần xuất','primary'))}`);
  }

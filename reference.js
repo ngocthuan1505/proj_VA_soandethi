@@ -138,7 +138,7 @@ export function questionQuickActionsHTML(q,index,total,iconFn){
  const ico=typeof iconFn==='function'?iconFn:()=>'';
  return [
   b('select','Chọn câu',`class="q-quick-btn" data-id="${q.id}" title="Chọn câu để sửa cùng Trợ lý"`),
-  b('quick-formula','ƒ',`class="q-quick-btn q-quick-symbol" data-id="${q.id}" data-editor-key="${q.id}" aria-label="Chèn công thức hoặc mẫu câu ${index+1}" title="Mở nhanh composer công thức & mẫu"`),
+  b('quick-formula','ƒ',`class="q-quick-btn q-quick-symbol" data-id="${q.id}" data-editor-key="${q.id}" aria-label="Chèn công thức hoặc mẫu câu ${index+1}" title="Mở nhanh trình soạn công thức & mẫu"`),
   b('quick-image',ico('image')||'Ảnh',`class="icon q-quick-btn" data-id="${q.id}" aria-label="Chèn ảnh câu ${index+1}" title="Chèn ảnh"`),
   b('quick-table',ico('grid')||'Bảng',`class="icon q-quick-btn" data-id="${q.id}" aria-label="Chèn hoặc sửa bảng câu ${index+1}" title="Chèn bảng"`),
   b('quick-figure','◇',`class="q-quick-btn q-quick-symbol" data-id="${q.id}" aria-label="Chèn hoặc sửa hình học câu ${index+1}" title="Hình học tọa độ"`),
@@ -216,9 +216,9 @@ export function buildContextualAssistantSuggestions(exam,options={}){
    badge:options.scope?.text&&!options.scope.wholeField?`Đang bôi đen Câu ${qNum}`:`Đang chọn Câu ${qNum} · ${typeLabel}`,
    summary:`Sửa đúng Câu ${qNum} hoặc kiểm tra độc lập trước khi duyệt.`,
    actions:[
-    {kind:'prompt',action:'studio-prompt',label:`Viết lại Câu ${qNum} rõ hơn, giữ đáp án`,prompt:`Viết lại câu ${qNum} cho rõ ràng và chuẩn mực hơn, giữ nguyên ý chính và đáp án đúng.`,hint:'Tạo diff 2 cột để đối chiếu',tag:'Sửa đúng câu chọn',primary:true},
+    {kind:'prompt',action:'studio-prompt',label:`Viết lại Câu ${qNum} rõ hơn, giữ đáp án`,prompt:`Viết lại câu ${qNum} cho rõ ràng và chuẩn mực hơn, giữ nguyên ý chính và đáp án đúng.`,hint:'So sánh trước/sau 2 cột để đối chiếu',tag:'Sửa đúng câu chọn',primary:true},
     {kind:'action',action:'ai-check',label:`Giải lại độc lập Câu ${qNum} bằng AI`,dataId:q.id,hint:'Không đưa đáp án lưu cho AI',tag:'Kiểm tra độc lập'},
-    {kind:'action',action:'quick-formula',label:`Chèn công thức / mẫu Câu ${qNum}`,dataId:q.id,hint:'Mở composer trực quan',tag:'Công thức & mẫu'},
+    {kind:'action',action:'quick-formula',label:`Chèn công thức / mẫu Câu ${qNum}`,dataId:q.id,hint:'Mở trình soạn công thức & mẫu trực quan',tag:'Công thức & mẫu'},
    ],
   };
  }
@@ -255,7 +255,7 @@ export function buildContextualAssistantSuggestions(exam,options={}){
    badge:`Đã duyệt ${st.questionCount}/${st.questionCount} câu`,
    summary:'Đề đã sẵn sàng kiểm tra ngắt trang A4, tạo nhiều mã đề hoặc lập ma trận đối chiếu.',
    actions:[
-    {kind:'action',action:'export',label:'Kiểm tra A4 & Xuất đề / Mã đề',hint:'Preflight · Word, PDF, HTML',tag:'Sẵn sàng xuất',primary:true},
+    {kind:'action',action:'export',label:'Kiểm tra A4 & Xuất đề / Mã đề',hint:'Kiểm tra khổ in A4 · Word, PDF, HTML',tag:'Sẵn sàng xuất',primary:true},
     {kind:'action',action:'local-matrix',label:'Lập ma trận ngược / Sinh thêm',hint:'Đối chiếu chủ đề & mức độ',tag:'Ma trận đối chiếu'},
     {kind:'action',action:'assistant-sources',label:'Xem nguồn đang gắn',hint:`${st.attachedCount} nguồn`,tag:'Nguồn tài liệu'},
    ],
@@ -275,13 +275,13 @@ export function buildContextualAssistantSuggestions(exam,options={}){
 
 export function contextualSuggestionsHTML(exam,options={}){
  const plan=buildContextualAssistantSuggestions(exam,options);
- const contextHeaderHTML=`<div class="assistant-context-head" style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;margin:0 0 8px"><span class="ctx-badge assistant-context-badge" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;line-height:1.35;background:#e6f4ef;color:#11695b">${esc(plan.badge)}</span><p class="ctx-summary" style="display:block;margin:0;font-size:12.5px;line-height:1.45;color:#4f645d">${esc(plan.summary)}</p></div>`;
+ const contextHeaderHTML=`<div class="assistant-context-head"><span class="ctx-badge assistant-context-badge">${esc(plan.badge)}</span><p class="ctx-summary">${esc(plan.summary)}</p></div>`;
  const buttons=plan.actions.map(item=>{
   const attrs=item.kind==='prompt'
    ?`class="suggestion-card${item.primary?' is-primary':''}" data-prompt="${esc(item.prompt)}"`
    :`class="suggestion-card${item.primary?' is-primary':''}"${item.dataId?` data-id="${esc(item.dataId)}"`:''}`;
   const sub=item.hint?`<small>${esc(item.hint)}</small>`:'';
-  const tag=item.tag?`<em class="suggestion-tag" style="display:inline-flex;align-self:flex-start;font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-top:3px;background:${item.primary?'#eef2ff':'#f1f5f9'};color:${item.primary?'#3730a3':'#475569'};line-height:1.35">${esc(item.tag)}</em>`:'';
+  const tag=item.tag?`<em class="suggestion-tag">${esc(item.tag)}</em>`:'';
   return b(item.action,`<span><b>${esc(item.label)}</b>${sub}${tag}</span><span>→</span>`,attrs);
  }).join('');
  return {plan,buttons,contextHeaderHTML};
@@ -312,8 +312,8 @@ function bindAssistantDropZone(){
   overlay.className='assistant-drop-overlay';
   overlay.hidden=true;
   overlay.setAttribute('aria-hidden','true');
-  overlay.style.cssText='position:absolute;inset:8px;z-index:25;display:none;place-items:center;pointer-events:none;border:2px dashed #12675d;border-radius:14px;background:rgba(242,248,245,0.94);color:#124e42;text-align:center;padding:20px';
-  overlay.innerHTML='<div class="assistant-drop-card"><strong>Thả tệp để nạp nguồn cho Trợ lý</strong><p style="margin:6px 0 0;font-size:12px;color:#3d6155">Hỗ trợ .docx, .pdf, .txt, .md, .pptx và ảnh PNG/JPEG/WEBP (tối đa 15 MB)</p></div>';
+  overlay.style.cssText='position:absolute;inset:8px;z-index:25;display:none;place-items:center;pointer-events:none;border:2px dashed var(--brand, #0f4c81);border-radius:14px;background:rgba(232,242,252,0.94);color:var(--brand-hover, #0b3a63);text-align:center;padding:20px';
+  overlay.innerHTML='<div class="assistant-drop-card"><strong>Thả tệp để nạp nguồn cho Trợ lý</strong><p style="margin:6px 0 0;font-size:12px;color:var(--ink-muted, #4b6178)">Hỗ trợ .docx, .pdf, .txt, .md, .pptx và ảnh PNG/JPEG/WEBP (tối đa 15 MB)</p></div>';
   assistant.append(overlay);
  }
  if(dropInitialized)return;
@@ -396,10 +396,10 @@ export function formatLatencyLabel(ms){
 export function chatMetaBadgeText(m){
  const provider=formatProviderName(m?.providerUsed);
  const fallbackFrom=formatProviderName(m?.fallbackFrom);
+ const model=String(m?.modelUsed||'').trim();
  const latency=formatLatencyLabel(m?.latencyMs);
  const label=fallbackFrom?(provider?`${provider} (dự phòng từ ${fallbackFrom})`:`Dự phòng từ ${fallbackFrom}`):provider;
- if(label&&latency)return `${label} · ${latency}`;
- return label||latency;
+ return [label,model,latency].filter(Boolean).join(' · ');
 }
 export function effortInstruction(e){return ['Trả lời ngắn gọn, giữ đủ đáp án và căn cứ cần thiết.','Trình bày lời giải theo các bước chính và đối chiếu các điều kiện.','Phân tích kỹ điều kiện, trường hợp đặc biệt; tự kiểm tra kết quả và nêu các bước giải, thang điểm chi tiết.'][e.aiEffort??1];}
 export function referenceSide(e,selected,tab){
@@ -411,10 +411,22 @@ export function referenceSide(e,selected,tab){
 export function referenceChat(e,options={}){
  const welcome=e.chat.length<=1;
  const {plan,buttons,contextHeaderHTML}=contextualSuggestionsHTML(e,options);
- return `${welcome?`<div class="assistant-welcome"><h2 style="color:#2563eb;font-weight:700;text-align:center;line-height:1.35;margin:2px 0 6px">Thầy cô muốn soạn đề<br>cho lớp nào trước?</h2><p style="text-align:center;margin:0 0 8px">${esc(plan.summary)}</p></div>`:e.chat.filter((m,i)=>!(i===0&&m.role==='assistant'&&/^(Đây là ví dụ Toán|Thầy cô đang mở ví dụ|Đề mới đã áp dụng)/.test(m.text))).map(m=>`<div class="assistant-message ${m.role==='assistant'?'role-assistant':'user'}">${m.role==='assistant'?'<span class="chat-spark">✧</span>':''}<div>${esc(m.text).replace(/\n/g,'<br>')}</div></div>`).join('')}<div class="assistant-shortcuts" data-context-mode="${esc(plan.mode)}">${contextHeaderHTML}${buttons}</div>`;
+ return `${welcome?`<div class="assistant-welcome"><span class="whale-badge">Trợ lý Cá Voi Xanh</span><h2>Thầy cô muốn soạn đề<br>cho lớp nào trước?</h2><p class="ctx-summary">${esc(plan.summary)}</p></div>`:e.chat.filter((m,i)=>!(i===0&&m.role==='assistant'&&/^(Đây là ví dụ Toán|Thầy cô đang mở ví dụ|Đề mới đã áp dụng)/.test(m.text))).map(m=>`<div class="assistant-message ${m.role==='assistant'?'role-assistant':'user'}">${m.role==='assistant'?'<span class="chat-spark">✧</span>':''}<div>${esc(m.text).replace(/\n/g,'<br>')}</div></div>`).join('')}<div class="assistant-shortcuts" data-context-mode="${esc(plan.mode)}">${contextHeaderHTML}${buttons}</div>`;
 }
-function sourceBadge(d){if(d.catalog||d.personalLesson)return 'SGK';if(d.communityToken)return 'CỘNG ĐỒNG';if(d.sourceExamId)return 'ĐỀ';return 'TỆP';}
-function sourceChannelKey(d){if(d.catalog||d.personalLesson)return 'sgk';if(d.communityToken)return 'community';if(d.sourceExamId)return 'exam';return 'file';}
+export function sourceBadge(d){
+ if(d?.personalLesson)return 'TÀI LIỆU CÁ NHÂN';
+ if(d?.catalog||d?.sourceOrigin==='lesson_catalog')return 'HỌC LIỆU MẪU';
+ if(d?.communityToken)return 'CỘNG ĐỒNG';
+ if(d?.sourceExamId)return 'ĐỀ';
+ return 'TỆP';
+}
+export function sourceChannelKey(d){
+ if(d?.personalLesson)return 'personal';
+ if(d?.catalog||d?.sourceOrigin==='lesson_catalog')return 'sample';
+ if(d?.communityToken)return 'community';
+ if(d?.sourceExamId)return 'exam';
+ return 'file';
+}
 function examSummaryText(ex){return (ex.questions||[]).map((q,i)=>`Câu ${i+1}. ${q.stem||''}`).join('\n').trim()||(ex.instructions||'').trim()||ex.title||'Đề cá nhân';}
 export const PEDAGOGICAL_PROMPT_LIBRARY=[
  {group:'Tạo đề & ma trận',items:[
@@ -564,7 +576,7 @@ export async function handleReferenceAction(action,node){if(handleComposerAction
    });
    const savedTotalCount=savedSet.size;
    const pendingNewCount=[...draftSet].filter(id=>!savedSet.has(id)).length+[...draftPersonalSet].filter(id=>!savedSet.has('exam-src-'+id)).length;
-   c.modal('Nguồn cho trợ lý (4 kênh)',`<form id="assistant-source-form"><div class="source-summary-banner"><span id="source-summary-counts">Đang gắn: <b>${savedTotalCount}</b>${pendingNewCount?` · Sắp gắn mới: <b>${pendingNewCount}</b>`:''}</span><div class="source-legend"><span class="pill source-channel-badge" data-channel="sgk">SGK</span><span class="pill source-channel-badge" data-channel="exam">ĐỀ</span><span class="pill source-channel-badge" data-channel="community">CỘNG ĐỒNG</span><span class="pill source-channel-badge" data-channel="file">TỆP</span></div></div><label class="source-strict-toggle"><input type="checkbox" name="strictTeacherOnly" ${strictTeacherOnly?'checked':''}> Chỉ bám tài liệu tôi tải lên (không dùng nguồn mẫu/chung)</label><div class="source-tabs" role="tablist"><button type="button" role="tab" aria-selected="true" data-src-tab="docs" class="active">Tệp &amp; Tài liệu đề (${e.docs.length})</button><button type="button" role="tab" aria-selected="false" data-src-tab="personal">Đề cá nhân (${allExams.length})</button>${b('lesson-sources','SGK / Bài học','class="source-tab-link" data-channel="sgk"')}${b('community-exams','Đề cộng đồng','class="source-tab-link" data-channel="community"')}</div><div data-src-panel="docs">${groups.join('')||'<p class="hint">Chưa có tài liệu/SGK trong đề này. Dùng Thêm tệp tại máy hoặc SGK / Bài học.</p>'}</div><div data-src-panel="personal" hidden><p class="hint">Hiển thị toàn bộ đề cá nhân (gồm cả đề ngắn). Xem nhanh tách biệt khỏi ô chọn.</p>${personalCards.join('')||'<p class="hint">Chưa có đề cá nhân khác trong kho.</p>'}</div><div class="modal-foot">${b('import-doc','Thêm tệp tại máy')}${b('close','Hủy')}<button class="primary" type="submit">Dùng các nguồn đã chọn</button></div></form>`);
+   c.modal('Nguồn cho trợ lý (4 kênh)',`<form id="assistant-source-form"><div class="source-summary-banner"><span id="source-summary-counts">Đang gắn: <b>${savedTotalCount}</b>${pendingNewCount?` · Sắp gắn mới: <b>${pendingNewCount}</b>`:''}</span><div class="source-legend"><span class="pill source-channel-badge" data-channel="personal">TÀI LIỆU CÁ NHÂN</span><span class="pill source-channel-badge" data-channel="sample">HỌC LIỆU MẪU</span><span class="pill source-channel-badge" data-channel="exam">ĐỀ</span><span class="pill source-channel-badge" data-channel="community">CỘNG ĐỒNG</span><span class="pill source-channel-badge" data-channel="file">TỆP</span></div></div><label class="source-strict-toggle"><input type="checkbox" name="strictTeacherOnly" ${strictTeacherOnly?'checked':''}> Chỉ bám tài liệu tôi tải lên (không dùng nguồn mẫu/chung)</label><div class="source-tabs" role="tablist"><button type="button" role="tab" aria-selected="true" data-src-tab="docs" class="active">Tệp &amp; Tài liệu đề (${e.docs.length})</button><button type="button" role="tab" aria-selected="false" data-src-tab="personal">Đề cá nhân (${allExams.length})</button>${b('lesson-sources','SGK / Bài học','class="source-tab-link" data-channel="sgk"')}${b('community-exams','Đề cộng đồng','class="source-tab-link" data-channel="community"')}</div><div data-src-panel="docs">${groups.join('')||'<p class="hint">Chưa có tài liệu/SGK trong đề này. Dùng Thêm tệp tại máy hoặc SGK / Bài học.</p>'}</div><div data-src-panel="personal" hidden><p class="hint">Hiển thị toàn bộ đề cá nhân (gồm cả đề ngắn). Xem nhanh tách biệt khỏi ô chọn.</p>${personalCards.join('')||'<p class="hint">Chưa có đề cá nhân khác trong kho.</p>'}</div><div class="modal-foot">${b('import-doc','Thêm tệp tại máy')}${b('close','Hủy')}<button class="primary" type="submit">Dùng các nguồn đã chọn</button></div></form>`);
    const form=$('#assistant-source-form'),dlg=$('#dialog');
    if(dlg&&!dlg.dataset.sourceDraftBound){dlg.dataset.sourceDraftBound='1';dlg.addEventListener('close',()=>{sourceModalDraft=null;});}
    const syncLiveSourceBadges=()=>{
@@ -772,5 +784,5 @@ export function audioAttachmentCardHTML(audio,{scope='question',targetId='',labe
 
 /** Empty Canvas hành động nhanh khi đề chưa có câu hỏi nào. */
 export function emptyCanvasHTML(e){
- return `<div class="empty-paper-canvas paper-empty" role="region" aria-label="Bắt đầu soạn đề"><span class="pill">Bàn soạn trống</span><h3>Bắt đầu đề thi ${esc(e?.subject||'mới')} · Lớp ${esc(e?.grade||'')}</h3><p>Thầy cô có thể sinh đề từ ma trận, rút trích từ tài liệu nguồn hoặc thêm trực tiếp từng câu hỏi trên giấy A4.</p><div class="empty-canvas-actions">${b('local-matrix','Tạo bằng AI theo ma trận','class="primary"')}${b('import-doc','Tạo từ tài liệu')}${b('add-question','+ Thêm câu trắc nghiệm')}${b('add-essay','+ Thêm bài tự luận')}${b('load-ai-demo','Mở đề mẫu hoàn chỉnh')}</div></div>`;
+ return `<div class="empty-paper-canvas paper-empty" role="region" aria-label="Bắt đầu soạn đề"><div class="empty-whale-art" aria-hidden="true"><svg viewBox="0 0 64 40" width="64" height="40"><path d="M8 22c0-8 7.5-14 18-14 8 0 14 3.5 16.2 9l6.8-3.6c.8-.4 1.6.3 1.3 1.1-1 3.7-3 6.5-6.2 8.2C41.8 27.6 35 30 26.5 30 15.2 30 8 27.2 8 22z" fill="#e8f2fc" stroke="#0f4c81" stroke-width="2" stroke-linejoin="round"/><circle cx="17.5" cy="19.5" r="1.7" fill="#0f4c81"/><path d="M6 34.5c5.5 2.4 11 2.4 16.5 0s11-2.4 16.5 0c4.8 2.1 9.5 2.3 14.5.7" fill="none" stroke="#1e78c8" stroke-width="2" stroke-linecap="round"/></svg></div><span class="pill">Bàn soạn trống</span><h3>Bắt đầu đề thi ${esc(e?.subject||'mới')} · Lớp ${esc(e?.grade||'')}</h3><p>Thầy cô có thể sinh đề từ ma trận, rút trích từ tài liệu nguồn hoặc thêm trực tiếp từng câu hỏi trên giấy A4.</p><div class="empty-canvas-actions">${b('local-matrix','Tạo bằng AI theo ma trận','class="primary"')}${b('import-doc','Tạo từ tài liệu')}${b('add-question','+ Thêm câu trắc nghiệm')}${b('add-essay','+ Thêm bài tự luận')}${b('load-ai-demo','Mở đề mẫu hoàn chỉnh')}</div></div>`;
 }

@@ -12,7 +12,12 @@ import {
 } from '../core.js';
 import {buildBankPayload, filterQuestionBankItems} from '../vip-tools.js';
 import {shouldDeferPageLayout} from '../pages.js';
-import {shouldConfirmStudentExport} from '../mvp.js';
+import {
+  shouldConfirmStudentExport,
+  shouldRequireDraftConfirmation,
+  WORKFLOW_STATUS_LABELS,
+  normalizeWorkflowStatus,
+} from '../mvp.js';
 import {examLibrarySearchText, filterAndSortLibraryExams} from '../workbench.js';
 import {lessonSubjectMatches} from '../lesson-picker.js';
 import {CHAT_TIME_PRESETS} from '../reference.js';
@@ -238,4 +243,33 @@ test('UV60 BUG-IT01-01: pages.js bảo vệ input/textarea/select trong .paper k
   assert.ok(pagesSrc.includes('paper.contains(active)'));
   assert.ok(pagesSrc.includes('setSelectionRange'));
   assert.ok(pagesSrc.includes("document.fonts?.status!=='loaded'"));
+});
+
+test('Blue Whale workflow reviewed + UC8 preflight draft gate + UC9 apply-quote stale tracking', () => {
+  assert.equal(WORKFLOW_STATUS_LABELS.reviewed, 'Đã rà soát');
+  assert.equal(normalizeWorkflowStatus('reviewed'), 'reviewed');
+  assert.equal(normalizeWorkflowStatus('invalid_status'), 'draft');
+
+  assert.equal(shouldRequireDraftConfirmation({batch: false, teacher: false, confirmed: false, classLabel: '', workflowStatus: 'draft', unapprovedCount: 0, preflightFailed: true}), true);
+  assert.equal(shouldRequireDraftConfirmation({batch: false, teacher: true, confirmed: false, classLabel: '', workflowStatus: 'draft', unapprovedCount: 0, preflightFailed: true}), true);
+  assert.equal(shouldRequireDraftConfirmation({batch: true, teacher: false, confirmed: false, classLabel: '', workflowStatus: 'draft', unapprovedCount: 0, preflightFailed: true}), true);
+  assert.equal(shouldRequireDraftConfirmation({batch: false, teacher: true, confirmed: true, classLabel: '', workflowStatus: 'draft', unapprovedCount: 0, preflightFailed: true}), false);
+
+  const appSrc = readText('app.js');
+  const mvpSrc = readText('mvp.js');
+  assert.ok(appSrc.includes('data-unified-header="1"'));
+  assert.ok(appSrc.includes('aria-label="Soạn đề thi · Bàn soạn"'));
+  assert.ok(appSrc.includes("staleReason:'quote_variant_changed'"));
+  assert.ok(appSrc.includes('currentSource:q.source'));
+  assert.ok(mvpSrc.includes('allowDraft:true'));
+  assert.ok(mvpSrc.includes('requiresDraftConfirmation'));
+  assert.ok(mvpSrc.includes('Vẫn tải bản nháp'));
+
+  const ownedFiles = ['app.js', 'mvp.js', 'workbench.js', 'reference.js', 'studio.js', 'lesson-picker.js', 'connections.js', 'citation-context.js', 'exam-rooms.js', 'assets/exam-room.js', 'vip-tools.js', 'sharing.js', 'sketch-board.js'];
+  for (const file of ownedFiles) {
+    const src = readText(file);
+    for (const forbidden of ['bản PoC', 'Điểm MVP', 'Guardrail', 'giải mù chéo', 'M01–M11', 'M01-M11']) {
+      assert.ok(!src.includes(forbidden), `${file} chứa từ cấm: ${forbidden}`);
+    }
+  }
 });

@@ -216,6 +216,48 @@ function renderRunHTML(node) {
   return inner;
 }
 
+const TF_OPT_PREFIX_RE = /^\s*[a-d]\)\s*/i;
+
+function stripRichDocLeadingPrefix(node) {
+  if (!node || typeof node !== 'object') return { node, stripped: false };
+  if (node.type === 'text' && typeof node.text === 'string') {
+    const nextText = node.text.replace(TF_OPT_PREFIX_RE, '');
+    return {
+      node: nextText === node.text ? node : { ...node, text: nextText },
+      stripped: true,
+    };
+  }
+  if (Array.isArray(node.runs) && node.runs.length) {
+    const runs = [...node.runs];
+    for (let i = 0; i < runs.length; i++) {
+      const r = runs[i];
+      if (r && typeof r.text === 'string' && r.text.length) {
+        runs[i] = { ...r, text: r.text.replace(TF_OPT_PREFIX_RE, '') };
+        return { node: { ...node, runs }, stripped: true };
+      }
+      if (r && r.latex) return { node, stripped: true };
+    }
+  }
+  const arrKey = Array.isArray(node.content) ? 'content' : Array.isArray(node.blocks) ? 'blocks' : '';
+  if (arrKey) {
+    const list = [...node[arrKey]];
+    for (let i = 0; i < list.length; i++) {
+      const res = stripRichDocLeadingPrefix(list[i]);
+      if (res.stripped) {
+        list[i] = res.node;
+        return { node: { ...node, [arrKey]: list }, stripped: true };
+      }
+    }
+  }
+  return { node, stripped: false };
+}
+
+export function stripTrueFalseOptionPrefix(stmt, richDoc = null) {
+  const cleanText = String(stmt ?? '').replace(TF_OPT_PREFIX_RE, '');
+  const cleanRichDoc = richDoc && typeof richDoc === 'object' ? stripRichDocLeadingPrefix(richDoc).node : richDoc;
+  return { text: cleanText, richDoc: cleanRichDoc };
+}
+
 function renderRichContent(text, richDoc) {
   if (richDoc && typeof richDoc === 'object') {
     if (Array.isArray(richDoc.content)) {
@@ -256,8 +298,8 @@ function renderDataChartSVG(data) {
       const lbl = String(d?.label || '');
       return `
         <g>
-          <rect x="${x}" y="${158 - h}" width="38" height="${h}" rx="4" fill="#11695b"/>
-          <text x="${x + 19}" y="${150 - h}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0d5449">${esc(val)}</text>
+          <rect x="${x}" y="${158 - h}" width="38" height="${h}" rx="4" fill="#0f4c81"/>
+          <text x="${x + 19}" y="${150 - h}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0b3a63">${esc(val)}</text>
           <text x="${x + 19}" y="178" text-anchor="middle" font-size="11" fill="#334155">${esc(lbl.length > 10 ? `${lbl.slice(0, 9)}…` : lbl)}</text>
         </g>
       `;
@@ -373,7 +415,7 @@ function renderQuestionMediaHTML(q, passageMap) {
     const p = passageMap.get(String(q.passageId));
     parts.push(`
       <div class="sr-passage-box">
-        ${p.title ? `<div style="font-weight:700;color:var(--sr-teal-dark);margin-bottom:4px;">${esc(p.title)}</div>` : ''}
+        ${p.title ? `<div style="font-weight:700;color:var(--sr-brand-dark, var(--sr-teal-dark, #0b3a63));margin-bottom:4px;">${esc(p.title)}</div>` : ''}
         <div>${renderRichContent(p.text || p.passageText || '', p.richDoc)}</div>
         ${p.audio ? `<div style="margin-top:10px;">${renderAudioCardHTML(p.audio)}</div>` : ''}
       </div>
@@ -381,7 +423,7 @@ function renderQuestionMediaHTML(q, passageMap) {
   } else if (q.passageText) {
     parts.push(`
       <div class="sr-passage-box">
-        ${q.passageTitle ? `<div style="font-weight:700;color:var(--sr-teal-dark);margin-bottom:4px;">${esc(q.passageTitle)}</div>` : ''}
+        ${q.passageTitle ? `<div style="font-weight:700;color:var(--sr-brand-dark, var(--sr-teal-dark, #0b3a63));margin-bottom:4px;">${esc(q.passageTitle)}</div>` : ''}
         <div>${esc(q.passageText).replace(/\n/g, '<br>')}</div>
       </div>
     `);
@@ -395,7 +437,7 @@ function renderQuestionMediaHTML(q, passageMap) {
     const dRows = appState.exam.data;
     parts.push(`
       <div class="sr-passage-box">
-        <div style="font-weight:700;margin-bottom:6px;color:var(--sr-teal-dark);">Bảng số liệu & Biểu đồ minh họa</div>
+        <div style="font-weight:700;margin-bottom:6px;color:var(--sr-brand-dark, var(--sr-teal-dark, #0b3a63));">Bảng số liệu & Biểu đồ minh họa</div>
         <div class="sr-scroll-box">
           <table class="sr-table">
             <thead><tr>${dRows.map((d) => `<th>${esc(d.label)}</th>`).join('')}</tr></thead>
@@ -497,11 +539,11 @@ function renderQuestionInputHTML(q) {
         ${[0, 1, 2, 3]
           .map((rowIdx) => {
             const val = cur[rowIdx];
-            const stmt = opts[rowIdx] ?? '';
+            const clean = stripTrueFalseOptionPrefix(opts[rowIdx] ?? '', docs[rowIdx]);
             const labelLetter = String.fromCharCode(97 + rowIdx);
             return `
               <div class="sr-tf-row">
-                <div class="sr-tf-stmt"><strong>${esc(labelLetter)})</strong> ${renderRichContent(stmt, docs[rowIdx])}</div>
+                <div class="sr-tf-stmt"><strong>${esc(labelLetter)})</strong> ${renderRichContent(clean.text, clean.richDoc)}</div>
                 <div class="sr-tf-toggle">
                   <button type="button" class="sr-tf-btn ${val === true ? 'is-true' : ''}" data-sr-action="pick-tf" data-qid="${esc(q.id)}" data-row="${rowIdx}" data-val="true" aria-pressed="${val === true}">Đúng</button>
                   <button type="button" class="sr-tf-btn ${val === false ? 'is-false' : ''}" data-sr-action="pick-tf" data-qid="${esc(q.id)}" data-row="${rowIdx}" data-val="false" aria-pressed="${val === false}">Sai</button>
@@ -609,7 +651,7 @@ function renderJoinScreenHTML() {
 
       ${
         appState.resumeOffer
-          ? `<div class="sr-card" style="margin-bottom:14px;border-color:#72b7a6;background:#f4faf8;">
+          ? `<div class="sr-card" style="margin-bottom:14px;border-color:#1e78c8;background:#e8f2fc;">
                <strong>Tìm thấy bài làm đã lưu trên thiết bị</strong>
                <p class="sr-muted" style="margin:6px 0 12px;">Thí sinh <strong>${esc(appState.resumeOffer.studentName)}</strong> có một lượt thi chưa hoàn tất hoặc đã nộp trên trình duyệt này.</p>
                <div style="display:flex;flex-wrap:wrap;gap:8px;">
@@ -754,7 +796,7 @@ function renderExamScreenHTML() {
         ${appState.error ? `<div class="sr-alert sr-alert-danger">${esc(appState.error)}</div>` : ''}
         ${
           appState.confirmSubmitOpen
-            ? `<div class="sr-card" style="border-color:var(--sr-teal);background:#f2faf7;">
+            ? `<div class="sr-card" style="border-color:var(--sr-brand, #0f4c81);background:#e8f2fc;">
                  <strong>Xác nhận nộp bài?</strong>
                  <p class="sr-muted" style="margin:6px 0 12px;">
                    Bạn đã trả lời <strong>${answeredCount}/${total}</strong> câu${appState.flagged.size ? ` · Có ${appState.flagged.size} câu đánh dấu xem lại` : ''}. Sau khi nộp, bài làm sẽ được ghi nhận ngay.
@@ -871,6 +913,70 @@ function formatCorrectAnsReview(q) {
   return String(corr);
 }
 
+export function renderResultReviewSectionHTML(r) {
+  if (!r || !r.resultsAvailable) {
+    return `<div class="sr-card">
+      <p style="margin-top:0;">${esc(r?.message || 'Bài làm của bạn đã được lưu. Điểm và đáp án sẽ hiển thị theo cấu hình của giáo viên.')}</p>
+      <button type="button" class="sr-btn sr-btn-soft" data-sr-action="refresh-result">Kiểm tra lại kết quả</button>
+    </div>`;
+  }
+  if (r.resultPolicy === 'score_only') {
+    return `<div class="sr-card">
+      <p style="margin:0;">Giáo viên chỉ cho phép xem tổng điểm cho phòng thi này.</p>
+    </div>`;
+  }
+  if (!Array.isArray(r.questions) || !r.questions.length) {
+    return '';
+  }
+  return r.questions
+    .map((q) => {
+      const maxP = Number(q.maxPointsP100 || 0);
+      const earned = q.earnedPointsP100;
+      const stateCls =
+        earned === null || earned === undefined
+          ? ''
+          : earned >= maxP && maxP > 0
+            ? 'is-correct'
+            : earned > 0
+              ? 'is-partial'
+              : 'is-wrong';
+      return `
+        <div class="sr-rev-item ${stateCls}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <strong>Câu ${esc(q.order)} (${esc(TYPE_LABELS[q.type] || q.type)})</strong>
+            <span class="sr-q-pts">
+              ${earned === null || earned === undefined ? 'Chờ chấm tay' : `${formatPointsVi(earned)} / ${formatPointsVi(maxP)} điểm`}
+            </span>
+          </div>
+          ${q.stem ? `<div style="font-size:14.5px;">${renderRichContent(q.stem, q.richDoc)}</div>` : ''}
+          <div style="font-size:13.5px;">
+            <strong>Bài làm của bạn:</strong> ${esc(formatStudentAnsReview(q))}
+          </div>
+          ${
+            q.correctAnswer !== undefined && q.correctAnswer !== null
+              ? `<div style="font-size:13.5px;color:#065f46;">
+                   <strong>Đáp án đúng:</strong> ${esc(formatCorrectAnsReview(q))}
+                 </div>`
+              : ''
+          }
+          ${
+            q.explanation
+              ? `<div class="sr-passage-box" style="margin-top:4px;font-size:13.5px;">
+                   <strong>Lời giải / Hướng dẫn:</strong> ${renderRichContent(q.explanation, null)}
+                 </div>`
+              : ''
+          }
+          ${
+            q.graderNote
+              ? `<div style="font-size:13px;color:var(--sr-brand-dark, var(--sr-teal-dark, #0b3a63));"><strong>Nhận xét của giáo viên:</strong> ${esc(q.graderNote)}</div>`
+              : ''
+          }
+        </div>
+      `;
+    })
+    .join('');
+}
+
 function renderResultScreenHTML() {
   const r = appState.result;
   if (!r) return '';
@@ -896,68 +1002,13 @@ function renderResultScreenHTML() {
                  <div class="sr-score-big">${esc(formatPointsVi(r.totalScoreP100))} / ${esc(formatPointsVi(r.totalPointsP100))}</div>
                  ${r.manualScoreP100 > 0 || r.gradingStatus === 'needs_manual' ? `<div style="font-size:12px;opacity:0.9;">Trắc nghiệm: ${esc(formatPointsVi(r.autoScoreP100))} · Tự luận: ${esc(formatPointsVi(r.manualScoreP100))}</div>` : ''}
                </div>`
-            : `<span class="sr-room-code-pill" style="color:#0d5449;">Đã nộp bài an toàn</span>`
+            : `<span class="sr-room-code-pill" style="color:#0b3a63;">Đã nộp bài an toàn</span>`
         }
       </div>
 
       ${appState.warningBanner ? `<div class="sr-alert sr-alert-warn">${esc(appState.warningBanner)}</div>` : ''}
 
-      ${
-        !r.resultsAvailable
-          ? `<div class="sr-card">
-               <p style="margin-top:0;">${esc(r.message || 'Bài làm của bạn đã được lưu. Điểm và đáp án sẽ hiển thị theo cấu hình của giáo viên.')}</p>
-               <button type="button" class="sr-btn sr-btn-soft" data-sr-action="refresh-result">Kiểm tra lại kết quả</button>
-             </div>`
-          : Array.isArray(r.questions) && r.questions.length
-            ? r.questions
-                .map((q) => {
-                  const maxP = Number(q.maxPointsP100 || 0);
-                  const earned = q.earnedPointsP100;
-                  const stateCls =
-                    earned === null || earned === undefined
-                      ? ''
-                      : earned >= maxP && maxP > 0
-                        ? 'is-correct'
-                        : earned > 0
-                          ? 'is-partial'
-                          : 'is-wrong';
-                  return `
-                    <div class="sr-rev-item ${stateCls}">
-                      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                        <strong>Câu ${esc(q.order)} (${esc(TYPE_LABELS[q.type] || q.type)})</strong>
-                        <span class="sr-q-pts">
-                          ${earned === null || earned === undefined ? 'Chờ chấm tay' : `${formatPointsVi(earned)} / ${formatPointsVi(maxP)} điểm`}
-                        </span>
-                      </div>
-                      ${q.stem ? `<div style="font-size:14.5px;">${esc(q.stem).replace(/\n/g, '<br>')}</div>` : ''}
-                      <div style="font-size:13.5px;">
-                        <strong>Bài làm của bạn:</strong> ${esc(formatStudentAnsReview(q))}
-                      </div>
-                      ${
-                        q.correctAnswer !== undefined && q.correctAnswer !== null
-                          ? `<div style="font-size:13.5px;color:#065f46;">
-                               <strong>Đáp án đúng:</strong> ${esc(formatCorrectAnsReview(q))}
-                             </div>`
-                          : ''
-                      }
-                      ${
-                        q.explanation
-                          ? `<div class="sr-passage-box" style="margin-top:4px;font-size:13.5px;">
-                               <strong>Lời giải / Hướng dẫn:</strong> ${esc(q.explanation).replace(/\n/g, '<br>')}
-                             </div>`
-                          : ''
-                      }
-                      ${
-                        q.graderNote
-                          ? `<div style="font-size:13px;color:var(--sr-teal-dark);"><strong>Nhận xét của giáo viên:</strong> ${esc(q.graderNote)}</div>`
-                          : ''
-                      }
-                    </div>
-                  `;
-                })
-                .join('')
-            : ''
-      }
+      ${renderResultReviewSectionHTML(r)}
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button type="button" class="sr-btn" data-sr-action="refresh-result">Làm mới kết quả</button>
@@ -1631,4 +1682,6 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  bootstrap();
+}

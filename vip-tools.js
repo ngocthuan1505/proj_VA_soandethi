@@ -1,7 +1,7 @@
 import {LEVELS, QUESTION_TYPES, check, clone, esc, isApproved, uid} from './core.js';
 import {richTextHTML} from './math-content.js';
 
-const LEVEL_COLORS = ['#11695b', '#2563eb', '#d97706', '#dc2626'];
+const LEVEL_COLORS = ['#0f4c81', '#1e78c8', '#d97706', '#dc2626'];
 const LEVEL_SHORT = ['NB', 'TH', 'VD', 'VDC'];
 const ESTIMATED_MINUTES_BY_TYPE = {mcq: 1.5, truefalse: 2.5, short: 2.5, essay: 10};
 const SAFE_CELL_IMAGE_RE = /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i;
@@ -539,7 +539,7 @@ export function renderAnalyticsModalHTML(report, exam = null, {clientFallback = 
     <section class="analytics-section">
       <div class="analytics-sec-head">
         <h3>Phân bố đáp án trắc nghiệm (A / B / C / D)</h3>
-        <span class="hint">${ans.totalMcq ? `${ans.totalMcq} câu MCQ · Chuỗi dài nhất: ${ans.maxStreak || 0}` : 'Chưa có câu trắc nghiệm đã xác nhận đáp án'}</span>
+        <span class="hint">${ans.totalMcq ? `${ans.totalMcq} câu trắc nghiệm · Chuỗi dài nhất: ${ans.maxStreak || 0}` : 'Chưa có câu trắc nghiệm đã xác nhận đáp án'}</span>
       </div>
       <div class="analytics-ans-grid">${answerBars}</div>
       ${ans.imbalanced ? '<div class="alert analytics-mini-alert">Phân bố đáp án chưa đều hoặc có chuỗi trùng đáp án dài. Cân nhắc trộn phương án khi tạo mã đề.</div>' : ''}

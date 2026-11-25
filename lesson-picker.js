@@ -6,6 +6,42 @@ import {mergeAssistantSourceDraft} from './reference.js';
 const personalRoute='/api/lesson-catalog/sources';
 const usable=record=>['allowed','teacher_owned'].includes(record.license_status);
 const normSubject=v=>String(v??'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/đ/g,'d').trim();
+export function normalizeLessonSearch(value){
+ return String(value??'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/đ/g,'d').replace(/[.,;:()[\]{}"'’“”?!\-–—/]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function foldVietnameseOrthography(norm){
+ return String(norm||'').replace(/\bquy/g,'qui').replace(/([bcdfghklmnpqrstvwxz])y(?![aeiou])/g,'$1i').replace(/\s+/g,' ').trim();
+}
+export function expandLessonSearchVariants(query){
+ const base=normalizeLessonSearch(query);
+ if(!base)return [];
+ const out=new Set([base]);
+ const folded=foldVietnameseOrthography(base);
+ if(folded)out.add(folded);
+ for(const item of [...out]){
+  if(/\bphep the\b/.test(item)){
+   out.add(item.replace(/\bphep the\b/g,'phuong phap the'));
+   out.add(item.replace(/\bbang phep the\b/g,'the').replace(/\bphep the\b/g,'the'));
+  }
+  if(/\bphuong phap the\b/.test(item))out.add(item.replace(/\bphuong phap the\b/g,'phep the'));
+  if(/\bgiai he phuong trinh\b/.test(item))out.add('giai he');
+  if(/\bti so\b/.test(item))out.add(item.replace(/\bti so\b/g,'ti le'));
+  if(/\bti le\b/.test(item))out.add(item.replace(/\bti le\b/g,'ti so'));
+ }
+ return [...out].filter(Boolean);
+}
+export function lessonMatchesSearch(collection,lesson,query){
+ const variants=expandLessonSearchVariants(query);
+ if(!variants.length)return true;
+ const rawHay=[collection?.name,collection?.subject,collection?.book,collection?.volume,lesson?.chapter,lesson?.title,lesson?.outcome,lesson?.text].filter(Boolean).join(' ');
+ const hay=foldVietnameseOrthography(normalizeLessonSearch(rawHay));
+ if(!hay)return false;
+ return variants.some(v=>{
+  if(hay.includes(v))return true;
+  const toks=v.split(' ').filter(Boolean);
+  return toks.length>=2&&toks.every(t=>hay.includes(t));
+ });
+}
 const isLiteratureSubject=v=>['ngu van','tieng viet'].includes(normSubject(v));
 export function lessonSubjectMatches(selected,candidate){
  if(!selected)return true;
@@ -82,7 +118,7 @@ export async function openLessonPicker(context) {
  <button type="submit" class="primary">Lưu học liệu</button>
  </form></details>`:'<p class="hint">Chưa tải được kho học liệu cá nhân.</p>'}
  <form id="lesson-picker"><p class="hint">Chọn học liệu mẫu của dự án hoặc bài trong kho cá nhân.</p><div class="grid2">
- <label>Kho<select name="library"><option value="">Tất cả</option><option value="sample">Học liệu mẫu</option><option value="personal">Kho cá nhân</option></select></label>${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,initialSubject)}${select('Bộ học liệu','book',[])}${select('Tập','volume',[])}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div class="modal-foot"><button type="button" data-action="${useLayer2?'close-top-modal':'assistant-sources'}">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`,'',{layer:useLayer2?2:1});
+ <label>Kho<select name="library"><option value="">Tất cả</option><option value="sample">Học liệu mẫu</option><option value="personal">Kho cá nhân</option></select></label>${select('Lớp','grade',grades,String(exam.grade))}${select('Môn','subject',subjects,initialSubject)}${select('Bộ học liệu','book',[])}${select('Tập','volume',[])}</div><label>Tìm bài hoặc chương<input type="search" name="query" placeholder="Ví dụ: phép thế"></label><div data-lesson-list></div><p data-lesson-count role="status"></p><div data-lesson-selected-chips class="lesson-selected-chips" hidden></div><div class="modal-foot"><button type="button" data-action="${useLayer2?'close-top-modal':'assistant-sources'}">Quay lại nguồn</button><button type="submit" class="primary">Dùng bài đã chọn</button></div></form>`,'',{layer:useLayer2?2:1});
  const form=dialog.querySelector('#lesson-picker'),list=form.querySelector('[data-lesson-list]');
  const editor=dialog.querySelector('[data-personal-editor]'),personalForm=editor?.querySelector('form');
  let editing=null, importSequence=0, imported=null, sourceOrigin='';
@@ -216,11 +252,12 @@ export async function openLessonPicker(context) {
   }catch(error){status.textContent=error.message;}
   finally{button.disabled=false;}
  });
- const normalize=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/đ/g,'d');
  function updateCheckboxes(){
+  const visibleSelected=new Set();
   for(const group of list.querySelectorAll('[data-lesson-collection]')){
    const {id,lessons}=collections.find(c=>c.id===group.dataset.lessonCollection);
    const all=group.querySelector('[name=collection]'),picked=choices.get(id).size;
+   for(const row of group.querySelectorAll('[name=lesson]'))if(row.checked)visibleSelected.add(`${id}::${row.value}`);
    if(all){
     all.checked=picked===lessons.length;
     all.indeterminate=picked>0&&picked<lessons.length;
@@ -231,6 +268,21 @@ export async function openLessonPicker(context) {
    const all=chapter.querySelector('[name=chapter]'), picked=rows.filter(row=>row.checked).length;
    all.checked=picked===rows.length;
    all.indeterminate=picked>0&&picked<rows.length;
+  }
+  const chips=[];
+  for(const c of collections){
+   const picked=[...(choices.get(c.id)||[])].sort((a,b)=>a-b);
+   for(const num of picked){
+    const lesson=c.lessons.find(l=>l.number===num);
+    const label=c.record?c.name:`${c.name} · ${lesson?.title||('Bài '+num)}`;
+    const hiddenInFilter=!visibleSelected.has(`${c.id}::${num}`);
+    chips.push(`<span class="lesson-selected-chip${hiddenInFilter?' is-hidden-filter':''}">${esc(label)}${hiddenInFilter?' <em>(đang ẩn ngoài bộ lọc)</em>':''} <button type="button" class="tiny-btn" data-unselect-lesson data-collection-id="${esc(c.id)}" data-lesson-number="${num}" aria-label="Bỏ chọn ${esc(label)}">×</button></span>`);
+   }
+  }
+  const chipsHost=form.querySelector('[data-lesson-selected-chips]');
+  if(chipsHost){
+   chipsHost.innerHTML=chips.join('');
+   chipsHost.hidden=!chips.length;
   }
   const count=[...choices.values()].reduce((total,items)=>total+items.size,0);
   form.querySelector('[data-lesson-count]').textContent=count+` bài được chọn${changed.size?' · chưa lưu':''}`;
@@ -247,26 +299,37 @@ export async function openLessonPicker(context) {
   updateFilter(book,eligible.map(c=>c.book));
   const books=eligible.filter(c=>!book.value||book.value===c.book);
   updateFilter(volume,books.map(c=>c.volume));
-  const search=normalize(query.value.trim());
+  const rawQuery=query.value.trim();
+  const hasSearch=Boolean(normalizeLessonSearch(rawQuery));
   list.innerHTML=books.filter(c=>!volume.value||volume.value===c.volume).map(c=>{
-   const lessons=c.lessons.filter(l=>normalize([l.title,l.chapter,l.outcome,c.book,c.volume].join(' ')).includes(search));
+   const lessons=c.lessons.filter(l=>lessonMatchesSearch(c,l,rawQuery));
    if(!lessons.length)return '';
    const chapters=Map.groupBy(lessons,l=>l.chapter);
    const edited=editedDocs.get(c.id);
    if(c.record){
     const [lesson]=lessons,available=usable(c.record)&&lesson.text.trim();
     return `<section class="small-card" data-lesson-collection="${esc(c.id)}">
-     <h3>${esc(c.name)}</h3><p class="hint">${esc([c.book,c.volume,lesson.chapter,lesson.title].join(' · '))}</p>
+     <h3><span class="pill source-channel-badge" data-channel="personal">Tài liệu cá nhân</span> ${esc(c.name)}</h3><p class="hint">${esc([c.book,c.volume,lesson.chapter,lesson.title].join(' · '))}</p>
      <label class="consent"><input type="checkbox" name="lesson" value="1" ${available?'':'disabled'} ${choices.get(c.id).has(1)?'checked':''}> Dùng học liệu này</label>
      ${available?'':'<p class="hint">Chưa đủ điều kiện dùng cho trợ lý.</p>'}
      <details><summary>Xem học liệu</summary><p>${esc(lesson.outcome)}</p><p style="white-space:pre-wrap">${esc(lesson.text)}</p></details>
      <button type="button" data-edit-personal>Sửa học liệu</button></section>`;
    }
-   return `<section class="small-card" data-lesson-collection="${esc(c.id)}"><h3>${esc(c.name)}</h3>${edited?'<p class="hint">Đang dùng bản đã đối chiếu trong đề.</p>':''}<label class="consent"><input type="checkbox" name="collection"> Chọn cả tập (${c.lessons.length} bài)</label>${[...chapters].map(([chapter,rows])=>`<fieldset data-lesson-chapter><legend>${esc(chapter)}</legend><label class="consent"><input type="checkbox" name="chapter"> ${search?'Chọn tất cả kết quả trong chương':'Chọn cả chương'}</label>${rows.map(l=>`<div class="source-choice"><label><input type="checkbox" name="lesson" value="${l.number}" ${choices.get(c.id).has(l.number)?'checked':''}> ${esc(l.title)}</label><details><summary>Xem học liệu</summary><p><b>Mục tiêu</b> · ${esc(l.outcome)}</p><p>${esc(edited?.pages.find(page=>page.number===l.number)?.text??l.text)}</p></details></div>`).join('')}</fieldset>`).join('')}</section>`;
+   return `<section class="small-card" data-lesson-collection="${esc(c.id)}"><h3><span class="pill source-channel-badge" data-channel="sample">Học liệu mẫu</span> ${esc(c.name)}</h3>${edited?'<p class="hint">Đang dùng bản đã đối chiếu trong đề.</p>':''}<label class="consent"><input type="checkbox" name="collection"> Chọn cả tập (${c.lessons.length} bài)</label>${[...chapters].map(([chapter,rows])=>`<fieldset data-lesson-chapter><legend>${esc(chapter)}</legend><label class="consent"><input type="checkbox" name="chapter"> ${hasSearch?'Chọn tất cả kết quả trong chương':'Chọn cả chương'}</label>${rows.map(l=>`<div class="source-choice"><label><input type="checkbox" name="lesson" value="${l.number}" ${choices.get(c.id).has(l.number)?'checked':''}> ${esc(l.title)}</label><details><summary>Xem học liệu</summary><p><b>Mục tiêu</b> · ${esc(l.outcome)}</p><p>${esc(edited?.pages.find(page=>page.number===l.number)?.text??l.text)}</p></details></div>`).join('')}</fieldset>`).join('')}</section>`;
   }).join('')||'<p>Chưa có bài phù hợp với bộ lọc.</p>';
   updateCheckboxes();
  }
  form.addEventListener('click',event=>{
+  const unselect=event.target.closest('[data-unselect-lesson]');
+  if(unselect){
+   const colId=unselect.dataset.collectionId, num=Number(unselect.dataset.lessonNumber);
+   choices.get(colId)?.delete(num);
+   changed.add(colId);
+   const cb=list.querySelector(`[data-lesson-collection="${CSS.escape(colId)}"] [name="lesson"][value="${num}"]`);
+   if(cb)cb.checked=false;
+   updateCheckboxes();
+   return;
+  }
   const button=event.target.closest('[data-edit-personal]');
   if(!button)return;
   const id=button.closest('[data-lesson-collection]').dataset.lessonCollection;
@@ -319,7 +382,7 @@ export async function openLessonPicker(context) {
      if(!usable(record)||!record.content_excerpt.trim())continue;
      const source={id:record.id,name:record.title,kind:'text',version:record.updated_at,
       pages:[{number:1,text:record.content_excerpt,title:record.lesson||record.title}],
-      text:record.content_excerpt,personalLesson:true,sourceLocator:record.locator,licenseStatus:record.license_status};
+      text:record.content_excerpt,personalLesson:true,sourceOrigin:record.source_origin||'personal_lesson',sourceLocator:record.locator,licenseStatus:record.license_status};
      if(saved)Object.assign(saved,source);
      else current.docs.push(source);
     }else if(!saved||(!editedCopy(saved)&&saved.version!==collection.version)){
@@ -327,7 +390,7 @@ export async function openLessonPicker(context) {
       ...lesson,text:`Bài ${lesson.number}. ${lesson.title}\n${lesson.text}\nMục tiêu: ${lesson.outcome}`,
      }));
      const source={id:collection.id,name:collection.name,kind:'text',version:collection.version,
-      pages,text:pages.map(page=>page.text).join('\n\n'),catalog:true};
+      pages,text:pages.map(page=>page.text).join('\n\n'),catalog:true,sourceOrigin:'lesson_catalog'};
      if(saved)Object.assign(saved,source);
      else current.docs.push(source);
     }

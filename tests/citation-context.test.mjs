@@ -354,3 +354,43 @@ test('question-check checkEvidenceHTML mở ngữ cảnh trực tiếp và xử 
  assert(!missingHtml.includes('data-action="source"'));
  assert(!missingHtml.includes('Mở nguồn để đối chiếu'));
 });
+
+test('UC9 stale citations: đánh dấu stale cho đủ 4 điều kiện và không mở details cũ', () => {
+ const docs = [{
+  id: DOC_ID,
+  name: 'Ngữ liệu Văn 9',
+  version: 1,
+  pages: [{number: 1, text: 'Sông Hồng chảy qua vùng đồng bằng Bắc Bộ.'}],
+ }];
+ const baseEv = {
+  sourceId: DOC_ID,
+  sourceVersion: 1,
+  locator: {kind: 'page', index: 1},
+  quote: 'Sông Hồng chảy qua vùng đồng bằng',
+  questionVersion: 1,
+ };
+
+ const flagStale = resolveCitationContext({...baseEv, stale: true, staleReason: 'quote_variant_changed'}, docs);
+ assert.equal(flagStale.status, 'stale');
+ assert.equal(flagStale.canOpen, false);
+ assert.equal(flagStale.quote, baseEv.quote);
+ assert.ok(flagStale.label.includes('Ngữ liệu Văn 9'));
+
+ const sourceMismatchNull = resolveCitationContext(baseEv, docs, {currentSource: {docId: null, location: 'Bản nhập tay'}});
+ assert.equal(sourceMismatchNull.status, 'stale');
+ assert.equal(sourceMismatchNull.canOpen, false);
+
+ const pageMismatch = resolveCitationContext(baseEv, docs, {currentSource: {docId: DOC_ID, page: 2}});
+ assert.equal(pageMismatch.status, 'stale');
+
+ const versionMismatch = resolveCitationContext(baseEv, docs, {questionVersion: 2});
+ assert.equal(versionMismatch.status, 'stale');
+
+ const quoteChanged = resolveCitationContext(baseEv, docs, {currentQuoteText: 'Đoạn ngữ liệu hoàn toàn mới không có đoạn cũ.'});
+ assert.equal(quoteChanged.status, 'stale');
+
+ const staleHtml = citationContextHTML(baseEv, docs, {questionVersion: 2});
+ assert.ok(staleHtml.includes('data-citation-status="stale"'));
+ assert.ok(staleHtml.includes(baseEv.quote));
+ assert.ok(!staleHtml.includes('matrix-evidence-source'));
+});

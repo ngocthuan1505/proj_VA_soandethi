@@ -11,16 +11,16 @@ function linkRow(item){
 
 export async function openSharing(c,api,{localPoC=false,sharedSnapshots=false}={}){
  if(localPoC&&!sharedSnapshots){
-  c.modal('Chia sẻ đề','<p>Bản đang chạy chưa có chia sẻ snapshot. Dùng Xuất đề để gửi Word/PDF, hoặc nạp bản app mới.</p>');return;
+  c.modal('Chia sẻ đề','<p>Bản đang chạy chưa có chia sẻ bản chụp đề. Dùng Xuất đề để gửi Word/PDF, hoặc cập nhật phiên bản ứng dụng mới.</p>');return;
  }
  const exam=c.exam(),result=sharedSnapshots?await api('/api/share?examId='+encodeURIComponent(exam.id)):{shares:[]};
  c.modal('Chia sẻ bản đề đã lưu',
-  '<p>Ai có liên kết đều xem được bản được chọn. Sửa đề gốc không đổi bản chia sẻ. Liên kết hoạt động khi máy chạy app; đây chưa phải hosting Internet.</p>'+
+  '<p>Ai có liên kết đều xem được bản được chọn. Sửa đề gốc không đổi bản chia sẻ. Liên kết hoạt động khi máy đang chạy ứng dụng; đây chưa phải máy chủ Internet.</p>'+
   '<form id="share-form" data-exam="'+esc(exam.id)+'" data-revision="'+exam.revision+'">'+
   '<p><b>'+esc(exam.title)+'</b> · Bản '+exam.revision+' · '+exam.questions.length+' câu</p>'+
   '<label class="source-choice"><input name="answers" type="checkbox"> Kèm đáp án, lời giải và barem</label>'+
   '<label class="source-choice"><input name="allowCopy" type="checkbox" checked> Cho phép tạo bản sao để chỉnh sửa</label>'+
-  (sharedSnapshots?'<label class="source-choice"><input name="community" type="checkbox"> Công bố bản học sinh trong kho cộng đồng</label><p class="hint">Người dùng cùng bản app có thể tìm và mở đề công bố. Chỉ công bố tài liệu được phép chia sẻ.</p><div data-community-fields hidden><label class="source-choice"><input name="consentPublic" type="checkbox"> Đồng ý công bố công khai trên kho cộng đồng (chỉ bản học sinh)</label><div class="grid2"><label>Bộ sách (tùy chọn)<input name="series" maxlength="150" value="'+esc(exam.series||'')+'"></label><label>Chương (tùy chọn)<input name="chapter" maxlength="200" value="'+esc(exam.chapter||'')+'"></label></div></div>':'')+
+  (sharedSnapshots?'<label class="source-choice"><input name="community" type="checkbox"> Công bố bản học sinh trong kho cộng đồng</label><p class="hint">Người dùng cùng phiên bản ứng dụng có thể tìm và mở đề công bố. Chỉ công bố tài liệu được phép chia sẻ.</p><div data-community-fields hidden><label class="source-choice"><input name="consentPublic" type="checkbox"> Đồng ý công bố công khai trên kho cộng đồng (chỉ bản học sinh)</label><div class="grid2"><label>Bộ sách (tùy chọn)<input name="series" maxlength="150" value="'+esc(exam.series||'')+'"></label><label>Chương (tùy chọn)<input name="chapter" maxlength="200" value="'+esc(exam.chapter||'')+'"></label></div></div>':'')+
   '<div class="modal-foot"><button class="primary" type="submit">Tạo liên kết chỉ xem</button></div></form>'+
   (sharedSnapshots?'<button type="button" data-action="community-exams">Mở kho đề cộng đồng</button>':'')+
   (result.shares.length?'<section class="shared-links"><h3>Liên kết đang mở</h3><p class="hint">Thu hồi ngăn truy cập tiếp; không xóa nội dung người khác đã xem hoặc tải.</p>'+result.shares.map(linkRow).join('')+'</section>':''));

@@ -25,7 +25,12 @@ import {
  formatProviderName,
  formatLatencyLabel,
  chatMetaBadgeText,
+ sourceBadge,
+ sourceChannelKey,
+ emptyCanvasHTML,
 } from '../reference.js';
+import {normalizeLessonSearch,expandLessonSearchVariants,lessonMatchesSearch} from '../lesson-picker.js';
+import {assistantText,latexToReadableUnicode,formatOutlineTitleUnicode} from '../studio.js';
 import {intentOf} from '../subject-profiles.js';
 import {approveQuestion,isApproved,check,clone,exportHTML,commit,undo,blank} from '../core.js';
 import {validateGenerated} from '../ai.mjs';
@@ -35,20 +40,30 @@ test('Tự luận: năm bài, tổng 10 điểm, kiểm tra barem và hoàn tác
 test('Sinh tự luận chỉ nhận barem khớp điểm, ma trận và nguồn thật',()=>{const sources=[{docId:'s',page:1,location:'Trang 1',text:'Phương trình bậc nhất có dạng ax + b = 0.'}],matrix=[{topic:'Đại số',targets:[0,1,0]}];const data={questions:[{type:'essay',stem:'Giải 2x + 3 = 11.',options:[],answer:0,points:2,rubric:[{text:'Chuyển vế',points:1},{text:'Tìm x = 4',points:1}],explanation:'2x = 8 nên x = 4.',topic:'Đại số',level:1,source:{docId:'s',page:1,quote:'Phương trình bậc nhất'}}]};assert.equal(validateGenerated(clone(data),sources,matrix,'essay')[0].type,'essay');const broken=clone(data);broken.questions[0].rubric[0].points=0.5;assert.throws(()=>validateGenerated(broken,sources,matrix,'essay'),/Thang điểm/);const invented=clone(data);invented.questions[0].source.quote='trích dẫn không có trong tài liệu';assert.throws(()=>validateGenerated(invented,sources,matrix,'essay'),/đoạn trích/);});
 test('Xuất tự luận: học sinh không lộ lời giải; giáo viên có bảng điểm Word thật',async()=>{const e=essaySample(),text=e.questions[0].rubric[0].text;assert.ok(!exportHTML(e,false).includes(text));assert.ok(exportHTML(e,true).includes(text));const zip=await dependency('jszip').loadAsync(await makeDocx(e,true));const xml=await zip.file('word/document.xml').async('string');assert.ok(xml.includes(text));assert.ok(xml.includes('Bài 1 (2 điểm)'));assert.ok(xml.includes('w:tbl'));assert.ok(!(await formattedHTML(e,false)).includes(text));});
 
-test('Lát B1: referenceCompose dựng chip 4 kênh [SGK]/[ĐỀ]/[CỘNG ĐỒNG]/[TỆP] kèm nút detach đúng data-doc',()=>{
+test('Lát B1: referenceCompose tách badge TÀI LIỆU CÁ NHÂN / HỌC LIỆU MẪU / ĐỀ / CỘNG ĐỒNG / TỆP kèm nút detach',()=>{
+ const personalDoc={id:'d-personal',name:'Bài giảng riêng',personalLesson:true};
+ const sampleDoc={id:'d-sgk',name:'Toán 10 · Bài 1',catalog:{series:'KNTT'}};
+ const originSampleDoc={id:'d-origin',name:'Học liệu gốc',sourceOrigin:'lesson_catalog'};
+ assert.equal(sourceBadge(personalDoc),'TÀI LIỆU CÁ NHÂN');
+ assert.equal(sourceChannelKey(personalDoc),'personal');
+ assert.equal(sourceBadge(sampleDoc),'HỌC LIỆU MẪU');
+ assert.equal(sourceChannelKey(sampleDoc),'sample');
+ assert.equal(sourceBadge(originSampleDoc),'HỌC LIỆU MẪU');
+ assert.equal(sourceChannelKey(originSampleDoc),'sample');
  const html=referenceCompose({
   docs:[
-   {id:'d-sgk',name:'Toán 10 · Bài 1',catalog:{series:'KNTT'}},
+   personalDoc,
+   sampleDoc,
    {id:'d-exam',name:'Đề ngắn 109B',sourceExamId:'ex-1'},
    {id:'d-comm',name:'Đề cộng đồng',communityToken:'tok-1'},
    {id:'d-file',name:'De_cu.docx'},
   ],
-  assistantSources:['d-sgk','d-exam','d-comm','d-file'],
+  assistantSources:['d-personal','d-sgk','d-exam','d-comm','d-file'],
   questions:[],
   aiEffort:1,
  },null);
- for(const badge of ['[SGK]','>SGK<','>ĐỀ<','>CỘNG ĐỒNG<','>TỆP<'].slice(1))assert.ok(html.includes(badge),badge);
- for(const id of ['d-sgk','d-exam','d-comm','d-file']){
+ for(const badge of ['>TÀI LIỆU CÁ NHÂN<','>HỌC LIỆU MẪU<','>ĐỀ<','>CỘNG ĐỒNG<','>TỆP<'])assert.ok(html.includes(badge),badge);
+ for(const id of ['d-personal','d-sgk','d-exam','d-comm','d-file']){
   assert.ok(html.includes(`data-action="detach-source"`));
   assert.ok(html.includes(`data-doc="${id}"`),id);
  }
@@ -304,4 +319,40 @@ test('Huy hiệu nguồn và tốc độ chat hiển thị chuẩn DeepSeek · 2
  assert.equal(chatMetaBadgeText({providerUsed:'',latencyMs:1200}),'1,2s');
  assert.equal(chatMetaBadgeText({providerUsed:'deepseek',fallbackFrom:'agy_cli',latencyMs:2400}),'DeepSeek (dự phòng từ AGY CLI) · 2,4s');
  assert.equal(chatMetaBadgeText({providerUsed:'agy_cli',latencyMs:14200}),'AGY CLI · 14,2s');
+});
+
+test('Blue Whale additions: chatMetaBadgeText modelUsed, emptyCanvasHTML, lesson-picker ty so/giai he, studio Unicode & list',()=>{
+ assert.equal(chatMetaBadgeText({providerUsed:'agy',modelUsed:'agy-cli',latencyMs:59900}),'AGY CLI · agy-cli · 59,9s');
+ assert.equal(chatMetaBadgeText({providerUsed:'deepseek',fallbackFrom:'agy',modelUsed:'deepseek-chat',latencyMs:2400}),'DeepSeek (dự phòng từ AGY CLI) · deepseek-chat · 2,4s');
+
+ const emptyHtml=emptyCanvasHTML({subject:'Toán',grade:'9'});
+ assert.ok(emptyHtml.includes('class="empty-paper-canvas'));
+ assert.ok(emptyHtml.includes('class="empty-whale-art"'));
+ assert.ok(emptyHtml.includes('<svg'));
+
+ assert.equal(normalizeLessonSearch('Tỉ số lượng giác'), 'ti so luong giac');
+ assert.ok(expandLessonSearchVariants('ty so').includes('ti so'));
+ assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Hệ thức lượng',title:'Tỉ số lượng giác của góc nhọn',outcome:'',text:''},'ty so'),true);
+ assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Hệ phương trình',title:'Giải hệ hai phương trình bậc nhất hai ẩn',outcome:'',text:''},'giai he phuong trinh'),true);
+ assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Hệ phương trình',title:'Giải hệ phương trình bằng phương pháp thế',outcome:'',text:''},'giai he bang phep the'),true);
+ assert.equal(lessonMatchesSearch({name:'Toán 11',subject:'Toán'},{chapter:'Đạo hàm',title:'Đạo hàm',outcome:'Quy tắc tính đạo hàm',text:''},'dao ham'),true);
+ assert.equal(lessonMatchesSearch({name:'Toán 12',subject:'Toán'},{chapter:'Nguyên hàm',title:'Nguyên hàm của hàm số',outcome:'',text:'Nội dung nguyên hàm'}),true);
+ assert.equal(lessonMatchesSearch({name:'Toán 9',subject:'Toán'},{chapter:'Chương 1',title:'Quy tắc đếm',outcome:'',text:''},'qui tac'),true);
+
+ const uni=latexToReadableUnicode('\\frac{a}{b}+\\sqrt{x}\\ge \\pi, \\triangle ABC, x\\in\\mathbb{R}, y\\le \\infty, z\\neq 0');
+ assert.ok(uni.includes('a/b'));
+ assert.ok(uni.includes('√(x)'));
+ assert.ok(uni.includes('≥'));
+ assert.ok(uni.includes('π'));
+ assert.ok(uni.includes('△ABC'));
+ assert.ok(uni.includes('ℝ'));
+ assert.ok(uni.includes('≤'));
+ assert.ok(uni.includes('∞'));
+ assert.ok(uni.includes('≠'));
+ assert.equal(formatOutlineTitleUnicode('Tính $\\frac{1}{2} + \\sqrt{9}$'),'Tính 1/2 + √(9)');
+
+ const richMsg=assistantText('### Tiêu đề `x_1`\n1. Bước một **đậm**\n2. Bước hai `code`');
+ assert.ok(richMsg.includes('<h4>Tiêu đề <code>x_1</code></h4>'));
+ assert.ok(richMsg.includes('chat-list-ordered'));
+ assert.ok(!richMsg.includes('</h4><br>'));
 });

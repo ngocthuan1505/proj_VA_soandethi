@@ -36,6 +36,7 @@ let state = {
   roomDetail: null,
   gradingQueue: null,
   analytics: null,
+  preflight: null,
   activeTab: 'share',
   scopeFilter: 'exam',
   onlyPendingGrading: true,
@@ -53,20 +54,23 @@ function injectStyles() {
   style.textContent = `
     dialog:has(.er-shell) {
       width: min(1060px, 95vw);
-      max-width: 1060px;
+      max-width: min(1060px, 100vw);
       padding: 0;
+      box-sizing: border-box;
     }
     dialog:has(.er-shell) .modal-body {
       padding: 16px 20px 22px;
-      background: #f8faf9;
+      background: var(--surface-subtle, #f6f9fd);
+      overflow-x: hidden;
     }
     .er-shell {
-      --er-teal: #11695b;
-      --er-teal-dark: #0d5449;
-      --er-teal-soft: #ebf5f1;
-      --er-border: #d4e0dc;
-      --er-ink: #162320;
-      --er-muted: #52635f;
+      --er-teal: var(--brand, #0f4c81);
+      --er-teal-dark: var(--brand-hover, #0b3a63);
+      --er-teal-soft: var(--brand-soft, #e8f2fc);
+      --er-accent: var(--accent, #1e78c8);
+      --er-border: var(--line, #d5e2ef);
+      --er-ink: var(--ink, #17283a);
+      --er-muted: var(--ink-muted, #4b6178);
       --er-warn: #92400e;
       --er-warn-bg: #fef3c7;
       --er-danger: #991b1b;
@@ -78,12 +82,18 @@ function injectStyles() {
       flex-direction: column;
       gap: 14px;
       font-size: 14px;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .er-card {
       background: #ffffff;
       border: 1px solid var(--er-border);
       border-radius: 10px;
       padding: 14px 16px;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .er-topbar {
       display: flex;
@@ -91,10 +101,12 @@ function injectStyles() {
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      background: linear-gradient(135deg, #ebf5f1 0%, #ffffff 70%);
-      border: 1px solid #b9d9cf;
+      background: linear-gradient(135deg, var(--er-teal-soft) 0%, #ffffff 72%);
+      border: 1px solid var(--er-border);
       border-radius: 10px;
       padding: 14px 16px;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .er-exam-title {
       font-weight: 700;
@@ -111,6 +123,7 @@ function injectStyles() {
       flex-wrap: wrap;
       align-items: center;
       gap: 8px;
+      min-width: 0;
     }
     .er-btn {
       display: inline-flex;
@@ -124,10 +137,13 @@ function injectStyles() {
       color: var(--er-ink);
       font-weight: 600;
       font-size: 13px;
+      line-height: 1.25;
       cursor: pointer;
+      box-sizing: border-box;
+      text-decoration: none;
       transition: background 0.15s ease, border-color 0.15s ease;
     }
-    .er-btn:hover { background: #f1f6f4; border-color: #9bb8b0; }
+    .er-btn:hover { background: var(--er-teal-soft); border-color: var(--er-accent); }
     .er-btn:disabled { opacity: 0.55; cursor: not-allowed; }
     .er-btn-primary {
       background: var(--er-teal);
@@ -137,10 +153,10 @@ function injectStyles() {
     .er-btn-primary:hover { background: var(--er-teal-dark); border-color: var(--er-teal-dark); }
     .er-btn-soft {
       background: var(--er-teal-soft);
-      border-color: #b7dbd0;
+      border-color: #bfd7ef;
       color: var(--er-teal-dark);
     }
-    .er-btn-soft:hover { background: #dceee7; }
+    .er-btn-soft:hover { background: #dbeafa; }
     .er-btn-danger {
       background: #fff5f5;
       border-color: #f3c2c2;
@@ -162,6 +178,7 @@ function injectStyles() {
       display: flex;
       flex-direction: column;
       gap: 4px;
+      min-width: 0;
     }
     .er-field label {
       font-size: 12.5px;
@@ -172,7 +189,7 @@ function injectStyles() {
       width: 100%;
       box-sizing: border-box;
       padding: 7px 10px;
-      border: 1px solid #c6d5d0;
+      border: 1px solid #c4d7ea;
       border-radius: 7px;
       font-size: 13.5px;
       font-family: inherit;
@@ -180,7 +197,7 @@ function injectStyles() {
       color: var(--er-ink);
     }
     .er-field input:focus, .er-field select:focus, .er-field textarea:focus {
-      outline: 2px solid rgba(17, 105, 91, 0.25);
+      outline: 2px solid rgba(15, 76, 129, 0.22);
       border-color: var(--er-teal);
     }
     .er-checks {
@@ -202,8 +219,22 @@ function injectStyles() {
       border-radius: 6px;
       padding: 9px 12px;
       font-size: 12.5px;
-      color: #1e423b;
+      color: var(--er-teal-dark);
       line-height: 1.45;
+    }
+    .er-preflight-banner {
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      border-left: 4px solid #c2410c;
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #9a3412;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .er-preflight-banner ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
     }
     .er-room-strip {
       display: flex;
@@ -289,7 +320,7 @@ function injectStyles() {
       color: var(--er-muted);
       cursor: pointer;
     }
-    .er-tab:hover { background: #f0f5f3; color: var(--er-ink); }
+    .er-tab:hover { background: var(--er-teal-soft); color: var(--er-ink); }
     .er-tab.is-active {
       background: var(--er-teal);
       color: #ffffff;
@@ -299,6 +330,7 @@ function injectStyles() {
       grid-template-columns: 230px minmax(0, 1fr);
       gap: 16px;
       align-items: start;
+      min-width: 0;
     }
     .er-qr-card {
       display: flex;
@@ -309,6 +341,8 @@ function injectStyles() {
       background: #ffffff;
       border: 1px solid var(--er-border);
       border-radius: 10px;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .er-qr-box {
       width: 184px;
@@ -317,7 +351,7 @@ function injectStyles() {
       align-items: center;
       justify-content: center;
       background: #ffffff;
-      border: 1px solid #edf2f0;
+      border: 1px solid #e5eef7;
       border-radius: 8px;
       padding: 6px;
     }
@@ -331,22 +365,27 @@ function injectStyles() {
       background: var(--er-teal-soft);
       padding: 6px 14px;
       border-radius: 8px;
-      border: 1px dashed #82bbae;
+      border: 1px dashed #8fb8e2;
     }
     .er-link-box {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 8px;
-      background: #f5f8f7;
+      background: #f4f8fc;
       border: 1px solid var(--er-border);
       border-radius: 8px;
       padding: 7px 10px;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .er-link-box code {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      flex: 1 1 180px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: normal;
       font-size: 12.5px;
       color: var(--er-ink);
     }
@@ -362,7 +401,7 @@ function injectStyles() {
       font-size: 13px;
     }
     .er-table th {
-      background: #f1f6f4;
+      background: #eef5fc;
       color: var(--er-teal-dark);
       font-weight: 700;
       text-align: left;
@@ -372,7 +411,7 @@ function injectStyles() {
     }
     .er-table td {
       padding: 9px 10px;
-      border-bottom: 1px solid #edf2f0;
+      border-bottom: 1px solid #e5eef7;
       vertical-align: middle;
     }
     .er-table tr:last-child td { border-bottom: none; }
@@ -391,7 +430,7 @@ function injectStyles() {
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid #edf2f0;
+      border-bottom: 1px solid #e5eef7;
       padding-bottom: 8px;
     }
     .er-grade-split {
@@ -400,8 +439,8 @@ function injectStyles() {
       gap: 14px;
     }
     .er-student-answer {
-      background: #fafcfb;
-      border: 1px solid #dbe6e2;
+      background: #f8fbfe;
+      border: 1px solid #d4e2f0;
       border-radius: 8px;
       padding: 10px 12px;
       white-space: pre-wrap;
@@ -409,8 +448,8 @@ function injectStyles() {
       min-height: 76px;
     }
     .er-rubric-box {
-      background: #f6faf8;
-      border: 1px solid #cde2db;
+      background: #f4f9fe;
+      border: 1px solid #c9ddf1;
       border-radius: 8px;
       padding: 10px 12px;
       display: flex;
@@ -425,7 +464,7 @@ function injectStyles() {
       font-size: 12.8px;
       padding: 5px 7px;
       background: #ffffff;
-      border: 1px solid #e1ede9;
+      border: 1px solid #ddeaf6;
       border-radius: 6px;
       cursor: pointer;
     }
@@ -464,7 +503,7 @@ function injectStyles() {
     .er-hist-bar {
       width: 100%;
       max-width: 44px;
-      background: linear-gradient(180deg, #168574 0%, #11695b 100%);
+      background: linear-gradient(180deg, var(--er-accent) 0%, var(--er-teal) 100%);
       border-radius: 6px 6px 2px 2px;
       min-height: 4px;
       transition: height 0.2s ease;
@@ -488,13 +527,43 @@ function injectStyles() {
       font-size: 13px;
     }
     @media (max-width: 780px) {
+      dialog:has(.er-shell) {
+        width: calc(100vw - 16px);
+        max-width: 100vw;
+      }
+      dialog:has(.er-shell) .modal-body {
+        padding: 12px;
+      }
       .er-grid-2, .er-grid-3, .er-share-layout, .er-grade-split {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .er-room-pill {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+      }
+      .er-btn, a.er-btn, .er-btn-sm, a.er-btn-sm {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
       }
       .er-hist { gap: 4px; }
     }
   `;
   document.head.appendChild(style);
+}
+
+export function isRoomLaunchBlocked(preflight) {
+  return Boolean(preflight && preflight.ready === false);
+}
+
+export function roomPreflightBannerHTML(preflight) {
+  if (!isRoomLaunchBlocked(preflight)) return '';
+  const blocking = Array.isArray(preflight?.blockingIssues) ? preflight.blockingIssues : [];
+  const listHTML = blocking.length
+    ? `<ul>${blocking.slice(0, 8).map((item) => `<li>${esc(item?.message || String(item || ''))}</li>`).join('')}</ul>`
+    : '<ul><li>Đề hiện tại còn lỗi chặn cần rà soát trước khi phát hành cho học sinh.</li></ul>';
+  return `<div class="er-preflight-banner" role="alert"><strong>Đề thi chưa đủ điều kiện mở phòng công khai (${blocking.length || 1} lỗi chặn):</strong>${listHTML}<div style="margin-top:6px;font-size:12px;">Vui lòng hoàn thiện khóa đáp án hoặc sửa lỗi chặn trên đề trước khi bấm mở phòng.</div></div>`;
 }
 
 export function formatPointsVi(p100) {
@@ -563,6 +632,7 @@ async function roomApi(c, path, { method = 'GET', body } = {}) {
       `Không thể xử lý yêu cầu (${response.status}).`;
     const err = new Error(msg);
     err.status = response.status;
+    err.data = data;
     throw err;
   }
   return data;
@@ -628,7 +698,7 @@ async function copyText(c, text, label = 'liên kết') {
 }
 
 function renderRichField(text, richDoc) {
-  if (richDoc && typeof richTextHTML === 'function') {
+  if (typeof richTextHTML === 'function') {
     return richTextHTML(text || '', richDoc);
   }
   return esc(text || '').replace(/\n/g, '<br>');
@@ -739,7 +809,7 @@ function buildCreateFormHTML(cur) {
         <strong>Lưu ý chế độ mạng nội bộ (LAN):</strong> Khi bật <em>Mở qua mạng nội bộ (LAN)</em>, hệ thống sẽ gợi ý địa chỉ IP nội bộ và mã QR tương ứng để học sinh trong cùng Wi-Fi lớp truy cập ngay trên điện thoại hoặc máy tính phòng tin mà không cần Internet ngoài. Máy chủ cần được khởi chạy với quyền lắng nghe trong mạng lớp.
       </div>
       <div class="er-btn-row" style="justify-content:flex-end;">
-        <button type="submit" class="er-btn er-btn-primary">Tạo & mở phòng ngay</button>
+        <button type="submit" class="er-btn er-btn-primary" ${isRoomLaunchBlocked(state.preflight) ? 'disabled' : ''}>Tạo &amp; mở phòng ngay</button>
       </div>
     </form>
   `;
@@ -786,7 +856,7 @@ function buildShareTabHTML(room) {
         }
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="min-width:0;display:flex;flex-direction:column;gap:12px;">
         <div class="er-card" style="display:flex;flex-direction:column;gap:10px;">
           <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;">
             <div>
@@ -967,7 +1037,7 @@ function buildMonitorTabHTML(room) {
                            <td>${attemptStatusBadge(a.status)}</td>
                            <td>
                              <span class="er-badge ${tabCls}">${tabCnt} tab</span>
-                             ${fsCnt ? `<span class="er-badge er-badge-warn">${fsCnt} thoát FS</span>` : ''}
+                             ${fsCnt ? `<span class="er-badge er-badge-warn">${fsCnt} lần thoát toàn màn hình</span>` : ''}
                            </td>
                            <td>
                              <strong>${esc(scoreTxt)}</strong>
@@ -1091,7 +1161,7 @@ function buildGradingTabHTML() {
                           }
                           ${
                             it.explanation
-                              ? `<div style="font-size:12.5px;border-top:1px dashed #c6ddd6;padding-top:6px;"><strong>Lời giải tham khảo:</strong> ${renderRichField(it.explanation, null)}</div>`
+                              ? `<div style="font-size:12.5px;border-top:1px dashed var(--er-border);padding-top:6px;"><strong>Lời giải tham khảo:</strong> ${renderRichField(it.explanation, null)}</div>`
                               : ''
                           }
                         </div>
@@ -1203,7 +1273,7 @@ function buildAnalyticsTabHTML(room) {
                       <tr>
                         <td><strong>Câu ${esc(q.order)}</strong></td>
                         <td>${esc(QUESTION_TYPES[q.type] || q.type)}</td>
-                        <td style="max-width:300px;">${esc(q.stem || '—')}</td>
+                        <td style="max-width:300px;">${q.stem ? richTextHTML(q.stem) : '—'}</td>
                         <td>${esc(formatPointsVi(q.maxPointsP100))}</td>
                         <td><strong>${esc(q.correctRate)}%</strong></td>
                         <td>${esc(q.correctCount)} / ${esc(q.partialCount)} / ${esc(q.wrongCount)}</td>
@@ -1228,6 +1298,7 @@ function buildShellHTML(c) {
       ? state.rooms.filter((r) => r.examId === cur.id)
       : state.rooms;
   const active = selectedRoom();
+  const preflightBlocked = isRoomLaunchBlocked(state.preflight);
 
   return `
     <div id="exam-rooms-shell" class="er-shell">
@@ -1239,7 +1310,7 @@ function buildShellHTML(c) {
           </div>
         </div>
         <div class="er-btn-row">
-          <button type="button" class="er-btn er-btn-primary" id="er-quick-open-btn" data-er-action="quick-open" ${!cur ? 'disabled' : ''}>
+          <button type="button" class="er-btn er-btn-primary" id="er-quick-open-btn" data-er-action="quick-open" ${!cur || preflightBlocked ? 'disabled' : ''}>
             Mở phòng ngay (1 chạm)
           </button>
           <button type="button" class="er-btn er-btn-soft" data-er-action="toggle-create" ${!cur ? 'disabled' : ''}>
@@ -1248,6 +1319,7 @@ function buildShellHTML(c) {
         </div>
       </div>
 
+      ${roomPreflightBannerHTML(state.preflight)}
       ${state.error ? `<div class="er-error">${esc(state.error)}</div>` : ''}
       ${state.createPanelOpen && cur ? buildCreateFormHTML(cur) : ''}
 
@@ -1289,7 +1361,7 @@ function buildShellHTML(c) {
           ? `<div class="er-card" style="display:flex;flex-direction:column;gap:14px;">
                <div class="er-tabs">
                  <button type="button" class="er-tab ${state.activeTab === 'share' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="share">Chia sẻ & Cấu hình</button>
-                 <button type="button" class="er-tab ${state.activeTab === 'monitor' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="monitor">Giám sát trực tiếp (${state.roomDetail?.attempts?.length ?? active.attemptCount ?? 0})</button>
+                 <button type="button" class="er-tab ${state.activeTab === 'monitor' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="monitor">Giám sát trực tiếp (${active.attemptCount ?? state.roomDetail?.attempts?.length ?? 0})</button>
                  <button type="button" class="er-tab ${state.activeTab === 'grading' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="grading">Chấm tự luận ${active.needsManualCount > 0 ? `(${active.needsManualCount})` : ''}</button>
                  <button type="button" class="er-tab ${state.activeTab === 'analytics' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="analytics">Thống kê & Excel</button>
                </div>
@@ -1379,8 +1451,31 @@ async function loadActiveTabData(c) {
       c,
       `/api/rooms/${encodeURIComponent(room.id)}/grading-queue?includeGraded=true`,
     );
+    const idx = state.rooms.findIndex((r) => r.id === room.id);
+    if (idx >= 0 && state.gradingQueue) {
+      if (state.gradingQueue.pendingCount != null) {
+        state.rooms[idx].needsManualCount = Number(state.gradingQueue.pendingCount);
+      }
+      const nextAttempts = state.gradingQueue.totalAttempts ?? state.gradingQueue.attemptCount;
+      if (nextAttempts != null) {
+        state.rooms[idx].attemptCount = Number(nextAttempts);
+      }
+    }
   } else if (state.activeTab === 'analytics') {
     state.analytics = await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}/analytics`);
+    const idx = state.rooms.findIndex((r) => r.id === room.id);
+    if (idx >= 0 && state.analytics) {
+      const nextAttempts =
+        state.analytics.totalAttempts ??
+        state.analytics.attemptCount ??
+        (Array.isArray(state.analytics.attempts) ? state.analytics.attempts.length : state.analytics.submittedCount);
+      if (nextAttempts != null) {
+        state.rooms[idx].attemptCount = Number(nextAttempts);
+      }
+      if (state.analytics.needsManualCount != null) {
+        state.rooms[idx].needsManualCount = Number(state.analytics.needsManualCount);
+      }
+    }
   }
 }
 
@@ -1418,19 +1513,55 @@ async function persistBeforeCreate(c) {
   }
 }
 
+async function loadRoomPreflight(c, examSnapshot) {
+  if (!examSnapshot?.id) {
+    state.preflight = null;
+    return null;
+  }
+  try {
+    const report = await roomApi(c, '/api/exports/preflight', {
+      method: 'POST',
+      body: { exam: examSnapshot },
+    });
+    state.preflight = report && typeof report === 'object' ? report : null;
+  } catch {
+    state.preflight = null;
+  }
+  return state.preflight;
+}
+
 async function createRoomFromPayload(c, payload) {
   const cur = c?.exam?.();
   if (!cur?.id) {
     throw new Error('Cần mở một đề thi trước khi tạo phòng.');
   }
   await persistBeforeCreate(c);
-  const created = await roomApi(c, '/api/rooms', {
-    method: 'POST',
-    body: {
-      examId: cur.id,
-      ...payload,
-    },
-  });
+  let created;
+  try {
+    created = await roomApi(c, '/api/rooms', {
+      method: 'POST',
+      body: {
+        examId: cur.id,
+        ...payload,
+      },
+    });
+  } catch (err) {
+    const detail = err?.data?.detail;
+    const blockingIssues =
+      detail?.blockingIssues ||
+      err?.data?.blockingIssues ||
+      detail?.preflight?.blockingIssues ||
+      err?.data?.preflight?.blockingIssues;
+    if (detail?.preflight || err?.data?.preflight || Array.isArray(blockingIssues)) {
+      state.preflight =
+        detail?.preflight ||
+        err?.data?.preflight || {
+          ready: false,
+          blockingIssues: Array.isArray(blockingIssues) ? blockingIssues : [],
+        };
+    }
+    throw err;
+  }
   state.createPanelOpen = false;
   state.error = '';
   state.qrBaseOrigin = typeof location !== 'undefined' ? location.origin : '';
@@ -1569,6 +1700,7 @@ function bindShellEvents(c) {
         return;
       }
       if (action === 'refresh-room' || action === 'refresh-grading' || action === 'refresh-analytics') {
+        await loadRooms(c, { preferredRoomId: selectedRoom()?.id || '' });
         await loadActiveTabData(c);
         renderShell(c);
         return;
@@ -1747,6 +1879,7 @@ export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate =
     roomDetail: null,
     gradingQueue: null,
     analytics: null,
+    preflight: null,
     activeTab: tab || 'share',
     scopeFilter: c?.exam?.() ? 'exam' : 'all',
     onlyPendingGrading: true,
@@ -1774,7 +1907,7 @@ export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate =
   }
 
   try {
-    await loadRooms(c);
+    await Promise.all([loadRooms(c), loadRoomPreflight(c, c?.exam?.())]);
     if (selectedRoom()) {
       await loadActiveTabData(c);
     }

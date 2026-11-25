@@ -21,7 +21,7 @@ export function openSketchBoard(context) {
    <div class="sketch-tools">
     <label>Màu nét<select name="ink">
      <option value="#20302e">Đen</option>
-     <option value="#176853">Xanh lục</option>
+     <option value="#0f4c81">Xanh đại dương</option>
      <option value="#9e3b32">Đỏ</option>
     </select></label>
     <button type="button" data-sketch-undo disabled>Hoàn tác nét</button>
@@ -67,7 +67,7 @@ export function openSketchBoard(context) {
    }
   }
   if(displayCursor){
-   target.strokeStyle='#176853';
+   target.strokeStyle='#0f4c81';
    target.lineWidth=1.5;
    target.beginPath();
    target.moveTo(cursor.x-8,cursor.y);target.lineTo(cursor.x+8,cursor.y);

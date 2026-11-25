@@ -13,12 +13,18 @@ import {
   filterAndSortLibraryExams,
   moveExamsToTrash,
   restoreExamsFromTrash,
+  isTeacherOwnedDoc,
+  buildFlexibleChatContext,
+  stabilizeStreamingMarkdown,
 } from '../workbench.js';
 import {
   renderProvidersHealthHTML,
   formatProviderTestResultHTML,
   connectionSettings,
+  translateProviderErrorMessage,
 } from '../connections.js';
+import {isRoomLaunchBlocked, roomPreflightBannerHTML} from '../exam-rooms.js';
+import {stripTrueFalseOptionPrefix, renderResultReviewSectionHTML} from '../assets/exam-room.js';
 import {
   PEDAGOGICAL_PROMPT_LIBRARY,
   promptLibraryHTML,
@@ -265,4 +271,68 @@ test('UV61 P2 Bugs: tìm explanation trong Kho đề, Trash khôi phục hàng l
   assert.equal(computeAttachmentState(false, true).label, 'Sắp gắn (chưa lưu)');
   assert.equal(computeAttachmentState(true, false).label, 'Sẽ gỡ khi lưu');
   assert.ok(readText('lesson-picker.js').includes('dialog-layer2') && readText('sharing.js').includes('dialog-layer2'));
+});
+
+test('Whale UX: strictTeacherOnly, in-place SSE, room preflight, exam-room a) prefix + score_only, Ollama error VN', () => {
+  assert.equal(isTeacherOwnedDoc({id: '1', name: 'File GV.pdf', sample: false}), true);
+  assert.equal(isTeacherOwnedDoc({id: '2', name: 'Bài giảng riêng', personalLesson: true, sourceOrigin: 'personal_lesson'}), true);
+  assert.equal(isTeacherOwnedDoc({id: '3', name: 'SGK mẫu', catalog: true}), false);
+  assert.equal(isTeacherOwnedDoc({id: '4', name: 'Mẫu hệ thống', sample: true}), false);
+  assert.equal(isTeacherOwnedDoc({id: '5', name: 'Cộng đồng', communityToken: 'tok'}), false);
+  assert.equal(isTeacherOwnedDoc({id: '6', name: 'Catalog origin', sourceOrigin: 'lesson_catalog'}), false);
+
+  const strictCtx = buildFlexibleChatContext({
+    id: 'ex-1',
+    subject: 'Toán',
+    grade: '9',
+    strictTeacherOnly: true,
+    assistantSources: ['gv-doc', 'cat-doc'],
+    assistantSourcePages: {'gv-doc': [2]},
+    docs: [
+      {id: 'gv-doc', name: 'Đề cương GV', version: 3, pages: [{number: 1, text: 'Trang 1 bỏ qua'}, {number: 2, text: 'Trang 2 được chọn'}]},
+      {id: 'cat-doc', name: 'Học liệu mẫu', catalog: true, sourceOrigin: 'lesson_catalog', pages: [{number: 1, text: 'Không được gửi'}]},
+    ],
+    questions: [],
+  }, [], []);
+  const srcItems = strictCtx.filter((x) => x.kind === 'attached-source');
+  assert.equal(srcItems.length, 1);
+  assert.equal(srcItems[0].id, 'gv-doc');
+  assert.equal(srcItems[0].pageNumber, 2);
+  assert.equal(srcItems[0].version, 3);
+  assert.ok(srcItems[0].excerpt.includes('Trang 2 được chọn'));
+
+  assert.equal(stabilizeStreamingMarkdown('```js\nconst x = 1;'), '```js\nconst x = 1;\n```');
+  assert.equal(stabilizeStreamingMarkdown('$$x^2 + 1'), '$$x^2 + 1\n$$');
+
+  const wbSrc = readText('workbench.js');
+  assert.ok(wbSrc.includes('paintStreamingReplyInPlace(examId)'));
+  assert.ok(wbSrc.includes('examId:e.id,text,effort:'));
+  assert.ok(wbSrc.includes('modelUsed:result.modelUsed||streamedModel'));
+  assert.ok(wbSrc.includes('retryPrompt:text'));
+
+  assert.equal(isRoomLaunchBlocked({ready: false, blockingIssues: [{message: 'Thiếu đáp án Câu 1'}]}), true);
+  assert.equal(isRoomLaunchBlocked({ready: true, blockingIssues: []}), false);
+  const banner = roomPreflightBannerHTML({ready: false, blockingIssues: [{message: 'Thiếu đáp án Câu 1'}]});
+  assert.ok(banner.includes('Thiếu đáp án Câu 1'));
+
+  const cleanTf = stripTrueFalseOptionPrefix('a) Hàm số đồng biến trên R', {
+    type: 'doc',
+    content: [{type: 'paragraph', content: [{type: 'text', text: 'a) Hàm số đồng biến trên R'}]}],
+  });
+  assert.equal(cleanTf.text, 'Hàm số đồng biến trên R');
+  assert.equal(cleanTf.richDoc.content[0].content[0].text, 'Hàm số đồng biến trên R');
+
+  const scoreOnlyHtml = renderResultReviewSectionHTML({
+    resultsAvailable: true,
+    resultPolicy: 'score_only',
+    questions: [{order: 1, type: 'mcq', stem: 'Câu mật'}],
+  });
+  assert.ok(scoreOnlyHtml.includes('Giáo viên chỉ cho phép xem tổng điểm cho phòng thi này.'));
+  assert.ok(!scoreOnlyHtml.includes('sr-rev-item'));
+
+  assert.equal(
+    translateProviderErrorMessage('ollama', 'All connection attempts failed'),
+    'Chưa bật dịch vụ Ollama tại máy (127.0.0.1:11434)',
+  );
+  assert.ok(formatProviderTestResultHTML('ollama', {ok: false, error: 'All connection attempts failed'}).text.includes('127.0.0.1:11434'));
 });

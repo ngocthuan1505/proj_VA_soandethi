@@ -10,10 +10,78 @@ import {openSketchBoard} from './sketch-board.js';
 let c,initialized=false,outlineObserver=null,figureState=null;const $=s=>document.querySelector(s);
 const b=(action,text,attrs='')=>`<button type="button" data-action="${action}" ${attrs}>${text}</button>`;
 const field=(q,name,index,label,text)=>`<textarea class="rich-field" data-id="${q.id}" data-rich-field="${name}" data-rich-index="${index}" aria-label="${esc(label)}">${esc(text)}</textarea>`;
-export function assistantText(text){const source=String(text||'').replace(/```(?:json|latex|markdown|text)?\n?([\s\S]*?)```/g,'$1');return source.split('\n').map(line=>{const safe=richTextHTML(line).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');if(/^#{1,3}\s/.test(line))return '<h4>'+safe.replace(/^#{1,3}\s/,'')+'</h4>';if(/^[-•]\s/.test(line))return '<div class="chat-list-item">'+safe.replace(/^[-•]\s/,'')+'</div>';return safe||'<br>';}).join('<br>');}
+function formatInlineSegment(text){
+ return String(text||'').split(/(`[^`\n]+`)/g).map((chunk,idx)=>{
+  if(idx%2===1&&chunk.startsWith('`')&&chunk.endsWith('`'))return `<code>${esc(chunk.slice(1,-1))}</code>`;
+  return esc(chunk).replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+ }).join('');
+}
+function renderAssistantInline(line){
+ return mathParts(line).map(p=>p.latex?richTextHTML(p.display?`$$${p.latex}$$`:`$${p.latex}$`):formatInlineSegment(p.text)).join('');
+}
+export function assistantText(text){
+ const source=String(text||'').replace(/```(?:json|latex|markdown|text)?\n?([\s\S]*?)```/g,'$1');
+ const blocks=source.split('\n').map(rawLine=>{
+  const line=String(rawLine||'');
+  const headMatch=line.match(/^#{1,3}\s+(.+)$/);
+  if(headMatch)return {block:true,html:`<h4>${renderAssistantInline(headMatch[1])}</h4>`};
+  const bulletMatch=line.match(/^[-•]\s+(.+)$/);
+  if(bulletMatch)return {block:true,html:`<div class="chat-list-item">${renderAssistantInline(bulletMatch[1])}</div>`};
+  const ordMatch=line.match(/^(\d+[.)])\s+(.+)$/);
+  if(ordMatch)return {block:true,html:`<div class="chat-list-item chat-list-ordered"><span class="chat-list-num">${esc(ordMatch[1])}</span> <span>${renderAssistantInline(ordMatch[2])}</span></div>`};
+  if(!line.trim())return {block:false,empty:true,html:'<br>'};
+  return {block:false,empty:false,html:renderAssistantInline(line)};
+ });
+ let out='';
+ for(let i=0;i<blocks.length;i++){
+  const cur=blocks[i],next=blocks[i+1];
+  out+=cur.html;
+  if(!cur.block&&!cur.empty&&next&&!next.block&&!next.empty)out+='<br>';
+ }
+ return out;
+}
 function inlineAnswers(){const e=c.exam();if(separateMarking(e)){const body=$('#marking-guide .full-rubric-table tbody');if(body){let i=0;for(const q of e.questions){const row=body.children[i++];if(!row)break;row.children[1].innerHTML=field(q,'explanation',0,'Lời giải bài '+(e.questions.indexOf(q)+1),q.explanation);for(const [j,r]of(q.rubric||[]).entries()){const line=body.children[i++];if(!line)break;line.firstElementChild.innerHTML=field(q,'rubric',j,'Bước chấm '+(j+1)+' bài '+(e.questions.indexOf(q)+1),r.text);line.lastElementChild.innerHTML=`<input class="rubric-point-input" type="number" min="0.05" max="10" step="0.05" data-rubric-point="${q.id}" data-index="${j}" value="${r.points}" aria-label="Điểm bước ${j+1} bài ${e.questions.indexOf(q)+1}">`;}}}}for(const q of e.questions){const root=document.getElementById('q-'+q.id);if(!root)continue;root.querySelectorAll('.option input').forEach((input,i)=>{const area=document.createElement('textarea');area.className='rich-field';Object.assign(area.dataset,{id:q.id,richField:'option',richIndex:String(i)});area.setAttribute('aria-label',input.getAttribute('aria-label'));area.value=q.options[i];input.replaceWith(area);});}mountEditor(c);}
 function compactCompose(){const compose=$('.chat-compose');if(!compose)return;const labels=[...compose.querySelectorAll(':scope > .compose-consent')];if(labels.length){const target=$('#chat-options')||compose;let row=$('.studio-ai-options');if(!row){row=document.createElement('div');row.className='studio-ai-options';target.append(row);}for(const label of labels){if(label.querySelector('#ai-consent'))label.lastChild.textContent=' Dùng AI đã kết nối';else label.lastChild.textContent=' Tự cập nhật đáp án';row.append(label);}}const input=$('#chat-input');if(input){input.rows=2;input.setAttribute('placeholder','Nhập yêu cầu tạo, sửa đề hoặc kéo thả tệp nguồn vào đây…');input.setAttribute('aria-label','Nhắn với trợ lý');}}
-function decorateOutline(){document.querySelectorAll('.outline-item .outline-title').forEach(n=>{if(n.dataset.mathRendered)return;n.dataset.mathRendered='true';const title=n.textContent.split('\n')[0];n.textContent=mathParts(title).map(p=>p.latex?(p.latex.length>25?'…':p.latex.replace(/\\(?:geq?|leq?)/g,m=>m.includes('ge')?'≥':'≤').replace(/\\(?:neq|ne)\b/g,'≠').replace(/[{}$\\]/g,'')):p.text).join('');});const root=$('.paper-scroll');if(root&&!root.dataset.outlineScroll){root.dataset.outlineScroll='true';let queued=false;root.addEventListener('scroll',()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;paintOutline();});}},{passive:true});}paintOutline();}
+export function latexToReadableUnicode(latex){
+ let s=String(latex||'').trim();
+ for(let i=0;i<4;i++){
+  const prev=s;
+  s=s
+   .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,(_,num,den)=>{
+    const n=/^[a-zA-Z0-9]+$/.test(num.trim())?num.trim():`(${num.trim()})`;
+    const d=/^[a-zA-Z0-9]+$/.test(den.trim())?den.trim():`(${den.trim()})`;
+    return `${n}/${d}`;
+   })
+   .replace(/\\sqrt\[([^\]]+)\]\{([^{}]+)\}/g,'$1√($2)')
+   .replace(/\\sqrt\{([^{}]+)\}/g,'√($1)');
+  if(s===prev)break;
+ }
+ return s
+  .replace(/\\mathbb\{([A-Za-z])\}/g,(_,ch)=>({R:'ℝ',N:'ℕ',Z:'ℤ',Q:'ℚ',C:'ℂ'}[ch]||ch))
+  .replace(/\\triangle\s*/g,'△')
+  .replace(/\\pi\b/g,'π')
+  .replace(/\\(?:geq|ge)\b/g,'≥')
+  .replace(/\\(?:leq|le)\b/g,'≤')
+  .replace(/\\(?:neq|ne)\b/g,'≠')
+  .replace(/\\infty\b/g,'∞')
+  .replace(/\\(?:times|cdot)\b/g,'·')
+  .replace(/\\pm\b/g,'±')
+  .replace(/\\perp\b/g,'⊥')
+  .replace(/\\angle\b/g,'∠')
+  .replace(/\\in\b/g,'∈')
+  .replace(/\^\\circ|\\circ\b/g,'°')
+  .replace(/[{}$\\]/g,'')
+  .replace(/\s+/g,' ')
+  .trim();
+}
+export function formatOutlineTitleUnicode(title){
+ return mathParts(String(title||'')).map(p=>{
+  if(!p.latex)return p.text;
+  const readable=latexToReadableUnicode(p.latex);
+  return readable.length>28?readable.slice(0,27)+'…':readable;
+ }).join('');
+}
+function decorateOutline(){document.querySelectorAll('.outline-item .outline-title').forEach(n=>{if(n.dataset.mathRendered)return;n.dataset.mathRendered='true';const title=n.textContent.split('\n')[0];n.textContent=formatOutlineTitleUnicode(title);});const root=$('.paper-scroll');if(root&&!root.dataset.outlineScroll){root.dataset.outlineScroll='true';let queued=false;root.addEventListener('scroll',()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;paintOutline();});}},{passive:true});}paintOutline();}
 function paintOutline(){const root=$('.paper-scroll');if(!root)return;const limit=root.getBoundingClientRect().top+90,nodes=[...document.querySelectorAll('.paper .question,.paper #marking-guide,.paper #marking-general,.paper #marking-table')];let current=null;for(const node of nodes)if(node.getClientRects().length&&node.getBoundingClientRect().top<=limit)current=node;document.querySelectorAll('.outline-item,.outline-section').forEach(n=>{const match=current?(current.dataset.q?n.dataset.id===current.dataset.q:n.dataset.action==='scroll-marking'&&(n.dataset.target||'marking-guide')===current.id):n.dataset.action==='scroll-heading';n.classList.toggle('in-view',match);if(match)n.setAttribute('aria-current','location');else n.removeAttribute('aria-current');});}
 
 export function mountStudio(context){c=context;document.body.classList.add('studio');prepareHeading();prepareSections();inlineAnswers();compactCompose();const footer=$('.main-footer');if(footer&&!$('.studio-page-controls'))footer.insertAdjacentHTML('beforeend',`<div class="studio-page-controls"><span class="studio-page-status">Trang 1</span><span class="footer-sep" aria-hidden="true">·</span><span class="studio-q-count"></span><span class="footer-sep" aria-hidden="true">·</span><span class="studio-word-count"></span></div>`);const ribbon=$('.document-bar');if(ribbon&&!$('.page-navigation'))ribbon.insertAdjacentHTML('beforeend',`<div class="page-navigation"><label for="page-jump">Trang</label><input id="page-jump" type="number" min="1" value="1" aria-label="Đến trang"><span id="page-total"></span></div>`);mountPages(c);mountDesign(c);mountUsability(c);decorateOutline();paintWords();if(document.querySelector('.paper.ai-writing'))document.querySelectorAll('.paper input,.paper textarea').forEach(n=>n.disabled=true);
