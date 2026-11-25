@@ -418,11 +418,11 @@
     width: 100%;
     max-width: 100%;
     display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: thin;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-start;
   }
-  .q-quick-btn, .q-actions button { min-height: 44px; height: auto; padding: 6px 10px; flex-shrink: 0; }
+  .q-quick-btn, .q-actions button { min-height: 44px; height: auto; padding: 5px 9px; }
   .option-answer-btn { min-width: 44px; min-height: 44px; }
   .empty-canvas-actions button, .add-question, .audio-player-controls button, .source-link, .essay-rubric-link { min-height: 44px; }
 }

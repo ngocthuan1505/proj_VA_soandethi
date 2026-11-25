@@ -27,6 +27,7 @@ exam.questions = [{
 exam.questions.push({
   id: uid(), type: 'essay', v: 1, points: 1, options: [],
   stem: 'Tính diện tích hình vuông cạnh 3 cm.', explanation: 'Diện tích là 9 cm vuông.',
+  rubric: [{text: 'Tính đúng 3 x 3 = 9 cm vuông.', points: 1}],
 });
 ensureBlocks(exam);
 const saved = await fetch(kv, {

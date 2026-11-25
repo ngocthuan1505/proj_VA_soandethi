@@ -21,6 +21,7 @@ const app=$('#app'),dialog=$('#dialog'),dialogLayer2=$('#dialog-layer2');
 const exam=()=>state.exams.find(e=>e.id===state.current);
 const qget=id=>exam().questions.find(q=>q.id===id);
 const sourceWarningText=(q,e)=>{
+ if(Array.isArray(q?.evidence)&&q.evidence.some(ev=>ev?.stale))return 'Ngữ liệu đã đổi · cần đối chiếu';
  const docId=q?.source?.docId;
  if(!docId||!e?.docs)return '';
  const doc=e.docs.find(d=>d.id===docId);

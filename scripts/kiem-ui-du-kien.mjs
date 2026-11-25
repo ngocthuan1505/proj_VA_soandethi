@@ -56,7 +56,12 @@ try{
  }
  await page.locator('.data-card td').getByText('300',{exact:true}).waitFor();
  assert.match(await chart.textContent(),/300/);
- const exported=await(await api('/api/save-export',{method:'POST',body:{type:'exam',exam:after,format:'html',teacher:false}})).json();
+ const blockedExport=await fetch(base+'/api/save-export',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({type:'exam',exam:after,format:'html',teacher:false})});
+ assert.equal(blockedExport.status,409);
+ const blockedJson=await blockedExport.json();
+ assert.equal(blockedJson.code,'export_preflight_blocked');
+ const exported=await(await api('/api/save-export',{method:'POST',body:{type:'exam',exam:after,format:'html',teacher:false,allowDraft:true}})).json();
+ assert.equal(exported.isDraft,true);
  const html=await(await api(exported.url)).text();
  assert.match(html,/<td>300<\/td>/);assert.match(html,/Khu vực B: 300/);
  await page.reload();await page.waitForLoadState('networkidle');

@@ -1398,7 +1398,18 @@ async function main() {
         );
         respPromise.catch(() => {});
         await clickFn();
-        const resp = await respPromise;
+        const confirmBtn = page.locator('#dialog [data-action="export-file"][data-confirmed="true"]').first();
+        const raceOutcome = await Promise.race([
+          respPromise.then((r) => ({type: 'resp', r})),
+          confirmBtn
+            .waitFor({state: 'visible', timeout: 2500})
+            .then(() => ({type: 'confirm'}))
+            .catch(() => null),
+        ]);
+        if (raceOutcome?.type === 'confirm') {
+          await confirmBtn.click();
+        }
+        const resp = raceOutcome?.type === 'resp' ? raceOutcome.r : await respPromise;
         if (resp.status() !== 200) {
           const errText = await resp.text().catch(() => '');
           throw new Error(`Export API ${resp.url()} trả ${resp.status()}: ${errText}`);
