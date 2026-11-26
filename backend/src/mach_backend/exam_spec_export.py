@@ -933,19 +933,62 @@ def _normalize_level(raw_level: Any, index: int) -> int:
     )
 
 
+def _choice_group_name(question: dict[str, Any]) -> str:
+    raw_group = question.get("choiceGroup")
+    return raw_group.strip() if isinstance(raw_group, str) and raw_group.strip() else ""
+
+
+def _effective_totals_by_choice_group(
+    entries: list[tuple[str, int | float]],
+) -> dict[str, Any]:
+    """Tính tổng câu và tổng điểm hiệu lực theo nhánh choiceGroup (chung + nhánh lớn nhất)."""
+    common_q4: int | float = 0
+    common_count = 0
+    track_q4: dict[str, int | float] = {}
+    track_counts: dict[str, int] = {}
+    for grp_raw, q4 in entries:
+        grp_key = grp_raw.strip().casefold() if grp_raw.strip() else ""
+        if grp_key:
+            track_q4[grp_key] = _add_q4(track_q4.get(grp_key, 0), q4)
+            track_counts[grp_key] = track_counts.get(grp_key, 0) + 1
+        else:
+            common_q4 = _add_q4(common_q4, q4)
+            common_count += 1
+    if not track_counts:
+        return {
+            "primary_track": None,
+            "effective_q4": common_q4,
+            "effective_questions": common_count,
+        }
+    primary_track = max(
+        track_counts.keys(),
+        key=lambda k: (float(track_q4.get(k, 0)), track_counts[k]),
+    )
+    return {
+        "primary_track": primary_track,
+        "effective_q4": _add_q4(common_q4, track_q4.get(primary_track, 0)),
+        "effective_questions": common_count + track_counts[primary_track],
+    }
+
+
 def _normalize_objective_question_for_label(question: dict[str, Any], kind: QuestionType) -> dict:
     copied = dict(question)
     copied["type"] = kind
     if kind == "mcq":
+        raw_options = copied.get("options")
+        opt_count = len(raw_options) if isinstance(raw_options, list) else 4
+        max_opts = max(4, min(opt_count, 8))
+        letters = "ABCDEFGH"[:max_opts]
         ans = copied.get("answer")
         if isinstance(ans, str):
             letter = ans.strip().upper()
-            if letter in {"A", "B", "C", "D"}:
-                copied["answer"] = "ABCD".index(letter)
+            if letter in letters:
+                copied["answer"] = letters.index(letter)
             else:
+                allowed = "A/B/C/D" if max_opts == 4 else f"A..{letters[-1]}"
                 raise AIError(
                     "invalid_answer",
-                    "Đáp án trắc nghiệm phải là A/B/C/D hoặc chỉ số 0..3.",
+                    f"Đáp án trắc nghiệm phải là {allowed} hoặc chỉ số 0..{max_opts - 1}.",
                     http_status=422,
                 )
     elif kind == "truefalse":
@@ -1103,14 +1146,17 @@ def validate_and_normalize_answer_key(
 
     objective_answers: list[dict[str, Any]] = []
     essay_rubrics: list[dict[str, Any]] = []
-    objective_q4: int | float = 0
-    essay_q4: int | float = 0
+    objective_entries: list[tuple[str, int | float]] = []
+    essay_entries: list[tuple[str, int | float]] = []
+    all_entries: list[tuple[str, int | float]] = []
 
     for idx, raw_q in enumerate(questions, 1):
         q_type = _normalize_type(raw_q.get("type"), idx)
         level_idx = _normalize_level(raw_q.get("level"), idx)
         q4 = _question_quarter_points(raw_q, idx)
         pts = _q4_to_float(q4)
+        choice_group = _choice_group_name(raw_q)
+        all_entries.append((choice_group, q4))
         topic = str(raw_q.get("topic") or raw_q.get("chapter") or "Chủ đề chung").strip()
         lesson = str(
             raw_q.get("lesson") or raw_q.get("unit") or raw_q.get("subtopic") or ""
@@ -1142,12 +1188,12 @@ def validate_and_normalize_answer_key(
                         raise AIError(
                             "empty_selected_option",
                             f"Câu {idx} đang chọn đáp án "
-                            f"{'ABCD'[ans] if ans < 4 else ans + 1} "
+                            f"{chr(65 + ans) if ans < 8 else ans + 1} "
                             "nhưng phương án bị trống.",
                             http_status=400,
                         )
             rubric_steps = _extract_rubric_steps(raw_q, idx, q4) if raw_q.get("rubric") else []
-            objective_q4 = _add_q4(objective_q4, q4)
+            objective_entries.append((choice_group, q4))
             objective_answers.append(
                 {
                     "index": idx,
@@ -1174,7 +1220,7 @@ def validate_and_normalize_answer_key(
                     f"Câu tự luận {idx} chưa có barem chấm hoặc lời giải tham khảo.",
                     http_status=422,
                 )
-            essay_q4 = _add_q4(essay_q4, q4)
+            essay_entries.append((choice_group, q4))
             essay_rubrics.append(
                 {
                     "index": idx,
@@ -1193,7 +1239,10 @@ def validate_and_normalize_answer_key(
                 }
             )
 
-    total_q4 = _add_q4(objective_q4, essay_q4)
+    objective_q4 = _effective_totals_by_choice_group(objective_entries)["effective_q4"]
+    essay_q4 = _effective_totals_by_choice_group(essay_entries)["effective_q4"]
+    total_info = _effective_totals_by_choice_group(all_entries)
+    total_q4 = total_info["effective_q4"]
     total_pts = _q4_to_float(total_q4)
     obj_pts = _q4_to_float(objective_q4)
     ess_pts = _q4_to_float(essay_q4)
@@ -1205,6 +1254,7 @@ def validate_and_normalize_answer_key(
         "grade": str(exam_obj.get("grade") or "").strip(),
         "minutes": exam_obj.get("minutes"),
         "total_questions": len(questions),
+        "effective_questions": total_info["effective_questions"],
         "total_points": total_pts,
         "total_points_q4": total_q4,
         "total_points_label": format_points_vi(total_pts),
@@ -1259,24 +1309,36 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
     """Lập bảng Ma trận & Đặc tả cả đề theo chủ đề/bài học, 4 mức nhận thức và tỷ lệ %."""
     exam_obj, questions = _validate_exam_base(exam)
 
-    groups: dict[tuple[str, str], dict[str, Any]] = {}
-    level_counts = [0, 0, 0, 0]
-    level_q4: list[int | float] = [0, 0, 0, 0]
-    type_counts: dict[QuestionType, int] = {"mcq": 0, "truefalse": 0, "short": 0, "essay": 0}
-    type_q4: dict[QuestionType, int | float] = {"mcq": 0, "truefalse": 0, "short": 0, "essay": 0}
-    total_q4: int | float = 0
-
+    parsed_items: list[tuple[dict[str, Any], QuestionType, int, int | float, str]] = []
+    entries: list[tuple[str, int | float]] = []
     for idx, raw_q in enumerate(questions, 1):
         q_type = _normalize_type(raw_q.get("type"), idx)
         level_idx = _normalize_level(raw_q.get("level"), idx)
         q4 = _question_quarter_points(raw_q, idx)
+        choice_group = _choice_group_name(raw_q)
+        parsed_items.append((raw_q, q_type, level_idx, q4, choice_group))
+        entries.append((choice_group, q4))
+
+    total_info = _effective_totals_by_choice_group(entries)
+    primary_track: str | None = total_info["primary_track"]
+    total_q4: int | float = total_info["effective_q4"]
+    total_questions: int = total_info["effective_questions"]
+
+    groups: dict[tuple[str, str, str], dict[str, Any]] = {}
+    level_counts = [0, 0, 0, 0]
+    level_q4: list[int | float] = [0, 0, 0, 0]
+    type_counts: dict[QuestionType, int] = {"mcq": 0, "truefalse": 0, "short": 0, "essay": 0}
+    type_q4: dict[QuestionType, int | float] = {"mcq": 0, "truefalse": 0, "short": 0, "essay": 0}
+
+    for idx, (raw_q, q_type, level_idx, q4, choice_group) in enumerate(parsed_items, 1):
         topic = str(raw_q.get("topic") or raw_q.get("chapter") or "Chủ đề chung").strip()
         lesson = str(
             raw_q.get("lesson") or raw_q.get("unit") or raw_q.get("subtopic") or ""
         ).strip()
         competency = _extract_competency(raw_q, topic, lesson, LEVEL_NAMES[level_idx])
 
-        group_key = (topic.casefold(), lesson.casefold())
+        grp_key = choice_group.casefold()
+        group_key = (topic.casefold(), lesson.casefold(), grp_key)
         group: dict[str, Any] | None = groups.get(group_key)
         if group is None:
             levels_map: dict[str, dict[str, Any]] = {
@@ -1294,6 +1356,7 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
             group = {
                 "topic": topic,
                 "lesson": lesson,
+                "choice_group": choice_group,
                 "levels": levels_map,
                 "question_types": [],
                 "competencies": [],
@@ -1322,13 +1385,12 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
         group["total_questions"] += 1
         group["total_points_q4"] = _add_q4(group["total_points_q4"], q4)
 
-        level_counts[level_idx] += 1
-        level_q4[level_idx] = _add_q4(level_q4[level_idx], q4)
-        type_counts[q_type] += 1
-        type_q4[q_type] = _add_q4(type_q4[q_type], q4)
-        total_q4 = _add_q4(total_q4, q4)
+        if primary_track is None or not grp_key or grp_key == primary_track:
+            level_counts[level_idx] += 1
+            level_q4[level_idx] = _add_q4(level_q4[level_idx], q4)
+            type_counts[q_type] += 1
+            type_q4[q_type] = _add_q4(type_q4[q_type], q4)
 
-    total_questions = len(questions)
     rows: list[dict[str, Any]] = []
     specification_rows: list[dict[str, Any]] = []
 
@@ -1347,6 +1409,7 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
                 "order": order,
                 "topic": group["topic"],
                 "lesson": group["lesson"],
+                "choice_group": group["choice_group"],
                 "levels": group["levels"],
                 "question_types": group["question_types"],
                 "question_type_labels": [TYPE_LABELS[t] for t in group["question_types"]],
@@ -1366,6 +1429,7 @@ def build_matrix_and_specification(exam: dict[str, Any]) -> dict[str, Any]:
                         "order": len(specification_rows) + 1,
                         "topic": group["topic"],
                         "lesson": group["lesson"],
+                        "choice_group": group["choice_group"],
                         "level": level_name,
                         "question_types": cell["question_types"],
                         "competencies": cell["competencies"],
@@ -1575,9 +1639,12 @@ def export_answer_key_rubric_html(exam: dict[str, Any], *, teacher: bool = True)
 def export_student_exam_html(exam: dict[str, Any]) -> str:
     """Xuất HTML in A4 bản học sinh: ẩn hoàn toàn đáp án, lời giải và barem."""
     _, questions = _validate_exam_base(exam)
-    total_q4: int | float = 0
-    for idx, q in enumerate(questions, 1):
-        total_q4 = _add_q4(total_q4, _question_quarter_points(q, idx))
+    total_q4 = _effective_totals_by_choice_group(
+        [
+            (_choice_group_name(q), _question_quarter_points(q, idx))
+            for idx, q in enumerate(questions, 1)
+        ]
+    )["effective_q4"]
     redacted = redact_exam_for_student(exam)
     header_data = {
         "title": str(redacted.get("title") or "Đề kiểm tra").strip(),
@@ -1618,11 +1685,14 @@ def export_matrix_specification_html(
 
     matrix_rows_html = []
     for row in data["rows"]:
+        grp_badge = (
+            f" <small>[{_esc(row['choice_group'])}]</small>" if row.get("choice_group") else ""
+        )
         topic_cell = (
-            f"<strong>{_inline_html_safe(row['topic'])}</strong><br>"
+            f"<strong>{_inline_html_safe(row['topic'])}</strong>{grp_badge}<br>"
             f"<small>{_inline_html_safe(row['lesson'])}</small>"
             if row["lesson"]
-            else f"<strong>{_inline_html_safe(row['topic'])}</strong>"
+            else f"<strong>{_inline_html_safe(row['topic'])}</strong>{grp_badge}"
         )
         level_cells = []
         for level_name in LEVEL_NAMES:
@@ -1686,11 +1756,14 @@ def export_matrix_specification_html(
 
     spec_rows_html = []
     for row in data["specification_rows"]:
+        grp_badge = (
+            f" <small>[{_esc(row['choice_group'])}]</small>" if row.get("choice_group") else ""
+        )
         topic_cell = (
-            f"<strong>{_inline_html_safe(row['topic'])}</strong><br>"
+            f"<strong>{_inline_html_safe(row['topic'])}</strong>{grp_badge}<br>"
             f"<small>{_inline_html_safe(row['lesson'])}</small>"
             if row["lesson"]
-            else f"<strong>{_inline_html_safe(row['topic'])}</strong>"
+            else f"<strong>{_inline_html_safe(row['topic'])}</strong>{grp_badge}"
         )
         competencies_html = "<br>".join(_inline_html_safe(c) for c in row["competencies"])
         q_indices = ", ".join(f"Câu {i}" for i in row["question_indices"])
@@ -1965,7 +2038,10 @@ def export_matrix_specification_docx(
     builder.add_rich_paragraph("I. Bảng ma trận đề kiểm tra", bold=True, style="Heading 2")
     matrix_rows: list[list[str]] = []
     for row in data["rows"]:
-        topic_cell = f"{row['topic']}\n{row['lesson']}" if row["lesson"] else row["topic"]
+        title = (
+            f"{row['topic']} [{row['choice_group']}]" if row.get("choice_group") else row["topic"]
+        )
+        topic_cell = f"{title}\n{row['lesson']}" if row["lesson"] else title
         level_cells = [
             f"{row['levels'][name]['count']} câu\n"
             f"({format_points_vi(row['levels'][name]['points'])})"
@@ -2025,7 +2101,15 @@ def export_matrix_specification_docx(
     spec_rows = [
         [
             str(row["order"]),
-            f"{row['topic']}\n{row['lesson']}" if row["lesson"] else row["topic"],
+            (
+                f"{row['topic']} [{row['choice_group']}]\n{row['lesson']}"
+                if row.get("choice_group") and row["lesson"]
+                else f"{row['topic']} [{row['choice_group']}]"
+                if row.get("choice_group")
+                else f"{row['topic']}\n{row['lesson']}"
+                if row["lesson"]
+                else row["topic"]
+            ),
             row["level"],
             ", ".join(row["question_types"]),
             "\n".join(row["competencies"]),

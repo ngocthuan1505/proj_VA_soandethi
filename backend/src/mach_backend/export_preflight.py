@@ -1220,11 +1220,19 @@ def audit_export_preflight(
 
     approved_count = 0
     unapproved_count = 0
-    total_points_q4: int | float = 0
+    raw_total_points_q4: int | float = 0
+    common_points_q4: int | float = 0
+    common_count = 0
+    track_points_q4: dict[str, int | float] = {}
+    track_counts: dict[str, int] = {}
 
     for ordinal, q in enumerate(questions, 1):
         raw_id = q.get("id")
         q_id = str(raw_id).strip() if isinstance(raw_id, str) and raw_id.strip() else f"q-{ordinal}"
+        raw_group = q.get("choiceGroup")
+        group_key = (
+            raw_group.strip().casefold() if isinstance(raw_group, str) and raw_group.strip() else ""
+        )
 
         # 2a. Chuẩn hóa dạng câu.
         try:
@@ -1275,8 +1283,18 @@ def audit_export_preflight(
         # 2d. Kiểm tra điểm hợp lệ (tối đa 2 chữ số thập phân) và tổng barem.
         try:
             q4 = _question_quarter_points(q, ordinal)
-            total_points_q4 = _add_q4(total_points_q4, q4)
+            raw_total_points_q4 = _add_q4(raw_total_points_q4, q4)
+            if group_key:
+                track_points_q4[group_key] = _add_q4(track_points_q4.get(group_key, 0), q4)
+                track_counts[group_key] = track_counts.get(group_key, 0) + 1
+            else:
+                common_points_q4 = _add_q4(common_points_q4, q4)
+                common_count += 1
         except AIError as err:
+            if group_key:
+                track_counts[group_key] = track_counts.get(group_key, 0) + 1
+            else:
+                common_count += 1
             blocking_issues.append(
                 {
                     "code": err.code,
@@ -1291,11 +1309,17 @@ def audit_export_preflight(
         # 2e. Kiểm tra phương án / đáp án / barem theo dạng câu.
         if q_type in {"mcq", "truefalse"}:
             raw_options = q.get("options")
+            min_opts, max_opts = (4, 8) if q_type == "mcq" else (4, 4)
             if (
                 not isinstance(raw_options, list)
-                or len(raw_options) != 4
+                or not (min_opts <= len(raw_options) <= max_opts)
                 or any(not isinstance(opt, str) or not opt.strip() for opt in raw_options)
             ):
+                opt_msg = (
+                    f"Câu {ordinal} cần đủ 4 phương án có nội dung rõ ràng trước khi in."
+                    if q_type == "truefalse"
+                    else f"Câu {ordinal} cần từ 4 đến 8 phương án có nội dung rõ ràng trước khi in."
+                )
                 blocking_issues.append(
                     {
                         "code": "missing_options",
@@ -1303,9 +1327,7 @@ def audit_export_preflight(
                         "questionId": q_id,
                         "ordinal": ordinal,
                         "field": "options",
-                        "message": (
-                            f"Câu {ordinal} cần đủ 4 phương án có nội dung rõ ràng trước khi in."
-                        ),
+                        "message": opt_msg,
                     }
                 )
             else:
@@ -1632,12 +1654,25 @@ def audit_export_preflight(
         "pageMap": page_map,
     }
 
+    if track_counts:
+        primary_key = max(
+            track_counts.keys(),
+            key=lambda k: (float(track_points_q4.get(k, 0)), track_counts[k]),
+        )
+        effective_points_q4 = _add_q4(common_points_q4, track_points_q4.get(primary_key, 0))
+        effective_questions = common_count + track_counts[primary_key]
+    else:
+        effective_points_q4 = common_points_q4
+        effective_questions = common_count
+
     summary = {
         "totalQuestions": len(questions),
+        "effectiveQuestions": effective_questions,
         "approvedCount": approved_count,
         "unapprovedCount": unapproved_count,
-        "totalPoints": _q4_to_float(total_points_q4),
-        "totalPointsQ4": total_points_q4,
+        "totalPoints": _q4_to_float(effective_points_q4),
+        "totalPointsQ4": effective_points_q4,
+        "rawTotalPoints": _q4_to_float(raw_total_points_q4),
         "blockingCount": len(blocking_issues),
         "warningCount": len(warnings),
         "ocrReviewCount": len(ocr_review_items),

@@ -14,6 +14,14 @@ from fastapi.testclient import TestClient
 
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import saved_answer, saved_answer_label, validate_answer
+from mach_backend.exam_spec_export import (
+    build_matrix_and_specification,
+    export_answer_key_rubric_html,
+    export_matrix_specification_html,
+    export_student_exam_html,
+    validate_and_normalize_answer_key,
+)
+from mach_backend.export_preflight import audit_export_preflight
 from mach_backend.local_documents import (
     _update_range_in_text,
     chrome_path,
@@ -585,3 +593,146 @@ def test_matrix_templates_accept_decimal_points_points_by_level_and_two_tracks(
         assert rows_after[0]["pointsByLevel"] == [0.2, 0.25, 0.4, None]
         assert rows_after[1]["choiceGroup"] == "Tự chọn A"
         assert rows_after[2]["choiceGroup"] == "Tự chọn B"
+
+
+def test_preflight_and_save_export_five_option_mcq_without_allow_draft(tmp_path: Path) -> None:
+    exam = {
+        "title": "Đề trắc nghiệm 5 phương án qua API",
+        "subject": "Sinh học",
+        "grade": "12",
+        "minutes": 15,
+        "questions": [
+            _mcq(
+                "mcq_e",
+                "Chọn đáp án E:",
+                options=["PA A", "PA B", "PA C", "PA D", "PA E"],
+                answer=4,
+                points=5.0,
+                rubric=[],
+            ),
+            _mcq(
+                "mcq_e_str",
+                "Chọn đáp án E dạng chữ cái:",
+                options=["A1", "B1", "C1", "D1", "E1", "F1"],
+                answer="E",
+                points=5.0,
+                rubric=[],
+            ),
+        ],
+    }
+
+    report = audit_export_preflight(exam)
+    assert report["ready"] is True, report["blockingIssues"]
+    assert report["blockingIssues"] == []
+    assert report["summary"]["totalPoints"] == 10.0
+
+    key_info = validate_and_normalize_answer_key(exam, teacher=True)
+    assert key_info["objective_answers"][0]["answer_label"] == "E"
+    assert key_info["objective_answers"][1]["answer_label"] == "E"
+
+    with TestClient(create_app(tmp_path), headers=ORIGIN) as client:
+        for fmt in ("html", "docx"):
+            res = client.post(
+                "/api/save-export",
+                json={"type": "exam", "exam": exam, "teacher": True, "format": fmt},
+            )
+            assert res.status_code == 200, res.text
+            assert res.json()["filename"].endswith(f".{fmt}")
+
+    # Phương án E rỗng vẫn bị chặn lỗi rõ ràng thay vì im lặng
+    broken = deepcopy(exam)
+    broken["questions"][0]["options"][4] = "   "
+    with pytest.raises(AIError) as exc:
+        validate_and_normalize_answer_key(broken, teacher=True)
+    assert exc.value.code == "empty_selected_option"
+    assert "đáp án E" in str(exc.value)
+
+
+def test_preflight_and_spec_export_two_track_choice_group_totals() -> None:
+    # Tổng thô các nhánh = 0,50 + 9,50 + 9,50 = 19,50đ nhưng tổng hiệu lực phải đúng 10,00đ
+    two_track_exam = {
+        "title": "Đề Tin học 2 hướng điểm chẵn 10",
+        "subject": "Tin học",
+        "grade": "12",
+        "minutes": 50,
+        "questions": [
+            _mcq("c1", "Câu chung 1", answer=0, topic="Mạng máy tính", points=0.25),
+            _mcq("c2", "Câu chung 2", answer=1, topic="Mạng máy tính", points=0.25),
+            _mcq(
+                "a1",
+                "Câu nhánh A1",
+                answer=0,
+                topic="Khoa học máy tính",
+                choiceGroup="Tự chọn A",
+                points=4.75,
+                rubric=[],
+            ),
+            _mcq(
+                "a2",
+                "Câu nhánh A2",
+                answer=1,
+                topic="Khoa học máy tính",
+                choiceGroup="Tự chọn A",
+                points=4.75,
+                rubric=[],
+            ),
+            _mcq(
+                "b1",
+                "Câu nhánh B1",
+                answer=2,
+                topic="Tin học ứng dụng",
+                choiceGroup="Tự chọn B",
+                points=4.75,
+                rubric=[],
+            ),
+            _mcq(
+                "b2",
+                "Câu nhánh B2",
+                answer=3,
+                topic="Tin học ứng dụng",
+                choiceGroup="Tự chọn B",
+                points=4.75,
+                rubric=[],
+            ),
+        ],
+    }
+
+    preflight = audit_export_preflight(two_track_exam)
+    assert preflight["ready"] is True, preflight["blockingIssues"]
+    assert preflight["summary"]["totalPoints"] == 10.0
+    assert preflight["summary"]["totalPointsQ4"] == 40
+    assert preflight["summary"]["effectiveQuestions"] == 4
+    assert preflight["summary"]["totalQuestions"] == 6
+
+    key_info = validate_and_normalize_answer_key(two_track_exam, teacher=True)
+    assert key_info["total_points"] == 10.0
+    assert key_info["total_questions"] == 6
+    assert key_info["effective_questions"] == 4
+    assert key_info["objective_points"] == 10.0
+
+    spec = build_matrix_and_specification(two_track_exam)
+    assert spec["total_points"] == 10.0
+    assert spec["total_questions"] == 4
+    assert spec["total_points_label"] == "10,00 điểm"
+    assert sum(spec["by_level"][lvl]["count"] for lvl in spec["by_level"]) == 4
+    assert round(sum(spec["by_level"][lvl]["points"] for lvl in spec["by_level"]), 2) == 10.0
+
+    for html_out in (
+        export_answer_key_rubric_html(two_track_exam, teacher=True),
+        export_student_exam_html(two_track_exam),
+        export_matrix_specification_html(two_track_exam),
+    ):
+        assert "10,00 điểm" in html_out
+        assert "19,50 điểm" not in html_out
+
+    # Kiểm tra SC-09 thật (32 câu thô = 28 câu hiệu lực, 12,00đ thô -> 10,00đ hiệu lực)
+    sc09 = json.loads(
+        (ROOT_DIR / "tests" / "fixtures" / "school-corpus" / "SC-09.json").read_text("utf-8")
+    )
+    sc09_pre = audit_export_preflight(sc09)
+    assert sc09_pre["ready"] is True
+    assert sc09_pre["summary"]["totalPoints"] == 10.0
+    assert sc09_pre["summary"]["effectiveQuestions"] == 28
+    sc09_spec = build_matrix_and_specification(sc09)
+    assert sc09_spec["total_points"] == 10.0
+    assert sc09_spec["total_questions"] == 28

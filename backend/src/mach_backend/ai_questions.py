@@ -231,6 +231,10 @@ def saved_answer(question: dict) -> Answer:
         answer = question.get("truthValues") or answer
         if isinstance(answer, list):
             answer = tuple(answer)
+    elif kind == "mcq" and isinstance(answer, str):
+        letter = answer.strip().upper()
+        if len(letter) == 1 and letter in "ABCDEFGH":
+            answer = "ABCDEFGH".index(letter)
     if answer is not None:
         if kind not in {"mcq", "short", "truefalse"}:
             raise AIError("invalid_answer", "Dạng câu hỏi đang lưu chưa hợp lệ.")
