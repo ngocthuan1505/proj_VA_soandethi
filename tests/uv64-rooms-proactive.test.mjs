@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   appState,
@@ -181,6 +184,13 @@ test('UV64 Điểm tạm & Hướng dẫn chấm chung: hiện ĐIỂM TẠM khi
   );
   assert.ok(gradingHtml.includes('Hướng dẫn chấm chung của đề'));
   assert.ok(gradingHtml.includes('Trừ 0,25 điểm nếu thiếu đơn vị'));
+
+  const erSrc = fs.readFileSync(
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../exam-rooms.js'),
+    'utf8',
+  );
+  assert.ok(erSrc.includes('.er-shell .er-tab.is-active:hover:not(:disabled)'));
+  assert.ok(erSrc.includes('background: var(--er-teal, #0f4c81);'));
 });
 
 test('UV64 Audio 1 lượt: khi playsRemaining về 0 sau tải vẫn giữ <audio controls> cho lượt hiện tại nhờ activePlayback', async () => {

@@ -143,26 +143,42 @@ function injectStyles() {
       text-decoration: none;
       transition: background 0.15s ease, border-color 0.15s ease;
     }
-    .er-btn:hover { background: var(--er-teal-soft); border-color: var(--er-accent); }
+    .er-shell .er-btn:hover:not(:disabled) {
+      background: var(--er-teal-soft);
+      border-color: var(--er-accent);
+      color: var(--er-ink);
+    }
     .er-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-    .er-btn-primary {
-      background: var(--er-teal);
-      border-color: var(--er-teal);
+    .er-shell .er-btn-primary {
+      background: var(--er-teal, #0f4c81);
+      border-color: var(--er-teal, #0f4c81);
       color: #ffffff;
     }
-    .er-btn-primary:hover { background: var(--er-teal-dark); border-color: var(--er-teal-dark); }
-    .er-btn-soft {
+    .er-shell .er-btn-primary:hover:not(:disabled) {
+      background: var(--er-teal-dark, #0b3a63);
+      border-color: var(--er-teal-dark, #0b3a63);
+      color: #ffffff;
+    }
+    .er-shell .er-btn-soft {
       background: var(--er-teal-soft);
       border-color: #bfd7ef;
       color: var(--er-teal-dark);
     }
-    .er-btn-soft:hover { background: #dbeafa; }
-    .er-btn-danger {
+    .er-shell .er-btn-soft:hover:not(:disabled) {
+      background: #dbeafa;
+      border-color: #9ec4e6;
+      color: var(--er-teal-dark);
+    }
+    .er-shell .er-btn-danger {
       background: #fff5f5;
       border-color: #f3c2c2;
       color: var(--er-danger);
     }
-    .er-btn-danger:hover { background: var(--er-danger-bg); }
+    .er-shell .er-btn-danger:hover:not(:disabled) {
+      background: var(--er-danger-bg);
+      border-color: #f3c2c2;
+      color: var(--er-danger);
+    }
     .er-btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
     .er-grid-2 {
       display: grid;
@@ -310,7 +326,7 @@ function injectStyles() {
       border-bottom: 1px solid var(--er-border);
       padding-bottom: 10px;
     }
-    .er-tab {
+    .er-shell .er-tab {
       padding: 7px 14px;
       border-radius: 8px;
       border: 1px solid transparent;
@@ -320,9 +336,15 @@ function injectStyles() {
       color: var(--er-muted);
       cursor: pointer;
     }
-    .er-tab:hover { background: var(--er-teal-soft); color: var(--er-ink); }
-    .er-tab.is-active {
-      background: var(--er-teal);
+    .er-shell .er-tab:hover:not(:disabled) {
+      background: var(--er-teal-soft);
+      border-color: transparent;
+      color: var(--er-ink);
+    }
+    .er-shell .er-tab.is-active,
+    .er-shell .er-tab.is-active:hover:not(:disabled) {
+      background: var(--er-teal, #0f4c81);
+      border-color: var(--er-teal, #0f4c81);
       color: #ffffff;
     }
     .er-share-layout {
