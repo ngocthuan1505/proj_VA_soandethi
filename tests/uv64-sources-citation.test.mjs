@@ -473,6 +473,34 @@ test('UV64 Workbench: chip nguồn chat hiện tên bài SGK cụ thể và resi
       assert.equal(chatCompose.style.overflowY, 'auto');
     },
   );
+
+  // Chuyển từ desktop (>760px) có sẵn .open từ phiên trước xuống mobile (<=760px) không tự coi là đang mở Chat mobile
+  const deskToMobWorkspace = createFakeElement('div');
+  deskToMobWorkspace.classList = makeClassList(['workspace', 'mobile-ai-view']);
+  const deskToMobAssistant = createFakeElement('aside');
+  deskToMobAssistant.classList = makeClassList(['assistant', 'open']);
+  await withMockBrowserEnv(
+    new Map([
+      ['.workspace', deskToMobWorkspace],
+      ['aside.assistant', deskToMobAssistant],
+      ['.assistant', deskToMobAssistant],
+    ]),
+    { width: 390, height: 844 },
+    async () => {
+      const res = preserveMobileChatOnResize({
+        prevWidth: 1600,
+        width: 390,
+        prevHeight: 1000,
+        height: 844,
+        workspace: deskToMobWorkspace,
+        assistant: deskToMobAssistant,
+      });
+      assert.equal(res.keptOpen, false);
+      assert.equal(res.heightOnlyResize, false);
+      assert.equal(deskToMobAssistant.classList.contains('open'), false);
+      assert.equal(deskToMobWorkspace.classList.contains('mobile-ai-view'), false);
+    },
+  );
 });
 
 test('UV64 MVP guard: export variants chỉ đọc unit độc lập và action không vượt quá số khối', async () => {
