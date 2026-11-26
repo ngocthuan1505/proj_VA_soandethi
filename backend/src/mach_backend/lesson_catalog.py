@@ -559,6 +559,21 @@ def _kntt_raw_collections() -> list[
                     ),
                 ),
                 (
+                    "Chủ đề 3: Một số đơn vị đo diện tích",
+                    "Bài 15: Ki-lô-mét vuông, héc-ta và mét vuông (km2, ha, m2)",
+                    48,
+                    59,
+                    4,
+                    (
+                        "Nhận biết đơn vị đo diện tích ki-lô-mét vuông (km², km2), héc-ta (ha), "
+                        "mét vuông (m², m2) và mối liên hệ quy đổi giữa các đơn vị."
+                    ),
+                    (
+                        "Đọc, viết và chuyển đổi được giữa các đơn vị đo diện tích km2, ha, m2.",
+                        "Vận dụng ước lượng và tính diện tích đất đai, bản đồ trong thực tế.",
+                    ),
+                ),
+                (
                     "Chủ đề 4: Các phép tính với số thập phân",
                     "Bài 19: Phép cộng, phép trừ, phép nhân, phép chia số thập phân",
                     64,
@@ -580,12 +595,27 @@ def _kntt_raw_collections() -> list[
                     113,
                     5,
                     (
-                        "Thiết lập và vận dụng công thức tính diện tích tam giác, hình thang, "
-                        "chu vi và diện tích hình tròn."
+                        "Thiết lập và vận dụng công thức tính diện tích tam giác, diện tích hình "
+                        "thang, chu vi và diện tích hình tròn."
                     ),
                     (
                         "Tính được diện tích hình tam giác, hình thang và hình tròn.",
                         "Giải được bài toán thực tế về đo đạc ruộng đất, sân vườn.",
+                    ),
+                ),
+                (
+                    "Chủ đề 6: Ôn tập học kỳ I",
+                    "Bài 31: Ôn tập học kỳ I số thập phân, đo diện tích và hình phẳng",
+                    114,
+                    125,
+                    4,
+                    (
+                        "Hệ thống hóa kiến thức học kỳ I (học kì I): số thập phân, bốn phép tính, "
+                        "đơn vị đo diện tích và diện tích hình tam giác, hình thang, hình tròn."
+                    ),
+                    (
+                        "Vận dụng tổng hợp kiến thức học kỳ I giải bài toán số học và hình học.",
+                        "Thành thạo quy đổi đơn vị đo độ dài, khối lượng và diện tích.",
                     ),
                 ),
             ],
@@ -611,6 +641,18 @@ def _kntt_raw_collections() -> list[
                 ),
                 (
                     "Chủ đề 8: Thể tích. Đơn vị đo thể tích",
+                    "Bài 45: Xăng-ti-mét khối, đề-xi-mét khối, mét khối (cm3, dm3, m3)",
+                    26,
+                    37,
+                    3,
+                    (
+                        "Nhận biết đơn vị đo thể tích cm³ (cm3), dm³ (dm3), m³ (m3) và mối quan "
+                        "hệ quy đổi giữa các đơn vị đo thể tích."
+                    ),
+                    (("Đọc, viết và chuyển đổi được giữa các đơn vị đo thể tích cm3, dm3, m3."),),
+                ),
+                (
+                    "Chủ đề 8: Thể tích. Đơn vị đo thể tích",
                     (
                         "Bài 46: Diện tích xung quanh, diện tích toàn phần và thể tích hình "
                         "hộp chữ nhật, hình lập phương"
@@ -619,30 +661,94 @@ def _kntt_raw_collections() -> list[
                     55,
                     5,
                     (
-                        "Nhận biết đơn vị cm³, dm³, m³ và công thức tính diện tích, thể tích "
-                        "hình khối."
+                        "Thiết lập công thức tính diện tích xung quanh, diện tích toàn phần và "
+                        "thể tích hình hộp chữ nhật, hình lập phương theo cm3, dm3, m3."
                     ),
                     (
                         (
                             "Tính được diện tích xung quanh, toàn phần và thể tích hình hộp "
                             "chữ nhật, hình lập phương."
                         ),
-                        "Chuyển đổi được giữa các đơn vị đo thể tích thông dụng.",
+                        "Vận dụng giải bài toán thực tế về bể nước, thùng hàng.",
                     ),
                 ),
                 (
                     "Chủ đề 10: Số đo thời gian, vận tốc. Các bài toán chuyển động đều",
-                    "Bài 58: Vận tốc, quãng đường và thời gian trong chuyển động đều",
-                    72,
-                    87,
-                    5,
+                    "Bài 58: Nhân, chia số đo thời gian với một số",
+                    64,
+                    70,
+                    3,
                     (
-                        "Thiết lập mối liên hệ $v = s : t$, $s = v \\cdot t$, $t = s : v$ và "
-                        "đổi đơn vị đo thời gian."
+                        "Thực hiện phép cộng, trừ, nhân, chia số đo thời gian với một số và "
+                        "đổi đơn vị giờ, phút, giây."
                     ),
                     (
-                        "Tính được vận tốc, quãng đường, thời gian của chuyển động đều.",
+                        "Tính đúng phép nhân, chia số đo thời gian với một số tự nhiên.",
+                        "Vận dụng tính tổng hoặc chia đều khoảng thời gian trong thực tế.",
+                    ),
+                ),
+                (
+                    "Chủ đề 10: Số đo thời gian, vận tốc. Các bài toán chuyển động đều",
+                    "Bài 59: Vận tốc của một chuyển động đều",
+                    71,
+                    76,
+                    3,
+                    (
+                        "Nhận biết khái niệm vận tốc của một chuyển động đều, đơn vị km/h, m/s "
+                        "và công thức $v = s : t$."
+                    ),
+                    (
+                        (
+                            "Tính được vận tốc của một chuyển động đều khi biết quãng đường "
+                            "và thời gian."
+                        ),
+                        "Đổi được các đơn vị đo vận tốc thông dụng (km/h, m/s).",
+                    ),
+                ),
+                (
+                    "Chủ đề 10: Số đo thời gian, vận tốc. Các bài toán chuyển động đều",
+                    "Bài 60: Quãng đường, thời gian của một chuyển động đều",
+                    77,
+                    87,
+                    4,
+                    (
+                        "Thiết lập mối liên hệ $s = v \\cdot t$, $t = s : v$ và giải bài toán "
+                        "chuyển động đều cùng chiều, ngược chiều."
+                    ),
+                    (
+                        "Tính được quãng đường và thời gian của một chuyển động đều.",
                         "Giải được bài toán hai động tử chuyển động ngược chiều, cùng chiều.",
+                    ),
+                ),
+                (
+                    "Chủ đề 11: Một số yếu tố thống kê và xác suất",
+                    "Bài 63: Biểu đồ hình quạt tròn, thống kê và xác suất thực nghiệm",
+                    90,
+                    103,
+                    4,
+                    (
+                        "Thu thập, đọc số liệu thống kê trên biểu đồ hình quạt tròn và kiểm "
+                        "đếm số lần lặp lại của một sự kiện (xác suất)."
+                    ),
+                    (
+                        "Đọc và phân tích được số liệu thống kê từ biểu đồ hình quạt tròn.",
+                        "Mô tả được xác suất thực nghiệm qua tỉ số lần xuất hiện của một sự kiện.",
+                    ),
+                ),
+                (
+                    "Chủ đề 12: Ôn tập cuối năm",
+                    "Bài 68: Ôn tập cuối năm Toán 5",
+                    106,
+                    125,
+                    5,
+                    (
+                        "Ôn tập cuối năm toàn bộ số thập phân, tỉ số phần trăm, đo diện tích "
+                        "(km2, ha, m2) và thể tích (cm3, dm3, m3), chuyển động đều, "
+                        "thống kê và xác suất."
+                    ),
+                    (
+                        "Hệ thống hóa và vận dụng tổng hợp kiến thức Toán 5 giải bài toán thực tế.",
+                        "Rèn kỹ năng tính toán, hình học và phân tích số liệu trước khi lên lớp 6.",
                     ),
                 ),
             ],
@@ -1177,6 +1283,63 @@ def _kntt_raw_collections() -> list[
                     (
                         "Thiết lập và đọc được bảng tần số, tần số tương đối ghép nhóm.",
                         "Nhận xét xu hướng phân bố dữ liệu từ biểu đồ.",
+                    ),
+                ),
+                (
+                    "Chương VIII. Xác suất của biến cố trong một số mô hình xác suất đơn giản",
+                    "Bài 25: Phép thử ngẫu nhiên và không gian mẫu",
+                    53,
+                    58,
+                    3,
+                    (
+                        "Nhận biết phép thử ngẫu nhiên, kết quả có thể và mô tả không gian "
+                        "mẫu $\\Omega$ trong các mô hình xác suất đơn giản."
+                    ),
+                    (
+                        "Xác định được phép thử ngẫu nhiên và liệt kê không gian mẫu $\\Omega$.",
+                        (
+                            "Mô tả được kết quả có thể của phép thử gieo xúc xắc, tung đồng xu, "
+                            "chọn ngẫu nhiên."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương VIII. Xác suất của biến cố trong một số mô hình xác suất đơn giản",
+                    "Bài 26: Xác suất của biến cố liên quan tới phép thử",
+                    59,
+                    66,
+                    3,
+                    (
+                        "Nhận biết biến cố đồng khả năng và tính xác suất của biến cố theo "
+                        "công thức $P(A) = \\frac{n(A)}{n(\\Omega)}$."
+                    ),
+                    (
+                        (
+                            "Đếm được số kết quả thuận lợi và tính được xác suất của biến cố "
+                            "trong mô hình đồng khả năng."
+                        ),
+                        "Giải thích được ý nghĩa xác suất của biến cố trong bài toán thực tế.",
+                    ),
+                ),
+                (
+                    "Chương VIII. Xác suất của biến cố trong một số mô hình xác suất đơn giản",
+                    "Luyện tập chung: Kiểm nghiệm & luyện tập xác suất Chương VIII",
+                    67,
+                    72,
+                    2,
+                    (
+                        "Kiểm nghiệm và luyện tập ước lượng xác suất của biến cố qua tần số "
+                        "tương đối thực nghiệm và mô hình đồng khả năng."
+                    ),
+                    (
+                        (
+                            "Thực hiện kiểm nghiệm và luyện tập giải bài toán xác suất trong "
+                            "các mô hình đơn giản."
+                        ),
+                        (
+                            "Liên hệ được giữa xác suất thực nghiệm qua kiểm nghiệm và xác "
+                            "suất lí thuyết."
+                        ),
                     ),
                 ),
                 (
@@ -1993,14 +2156,15 @@ def _kntt_raw_collections() -> list[
                     86,
                     4,
                     (
-                        "Tính và đánh giá độ phân tán của mẫu số liệu ghép nhóm trong phân "
-                        "tích dữ liệu."
+                        "Tính và đánh giá độ phân tán của mẫu số liệu thống kê ghép nhóm trong "
+                        "phân tích dữ liệu."
                     ),
                     (
                         (
                             "Tính được khoảng biến thiên, khoảng tứ phân vị, phương sai và độ "
-                            "lệch chuẩn mẫu ghép nhóm."
+                            "lệch chuẩn mẫu số liệu thống kê ghép nhóm."
                         ),
+                        "Giải thích được ý nghĩa thống kê của các số đặc trưng đo độ phân tán.",
                     ),
                 ),
             ],
@@ -2050,19 +2214,37 @@ def _kntt_raw_collections() -> list[
                 ),
                 (
                     "Chương VI: Xác suất có điều kiện",
-                    "Bài 18: Xác suất có điều kiện và công thức Bayes",
+                    "Bài 18: Xác suất có điều kiện",
                     66,
-                    82,
-                    5,
+                    73,
+                    2,
                     (
-                        "Tính xác suất có điều kiện $P(A|B)$, sử dụng sơ đồ hình cây, công "
-                        "thức xác suất toàn phần và công thức Bayes."
+                        "Định nghĩa xác suất có điều kiện $P(A|B)$, công thức nhân xác suất "
+                        "và sử dụng sơ đồ hình cây."
                     ),
                     (
-                        "Tính được xác suất có điều kiện bằng định nghĩa và sơ đồ hình cây.",
                         (
-                            "Vận dụng công thức xác suất toàn phần và công thức Bayes vào bài "
-                            "toán y học, kiểm định."
+                            "Hiểu và tính được xác suất có điều kiện bằng định nghĩa và sơ "
+                            "đồ hình cây."
+                        ),
+                        "Vận dụng quy tắc nhân xác suất tính xác suất giao của hai biến cố.",
+                    ),
+                ),
+                (
+                    "Chương VI: Xác suất có điều kiện",
+                    "Bài 19: Công thức xác suất toàn phần và công thức Bayes",
+                    74,
+                    82,
+                    3,
+                    (
+                        "Thiết lập công thức xác suất toàn phần "
+                        "$P(B) = P(A)P(B|A) + P(\\bar{A})P(B|\\bar{A})$ và công thức Bayes."
+                    ),
+                    (
+                        "Vận dụng được công thức xác suất toàn phần và công thức Bayes.",
+                        (
+                            "Giải quyết bài toán ứng dụng công thức Bayes trong y học, kiểm "
+                            "định chất lượng."
                         ),
                     ),
                 ),
@@ -8517,6 +8699,9 @@ def lesson_catalog() -> list[dict[str, Any]]:
                 "grade": grade,
                 "book": KNTT_SERIES,
                 "series": KNTT_SERIES,
+                "publisher": "NXB Giáo dục Việt Nam",
+                "edition": "GDPT 2018",
+                "contentType": "summary_outline",
                 "volume": volume,
                 "totalPages": total_pages,
                 "catalogKind": "sgk",

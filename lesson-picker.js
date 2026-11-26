@@ -1,4 +1,5 @@
 import {esc,touch,check} from './core.js';
+import {richTextHTML} from './math-content.js';
 import {selectedDocumentPages} from './assistant-sources.js';
 import {workspaceHeaders} from './storage.js';
 import {mergeAssistantSourceDraft} from './reference.js';
@@ -350,11 +351,18 @@ export async function openLessonPicker(context) {
   const outcomes=Array.isArray(lesson.learningOutcomes)&&lesson.learningOutcomes.length
    ?lesson.learningOutcomes
    :(lesson.outcome?[lesson.outcome]:[]);
+  const sourceMetaParts=col.record
+   ?[]
+   :[
+    col.publisher||(col.series===KNTT_SERIES?'NXB Giáo dục Việt Nam':''),
+    col.edition||col.curriculumStandard||(col.series===KNTT_SERIES?'GDPT 2018':''),
+    col.contentType==='summary_outline'||col.series===KNTT_SERIES?'Tóm tắt & YCCĐ':'',
+   ].filter(Boolean);
   const summaryText=lesson.summary||lesson.text||'';
   const rawText=edited?.pages?.find(page=>page.number===lesson.number)?.text??lesson.text??'';
   const detailsBlock=col.record
-   ?`<details class="sgk-detail-raw"><summary>Chi tiết trích đoạn</summary><p><b>Mục tiêu</b> · ${esc(lesson.outcome||'Tài liệu cá nhân')}</p><p style="white-space:pre-wrap">${esc(rawText)}</p></details>`
-   :`<details class="sgk-detail-raw"><summary>Xem học liệu</summary><p><b>Mục tiêu</b> · ${esc(lesson.outcome)}</p><p style="white-space:pre-wrap">${esc(rawText)}</p></details>`;
+   ?`<details class="sgk-detail-raw"><summary>Chi tiết trích đoạn</summary><p><b>Mục tiêu</b> · ${richTextHTML(lesson.outcome||'Tài liệu cá nhân')}</p><p class="sgk-detail-raw-text">${richTextHTML(rawText)}</p></details>`
+   :`<details class="sgk-detail-raw"><summary>Xem học liệu</summary><p><b>Mục tiêu</b> · ${richTextHTML(lesson.outcome||'')}</p><p class="sgk-detail-raw-text">${richTextHTML(rawText)}</p></details>`;
   const detailHeading=col.record
    ?`Học liệu · ${lesson.title}`
    :(/^Bài\s+\d+\b/i.test(lesson.title)?lesson.title:`Bài ${lesson.number} · ${lesson.title}`);
@@ -364,10 +372,11 @@ export async function openLessonPicker(context) {
      <span class="pill source-channel-badge" data-channel="${esc(badgeKind)}">${esc(badgeText)}</span>
      <span class="sgk-detail-meta">${esc(metaParts.join(' · '))}</span>
     </div>
-    <h4 class="sgk-detail-title">${esc(detailHeading)}</h4>
-    <p class="sgk-detail-chapter">Thuộc: ${esc(lesson.chapter)}</p>
-    <p class="sgk-detail-summary">${esc(summaryText)}</p>
-    ${outcomes.length?`<div class="sgk-outcomes-box"><div class="sgk-outcomes-label">YÊU CẦU CẦN ĐẠT</div><ul class="sgk-outcomes">${outcomes.map(o=>`<li>${esc(o)}</li>`).join('')}</ul></div>`:''}
+    ${sourceMetaParts.length?`<p class="sgk-detail-source-meta">${esc(sourceMetaParts.join(' · '))}</p>`:''}
+    <h4 class="sgk-detail-title">${richTextHTML(detailHeading)}</h4>
+    <p class="sgk-detail-chapter">Thuộc: ${richTextHTML(lesson.chapter)}</p>
+    <p class="sgk-detail-summary">${richTextHTML(summaryText)}</p>
+    ${outcomes.length?`<div class="sgk-outcomes-box"><div class="sgk-outcomes-label">YÊU CẦU CẦN ĐẠT</div><ul class="sgk-outcomes">${outcomes.map(o=>`<li>${richTextHTML(o)}</li>`).join('')}</ul></div>`:''}
     ${detailsBlock}
    </div>`;
  }
@@ -511,7 +520,7 @@ export async function openLessonPicker(context) {
      </fieldset>`;
     }).join('')}
    </section>`;
-  }).join('')||'<p class="hint">Chưa có bài phù hợp với bộ lọc.</p>';
+  }).join('')||'<p class="hint sgk-empty-state">Chưa có bài phù hợp với bộ lọc.</p>';
 
   const stillVisible=activePreview&&visibleItems.some(i=>i.collectionId===activePreview.collectionId&&i.lessonNumber===activePreview.lessonNumber);
   if(!stillVisible)activePreview=visibleItems[0]||null;

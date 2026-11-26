@@ -1444,7 +1444,14 @@ header.top {
   color: var(--brand);
   margin: 8px 0;
 }
-.matrix-table-scroll { overflow-x: auto; max-width: 100%; }
+.matrix-table-scroll {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#matrix-form { min-width: 0; max-width: 100%; }
 .matrix-chat-summary {
   margin: 8px 0;
   border: 1px solid var(--line);
@@ -3365,6 +3372,24 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
 .sgk-detail-card { display: flex; flex-direction: column; gap: 10px; }
 .sgk-detail-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sgk-detail-meta { font-size: 12px; color: var(--ink-muted); }
+.sgk-detail-source-meta { margin: -4px 0 0; font-size: 11.5px; color: var(--ink-muted); }
+.sgk-detail-raw-text { white-space: pre-wrap; margin: 4px 0 0; }
+.sgk-empty-state { margin: 4px 0; white-space: normal; line-height: 1.5; }
+.ProseMirror pre,
+.rich-pending pre,
+.sgk-detail-raw pre {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: var(--bg-canvas);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 6px 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .sgk-detail-title { margin: 0; font-size: 17px; font-weight: 700; color: var(--ink-strong); line-height: 1.35; }
 .sgk-detail-chapter { margin: 0; font-size: 12.5px; color: var(--ink-muted); }
 .sgk-detail-summary { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
@@ -3534,14 +3559,33 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
   .main {
     flex: 1 1 auto;
     min-height: 0;
-    grid-template-rows: 44px 52px 16px minmax(0, 1fr) 52px;
+    grid-template-rows: 44px auto 24px minmax(0, 1fr) 48px;
   }
   .menubar-row .breadcrumb { display: none; }
   .menubar { flex-shrink: 1; }
   .menubar .menu-button { min-height: var(--touch-min); height: 44px; padding: 8px 10px; font-size: 12.5px; }
   .editing-bar { padding: 4px 8px; }
-  .editor-toolbar { height: 44px; }
+  .editor-toolbar { height: 44px; padding: 0 0 0 6px; position: relative; }
   .editor-toolbar button { min-width: var(--touch-min); min-height: var(--touch-min); height: 44px; }
+  .editor-toolbar [data-action="menu"] {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: var(--bg-subtle);
+    border-left: 1px solid var(--line);
+    border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+    box-shadow: -6px 0 10px -4px rgba(15, 30, 46, 0.14);
+  }
+  .document-bar {
+    height: 100%;
+    justify-content: flex-end;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--line-soft);
+    z-index: 2;
+  }
+  .document-bar .ruler { display: none; }
+  .document-bar .page-navigation { position: static; }
+  .paper-scroll { padding-top: 12px; }
   .ux-view-tabs .view-tab { min-height: var(--touch-min); height: 44px; padding: 6px 10px; font-size: 12px; }
   .ux-view-tabs .ux-mobile-only { display: inline-flex; }
   .ux-view-tabs .view-tab[data-action="view-student"],
@@ -3556,7 +3600,7 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
   /* Trên mobile, mở Trợ lý nằm gọn ngay dưới thanh công cụ & tabs mà không che nút điều hướng */
   .workspace.mobile-ai-view .main {
     flex: 0 0 auto;
-    grid-template-rows: 44px 52px;
+    grid-template-rows: 44px auto;
   }
   .workspace.mobile-ai-view .main .document-bar,
   .workspace.mobile-ai-view .main .paper-scroll,
@@ -3568,10 +3612,13 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
     position: static;
     flex: 1 1 auto;
     min-height: 0;
+    max-height: 100dvh;
     width: 100%;
     border-left: 0;
     border-top: 1px solid var(--line);
   }
+  aside.assistant .assistant-body { min-height: 120px; }
+  aside.assistant .chat-compose { max-height: calc(100dvh - 170px); overflow-y: auto; }
   .wf-step, .wf-mode-pill, .source-quick-btn, .add-source, .prompt-library-trigger, .compose-attachments button { min-height: var(--touch-min); height: auto; }
   .grid2, .grid3, .new-subject-grid, .time-preset-grid, .fixed-router-status-strip, .wb-library-filters, .cloud-provider-grid, .scan-layout, .diff-side-by-side, .visual-figure-layout, .qbank-options, .analytics-ans-grid {
     grid-template-columns: 1fr;
@@ -3611,14 +3658,71 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
   }
   .home-hero { padding: 16px; }
   .home-hero-grid, .sgk-split { grid-template-columns: 1fr; }
-  .sgk-split { overflow: auto; }
-  .sgk-tree-pane { max-height: 42vh; }
+  dialog#dialog:has(#matrix-form) .modal-body { padding: 12px 14px; min-width: 0; overflow-x: hidden; }
+  dialog#dialog:has(.sgk-modal),
+  dialog#dialog-layer2:has(.sgk-modal) {
+    height: auto;
+    max-height: calc(100dvh - 16px);
+  }
+  dialog#dialog:has(.sgk-modal) .modal-body,
+  dialog#dialog-layer2:has(.sgk-modal) .modal-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 14px;
+  }
+  .sgk-modal,
+  .sgk-modal #lesson-picker {
+    height: auto;
+    overflow: visible;
+  }
+  .sgk-filter-row,
+  .sgk-filter-sub {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .modal-body .sgk-filters label { min-width: 0; }
+  .modal-body .sgk-filters .sgk-search-field { grid-column: 1 / -1; }
+  .sgk-series-badge { white-space: normal; }
+  .sgk-split { overflow: visible; }
+  .sgk-tree-pane { min-height: 96px; max-height: 44vh; }
   .studio-find { right: 8px; left: 8px; width: auto; top: 52px; }
   .wb-library-card { align-items: flex-start; flex-direction: column; }
   .visual-figure-form #figure-preview svg, #figure-preview svg { height: 240px; }
   .modal-body button, .modal-foot button, .chat-compose button { min-height: var(--touch-min); }
   .chat-compose .voice-mic-btn { min-height: 36px; min-width: 36px; height: 36px; width: 36px; }
   #chat-input { font-size: 16px; }
+}
+
+@media (max-width: 760px) and (max-height: 680px) {
+  .workspace.mobile-ai-view aside.assistant,
+  aside.assistant.open {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    height: var(--chat-viewport-height, 100dvh);
+    max-height: 100dvh;
+    z-index: var(--z-drawer);
+    border-top: 0;
+  }
+  aside.assistant .assistant-head {
+    height: 40px;
+    min-height: 40px;
+    padding: 0 10px;
+  }
+  aside.assistant .assistant-body {
+    min-height: 120px;
+    padding: 8px 10px;
+  }
+  aside.assistant .chat-compose {
+    padding: 4px 8px 5px;
+    max-height: 55dvh;
+    overflow-y: auto;
+  }
+  aside.assistant .assistant-source-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  aside.assistant .chat-foot { display: none; }
+  aside.assistant #chat-input { min-height: 32px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

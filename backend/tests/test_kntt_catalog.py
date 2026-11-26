@@ -170,4 +170,8 @@ def test_kntt_accent_insensitive_search():
 
     bayes_hits = search_lesson_catalog("cong thuc bayes", subject="Toán", grade=12)
     bayes_titles = [lesson["title"] for col in bayes_hits for lesson in col["lessons"]]
-    assert "Bài 18: Xác suất có điều kiện và công thức Bayes" in bayes_titles
+    assert "Bài 19: Công thức xác suất toàn phần và công thức Bayes" in bayes_titles
+
+    cond_hits = search_lesson_catalog("xac suat co dieu kien", subject="Toán", grade=12)
+    cond_titles = [lesson["title"] for col in cond_hits for lesson in col["lessons"]]
+    assert "Bài 18: Xác suất có điều kiện" in cond_titles
