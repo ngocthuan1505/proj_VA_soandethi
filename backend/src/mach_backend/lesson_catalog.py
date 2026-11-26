@@ -48,8 +48,6627 @@ def _grade_level(grade: str | int) -> str:
     return "THPT"
 
 
+KNTT_SERIES = "Kết nối tri thức với cuộc sống"
+_VOLUME_ORDER = {"Tập một": 0, "Tập hai": 1, "Chuyên đề học tập": 2, "Tập 1": 3, "Tập 2": 4}
+
+
+def _kntt_raw_collections() -> list[
+    tuple[
+        str,
+        str,
+        str,
+        str,
+        int,
+        list[tuple[str, str, int, int, int, str, tuple[str, ...]]],
+    ]
+]:
+    """Mục lục SGK Bộ Kết nối tri thức với cuộc sống (GDPT 2018) Lớp 1–12."""
+    return [
+        # ==================== TOÁN 1–12 ====================
+        (
+            "kntt-toan-1-t1",
+            "Toán",
+            "1",
+            "Tập một",
+            108,
+            [
+                (
+                    "Chủ đề 1: Các số từ 0 đến 10",
+                    "Bài 1: Các số 0, 1, 2, 3, 4, 5",
+                    6,
+                    13,
+                    3,
+                    (
+                        "Nhận biết, đọc, viết và đếm các số tự nhiên từ 0 đến 5 thông qua đồ "
+                        "vật trực quan."
+                    ),
+                    (
+                        "Đếm, đọc, viết được các số từ 0 đến 5.",
+                        "Nhận biết được số lượng nhóm đồ vật trong phạm vi 5.",
+                    ),
+                ),
+                (
+                    "Chủ đề 1: Các số từ 0 đến 10",
+                    "Bài 2: Các số 6, 7, 8, 9, 10",
+                    14,
+                    21,
+                    3,
+                    (
+                        "Mở rộng đếm, đọc, viết các số từ 6 đến 10 và so sánh số lượng hai "
+                        "nhóm đồ vật."
+                    ),
+                    (
+                        "Đếm, đọc, viết được các số từ 6 đến 10.",
+                        "So sánh và sắp xếp được các số trong phạm vi 10.",
+                    ),
+                ),
+                (
+                    "Chủ đề 2: Làm quen với một số hình phẳng",
+                    "Bài 6: Hình vuông, hình tròn, hình tam giác, hình chữ nhật",
+                    38,
+                    43,
+                    2,
+                    (
+                        "Nhận dạng bốn hình phẳng cơ bản qua đồ vật quen thuộc trong lớp học "
+                        "và gia đình."
+                    ),
+                    (
+                        "Nhận biết được hình vuông, hình tròn, hình tam giác, hình chữ nhật.",
+                        "Ghép và xếp được hình đơn giản từ các mảnh ghép phẳng.",
+                    ),
+                ),
+                (
+                    "Chủ đề 3: Phép cộng, phép trừ trong phạm vi 10",
+                    "Bài 10: Phép cộng trong phạm vi 10",
+                    56,
+                    63,
+                    4,
+                    (
+                        "Hình thành khái niệm phép cộng qua thao tác gộp hai nhóm đồ vật và "
+                        "lập bảng cộng trong phạm vi 10."
+                    ),
+                    (
+                        "Thực hiện được phép cộng các số trong phạm vi 10.",
+                        "Nêu được phép cộng thích hợp với tranh vẽ hoặc tình huống thực tế.",
+                    ),
+                ),
+                (
+                    "Chủ đề 3: Phép cộng, phép trừ trong phạm vi 10",
+                    "Bài 11: Phép trừ trong phạm vi 10",
+                    64,
+                    71,
+                    4,
+                    (
+                        "Hình thành khái niệm phép trừ qua thao tác tách bớt và mối liên hệ "
+                        "giữa phép cộng, phép trừ."
+                    ),
+                    (
+                        "Thực hiện được phép trừ các số trong phạm vi 10.",
+                        "Vận dụng phép trừ giải quyết tình huống đơn giản.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-1-t2",
+            "Toán",
+            "1",
+            "Tập hai",
+            104,
+            [
+                (
+                    "Chủ đề 6: Các số đến 100",
+                    "Bài 21: Số có hai chữ số",
+                    4,
+                    15,
+                    4,
+                    (
+                        "Nhận biết cấu tạo thập phân gồm hàng chục, hàng đơn vị của các số từ "
+                        "10 đến 99."
+                    ),
+                    (
+                        "Đếm, đọc, viết được các số có hai chữ số.",
+                        "Phân tích được số có hai chữ số thành chục và đơn vị.",
+                    ),
+                ),
+                (
+                    "Chủ đề 7: Độ dài và đo độ dài",
+                    "Bài 25: Dài hơn, ngắn hơn và đơn vị xăng-ti-mét",
+                    28,
+                    35,
+                    3,
+                    "So sánh trực tiếp độ dài hai vật và sử dụng thước có vạch xăng-ti-mét để đo.",
+                    (
+                        "So sánh được độ dài hai vật bằng trực giác hoặc thước đo.",
+                        "Đo và ước lượng được độ dài theo đơn vị cm.",
+                    ),
+                ),
+                (
+                    "Chủ đề 8: Phép cộng, phép trừ (không nhớ) trong phạm vi 100",
+                    "Bài 31: Phép cộng số có hai chữ số với số có hai chữ số",
+                    52,
+                    59,
+                    4,
+                    "Đặt tính và tính phép cộng không nhớ trong phạm vi 100 theo cột dọc.",
+                    (
+                        "Thực hiện được phép cộng không nhớ trong phạm vi 100.",
+                        "Giải được bài toán thực tế có một bước tính cộng.",
+                    ),
+                ),
+                (
+                    "Chủ đề 9: Thời gian, giờ và lịch",
+                    "Bài 36: Thực hành xem lịch và giờ",
+                    76,
+                    83,
+                    3,
+                    "Đọc giờ đúng trên đồng hồ kim và nhận biết các ngày trong tuần trên tờ lịch.",
+                    (
+                        "Xem được giờ đúng trên đồng hồ và gọi tên các thứ trong tuần.",
+                        "Gắn thời điểm trong ngày với hoạt động sinh hoạt quen thuộc.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-2-t1",
+            "Toán",
+            "2",
+            "Tập một",
+            124,
+            [
+                (
+                    "Chủ đề 1: Ôn tập và bổ sung",
+                    "Bài 3: Các thành phần của phép cộng, phép trừ",
+                    13,
+                    18,
+                    3,
+                    (
+                        "Nhận biết số hạng, tổng, số bị trừ, số trừ, hiệu và ứng dụng giải "
+                        "bài toán nhiều hơn, ít hơn."
+                    ),
+                    (
+                        "Gọi đúng tên các thành phần của phép cộng và phép trừ.",
+                        "Giải được bài toán về nhiều hơn, ít hơn một số đơn vị.",
+                    ),
+                ),
+                (
+                    "Chủ đề 2: Phép cộng, phép trừ trong phạm vi 20",
+                    "Bài 7: Phép cộng (qua 10) trong phạm vi 20",
+                    26,
+                    33,
+                    4,
+                    "Tính nhẩm phép cộng qua 10 bằng cách tách số tạo thành tròn chục.",
+                    (
+                        "Thực hiện thành thạo phép cộng qua 10 trong phạm vi 20.",
+                        "Vận dụng tính nhẩm giải bài toán thực tế.",
+                    ),
+                ),
+                (
+                    "Chủ đề 3: Làm quen với khối lượng, dung tích",
+                    "Bài 15: Ki-lô-gam và Lít",
+                    56,
+                    65,
+                    3,
+                    (
+                        "Nhận biết đơn vị đo khối lượng kg, đơn vị đo dung tích l và thực "
+                        "hành cân, đong."
+                    ),
+                    (
+                        "Đọc được số đo khối lượng (kg) và dung tích (l) trên dụng cụ đo.",
+                        "Tính toán được với số đo kg, l trong bài toán có lời văn.",
+                    ),
+                ),
+                (
+                    "Chủ đề 4: Phép cộng, phép trừ (có nhớ) trong phạm vi 100",
+                    "Bài 19: Phép cộng (có nhớ) số có hai chữ số với số có hai chữ số",
+                    72,
+                    79,
+                    4,
+                    "Đặt tính theo cột dọc và thực hiện nhớ 1 sang hàng chục trong phép cộng.",
+                    (
+                        "Tính đúng phép cộng có nhớ trong phạm vi 100.",
+                        "Kiểm tra lại kết quả bằng ước lượng đơn giản.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-2-t2",
+            "Toán",
+            "2",
+            "Tập hai",
+            124,
+            [
+                (
+                    "Chủ đề 8: Phép nhân, phép chia",
+                    "Bài 37: Phép nhân và bảng nhân 2, bảng nhân 5",
+                    4,
+                    15,
+                    5,
+                    (
+                        "Nhận biết phép nhân là tổng các số hạng bằng nhau; thuộc bảng nhân 2 "
+                        "và bảng nhân 5."
+                    ),
+                    (
+                        "Viết được phép nhân tương ứng với tổng các số hạng bằng nhau.",
+                        "Vận dụng bảng nhân 2, 5 tính nhẩm và giải toán.",
+                    ),
+                ),
+                (
+                    "Chủ đề 8: Phép nhân, phép chia",
+                    "Bài 41: Phép chia và bảng chia 2, bảng chia 5",
+                    16,
+                    25,
+                    4,
+                    (
+                        "Hình thành phép chia từ bài toán chia đều và lập bảng chia 2, chia 5 "
+                        "từ bảng nhân."
+                    ),
+                    (
+                        "Thực hiện được phép chia trong bảng chia 2 và bảng chia 5.",
+                        "Nhận biết mối liên hệ giữa phép nhân và phép chia.",
+                    ),
+                ),
+                (
+                    "Chủ đề 11: Độ dài và đơn vị đo độ dài. Tiền Việt Nam",
+                    "Bài 53: Đơn vị đo độ dài đề-xi-mét, mét, ki-lô-mét",
+                    58,
+                    67,
+                    4,
+                    (
+                        "Nhận biết quan hệ quy đổi giữa cm, dm, m, km và ước lượng khoảng "
+                        "cách thực tế."
+                    ),
+                    (
+                        "Đổi được đơn vị đo độ dài giữa m, dm, cm.",
+                        "Chọn đơn vị đo phù hợp cho đồ vật và quãng đường.",
+                    ),
+                ),
+                (
+                    "Chủ đề 12: Phép cộng, phép trừ trong phạm vi 1000",
+                    "Bài 61: Phép cộng, phép trừ (không nhớ) trong phạm vi 1000",
+                    82,
+                    91,
+                    4,
+                    "Đặt tính và tính phép cộng, trừ số có ba chữ số không nhớ.",
+                    (
+                        "Thực hiện được phép cộng, phép trừ không nhớ trong phạm vi 1000.",
+                        "Giải được bài toán có một bước tính trong phạm vi 1000.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-3-t1",
+            "Toán",
+            "3",
+            "Tập một",
+            124,
+            [
+                (
+                    "Chủ đề 2: Bảng nhân, bảng chia",
+                    "Bài 8: Luyện tập bảng nhân 6, 7, 8, 9",
+                    24,
+                    37,
+                    5,
+                    (
+                        "Xây dựng và ghi nhớ các bảng nhân, bảng chia 6, 7, 8, 9 qua quy luật "
+                        "tăng dần."
+                    ),
+                    (
+                        "Thuộc và vận dụng được bảng nhân, bảng chia 6, 7, 8, 9.",
+                        "Giải được bài toán gấp một số lên nhiều lần và giảm một số đi nhiều lần.",
+                    ),
+                ),
+                (
+                    "Chủ đề 4: Phép nhân, phép chia trong phạm vi 100",
+                    "Bài 23: Nhân số có hai chữ số với số có một chữ số",
+                    68,
+                    72,
+                    3,
+                    "Đặt tính nhân theo cột dọc và thực hiện phép chia hết, phép chia có dư.",
+                    (
+                        "Thực hiện được phép nhân, chia số có hai chữ số cho số có một chữ số.",
+                        "Kiểm tra điều kiện số dư luôn bé hơn số chia.",
+                    ),
+                ),
+                (
+                    "Chủ đề 6: Phép nhân, phép chia trong phạm vi 1000",
+                    "Bài 38: Biểu thức số và tính giá trị biểu thức số",
+                    103,
+                    111,
+                    4,
+                    (
+                        "Vận dụng quy tắc thứ tự thực hiện phép tính có cộng, trừ, nhân, chia "
+                        "và dấu ngoặc."
+                    ),
+                    (
+                        "Tính đúng giá trị biểu thức số có đến hai dấu phép tính và dấu ngoặc.",
+                        "Vận dụng biểu thức số để giải bài toán có hai bước tính.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-3-t2",
+            "Toán",
+            "3",
+            "Tập hai",
+            124,
+            [
+                (
+                    "Chủ đề 8: Các số đến 10 000",
+                    "Bài 45: Các số có bốn chữ số và làm tròn số",
+                    4,
+                    15,
+                    4,
+                    "Đọc, viết, so sánh số đến 10 000 và làm tròn số đến hàng chục, hàng trăm.",
+                    (
+                        "Nhận biết cấu tạo thập phân của số có bốn chữ số.",
+                        "Làm tròn được số đến hàng chục, hàng trăm gần nhất.",
+                    ),
+                ),
+                (
+                    "Chủ đề 9: Chu vi, diện tích một số hình phẳng",
+                    "Bài 51: Diện tích của một hình và đơn vị xăng-ti-mét vuông",
+                    26,
+                    35,
+                    4,
+                    (
+                        "Hình thành biểu tượng diện tích, đơn vị cm² và công thức diện tích "
+                        "hình chữ nhật, hình vuông."
+                    ),
+                    (
+                        "Tính được chu vi và diện tích hình chữ nhật, hình vuông.",
+                        "Giải được bài toán thực tế gắn với chu vi, diện tích.",
+                    ),
+                ),
+                (
+                    "Chủ đề 14: Nhân, chia trong phạm vi 100 000",
+                    "Bài 67: Thực hành xem đồng hồ, tiền Việt Nam và thống kê đơn giản",
+                    80,
+                    95,
+                    4,
+                    (
+                        "Đọc bảng số liệu thống kê, làm quen khả năng xảy ra của sự kiện và "
+                        "tính toán tiền Việt Nam."
+                    ),
+                    (
+                        "Thu thập, phân loại và đọc được bảng số liệu đơn giản.",
+                        "Nêu được các khả năng xảy ra của một sự kiện đơn giản.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-4-t1",
+            "Toán",
+            "4",
+            "Tập một",
+            128,
+            [
+                (
+                    "Chủ đề 2: Góc và đơn vị đo góc",
+                    "Bài 8: Góc nhọn, góc tù, góc bẹt và đo góc bằng thước đo góc",
+                    26,
+                    34,
+                    3,
+                    "Phân loại góc nhọn, góc vuông, góc tù, góc bẹt và sử dụng thước đo độ.",
+                    (
+                        "Nhận biết và đo được số đo các loại góc cơ bản.",
+                        "Nhận biết được hai đường thẳng vuông góc, hai đường thẳng song song.",
+                    ),
+                ),
+                (
+                    "Chủ đề 3: Số có nhiều chữ số",
+                    "Bài 12: Các số trong phạm vi lớp triệu",
+                    40,
+                    49,
+                    4,
+                    (
+                        "Đọc, viết, phân tích hàng và lớp của số đến lớp triệu; làm tròn đến "
+                        "hàng trăm nghìn."
+                    ),
+                    (
+                        "Đọc, viết và so sánh được các số đến lớp triệu.",
+                        "Nhận biết giá trị theo vị trí của chữ số trong số nhiều chữ số.",
+                    ),
+                ),
+                (
+                    "Chủ đề 6: Đường thẳng vuông góc, đường thẳng song song",
+                    "Bài 29: Hình bình hành và hình thoi",
+                    96,
+                    103,
+                    3,
+                    (
+                        "Khám phá tính chất cạnh đối song song bằng nhau của hình bình hành "
+                        "và bốn cạnh bằng nhau của hình thoi."
+                    ),
+                    (
+                        "Nhận biết được đặc điểm cơ bản của hình bình hành và hình thoi.",
+                        "Vẽ và ghép được hình bình hành, hình thoi trên lưới ô vuông.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-4-t2",
+            "Toán",
+            "4",
+            "Tập hai",
+            128,
+            [
+                (
+                    "Chủ đề 8: Phép nhân và phép chia",
+                    "Bài 44: Chia cho số có hai chữ số",
+                    22,
+                    29,
+                    4,
+                    "Thực hiện đặt tính chia cho số có hai chữ số và tìm số trung bình cộng.",
+                    (
+                        "Thực hiện thành thạo phép nhân, phép chia cho số có hai chữ số.",
+                        "Giải được bài toán tìm số trung bình cộng và rút về đơn vị.",
+                    ),
+                ),
+                (
+                    "Chủ đề 10: Phân số",
+                    "Bài 53: Khái niệm phân số và tính chất cơ bản của phân số",
+                    49,
+                    61,
+                    4,
+                    "Nhận biết tử số, mẫu số; rút gọn, quy đồng mẫu số và so sánh phân số.",
+                    (
+                        "Đọc, viết, rút gọn và quy đồng được hai phân số.",
+                        "So sánh và sắp xếp được các phân số theo thứ tự.",
+                    ),
+                ),
+                (
+                    "Chủ đề 11: Phép cộng, phép trừ phân số",
+                    "Bài 60: Phép cộng, phép trừ, phép nhân và phép chia phân số",
+                    74,
+                    95,
+                    5,
+                    "Thực hiện bốn phép tính với phân số cùng mẫu và khác mẫu số.",
+                    (
+                        "Tính đúng tổng, hiệu, tích, thương của hai phân số.",
+                        "Giải được bài toán tìm phân số của một số.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-5-t1",
+            "Toán",
+            "5",
+            "Tập một",
+            128,
+            [
+                (
+                    "Chủ đề 2: Số thập phân",
+                    "Bài 10: Khái niệm số thập phân và so sánh số thập phân",
+                    32,
+                    43,
+                    4,
+                    (
+                        "Nhận biết phần nguyên, phần thập phân, hàng của số thập phân và quy "
+                        "tắc so sánh."
+                    ),
+                    (
+                        "Đọc, viết, so sánh và làm tròn được số thập phân.",
+                        "Chuyển đổi được phân số thập phân sang số thập phân.",
+                    ),
+                ),
+                (
+                    "Chủ đề 4: Các phép tính với số thập phân",
+                    "Bài 19: Phép cộng, phép trừ, phép nhân, phép chia số thập phân",
+                    64,
+                    85,
+                    6,
+                    (
+                        "Đặt tính và tính bốn phép toán với số thập phân; nhân chia nhẩm với "
+                        "10, 100, 0,1."
+                    ),
+                    (
+                        "Thực hiện thành thạo bốn phép tính với số thập phân.",
+                        "Vận dụng tính chất giao hoán, kết hợp, phân phối để tính thuận tiện.",
+                    ),
+                ),
+                (
+                    "Chủ đề 5: Một số hình phẳng. Chu vi và diện tích",
+                    "Bài 26: Hình thang, diện tích hình tam giác, hình thang và hình tròn",
+                    98,
+                    113,
+                    5,
+                    (
+                        "Thiết lập và vận dụng công thức tính diện tích tam giác, hình thang, "
+                        "chu vi và diện tích hình tròn."
+                    ),
+                    (
+                        "Tính được diện tích hình tam giác, hình thang và hình tròn.",
+                        "Giải được bài toán thực tế về đo đạc ruộng đất, sân vườn.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-5-t2",
+            "Toán",
+            "5",
+            "Tập hai",
+            128,
+            [
+                (
+                    "Chủ đề 7: Tỉ số và các bài toán liên quan",
+                    "Bài 36: Tỉ số và tỉ số phần trăm",
+                    4,
+                    19,
+                    5,
+                    "Nhận biết tỉ số phần trăm và giải ba dạng toán cơ bản về tỉ số phần trăm.",
+                    (
+                        "Tính được tỉ số phần trăm của hai số và tìm giá trị phần trăm của một số.",
+                        "Vận dụng tỉ số phần trăm vào bài toán lãi suất, giảm giá.",
+                    ),
+                ),
+                (
+                    "Chủ đề 8: Thể tích. Đơn vị đo thể tích",
+                    (
+                        "Bài 46: Diện tích xung quanh, diện tích toàn phần và thể tích hình "
+                        "hộp chữ nhật, hình lập phương"
+                    ),
+                    38,
+                    55,
+                    5,
+                    (
+                        "Nhận biết đơn vị cm³, dm³, m³ và công thức tính diện tích, thể tích "
+                        "hình khối."
+                    ),
+                    (
+                        (
+                            "Tính được diện tích xung quanh, toàn phần và thể tích hình hộp "
+                            "chữ nhật, hình lập phương."
+                        ),
+                        "Chuyển đổi được giữa các đơn vị đo thể tích thông dụng.",
+                    ),
+                ),
+                (
+                    "Chủ đề 10: Số đo thời gian, vận tốc. Các bài toán chuyển động đều",
+                    "Bài 58: Vận tốc, quãng đường và thời gian trong chuyển động đều",
+                    72,
+                    87,
+                    5,
+                    (
+                        "Thiết lập mối liên hệ $v = s : t$, $s = v \\cdot t$, $t = s : v$ và "
+                        "đổi đơn vị đo thời gian."
+                    ),
+                    (
+                        "Tính được vận tốc, quãng đường, thời gian của chuyển động đều.",
+                        "Giải được bài toán hai động tử chuyển động ngược chiều, cùng chiều.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-6-t1",
+            "Toán",
+            "6",
+            "Tập một",
+            112,
+            [
+                (
+                    "Chương I: Tập hợp các số tự nhiên",
+                    "Bài 1: Tập hợp",
+                    5,
+                    8,
+                    2,
+                    (
+                        "Giới thiệu khái niệm tập hợp, phần tử thuộc tập hợp và hai cách mô "
+                        "tả tập hợp."
+                    ),
+                    (
+                        (
+                            "Sử dụng được kí hiệu thuộc, không thuộc và cách liệt kê, chỉ ra "
+                            "tính chất đặc trưng."
+                        ),
+                        "Viết được tập hợp các số tự nhiên $\\mathbb{N}$, $\\mathbb{N}^*$.",
+                    ),
+                ),
+                (
+                    "Chương I: Tập hợp các số tự nhiên",
+                    "Bài 6: Lũy thừa với số mũ tự nhiên",
+                    22,
+                    24,
+                    2,
+                    (
+                        "Định nghĩa lũy thừa bậc n của a và quy tắc nhân, chia hai lũy thừa "
+                        "cùng cơ số."
+                    ),
+                    (
+                        "Thực hiện được phép tính lũy thừa với số mũ tự nhiên.",
+                        "Vận dụng thứ tự thực hiện các phép tính trong biểu thức có lũy thừa.",
+                    ),
+                ),
+                (
+                    "Chương II: Tính chia hết trong tập hợp các số tự nhiên",
+                    "Bài 11: Ước chung, ước chung lớn nhất và bội chung nhỏ nhất",
+                    44,
+                    55,
+                    4,
+                    (
+                        "Phân tích số ra thừa số nguyên tố để tìm ƯCLN, BCNN và ứng dụng rút "
+                        "gọn, quy đồng phân số."
+                    ),
+                    (
+                        "Tìm được ƯCLN và BCNN của hai hoặc ba số tự nhiên.",
+                        "Vận dụng ƯCLN, BCNN giải bài toán chia đều, chu kì thực tế.",
+                    ),
+                ),
+                (
+                    "Chương III: Số nguyên",
+                    "Bài 14: Phép cộng, phép trừ, phép nhân và phép chia hết các số nguyên",
+                    62,
+                    74,
+                    5,
+                    (
+                        "Mở rộng tập số nguyên $\\mathbb{Z}$, quy tắc dấu ngoặc và bốn phép "
+                        "toán trên số nguyên."
+                    ),
+                    (
+                        "Thực hiện thành thạo các phép tính cộng, trừ, nhân, chia hết số nguyên.",
+                        "Vận dụng quy tắc dấu ngoặc để tính hợp lí.",
+                    ),
+                ),
+                (
+                    "Chương IV: Một số hình phẳng trong thực tiễn",
+                    "Bài 20: Chu vi và diện tích của một số tứ giác đã học",
+                    90,
+                    95,
+                    3,
+                    (
+                        "Tổng hợp công thức chu vi, diện tích hình chữ nhật, hình vuông, hình "
+                        "bình hành, hình thoi, hình thang cân."
+                    ),
+                    (
+                        "Tính được chu vi và diện tích các tứ giác đặc biệt trong thực tiễn.",
+                        "Nhận biết trục đối xứng và tâm đối xứng của hình phẳng.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-6-t2",
+            "Toán",
+            "6",
+            "Tập hai",
+            112,
+            [
+                (
+                    "Chương VI: Phân số",
+                    "Bài 25: Phép cộng, phép trừ, phép nhân và phép chia phân số",
+                    15,
+                    25,
+                    4,
+                    (
+                        "Mở rộng phân số có tử và mẫu nguyên, hỗn số dương và hai bài toán cơ "
+                        "bản về phân số."
+                    ),
+                    (
+                        "Thực hiện được bốn phép toán với phân số và hỗn số.",
+                        "Giải được bài toán tìm giá trị phân số của một số cho trước và ngược lại.",
+                    ),
+                ),
+                (
+                    "Chương VII: Số thập phân",
+                    "Bài 31: Một số bài toán về tỉ số và tỉ số phần trăm",
+                    38,
+                    42,
+                    3,
+                    "Tính toán với số thập phân âm, làm tròn số và ứng dụng tỉ số phần trăm.",
+                    (
+                        "Thực hiện được các phép tính với số thập phân và làm tròn theo hàng.",
+                        "Giải được bài toán thực tế về chiết khấu, lãi suất, tỉ lệ bản đồ.",
+                    ),
+                ),
+                (
+                    "Chương VIII: Những hình hình học cơ bản",
+                    "Bài 35: Trung điểm của đoạn thẳng và góc",
+                    54,
+                    66,
+                    4,
+                    "Khảo sát điểm, đường thẳng, tia, đoạn thẳng, trung điểm và số đo góc.",
+                    (
+                        "Xác định được trung điểm của đoạn thẳng và tính độ dài đoạn thẳng.",
+                        "Đo và phân loại được góc nhọn, vuông, tù, bẹt.",
+                    ),
+                ),
+                (
+                    "Chương IX: Dữ liệu và xác suất thực nghiệm",
+                    "Bài 42: Kết quả có thể và sự kiện trong trò chơi, thí nghiệm",
+                    88,
+                    96,
+                    3,
+                    "Đọc biểu đồ cột kép và tính xác suất thực nghiệm qua nhiều lần thử.",
+                    (
+                        "Đọc, vẽ được bảng thống kê và biểu đồ cột kép.",
+                        "Tính được xác suất thực nghiệm của một sự kiện đơn giản.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-7-t1",
+            "Toán",
+            "7",
+            "Tập một",
+            108,
+            [
+                (
+                    "Chương I: Số hữu tỉ",
+                    "Bài 3: Lũy thừa với số mũ tự nhiên của một số hữu tỉ",
+                    16,
+                    21,
+                    3,
+                    (
+                        "Thực hiện các phép toán trong tập số hữu tỉ $\\mathbb{Q}$ và quy tắc "
+                        "chuyển vế."
+                    ),
+                    (
+                        (
+                            "Thực hiện thành thạo phép tính lũy thừa và thứ tự phép tính trên "
+                            "$\\mathbb{Q}$."
+                        ),
+                        "Vận dụng quy tắc chuyển vế tìm số hữu tỉ chưa biết.",
+                    ),
+                ),
+                (
+                    "Chương II: Số thực",
+                    "Bài 6: Số vô tỉ, căn bậc hai số học và tập hợp số thực",
+                    29,
+                    37,
+                    4,
+                    (
+                        "Giới thiệu số thập phân vô hạn không tuần hoàn, căn bậc hai số học "
+                        "và trục số thực $\\mathbb{R}$."
+                    ),
+                    (
+                        (
+                            "Tính được căn bậc hai số học và làm tròn số thực với độ chính "
+                            "xác cho trước."
+                        ),
+                        "Nhận biết giá trị tuyệt đối của một số thực.",
+                    ),
+                ),
+                (
+                    "Chương III: Góc và đường thẳng song song",
+                    "Bài 9: Hai đường thẳng song song và dấu hiệu nhận biết",
+                    46,
+                    54,
+                    4,
+                    (
+                        "Vận dụng góc đối đỉnh, góc so le trong, đồng vị và tiên đề Euclid "
+                        "chứng minh song song."
+                    ),
+                    (
+                        "Nhận biết và chứng minh được hai đường thẳng song song.",
+                        "Vận dụng tính chất hai đường thẳng song song để tính số đo góc.",
+                    ),
+                ),
+                (
+                    "Chương IV: Tam giác bằng nhau",
+                    "Bài 13: Ba trường hợp bằng nhau của tam giác",
+                    63,
+                    75,
+                    5,
+                    (
+                        "Chứng minh hai tam giác bằng nhau theo các trường hợp c-c-c, c-g-c, "
+                        "g-c-g và tam giác cân."
+                    ),
+                    (
+                        (
+                            "Chứng minh được hai tam giác bằng nhau và suy ra cạnh, góc tương "
+                            "ứng bằng nhau."
+                        ),
+                        "Vận dụng tính chất tam giác cân và đường trung trực của đoạn thẳng.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-7-t2",
+            "Toán",
+            "7",
+            "Tập hai",
+            108,
+            [
+                (
+                    "Chương VI: Tỉ lệ thức và đại lượng tỉ lệ",
+                    "Bài 21: Tính chất của dãy tỉ số bằng nhau",
+                    8,
+                    17,
+                    4,
+                    (
+                        "Vận dụng tính chất tỉ lệ thức, dãy tỉ số bằng nhau giải bài toán đại "
+                        "lượng tỉ lệ thuận, tỉ lệ nghịch."
+                    ),
+                    (
+                        "Áp dụng được tính chất dãy tỉ số bằng nhau tìm các đại lượng chưa biết.",
+                        "Giải được bài toán thực tế về đại lượng tỉ lệ thuận và tỉ lệ nghịch.",
+                    ),
+                ),
+                (
+                    "Chương VII: Biểu thức đại số và đa thức một biến",
+                    "Bài 26: Phép cộng, phép trừ, phép nhân và phép chia đa thức một biến",
+                    31,
+                    43,
+                    5,
+                    (
+                        "Thu gọn, sắp xếp đa thức một biến, tìm nghiệm và thực hiện bốn phép "
+                        "toán trên đa thức."
+                    ),
+                    (
+                        (
+                            "Xác định được bậc, hệ số cao nhất, hệ số tự do và nghiệm của đa "
+                            "thức một biến."
+                        ),
+                        "Thực hiện thành thạo cộng, trừ, nhân và chia đa thức một biến.",
+                    ),
+                ),
+                (
+                    "Chương IX: Quan hệ giữa các yếu tố trong một tam giác",
+                    (
+                        "Bài 34: Sự đồng quy của ba đường trung tuyến, phân giác, trung trực, "
+                        "đường cao"
+                    ),
+                    72,
+                    83,
+                    4,
+                    (
+                        "Khảo sát bất đẳng thức tam giác và tính chất trọng tâm, trực tâm, "
+                        "tâm đường tròn nội tiếp, ngoại tiếp."
+                    ),
+                    (
+                        "Vận dụng được quan hệ giữa góc và cạnh đối diện, bất đẳng thức tam giác.",
+                        "Xác định được tính chất đồng quy của bốn đường đặc biệt trong tam giác.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-8-t1",
+            "Toán",
+            "8",
+            "Tập một",
+            112,
+            [
+                (
+                    "Chương I: Đa thức",
+                    "Bài 3: Phép cộng, phép trừ, phép nhân và phép chia đa thức nhiều biến",
+                    15,
+                    24,
+                    4,
+                    (
+                        "Nhận biết đơn thức, đa thức nhiều biến và thực hiện các phép toán "
+                        "thu gọn đa thức."
+                    ),
+                    (
+                        (
+                            "Thực hiện thành thạo cộng, trừ, nhân đa thức và chia đa thức cho "
+                            "đơn thức."
+                        ),
+                        "Tính được giá trị đa thức nhiều biến tại giá trị cho trước.",
+                    ),
+                ),
+                (
+                    "Chương II: Hằng đẳng thức đáng nhớ và ứng dụng",
+                    "Bài 9: Phân tích đa thức thành nhân tử",
+                    42,
+                    46,
+                    4,
+                    (
+                        "Vận dụng bảy hằng đẳng thức đáng nhớ, đặt nhân tử chung và nhóm hạng "
+                        "tử phân tích đa thức."
+                    ),
+                    (
+                        "Vận dụng được bảy hằng đẳng thức đáng nhớ vào khai triển và rút gọn.",
+                        "Phân tích được đa thức thành nhân tử bằng nhiều phương pháp phối hợp.",
+                    ),
+                ),
+                (
+                    "Chương III: Tứ giác",
+                    "Bài 12: Hình bình hành, hình chữ nhật, hình thoi và hình vuông",
+                    58,
+                    72,
+                    5,
+                    "Hệ thống hóa tính chất và dấu hiệu nhận biết các loại tứ giác đặc biệt.",
+                    (
+                        (
+                            "Chứng minh được một tứ giác là hình bình hành, hình chữ nhật, "
+                            "hình thoi hoặc hình vuông."
+                        ),
+                        "Vận dụng tính chất tứ giác giải bài toán chứng minh hình học.",
+                    ),
+                ),
+                (
+                    "Chương IV: Định lí Thalès",
+                    "Bài 15: Định lí Thalès trong tam giác và đường trung bình",
+                    78,
+                    87,
+                    4,
+                    (
+                        "Thiết lập định lí Thalès thuận, đảo, tính chất đường trung bình và "
+                        "tính chất đường phân giác."
+                    ),
+                    (
+                        "Tính được độ dài đoạn thẳng và chứng minh song song bằng định lí Thalès.",
+                        "Vận dụng tính chất đường phân giác của tam giác.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-8-t2",
+            "Toán",
+            "8",
+            "Tập hai",
+            116,
+            [
+                (
+                    "Chương VI: Phân thức đại số",
+                    "Bài 23: Phép cộng, phép trừ, phép nhân và phép chia phân thức đại số",
+                    15,
+                    24,
+                    4,
+                    (
+                        "Tìm điều kiện xác định, rút gọn và thực hiện bốn phép tính trên phân "
+                        "thức đại số."
+                    ),
+                    (
+                        "Rút gọn và quy đồng mẫu thức của các phân thức đại số.",
+                        "Tính đúng giá trị và chứng minh đẳng thức chứa phân thức.",
+                    ),
+                ),
+                (
+                    "Chương VII: Phương trình bậc nhất và hàm số bậc nhất",
+                    "Bài 28: Hàm số bậc nhất và đồ thị của hàm số bậc nhất",
+                    44,
+                    54,
+                    4,
+                    "Giải phương trình bậc nhất một ẩn, vẽ đồ thị $y = ax + b$ và xét hệ số góc.",
+                    (
+                        "Giải được phương trình bậc nhất một ẩn và bài toán lập phương trình.",
+                        (
+                            "Vẽ được đồ thị hàm số $y = ax + b$ và nhận biết hai đường thẳng "
+                            "song song, cắt nhau."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương IX: Tam giác đồng dạng",
+                    "Bài 34: Ba trường hợp đồng dạng của hai tam giác và định lí Pythagore",
+                    80,
+                    95,
+                    5,
+                    (
+                        "Chứng minh hai tam giác đồng dạng (c-c-c, c-g-c, g-g) và ứng dụng "
+                        "định lí Pythagore."
+                    ),
+                    (
+                        "Chứng minh được hai tam giác đồng dạng và suy ra tỉ lệ cạnh.",
+                        "Vận dụng định lí Pythagore tính độ dài trong tam giác vuông.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-9-t1",
+            "Toán",
+            "9",
+            "Tập một",
+            112,
+            [
+                (
+                    "Chương I: Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+                    "Bài 2: Giải hệ hai phương trình bậc nhất hai ẩn",
+                    11,
+                    18,
+                    3,
+                    (
+                        "Giải hệ hai phương trình bậc nhất hai ẩn bằng phương pháp thế, cộng "
+                        "đại số và giải bài toán thực tế."
+                    ),
+                    (
+                        "Giải thành thạo hệ hai phương trình bậc nhất hai ẩn.",
+                        "Lập và giải được hệ phương trình từ bài toán thực tiễn.",
+                    ),
+                ),
+                (
+                    "Chương II: Phương trình và bất phương trình bậc nhất một ẩn",
+                    "Bài 6: Bất phương trình bậc nhất một ẩn",
+                    36,
+                    41,
+                    3,
+                    (
+                        "Giải phương trình quy về bậc nhất, phương trình chứa ẩn ở mẫu và bất "
+                        "phương trình bậc nhất."
+                    ),
+                    (
+                        "Giải được phương trình tích, phương trình chứa ẩn ở mẫu.",
+                        "Giải được bất phương trình bậc nhất một ẩn và biểu diễn tập nghiệm.",
+                    ),
+                ),
+                (
+                    "Chương III: Căn bậc hai và căn bậc ba",
+                    "Bài 9: Biến đổi đơn giản và rút gọn biểu thức chứa căn thức bậc hai",
+                    56,
+                    64,
+                    4,
+                    (
+                        "Vận dụng hằng đẳng thức $\\sqrt{A^2} = |A|$, trục căn thức ở mẫu để "
+                        "rút gọn biểu thức."
+                    ),
+                    (
+                        "Tìm được điều kiện xác định và rút gọn biểu thức chứa căn bậc hai.",
+                        "Tính được căn bậc ba của biểu thức số đơn giản.",
+                    ),
+                ),
+                (
+                    "Chương IV: Hệ thức lượng trong tam giác vuông",
+                    "Bài 11: Tỉ số lượng giác của góc nhọn",
+                    69,
+                    75,
+                    3,
+                    (
+                        "Định nghĩa $\\sin, \\cos, \\tan, \\cot$ của góc nhọn và vận dụng "
+                        "giải tam giác vuông."
+                    ),
+                    (
+                        "Tính được tỉ số lượng giác và hệ thức cạnh - góc trong tam giác vuông.",
+                        "Ứng dụng giải bài toán đo chiều cao, khoảng cách thực tế.",
+                    ),
+                ),
+                (
+                    "Chương V: Đường tròn",
+                    "Bài 15: Độ dài của cung tròn, diện tích hình quạt tròn và vị trí tương đối",
+                    92,
+                    102,
+                    4,
+                    (
+                        "Khảo sát tiếp tuyến đường tròn, góc ở tâm, góc nội tiếp và độ dài "
+                        "cung, diện tích hình quạt."
+                    ),
+                    (
+                        "Nhận biết và chứng minh được tính chất hai tiếp tuyến cắt nhau.",
+                        "Tính được độ dài cung tròn và diện tích hình quạt tròn.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-9-t2",
+            "Toán",
+            "9",
+            "Tập hai",
+            116,
+            [
+                (
+                    "Chương VI: Hàm số $y = ax^2$ ($a \\neq 0$). Phương trình bậc hai một ẩn",
+                    "Bài 19: Phương trình bậc hai một ẩn và định lí Viète",
+                    11,
+                    24,
+                    5,
+                    (
+                        "Giải phương trình bậc hai bằng công thức nghiệm và vận dụng định lí "
+                        "Viète tìm tổng, tích hai nghiệm."
+                    ),
+                    (
+                        "Giải thành thạo phương trình bậc hai một ẩn bằng biệt thức $\\Delta$.",
+                        "Vận dụng định lí Viète nhẩm nghiệm và tìm điều kiện tham số.",
+                    ),
+                ),
+                (
+                    "Chương VII: Tần số và tần số tương đối",
+                    "Bài 23: Bảng tần số tương đối và biểu đồ tần số tương đối ghép nhóm",
+                    38,
+                    50,
+                    3,
+                    (
+                        "Lập bảng tần số, tần số tương đối và vẽ biểu đồ cột, hình quạt biểu "
+                        "diễn dữ liệu."
+                    ),
+                    (
+                        "Thiết lập và đọc được bảng tần số, tần số tương đối ghép nhóm.",
+                        "Nhận xét xu hướng phân bố dữ liệu từ biểu đồ.",
+                    ),
+                ),
+                (
+                    "Chương IX: Đường tròn ngoại tiếp và đường tròn nội tiếp",
+                    "Bài 29: Tứ giác nội tiếp",
+                    75,
+                    82,
+                    4,
+                    (
+                        "Chứng minh tứ giác nội tiếp đường tròn và vận dụng tính chất tổng "
+                        "hai góc đối bằng $180^\\circ$."
+                    ),
+                    (
+                        "Nhận biết và chứng minh được tứ giác nội tiếp đường tròn.",
+                        (
+                            "Vận dụng tính chất tứ giác nội tiếp vào bài toán chứng minh góc "
+                            "và độ dài."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương X: Một số hình khối trong thực tiễn",
+                    "Bài 31: Hình trụ, hình nón và hình cầu",
+                    90,
+                    104,
+                    4,
+                    (
+                        "Tính diện tích xung quanh và thể tích hình trụ, hình nón, diện tích "
+                        "mặt cầu và thể tích hình cầu."
+                    ),
+                    (
+                        "Tính được diện tích xung quanh và thể tích hình trụ, hình nón, hình cầu.",
+                        "Giải được bài toán thực tế về vật thể tròn xoay.",
+                    ),
+                ),
+            ],
+        ),
+        # ==================== TOÁN 10 (MẪU ĐIỂN HÌNH ĐẦY ĐỦ) ====================
+        (
+            "kntt-toan-10-t1",
+            "Toán",
+            "10",
+            "Tập một",
+            106,
+            [
+                (
+                    "Chương I: Mệnh đề và tập hợp",
+                    "Bài 1: Mệnh đề",
+                    5,
+                    11,
+                    3,
+                    (
+                        "Khái niệm mệnh đề, mệnh đề chứa biến, mệnh đề phủ định, mệnh đề kéo "
+                        "theo, mệnh đề đảo, mệnh đề tương đương và kí hiệu lượng từ "
+                        "$\\forall, \\exists$."
+                    ),
+                    (
+                        (
+                            "Thiết lập và phát biểu được các mệnh đề toán học, bao gồm mệnh "
+                            "đề phủ định, đảo, tương đương, điều kiện cần và đủ."
+                        ),
+                        (
+                            "Xác định được tính đúng sai của một mệnh đề trong những trường "
+                            "hợp đơn giản."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương I: Mệnh đề và tập hợp",
+                    "Bài 2: Tập hợp và các phép toán trên tập hợp",
+                    12,
+                    19,
+                    4,
+                    (
+                        "Cách mô tả tập hợp, tập hợp con, hai tập hợp bằng nhau, các tập hợp "
+                        "số và các phép toán giao, hợp, hiệu, phần bù trên tập hợp, biểu diễn "
+                        "bằng biểu đồ Ven."
+                    ),
+                    (
+                        (
+                            "Nhận biết được các khái niệm cơ bản về tập hợp (tập con, hai tập "
+                            "hợp bằng nhau, tập rỗng) và biết sử dụng các kí hiệu $\\subset, "
+                            "\\supset, \\emptyset$."
+                        ),
+                        (
+                            "Thực hiện được các phép toán trên tập hợp (hợp, giao, hiệu của "
+                            "hai tập hợp, phần bù của một tập con) và biểu diễn bằng biểu đồ "
+                            "Ven."
+                        ),
+                        "Giải quyết được một số vấn đề thực tiễn gắn với phép toán trên tập hợp.",
+                    ),
+                ),
+                (
+                    "Chương I: Mệnh đề và tập hợp",
+                    "Bài tập cuối chương I",
+                    20,
+                    21,
+                    1,
+                    (
+                        "Hệ thống hóa kiến thức và luyện tập tổng hợp về mệnh đề, lượng từ và "
+                        "các phép toán tập hợp trên trục số."
+                    ),
+                    (
+                        (
+                            "Vận dụng tổng hợp kiến thức mệnh đề và tập hợp giải bài tập trắc "
+                            "nghiệm, tự luận."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II: Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
+                    "Bài 3: Bất phương trình bậc nhất hai ẩn",
+                    22,
+                    25,
+                    2,
+                    (
+                        "Định nghĩa bất phương trình bậc nhất hai ẩn $ax + by \\le c$ và cách "
+                        "biểu diễn miền nghiệm trên mặt phẳng tọa độ $Oxy$."
+                    ),
+                    (
+                        "Nhận biết được bất phương trình bậc nhất hai ẩn.",
+                        (
+                            "Biểu diễn được miền nghiệm của bất phương trình bậc nhất hai ẩn "
+                            "trên mặt phẳng tọa độ."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II: Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
+                    "Bài 4: Hệ bất phương trình bậc nhất hai ẩn",
+                    26,
+                    30,
+                    3,
+                    (
+                        "Xác định miền nghiệm đa giác của hệ bất phương trình bậc nhất hai ẩn "
+                        "và tìm cực trị biểu thức tuyến tính $F(x; y) = ax + by$ trong bài "
+                        "toán tối ưu."
+                    ),
+                    (
+                        (
+                            "Biểu diễn được miền nghiệm của hệ bất phương trình bậc nhất hai "
+                            "ẩn trên mặt phẳng tọa độ."
+                        ),
+                        (
+                            "Vận dụng được kiến thức về hệ bất phương trình bậc nhất hai ẩn "
+                            "giải quyết bài toán quy hoạch tuyến tính thực tiễn."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II: Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
+                    "Bài tập cuối chương II",
+                    31,
+                    32,
+                    1,
+                    (
+                        "Ôn tập biểu diễn miền nghiệm và mô hình hóa bài toán sản xuất, dinh "
+                        "dưỡng bằng hệ bất phương trình bậc nhất hai ẩn."
+                    ),
+                    (
+                        (
+                            "Củng cố kĩ năng xác định tọa độ đỉnh miền đa giác nghiệm và kết "
+                            "luận giá trị lớn nhất, nhỏ nhất."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương III: Hệ thức lượng trong tam giác",
+                    "Bài 5: Giá trị lượng giác của một góc từ 0° đến 180°",
+                    33,
+                    37,
+                    2,
+                    (
+                        "Mở rộng định nghĩa $\\sin \\alpha, \\cos \\alpha, \\tan \\alpha, "
+                        "\\cot \\alpha$ trên nửa đường tròn đơn vị và quan hệ giữa hai góc bù "
+                        "nhau, phụ nhau."
+                    ),
+                    (
+                        (
+                            "Tính được giá trị lượng giác của một góc từ $0^\\circ$ đến "
+                            "$180^\\circ$, kể cả góc đặc biệt."
+                        ),
+                        "Vận dụng được hệ thức lượng giác cơ bản cho góc tù.",
+                    ),
+                ),
+                (
+                    "Chương III: Hệ thức lượng trong tam giác",
+                    "Bài 6: Hệ thức lượng trong tam giác",
+                    38,
+                    43,
+                    4,
+                    (
+                        "Thiết lập định lí côsin, định lí sin, các công thức tính diện tích "
+                        "tam giác và công thức Heron để giải tam giác và đo đạc thực địa."
+                    ),
+                    (
+                        "Giải thích và vận dụng được định lí côsin, định lí sin trong tam giác.",
+                        (
+                            "Tính được diện tích tam giác bằng nhiều công thức và giải quyết "
+                            "bài toán đo đạc thực tiễn."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương III: Hệ thức lượng trong tam giác",
+                    "Bài tập cuối chương III",
+                    44,
+                    45,
+                    1,
+                    (
+                        "Luyện tập tổng hợp giải tam giác và bài toán ứng dụng định lí sin, "
+                        "côsin trong hàng hải, trắc địa."
+                    ),
+                    (
+                        (
+                            "Lựa chọn linh hoạt định lí côsin, định lí sin và công thức diện "
+                            "tích phù hợp dữ kiện."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương IV: Vectơ",
+                    "Bài 7: Các khái niệm mở đầu",
+                    46,
+                    49,
+                    2,
+                    (
+                        "Khái niệm vectơ, độ dài vectơ, hai vectơ cùng phương, cùng hướng, "
+                        "bằng nhau và vectơ-không."
+                    ),
+                    (
+                        "Nhận biết được khái niệm vectơ, vectơ bằng nhau và vectơ-không.",
+                        "Biểu thị được một số đại lượng vật lí như lực, vận tốc bằng vectơ.",
+                    ),
+                ),
+                (
+                    "Chương IV: Vectơ",
+                    "Bài 8: Tổng và hiệu của hai vectơ",
+                    50,
+                    54,
+                    3,
+                    (
+                        "Quy tắc ba điểm, quy tắc hình bình hành, tính chất phép cộng, hiệu "
+                        "hai vectơ và ứng dụng phân tích lực."
+                    ),
+                    (
+                        (
+                            "Thực hiện được phép cộng, phép trừ hai vectơ và vận dụng quy tắc "
+                            "trung điểm, trọng tâm."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương IV: Vectơ",
+                    "Bài 9: Tích của một vectơ với một số",
+                    55,
+                    58,
+                    2,
+                    (
+                        "Định nghĩa tích một số thực với vectơ, tính chất phân phối và điều "
+                        "kiện hai vectơ cùng phương, ba điểm thẳng hàng."
+                    ),
+                    (
+                        (
+                            "Thực hiện được phép nhân vectơ với một số và chứng minh ba điểm "
+                            "thẳng hàng."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương IV: Vectơ",
+                    "Bài 10: Vectơ trong mặt phẳng tọa độ",
+                    59,
+                    64,
+                    3,
+                    (
+                        "Biểu diễn tọa độ của điểm và vectơ trong hệ trục $Oxy$; công thức "
+                        "tọa độ tổng, hiệu, trung điểm và trọng tâm."
+                    ),
+                    (
+                        (
+                            "Tìm được tọa độ của vectơ, độ dài vectơ và khoảng cách giữa hai "
+                            "điểm trong $Oxy$."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương IV: Vectơ",
+                    "Bài 11: Tích vô hướng của hai vectơ",
+                    65,
+                    69,
+                    3,
+                    (
+                        "Định nghĩa góc giữa hai vectơ, tích vô hướng và biểu thức tọa độ "
+                        "tích vô hướng; ứng dụng chứng minh vuông góc và tính công cơ học."
+                    ),
+                    (
+                        "Tính được tích vô hướng hai vectơ theo định nghĩa và theo tọa độ.",
+                        "Vận dụng tích vô hướng tính góc giữa hai vectơ và giải bài toán vật lí.",
+                    ),
+                ),
+                (
+                    "Chương V: Các số đặc trưng của mẫu số liệu không ghép nhóm",
+                    "Bài 12: Số gần đúng và sai số",
+                    72,
+                    75,
+                    2,
+                    (
+                        "Khái niệm số gần đúng, sai số tuyệt đối, sai số tương đối và quy tắc "
+                        "làm tròn số gần đúng."
+                    ),
+                    (
+                        (
+                            "Xác định được số gần đúng với độ chính xác cho trước và ước "
+                            "lượng sai số tương đối."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương V: Các số đặc trưng của mẫu số liệu không ghép nhóm",
+                    "Bài 13: Các số đặc trưng đo xu thế trung tâm",
+                    76,
+                    81,
+                    3,
+                    (
+                        "Tính và giải thích ý nghĩa của số trung bình cộng, trung vị, tứ phân "
+                        "vị và mốt của mẫu số liệu."
+                    ),
+                    (
+                        (
+                            "Tính được số trung bình, trung vị, tứ phân vị và mốt của mẫu số "
+                            "liệu không ghép nhóm."
+                        ),
+                        "Lựa chọn được số đặc trưng đại diện phù hợp khi có giá trị bất thường.",
+                    ),
+                ),
+                (
+                    "Chương V: Các số đặc trưng của mẫu số liệu không ghép nhóm",
+                    "Bài 14: Các số đặc trưng đo độ phân tán",
+                    82,
+                    87,
+                    3,
+                    (
+                        "Tính khoảng biến thiên, khoảng tứ phân vị, phương sai, độ lệch chuẩn "
+                        "và phát hiện giá trị ngoại lệ."
+                    ),
+                    (
+                        (
+                            "Tính được khoảng biến thiên, khoảng tứ phân vị, phương sai và độ "
+                            "lệch chuẩn."
+                        ),
+                        "So sánh mức độ ổn định của hai mẫu số liệu qua độ lệch chuẩn.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-10-t2",
+            "Toán",
+            "10",
+            "Tập hai",
+            104,
+            [
+                (
+                    "Chương VI: Hàm số, đồ thị và ứng dụng",
+                    "Bài 16: Hàm số bậc hai",
+                    11,
+                    17,
+                    4,
+                    (
+                        "Khảo sát đỉnh, trục đối xứng, bảng biến thiên và đồ thị parabol của "
+                        "hàm số bậc hai $y = ax^2 + bx + c$."
+                    ),
+                    (
+                        "Thiết lập được bảng giá trị và vẽ đồ thị hàm số bậc hai.",
+                        (
+                            "Vận dụng hàm số bậc hai giải bài toán quỹ đạo chuyển động, tối "
+                            "ưu diện tích."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương VI: Hàm số, đồ thị và ứng dụng",
+                    "Bài 17: Dấu của tam thức bậc hai",
+                    18,
+                    24,
+                    3,
+                    (
+                        "Định lí về dấu tam thức bậc hai, giải bất phương trình bậc hai một "
+                        "ẩn và phương trình quy về bậc hai."
+                    ),
+                    (
+                        "Xét được dấu tam thức bậc hai và giải bất phương trình bậc hai một ẩn.",
+                        "Giải được phương trình chứa căn quy về phương trình bậc hai.",
+                    ),
+                ),
+                (
+                    "Chương VII: Phương pháp tọa độ trong mặt phẳng",
+                    "Bài 19: Phương trình đường thẳng, đường tròn và ba đường conic",
+                    30,
+                    58,
+                    6,
+                    (
+                        "Lập phương trình tổng quát, tham số đường thẳng; tính góc, khoảng "
+                        "cách; phương trình đường tròn, elip, hypebol, parabol."
+                    ),
+                    (
+                        (
+                            "Viết được phương trình đường thẳng, đường tròn và tính khoảng "
+                            "cách từ điểm đến đường thẳng."
+                        ),
+                        "Nhận biết được phương trình chính tắc của elip, hypebol, parabol.",
+                    ),
+                ),
+                (
+                    "Chương VIII: Đại số tổ hợp",
+                    "Bài 23: Quy tắc đếm, hoán vị, chỉnh hợp, tổ hợp và nhị thức Newton",
+                    60,
+                    77,
+                    5,
+                    (
+                        "Vận dụng quy tắc cộng, quy tắc nhân, công thức $P_n, A_n^k, C_n^k$ "
+                        "và khai triển $(a+b)^n$ với $n \\le 5$."
+                    ),
+                    (
+                        "Tính được số cách chọn bằng hoán vị, chỉnh hợp, tổ hợp.",
+                        "Khai triển được nhị thức Newton với số mũ $n = 4, 5$.",
+                    ),
+                ),
+                (
+                    "Chương IX: Tính xác suất theo định nghĩa cổ điển",
+                    "Bài 26: Biến cố và định nghĩa cổ điển của xác suất",
+                    78,
+                    88,
+                    4,
+                    (
+                        "Xác định không gian mẫu, biến cố đối và tính xác suất theo định "
+                        "nghĩa cổ điển kết hợp tổ hợp."
+                    ),
+                    (
+                        "Tính được xác suất của biến cố trong phép thử đồng khả năng.",
+                        "Vận dụng quy tắc biến cố đối để đơn giản hóa bài toán xác suất.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-10-cd",
+            "Toán",
+            "10",
+            "Chuyên đề học tập",
+            64,
+            [
+                (
+                    "Chuyên đề 1: Hệ phương trình bậc nhất ba ẩn",
+                    "Bài 1: Hệ phương trình bậc nhất ba ẩn và ứng dụng",
+                    5,
+                    22,
+                    5,
+                    (
+                        "Giải hệ phương trình bậc nhất ba ẩn bằng phương pháp Gauss và vận "
+                        "dụng giải bài toán vật lí, hóa học, kinh tế."
+                    ),
+                    (
+                        "Giải được hệ phương trình bậc nhất ba ẩn bằng phương pháp khử ẩn dần.",
+                        "Vận dụng hệ bậc nhất ba ẩn mô hình hóa bài toán thực tế.",
+                    ),
+                ),
+                (
+                    "Chuyên đề 2: Phương pháp quy nạp toán học. Nhị thức Newton",
+                    "Bài 3: Phương pháp quy nạp toán học và nhị thức Newton tổng quát",
+                    23,
+                    40,
+                    5,
+                    (
+                        "Chứng minh đẳng thức, bất đẳng thức bằng quy nạp toán học và khai "
+                        "triển nhị thức Newton tổng quát."
+                    ),
+                    (
+                        "Chứng minh được mệnh đề toán học bằng phương pháp quy nạp.",
+                        "Tìm được hệ số hạng tử trong khai triển $(a+b)^n$.",
+                    ),
+                ),
+                (
+                    "Chuyên đề 3: Ba đường conic và ứng dụng",
+                    "Bài 5: Elip, hypebol, parabol và tính chất quang học",
+                    41,
+                    60,
+                    5,
+                    (
+                        "Nghiên cứu tâm sai, đường chuẩn, bán kính qua tiêu và ứng dụng thiết "
+                        "kế gương parabol, quỹ đạo hành tinh."
+                    ),
+                    ("Xác định được tâm sai, tiêu điểm, đường chuẩn của ba đường conic.",),
+                ),
+            ],
+        ),
+        # ==================== TOÁN 11 ====================
+        (
+            "kntt-toan-11-t1",
+            "Toán",
+            "11",
+            "Tập một",
+            120,
+            [
+                (
+                    "Chương I: Hàm số lượng giác và phương trình lượng giác",
+                    "Bài 1: Giá trị lượng giác của góc lượng giác và công thức lượng giác",
+                    5,
+                    21,
+                    5,
+                    (
+                        "Góc lượng giác theo radian, đường tròn lượng giác và các công thức "
+                        "cộng, nhân đôi, biến đổi tích thành tổng."
+                    ),
+                    (
+                        "Đổi được giữa độ và radian; tính giá trị lượng giác của góc bất kì.",
+                        (
+                            "Vận dụng thành thạo công thức cộng, công thức nhân đôi và biến "
+                            "đổi tổng thành tích."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương I: Hàm số lượng giác và phương trình lượng giác",
+                    "Bài 4: Phương trình lượng giác cơ bản",
+                    31,
+                    40,
+                    4,
+                    (
+                        "Giải các phương trình $\\sin x = m, \\cos x = m, \\tan x = m, \\cot "
+                        "x = m$ và phương trình đưa về dạng cơ bản."
+                    ),
+                    (
+                        (
+                            "Giải được phương trình lượng giác cơ bản và biểu diễn nghiệm "
+                            "theo radian hoặc độ."
+                        ),
+                        "Vận dụng phương trình lượng giác giải bài toán dao động điều hòa.",
+                    ),
+                ),
+                (
+                    "Chương II: Dãy số. Cấp số cộng và cấp số nhân",
+                    "Bài 6: Cấp số cộng và cấp số nhân",
+                    48,
+                    59,
+                    5,
+                    (
+                        "Xác định số hạng tổng quát $u_n$ và tổng $n$ số hạng đầu $S_n$ của "
+                        "cấp số cộng, cấp số nhân."
+                    ),
+                    (
+                        (
+                            "Tính được số hạng tổng quát và tổng $n$ số hạng đầu của cấp số "
+                            "cộng, cấp số nhân."
+                        ),
+                        "Giải được bài toán thực tiễn về tăng trưởng, lãi kép.",
+                    ),
+                ),
+                (
+                    "Chương III: Các số đặc trưng đo xu thế trung tâm của mẫu số liệu ghép nhóm",
+                    "Bài 9: Các số đặc trưng đo xu thế trung tâm mẫu ghép nhóm",
+                    64,
+                    75,
+                    4,
+                    (
+                        "Tính số trung bình, trung vị, tứ phân vị và mốt cho bảng phân bố tần "
+                        "số ghép nhóm."
+                    ),
+                    (
+                        (
+                            "Tính và giải thích được số trung bình, trung vị, tứ phân vị và "
+                            "mốt mẫu ghép nhóm."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương IV: Quan hệ song song trong không gian",
+                    "Bài 11: Đường thẳng và mặt phẳng song song trong không gian",
+                    78,
+                    97,
+                    6,
+                    (
+                        "Xác định giao tuyến hai mặt phẳng, chứng minh đường thẳng song song "
+                        "mặt phẳng và hai mặt phẳng song song."
+                    ),
+                    (
+                        (
+                            "Xác định được giao tuyến, giao điểm và chứng minh quan hệ song "
+                            "song trong không gian."
+                        ),
+                        "Vận dụng định lí Thalès trong không gian và phép chiếu song song.",
+                    ),
+                ),
+                (
+                    "Chương V: Giới hạn. Hàm số liên tục",
+                    "Bài 16: Giới hạn của dãy số, giới hạn của hàm số và hàm số liên tục",
+                    104,
+                    118,
+                    5,
+                    (
+                        "Tính giới hạn dãy số, giới hạn hàm số tại một điểm và tại vô cực; "
+                        "xét tính liên tục trên khoảng."
+                    ),
+                    (
+                        "Tính được giới hạn hữu hạn, vô cực của dãy số và hàm số.",
+                        (
+                            "Xét được tính liên tục của hàm số và vận dụng chứng minh phương "
+                            "trình có nghiệm."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-11-t2",
+            "Toán",
+            "11",
+            "Tập hai",
+            116,
+            [
+                (
+                    "Chương VI: Hàm số mũ và hàm số lôgarit",
+                    "Bài 19: Lôgarit, hàm số mũ, hàm số lôgarit và phương trình",
+                    11,
+                    31,
+                    6,
+                    (
+                        "Quy tắc tính lôgarit, tính chất đồ thị hàm mũ, hàm lôgarit và giải "
+                        "phương trình, bất phương trình mũ, lôgarit."
+                    ),
+                    (
+                        (
+                            "Vận dụng được tính chất lũy thừa số mũ thực và lôgarit để biến "
+                            "đổi biểu thức."
+                        ),
+                        "Giải được phương trình, bất phương trình mũ và lôgarit cơ bản.",
+                    ),
+                ),
+                (
+                    "Chương VII: Quan hệ vuông góc trong không gian",
+                    "Bài 23: Đường thẳng vuông góc mặt phẳng, góc và khoảng cách",
+                    36,
+                    64,
+                    7,
+                    (
+                        "Chứng minh đường thẳng vuông góc mặt phẳng, hai mặt phẳng vuông góc; "
+                        "tính góc nhị diện, khoảng cách và thể tích khối chóp, lăng trụ."
+                    ),
+                    (
+                        (
+                            "Chứng minh được đường thẳng vuông góc mặt phẳng và hai mặt phẳng "
+                            "vuông góc."
+                        ),
+                        (
+                            "Tính được góc giữa đường thẳng với mặt phẳng, góc nhị diện, "
+                            "khoảng cách và thể tích."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương VIII: Các quy tắc tính xác suất",
+                    "Bài 29: Công thức cộng và công thức nhân xác suất",
+                    68,
+                    81,
+                    4,
+                    (
+                        "Xác định biến cố hợp, giao, xung khắc, độc lập và vận dụng quy tắc "
+                        "cộng, quy tắc nhân xác suất."
+                    ),
+                    ("Tính được xác suất biến cố hợp và biến cố giao của các biến cố độc lập.",),
+                ),
+                (
+                    "Chương IX: Đạo hàm",
+                    "Bài 32: Các quy tắc tính đạo hàm và đạo hàm cấp hai",
+                    86,
+                    103,
+                    5,
+                    (
+                        "Tính đạo hàm hàm sơ cấp, hàm hợp; viết phương trình tiếp tuyến và ý "
+                        "nghĩa cơ học của đạo hàm cấp hai."
+                    ),
+                    (
+                        "Tính thành thạo đạo hàm hàm đa thức, lượng giác, mũ, lôgarit và hàm hợp.",
+                        "Viết được phương trình tiếp tuyến của đồ thị hàm số tại một điểm.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-11-cd",
+            "Toán",
+            "11",
+            "Chuyên đề học tập",
+            68,
+            [
+                (
+                    "Chuyên đề 1: Phép biến hình trong mặt phẳng",
+                    "Bài 1: Phép dời hình và phép đồng dạng trong mặt phẳng",
+                    5,
+                    24,
+                    5,
+                    (
+                        "Khảo sát phép tịnh tiến, đối xứng trục, đối xứng tâm, phép quay và "
+                        "phép vị tự."
+                    ),
+                    (
+                        (
+                            "Xác định được ảnh của điểm, đường thẳng, đường tròn qua các phép "
+                            "biến hình."
+                        ),
+                    ),
+                ),
+                (
+                    "Chuyên đề 2: Làm quen với một vài khái niệm của Lí thuyết đồ thị",
+                    "Bài 3: Đường đi Euler, đường đi Hamilton và bài toán đường đi ngắn nhất",
+                    25,
+                    46,
+                    5,
+                    (
+                        "Nhận biết đỉnh, cạnh, bậc đỉnh của đồ thị và vận dụng thuật toán tìm "
+                        "đường đi ngắn nhất."
+                    ),
+                    ("Vận dụng được đồ thị mô hình hóa bài toán mạng giao thông và lịch trình.",),
+                ),
+            ],
+        ),
+        # ==================== TOÁN 12 ====================
+        (
+            "kntt-toan-12-t1",
+            "Toán",
+            "12",
+            "Tập một",
+            108,
+            [
+                (
+                    "Chương I: Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số",
+                    "Bài 1: Tính đơn điệu và cực trị của hàm số",
+                    5,
+                    14,
+                    4,
+                    (
+                        "Xét dấu đạo hàm cấp một xác định khoảng đồng biến, nghịch biến và "
+                        "điểm cực đại, cực tiểu của hàm số."
+                    ),
+                    (
+                        (
+                            "Nhận biết được tính đồng biến, nghịch biến và điểm cực trị qua "
+                            "bảng biến thiên và đồ thị."
+                        ),
+                        "Tìm được khoảng đơn điệu và cực trị của hàm đa thức, phân thức.",
+                    ),
+                ),
+                (
+                    "Chương I: Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số",
+                    "Bài 2: Giá trị lớn nhất, giá trị nhỏ nhất và đường tiệm cận của đồ thị hàm số",
+                    15,
+                    25,
+                    4,
+                    (
+                        "Tìm GTLN, GTNN trên đoạn; xác định tiệm cận đứng, tiệm cận ngang và "
+                        "tiệm cận xiên của đồ thị."
+                    ),
+                    (
+                        (
+                            "Tìm được GTLN, GTNN của hàm số trên đoạn và giải bài toán tối ưu "
+                            "thực tiễn."
+                        ),
+                        "Xác định được đường tiệm cận đứng, ngang, xiên của đồ thị hàm phân thức.",
+                    ),
+                ),
+                (
+                    "Chương I: Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số",
+                    "Bài 4: Khảo sát sự biến thiên và vẽ đồ thị của hàm số",
+                    26,
+                    38,
+                    4,
+                    (
+                        "Thực hiện quy trình khảo sát và vẽ đồ thị hàm bậc ba, phân thức bậc "
+                        "nhất trên bậc nhất và bậc hai trên bậc nhất."
+                    ),
+                    (
+                        (
+                            "Khảo sát và vẽ thành thạo đồ thị ba dạng hàm số cơ bản và biện "
+                            "luận tương giao."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II: Vectơ và hệ trục tọa độ trong không gian",
+                    "Bài 6: Vectơ và hệ trục tọa độ trong không gian Oxyz",
+                    44,
+                    66,
+                    5,
+                    (
+                        "Thực hiện phép toán vectơ trong không gian, tọa độ điểm, biểu thức "
+                        "tọa độ tích vô hướng và tính góc, độ dài."
+                    ),
+                    (
+                        (
+                            "Tính được tọa độ tổng, hiệu, tích vô hướng và góc giữa hai vectơ "
+                            "trong $Oxyz$."
+                        ),
+                        "Vận dụng hệ tọa độ $Oxyz$ mô tả vị trí vật thể trong không gian thực tế.",
+                    ),
+                ),
+                (
+                    "Chương III: Các số đặc trưng đo mức độ phân tán của mẫu số liệu ghép nhóm",
+                    (
+                        "Bài 9: Khoảng biến thiên, khoảng tứ phân vị, phương sai và độ lệch "
+                        "chuẩn mẫu ghép nhóm"
+                    ),
+                    74,
+                    86,
+                    4,
+                    (
+                        "Tính và đánh giá độ phân tán của mẫu số liệu ghép nhóm trong phân "
+                        "tích dữ liệu."
+                    ),
+                    (
+                        (
+                            "Tính được khoảng biến thiên, khoảng tứ phân vị, phương sai và độ "
+                            "lệch chuẩn mẫu ghép nhóm."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-12-t2",
+            "Toán",
+            "12",
+            "Tập hai",
+            104,
+            [
+                (
+                    "Chương IV: Nguyên hàm và tích phân",
+                    "Bài 11: Nguyên hàm và tích phân",
+                    5,
+                    23,
+                    6,
+                    (
+                        "Tìm nguyên hàm các hàm sơ cấp, tính tích phân theo công thức "
+                        "Newton–Leibniz và ứng dụng tính diện tích, thể tích khối tròn xoay."
+                    ),
+                    (
+                        "Tìm được nguyên hàm và tính được tích phân của các hàm số cơ bản.",
+                        (
+                            "Tính được diện tích hình phẳng và thể tích vật thể tròn xoay "
+                            "bằng tích phân."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương V: Phương pháp tọa độ trong không gian",
+                    "Bài 14: Phương trình mặt phẳng, đường thẳng và mặt cầu trong không gian",
+                    30,
+                    60,
+                    7,
+                    (
+                        "Lập phương trình mặt phẳng, phương trình tham số và chính tắc đường "
+                        "thẳng, phương trình mặt cầu; tính góc và khoảng cách."
+                    ),
+                    (
+                        "Viết được phương trình mặt phẳng, đường thẳng và mặt cầu trong $Oxyz$.",
+                        (
+                            "Tính được khoảng cách từ điểm đến mặt phẳng và góc giữa đường "
+                            "thẳng, mặt phẳng."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương VI: Xác suất có điều kiện",
+                    "Bài 18: Xác suất có điều kiện và công thức Bayes",
+                    66,
+                    82,
+                    5,
+                    (
+                        "Tính xác suất có điều kiện $P(A|B)$, sử dụng sơ đồ hình cây, công "
+                        "thức xác suất toàn phần và công thức Bayes."
+                    ),
+                    (
+                        "Tính được xác suất có điều kiện bằng định nghĩa và sơ đồ hình cây.",
+                        (
+                            "Vận dụng công thức xác suất toàn phần và công thức Bayes vào bài "
+                            "toán y học, kiểm định."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-toan-12-cd",
+            "Toán",
+            "12",
+            "Chuyên đề học tập",
+            68,
+            [
+                (
+                    (
+                        "Chuyên đề 1: Biến ngẫu nhiên rời rạc. Các số đặc trưng của biến ngẫu "
+                        "nhiên rời rạc"
+                    ),
+                    "Bài 1: Biến ngẫu nhiên rời rạc, phân bố nhị thức và kì vọng",
+                    5,
+                    24,
+                    5,
+                    (
+                        "Lập bảng phân bố xác suất, tính kì vọng, phương sai, độ lệch chuẩn "
+                        "và vận dụng phân bố Bernoulli, nhị thức."
+                    ),
+                    (
+                        (
+                            "Tính được kì vọng và phương sai của biến ngẫu nhiên rời rạc và "
+                            "phân bố nhị thức."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Chuyên đề 2: Ứng dụng toán học để giải quyết một số vấn đề liên quan "
+                        "đến tài chính"
+                    ),
+                    "Bài 3: Tiền tệ, lãi suất, tín dụng và lập kế hoạch tài chính",
+                    25,
+                    48,
+                    5,
+                    (
+                        "Tính lãi đơn, lãi kép, trả góp và đánh giá rủi ro cơ bản trong bài "
+                        "toán tài chính cá nhân."
+                    ),
+                    ("Vận dụng được công thức lãi kép và cấp số nhân vào tính toán tài chính.",),
+                ),
+            ],
+        ),
+        # ==================== TIẾNG VIỆT 1–5 ====================
+        (
+            "kntt-tieng-viet-1-t1",
+            "Tiếng Việt",
+            "1",
+            "Tập một",
+            172,
+            [
+                (
+                    "Phần 1: Làm quen âm chữ và dấu thanh",
+                    "Bài 1–10: Các chữ cái và thanh điệu cơ bản",
+                    10,
+                    33,
+                    6,
+                    "Nhận diện âm, chữ cái đầu tiên, ghép vần đơn giản và tập viết nét cơ bản.",
+                    (
+                        "Đọc đúng âm, tiếng và từ ngữ chứa các chữ cái, dấu thanh đã học.",
+                        "Viết đúng cỡ chữ và khoảng cách chữ cái trên vở ô li.",
+                    ),
+                ),
+                (
+                    "Phần 2: Vần có âm cuối và đọc hiểu câu ngắn",
+                    "Bài 45–60: Ghép vần và đọc đoạn văn ngắn",
+                    102,
+                    135,
+                    6,
+                    "Luyện đọc trơn câu và đoạn văn ngắn về gia đình, trường học, thiên nhiên.",
+                    ("Đọc trơn được đoạn văn ngắn và trả lời câu hỏi về chi tiết trực tiếp.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-1-t2",
+            "Tiếng Việt",
+            "1",
+            "Tập hai",
+            176,
+            [
+                (
+                    "Chủ điểm: Tôi và các bạn",
+                    "Bài 1: Tôi là học sinh lớp 1",
+                    10,
+                    21,
+                    4,
+                    (
+                        "Đọc hiểu câu chuyện về ngày đầu đi học, rèn kĩ năng nói lời chào hỏi "
+                        "và viết câu kể ngắn."
+                    ),
+                    (
+                        "Đọc hiểu nội dung văn bản ngắn và nhận biết nhân vật chính.",
+                        "Viết được câu kể đơn giản đúng chính tả cơ bản.",
+                    ),
+                ),
+                (
+                    "Chủ điểm: Thiên nhiên kì thú",
+                    "Bài 5: Mùa xuân và những khu vườn nhỏ",
+                    96,
+                    112,
+                    4,
+                    (
+                        "Đọc văn bản miêu tả cây cối, con vật và mở rộng vốn từ chỉ màu sắc, "
+                        "hoạt động."
+                    ),
+                    ("Tìm được từ ngữ chỉ đặc điểm thiên nhiên trong đoạn đọc.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-2-t1",
+            "Tiếng Việt",
+            "2",
+            "Tập một",
+            152,
+            [
+                (
+                    "Chủ điểm: Em lớn lên từng ngày",
+                    "Bài 1: Đọc hiểu câu chuyện và đặt câu giới thiệu",
+                    10,
+                    24,
+                    4,
+                    (
+                        "Rèn đọc trơn văn bản kể chuyện, phân biệt từ chỉ sự vật, hoạt động "
+                        "và viết đoạn ngắn 3–4 câu."
+                    ),
+                    (
+                        "Đọc trơn và hiểu trình tự sự việc chính trong văn bản kể chuyện.",
+                        "Đặt được câu theo mẫu Ai là gì, Ai làm gì và dùng đúng dấu chấm, dấu hỏi.",
+                    ),
+                ),
+                (
+                    "Chủ điểm: Mái ấm gia đình",
+                    "Bài 15: Đọc hiểu thơ và viết đoạn văn kể việc nhà",
+                    64,
+                    79,
+                    4,
+                    (
+                        "Cảm nhận tình cảm gia đình qua thơ thiếu nhi và viết đoạn văn ngắn "
+                        "kể việc giúp người thân."
+                    ),
+                    ("Nêu được cảm nhận về chi tiết thể hiện tình yêu thương gia đình.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-2-t2",
+            "Tiếng Việt",
+            "2",
+            "Tập hai",
+            152,
+            [
+                (
+                    "Chủ điểm: Vẻ đẹp quanh em",
+                    "Bài 1: Đọc hiểu văn bản miêu tả cảnh vật và từ chỉ đặc điểm",
+                    10,
+                    26,
+                    4,
+                    (
+                        "Đọc hiểu bài văn tả cảnh bốn mùa, sử dụng từ chỉ đặc điểm và dấu "
+                        "phẩy liệt kê."
+                    ),
+                    ("Nhận biết từ chỉ đặc điểm và sử dụng dấu phẩy đúng vị trí trong câu.",),
+                ),
+                (
+                    "Chủ điểm: Giao tiếp và kết nối",
+                    "Bài 20: Văn bản thông tin ngắn và viết bưu thiếp, lời nhắn",
+                    88,
+                    104,
+                    4,
+                    (
+                        "Tiếp cận văn bản thông tin đơn giản, đọc bảng chỉ dẫn và viết lời "
+                        "nhắn lịch sự."
+                    ),
+                    ("Đọc hiểu thông tin chính và viết được đoạn văn ngắn 4–5 câu theo chủ đề.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-3-t1",
+            "Tiếng Việt",
+            "3",
+            "Tập một",
+            148,
+            [
+                (
+                    "Chủ điểm: Trải nghiệm và khám phá",
+                    "Bài 1: Đọc hiểu truyện thiếu nhi và biện pháp so sánh",
+                    10,
+                    25,
+                    4,
+                    (
+                        "Đọc hiểu văn bản tự sự, nhận biết hình ảnh so sánh và viết đoạn văn "
+                        "kể lại trải nghiệm."
+                    ),
+                    (
+                        "Nhận biết được hình ảnh so sánh trong câu văn, câu thơ.",
+                        "Viết được đoạn văn kể lại một hoạt động hoặc sự việc đã trải qua.",
+                    ),
+                ),
+                (
+                    "Chủ điểm: Cổng trường rộng mở",
+                    "Bài 12: Từ có nghĩa giống nhau, trái ngược nhau và viết đoạn tả đồ vật",
+                    56,
+                    72,
+                    4,
+                    (
+                        "Mở rộng vốn từ theo chủ điểm trường học, luyện đặt câu cảm và viết "
+                        "đoạn văn tả đồ dùng học tập."
+                    ),
+                    (
+                        (
+                            "Tìm được từ đồng nghĩa, trái nghĩa đơn giản và viết đoạn tả đồ "
+                            "vật rõ đặc điểm."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-3-t2",
+            "Tiếng Việt",
+            "3",
+            "Tập hai",
+            148,
+            [
+                (
+                    "Chủ điểm: Những sắc màu thiên nhiên",
+                    "Bài 1: Đọc hiểu văn bản thông tin và câu khiến",
+                    10,
+                    26,
+                    4,
+                    (
+                        "Khai thác thông tin từ văn bản khoa học thường thức, phân biệt câu "
+                        "kể, câu hỏi, câu khiến, câu cảm."
+                    ),
+                    (
+                        "Nhận biết được mục đích nói của bốn kiểu câu cơ bản.",
+                        "Viết được đoạn văn nêu tình cảm, cảm xúc về cảnh đẹp quê hương.",
+                    ),
+                ),
+                (
+                    "Chủ điểm: Trái đất của chúng mình",
+                    "Bài 22: Đọc hiểu văn bản bảo vệ môi trường và viết thư ngắn",
+                    92,
+                    108,
+                    4,
+                    (
+                        "Đọc hiểu văn bản về bảo vệ môi trường, rèn luyện cấu trúc một bức "
+                        "thư thăm hỏi ngắn."
+                    ),
+                    ("Trình bày được ý kiến cá nhân và viết được bức thư ngắn đủ bố cục.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-4-t1",
+            "Tiếng Việt",
+            "4",
+            "Tập một",
+            148,
+            [
+                (
+                    "Chủ điểm: Mỗi người một vẻ",
+                    "Bài 1: Danh từ, động từ, tính từ và nhân hóa",
+                    10,
+                    32,
+                    5,
+                    (
+                        "Phân loại danh từ, động từ, tính từ; nhận biết biện pháp nhân hóa và "
+                        "viết bài văn kể lại câu chuyện."
+                    ),
+                    (
+                        "Phân biệt được danh từ, động từ, tính từ trong câu văn.",
+                        "Viết được bài văn kể lại câu chuyện đã đọc, đã nghe có bố cục ba phần.",
+                    ),
+                ),
+                (
+                    "Chủ điểm: Niềm vui sáng tạo",
+                    "Bài 17: Quy tắc viết hoa tên cơ quan, tổ chức và viết báo cáo thảo luận nhóm",
+                    74,
+                    92,
+                    4,
+                    (
+                        "Nắm quy tắc viết hoa tên riêng, viết đoạn văn nêu ý kiến và lập báo "
+                        "cáo thảo luận nhóm."
+                    ),
+                    ("Viết đúng quy tắc viết hoa và trình bày báo cáo thảo luận rõ ràng.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-4-t2",
+            "Tiếng Việt",
+            "4",
+            "Tập hai",
+            148,
+            [
+                (
+                    "Chủ điểm: Sống để yêu thương",
+                    "Bài 1: Chủ ngữ, vị ngữ, trạng ngữ trong câu",
+                    10,
+                    32,
+                    5,
+                    (
+                        "Xác định thành phần chính (chủ ngữ, vị ngữ) và thành phần phụ trạng "
+                        "ngữ chỉ thời gian, nơi chốn."
+                    ),
+                    (
+                        "Phân tích được chủ ngữ, vị ngữ và trạng ngữ trong câu đơn.",
+                        "Viết được bài văn miêu tả cây cối có quan sát sinh động.",
+                    ),
+                ),
+                (
+                    "Chủ điểm: Quê hương trong tôi",
+                    "Bài 18: Văn bản tả con vật và hướng dẫn thực hiện công việc",
+                    78,
+                    96,
+                    4,
+                    (
+                        "Viết bài văn miêu tả con vật gần gũi và văn bản hướng dẫn các bước "
+                        "làm một sản phẩm thủ công."
+                    ),
+                    ("Lập dàn ý và viết được bài văn tả con vật mạch lạc, giàu hình ảnh.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-5-t1",
+            "Tiếng Việt",
+            "5",
+            "Tập một",
+            152,
+            [
+                (
+                    "Chủ điểm: Thế giới tuổi thơ",
+                    "Bài 1: Từ đồng nghĩa, từ đa nghĩa và viết bài văn tả phong cảnh",
+                    10,
+                    34,
+                    5,
+                    (
+                        "Phân biệt từ đồng nghĩa, từ đa nghĩa (nghĩa gốc, nghĩa chuyển) và "
+                        "rèn viết bài văn tả phong cảnh."
+                    ),
+                    (
+                        "Phân biệt được nghĩa gốc, nghĩa chuyển của từ đa nghĩa trong ngữ cảnh.",
+                        "Viết được bài văn tả phong cảnh có cảm xúc và biện pháp tu từ.",
+                    ),
+                ),
+                (
+                    "Chủ điểm: Nghệ thuật muôn màu",
+                    "Bài 17: Kết từ, đại từ và viết báo cáo công việc",
+                    76,
+                    94,
+                    4,
+                    (
+                        "Sử dụng đại từ, kết từ liên kết câu và viết đoạn văn giới thiệu một "
+                        "nhân vật văn học."
+                    ),
+                    ("Nhận biết và dùng đúng đại từ, kết từ để liên kết câu văn.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-viet-5-t2",
+            "Tiếng Việt",
+            "5",
+            "Tập hai",
+            152,
+            [
+                (
+                    "Chủ điểm: Vẻ đẹp cuộc sống",
+                    "Bài 1: Câu đơn, câu ghép và cách nối các vế câu ghép",
+                    10,
+                    34,
+                    5,
+                    (
+                        "Phân biệt câu đơn, câu ghép; sử dụng cặp kết từ biểu thị quan hệ "
+                        "nguyên nhân, điều kiện, tương phản."
+                    ),
+                    (
+                        "Xác định và đặt được câu ghép nối bằng kết từ hoặc dấu phẩy.",
+                        (
+                            "Viết được bài văn tả người có chi tiết tiêu biểu về ngoại hình, "
+                            "tính cách."
+                        ),
+                    ),
+                ),
+                (
+                    "Chủ điểm: Chung sống hòa bình",
+                    "Bài 18: Liên kết câu bằng lặp từ ngữ, thay thế từ ngữ và viết đoạn nêu ý kiến",
+                    78,
+                    98,
+                    4,
+                    (
+                        "Vận dụng phép lặp, phép thế để liên kết câu trong đoạn và viết đoạn "
+                        "văn bày tỏ thái độ trước một hiện tượng."
+                    ),
+                    ("Nhận biết và vận dụng được phép liên kết câu trong đoạn văn.",),
+                ),
+            ],
+        ),
+        # ==================== NGỮ VĂN 6–12 ====================
+        (
+            "kntt-ngu-van-6-t1",
+            "Ngữ văn",
+            "6",
+            "Tập một",
+            132,
+            [
+                (
+                    "Bài 1: Tôi và các bạn",
+                    (
+                        "Đọc hiểu truyện đồng thoại, từ đơn, từ phức và viết bài văn kể lại "
+                        "một trải nghiệm"
+                    ),
+                    10,
+                    35,
+                    5,
+                    (
+                        "Tìm hiểu đặc điểm nhân vật, lời kể ngôi thứ nhất trong truyện đồng "
+                        "thoại; phân biệt từ ghép, từ láy."
+                    ),
+                    (
+                        (
+                            "Nhận biết được người kể chuyện ngôi thứ nhất, chi tiết tiêu biểu "
+                            "trong truyện đồng thoại."
+                        ),
+                        "Viết được bài văn kể lại một trải nghiệm đáng nhớ của bản thân.",
+                    ),
+                ),
+                (
+                    "Bài 2: Gõ cửa trái tim",
+                    "Đọc hiểu thơ có yếu tố tự sự, miêu tả và biện pháp ẩn dụ",
+                    36,
+                    56,
+                    4,
+                    (
+                        "Phân tích hình ảnh, cảm xúc trong thơ thiếu nhi, nhận diện biện pháp "
+                        "ẩn dụ và viết đoạn ghi lại cảm xúc về bài thơ."
+                    ),
+                    (
+                        "Nhận biết được biện pháp tu từ ẩn dụ và tác dụng biểu đạt.",
+                        (
+                            "Viết được đoạn văn ghi lại cảm xúc về một bài thơ có yếu tố tự "
+                            "sự, miêu tả."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 3: Yêu thương và chia sẻ",
+                    "Đọc hiểu truyện ngắn, cụm danh từ, cụm động từ và kể lại trải nghiệm",
+                    57,
+                    82,
+                    5,
+                    (
+                        "Phân tích tình huống và nhân vật truyện ngắn; mở rộng thành phần "
+                        "chính của câu bằng cụm từ."
+                    ),
+                    (
+                        "Phân tích được đặc điểm nhân vật qua hành động, lời nói, suy nghĩ.",
+                        "Vận dụng cụm danh từ, cụm động từ để mở rộng câu văn.",
+                    ),
+                ),
+                (
+                    "Bài 5: Những nẻo đường xứ sở",
+                    "Đọc hiểu kí (du kí) và viết bài văn tả cảnh sinh hoạt",
+                    105,
+                    128,
+                    4,
+                    (
+                        "Nhận biết đặc trưng thể loại du kí, phép ẩn dụ, hoán dụ và kĩ năng "
+                        "viết bài văn tả cảnh sinh hoạt."
+                    ),
+                    (
+                        "Nhận biết được sự kết hợp giữa tự sự và miêu tả trong văn bản du kí.",
+                        "Viết được bài văn tả cảnh sinh hoạt giàu chi tiết quan sát.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-6-t2",
+            "Ngữ văn",
+            "6",
+            "Tập hai",
+            124,
+            [
+                (
+                    "Bài 6: Chuyện kể về những người anh hùng",
+                    "Đọc hiểu truyền thuyết và viết bài văn thuyết minh thuật lại một sự kiện",
+                    6,
+                    30,
+                    5,
+                    (
+                        "Khám phá yếu tố kì ảo, cốt lõi lịch sử trong truyền thuyết dân gian "
+                        "và kĩ năng kể lại truyền thuyết."
+                    ),
+                    (
+                        (
+                            "Nhận biết được đặc trưng cốt truyện, nhân vật anh hùng và yếu tố "
+                            "kì ảo trong truyền thuyết."
+                        ),
+                        "Viết được bài văn thuyết minh thuật lại một lễ hội hoặc sự kiện.",
+                    ),
+                ),
+                (
+                    "Bài 7: Thế giới cổ tích",
+                    "Đọc hiểu truyện cổ tích và đóng vai nhân vật kể lại câu chuyện",
+                    31,
+                    52,
+                    4,
+                    "Phân tích kiểu nhân vật, motip kì ảo và ước mơ công lí trong truyện cổ tích.",
+                    (
+                        "Nêu được chủ đề và bài học rút ra từ truyện cổ tích.",
+                        "Viết được bài văn đóng vai nhân vật kể lại một truyện cổ tích.",
+                    ),
+                ),
+                (
+                    "Bài 8: Khác biệt và gần gũi",
+                    "Đọc hiểu văn bản nghị luận xã hội và viết bài văn trình bày ý kiến",
+                    53,
+                    76,
+                    5,
+                    (
+                        "Nhận diện vấn đề nghị luận, ý kiến, lí lẽ và bằng chứng trong văn "
+                        "bản nghị luận ngắn."
+                    ),
+                    (
+                        "Xác định được ý kiến, lí lẽ, bằng chứng trong văn bản nghị luận.",
+                        "Viết được bài văn trình bày ý kiến về một hiện tượng đời sống.",
+                    ),
+                ),
+                (
+                    "Bài 9: Trái Đất – ngôi nhà chung",
+                    "Đọc hiểu văn bản thông tin đa phương thức và viết biên bản",
+                    77,
+                    102,
+                    4,
+                    (
+                        "Đọc hiểu văn bản thông tin kết hợp nhan đề, sa-pô, hình ảnh, số liệu "
+                        "và kĩ năng tóm tắt bằng sơ đồ."
+                    ),
+                    (
+                        (
+                            "Nhận biết được tác dụng của phương tiện phi ngôn ngữ trong văn "
+                            "bản thông tin."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-7-t1",
+            "Ngữ văn",
+            "7",
+            "Tập một",
+            136,
+            [
+                (
+                    "Bài 1: Bầu trời tuổi thơ",
+                    "Đọc hiểu truyện hiện đại, mở rộng trạng ngữ và tóm tắt văn bản",
+                    10,
+                    34,
+                    5,
+                    (
+                        "Phân tích cốt truyện, tính cách nhân vật và thực hành tóm tắt văn "
+                        "bản theo yêu cầu độ dài."
+                    ),
+                    (
+                        "Nhận biết được đề tài, chi tiết tiêu biểu và tính cách nhân vật.",
+                        "Tóm tắt được văn bản tự sự theo các mức độ dài ngắn khác nhau.",
+                    ),
+                ),
+                (
+                    "Bài 2: Khúc nhạc tâm hồn",
+                    "Đọc hiểu thơ bốn chữ, năm chữ và biện pháp tu từ nói giảm nói tránh",
+                    35,
+                    56,
+                    4,
+                    (
+                        "Khảo sát vần, nhịp, hình ảnh trong thơ bốn chữ, năm chữ và viết đoạn "
+                        "ghi lại cảm xúc sau khi đọc thơ."
+                    ),
+                    ("Phân tích được vần, nhịp và cảm xúc chủ đạo trong thơ bốn chữ, năm chữ.",),
+                ),
+                (
+                    "Bài 3: Cội nguồn yêu thương",
+                    (
+                        "Đọc hiểu truyện ngắn, số từ, phó từ và viết bài văn phân tích đặc "
+                        "điểm nhân vật"
+                    ),
+                    57,
+                    82,
+                    5,
+                    (
+                        "Nhận biết vai trò của số từ, phó từ và cấu trúc bài văn phân tích "
+                        "nhân vật trong tác phẩm văn học."
+                    ),
+                    (
+                        (
+                            "Viết được bài văn phân tích đặc điểm nhân vật dựa trên bằng "
+                            "chứng từ tác phẩm."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-7-t2",
+            "Ngữ văn",
+            "7",
+            "Tập hai",
+            128,
+            [
+                (
+                    "Bài 6: Bài học cuộc sống",
+                    (
+                        "Đọc hiểu truyện ngụ ngôn, tục ngữ và viết bài văn nghị luận về một "
+                        "vấn đề đời sống"
+                    ),
+                    6,
+                    30,
+                    5,
+                    (
+                        "Giải mã bài học triết lí trong truyện ngụ ngôn, tục ngữ; rèn kĩ năng "
+                        "viết bài nghị luận trình bày tán thành/phản đối."
+                    ),
+                    (
+                        (
+                            "Nhận biết được đặc điểm hình thức và bài học ứng xử của truyện "
+                            "ngụ ngôn, tục ngữ."
+                        ),
+                        "Viết được bài văn nghị luận về một vấn đề trong đời sống.",
+                    ),
+                ),
+                (
+                    "Bài 7: Thế giới viễn tưởng",
+                    "Đọc hiểu truyện khoa học viễn tưởng và viết bài văn kể lại sự việc có thật",
+                    31,
+                    54,
+                    4,
+                    (
+                        "Phân tích không gian, thời gian, cốt truyện giàu trí tưởng tượng "
+                        "khoa học và biện pháp liên kết đoạn."
+                    ),
+                    (
+                        (
+                            "Nhận biết được đề tài, sự kiện, tình huống trong truyện khoa học "
+                            "viễn tưởng."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 9: Hòa điệu với tự nhiên",
+                    (
+                        "Đọc hiểu văn bản thông tin giới thiệu quy tắc, luật lệ và viết bài "
+                        "thuyết minh"
+                    ),
+                    76,
+                    102,
+                    4,
+                    (
+                        "Khai thác cấu trúc văn bản thông tin giải thích hiện tượng tự nhiên "
+                        "và viết bài thuyết minh quy tắc hoạt động."
+                    ),
+                    (
+                        (
+                            "Viết được bài văn thuyết minh về quy tắc hoặc luật lệ trong một "
+                            "trò chơi, hoạt động."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-8-t1",
+            "Ngữ văn",
+            "8",
+            "Tập một",
+            136,
+            [
+                (
+                    "Bài 1: Câu chuyện của lịch sử",
+                    (
+                        "Đọc hiểu truyện lịch sử và viết bài văn kể lại một chuyến đi hoặc "
+                        "hoạt động xã hội"
+                    ),
+                    10,
+                    34,
+                    5,
+                    (
+                        "Phân tích bối cảnh lịch sử, nhân vật và cốt truyện đa tuyến trong "
+                        "truyện lịch sử; nhận biết biệt ngữ xã hội."
+                    ),
+                    (
+                        (
+                            "Nhận biết được đặc trưng bối cảnh, cốt truyện và nhân vật của "
+                            "truyện lịch sử."
+                        ),
+                        (
+                            "Viết được bài văn kể lại một chuyến đi có kết hợp yếu tố miêu "
+                            "tả, biểu cảm."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 2: Vẻ đẹp cổ điển",
+                    "Đọc hiểu thơ thất ngôn bát cú và tứ tuyệt Đường luật",
+                    35,
+                    56,
+                    4,
+                    (
+                        "Phân tích bố cục, niêm luật, đối và nghệ thuật tả cảnh ngụ tình "
+                        "trong thơ Đường luật; phép đảo ngữ."
+                    ),
+                    (
+                        (
+                            "Nhận biết được bố cục, vần, nhịp, phép đối trong thơ thất ngôn "
+                            "bát cú và tứ tuyệt."
+                        ),
+                        "Viết được bài văn phân tích một bài thơ Đường luật.",
+                    ),
+                ),
+                (
+                    "Bài 3: Lời sông núi",
+                    "Đọc hiểu văn bản nghị luận trung đại và hiện đại",
+                    57,
+                    82,
+                    5,
+                    (
+                        "Phân tích mối quan hệ giữa luận đề, luận điểm, lí lẽ và bằng chứng; "
+                        "nhận biết đoạn văn diễn dịch, quy nạp."
+                    ),
+                    (
+                        (
+                            "Phân tích được luận đề, luận điểm, lí lẽ và bằng chứng trong văn "
+                            "bản nghị luận."
+                        ),
+                        "Viết được bài văn nghị luận về một vấn đề của đời sống.",
+                    ),
+                ),
+                (
+                    "Bài 5: Những câu chuyện hài",
+                    "Đọc hiểu hài kịch, truyện cười và viết bài nghị luận về vấn đề đời sống",
+                    103,
+                    128,
+                    4,
+                    (
+                        "Nhận diện xung đột kịch, thủ pháp trào phúng, câu hỏi tu từ và nghĩa "
+                        "hàm ẩn trong đối thoại."
+                    ),
+                    ("Phân tích được xung đột, hành động và tiếng cười phê phán trong hài kịch.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-8-t2",
+            "Ngữ văn",
+            "8",
+            "Tập hai",
+            132,
+            [
+                (
+                    "Bài 6: Chân dung cuộc sống",
+                    "Đọc hiểu truyện ngắn hiện đại và viết bài văn phân tích một tác phẩm truyện",
+                    6,
+                    32,
+                    5,
+                    (
+                        "Phân tích cốt truyện, nhân vật, chi tiết nghệ thuật và trợ từ, thán "
+                        "từ trong lời thoại nhân vật."
+                    ),
+                    (
+                        (
+                            "Viết được bài văn phân tích chủ đề và nét đặc sắc nghệ thuật của "
+                            "một tác phẩm truyện."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 7: Tin yêu và ước vọng",
+                    "Đọc hiểu thơ tự do và viết bài phân tích một tác phẩm thơ",
+                    33,
+                    56,
+                    4,
+                    (
+                        "Phân tích mạch cảm xúc, hình ảnh, nhịp điệu trong thơ tự do và thành "
+                        "phần biệt lập trong câu."
+                    ),
+                    ("Nhận biết được đặc điểm hình thức và cảm hứng chủ đạo của thơ tự do.",),
+                ),
+                (
+                    "Bài 9: Hôm nay và ngày mai",
+                    (
+                        "Đọc hiểu văn bản thông tin giải thích hiện tượng tự nhiên và viết "
+                        "văn bản thuyết minh"
+                    ),
+                    78,
+                    106,
+                    4,
+                    (
+                        "Đọc hiểu văn bản thông tin giải thích nguyên nhân - kết quả và cách "
+                        "trình bày thông tin khách quan."
+                    ),
+                    (
+                        (
+                            "Viết được văn bản thuyết minh giải thích một hiện tượng tự nhiên "
+                            "hoặc giới thiệu cuốn sách."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-9-t1",
+            "Ngữ văn",
+            "9",
+            "Tập một",
+            144,
+            [
+                (
+                    "Bài 1: Thế giới kì ảo",
+                    (
+                        "Đọc hiểu truyện truyền kì và viết bài văn nghị luận về một vấn đề "
+                        "cần giải quyết"
+                    ),
+                    10,
+                    36,
+                    5,
+                    (
+                        "Phân tích không gian, thời gian, yếu tố kì ảo trong truyện truyền "
+                        "kì; nhận biết điển tích, điển cố."
+                    ),
+                    (
+                        (
+                            "Phân tích được vai trò của yếu tố kì ảo và thông điệp trong "
+                            "truyện truyền kì."
+                        ),
+                        (
+                            "Viết được bài văn nghị luận đề xuất giải pháp khả thi cho một "
+                            "vấn đề đời sống."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 2: Những cung bậc tâm trạng",
+                    "Đọc hiểu thơ song thất lục bát và viết bài phân tích tác phẩm văn học (thơ)",
+                    37,
+                    60,
+                    4,
+                    (
+                        "Nhận diện vần, nhịp, thanh điệu đặc trưng của thể thơ song thất lục "
+                        "bát và biện pháp tu từ chơi chữ, điệp thanh."
+                    ),
+                    (
+                        (
+                            "Phân tích được nét đặc sắc nghệ thuật và cảm xúc trong thơ song "
+                            "thất lục bát."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 3: Hồn nước nằm trong tiếng mẹ cha",
+                    "Đọc hiểu truyện thơ Nôm và chữ viết tiếng Việt",
+                    61,
+                    86,
+                    5,
+                    (
+                        "Khảo sát cốt truyện, nhân vật, nghệ thuật tả người, tả cảnh trong "
+                        "truyện thơ Nôm và cách dẫn trực tiếp, gián tiếp."
+                    ),
+                    (
+                        (
+                            "Phân tích được nội dung chủ đề và nghệ thuật xây dựng nhân vật "
+                            "trong truyện thơ Nôm."
+                        ),
+                        "Phân biệt và chuyển đổi được lời dẫn trực tiếp sang lời dẫn gián tiếp.",
+                    ),
+                ),
+                (
+                    "Bài 5: Đối diện với nỗi đau",
+                    "Đọc hiểu bi kịch và viết bài văn nghị luận phân tích tác phẩm kịch",
+                    110,
+                    136,
+                    4,
+                    (
+                        "Nhận diện xung đột bi kịch, hành động, lời thoại và hiệu ứng thanh "
+                        "lọc cảm xúc."
+                    ),
+                    ("Phân tích được xung đột và nhân vật bi kịch trong văn bản kịch.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-9-t2",
+            "Ngữ văn",
+            "9",
+            "Tập hai",
+            140,
+            [
+                (
+                    "Bài 6: Giải mã những bí mật",
+                    "Đọc hiểu truyện trinh thám và viết truyện kể sáng tạo",
+                    6,
+                    32,
+                    5,
+                    (
+                        "Phân tích đầu mối, suy luận, không gian, thời gian trong truyện "
+                        "trinh thám và câu rút gọn, câu đặc biệt."
+                    ),
+                    (
+                        (
+                            "Nhận biết được cốt truyện, chi tiết manh mối và nghệ thuật tạo "
+                            "kịch tính trong truyện trinh thám."
+                        ),
+                        "Viết được một truyện kể sáng tạo có chi tiết miêu tả và biểu cảm.",
+                    ),
+                ),
+                (
+                    "Bài 7: Hồn thơ muôn điệu",
+                    "Đọc hiểu thơ tám chữ, thơ tự do và viết đoạn văn ghi lại cảm nghĩ",
+                    33,
+                    56,
+                    4,
+                    (
+                        "Phân tích kết cấu, hình ảnh biểu tượng, nhịp điệu thơ hiện đại và "
+                        "viết bài nghị luận phân tích bài thơ."
+                    ),
+                    ("Phân tích được giá trị thẩm mĩ của hình ảnh, ngôn ngữ trong thơ hiện đại.",),
+                ),
+                (
+                    "Bài 8: Tiếng nói của lương tri",
+                    "Đọc hiểu văn bản nghị luận xã hội và viết bài nghị luận phân tích tác phẩm",
+                    57,
+                    84,
+                    5,
+                    (
+                        "Đánh giá sức thuyết phục của hệ thống luận điểm, lí lẽ và bằng chứng "
+                        "trong văn bản nghị luận."
+                    ),
+                    (
+                        (
+                            "Viết được bài văn nghị luận trình bày quan điểm thuyết phục về "
+                            "vấn đề xã hội."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-10-t1",
+            "Ngữ văn",
+            "10",
+            "Tập một",
+            144,
+            [
+                (
+                    "Bài 1: Sức hấp dẫn của truyện kể",
+                    (
+                        "Đọc hiểu thần thoại, truyện ngắn và viết văn bản nghị luận phân tích "
+                        "tác phẩm truyện"
+                    ),
+                    10,
+                    38,
+                    5,
+                    (
+                        "Khảo sát không gian, thời gian thần thoại, ngôi kể, điểm nhìn và "
+                        "nghệ thuật xây dựng nhân vật truyện kể."
+                    ),
+                    (
+                        (
+                            "Phân tích được cốt truyện, nhân vật, ngôi kể và điểm nhìn trong "
+                            "văn bản truyện."
+                        ),
+                        (
+                            "Viết được văn bản nghị luận phân tích, đánh giá chủ đề và nghệ "
+                            "thuật tác phẩm truyện."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 2: Vẻ đẹp của thơ ca",
+                    "Đọc hiểu thơ Đường luật, thơ Hai-cư, thơ tự do và phân tích bài thơ",
+                    39,
+                    68,
+                    5,
+                    (
+                        "Nhận diện nhân vật trữ tình, cảm hứng chủ đạo, hình ảnh, ngôn từ cô "
+                        "đọng và sửa lỗi dùng từ."
+                    ),
+                    (
+                        "Phân tích được giá trị thẩm mĩ của từ ngữ, hình ảnh, vần, nhịp trong thơ.",
+                        "Viết được bài nghị luận phân tích, đánh giá một tác phẩm thơ.",
+                    ),
+                ),
+                (
+                    "Bài 3: Nghệ thuật thuyết phục trong văn nghị luận",
+                    "Đọc hiểu văn bản nghị luận xã hội, văn học và viết bài luận thuyết phục",
+                    69,
+                    98,
+                    5,
+                    (
+                        "Đánh giá cách triển khai luận đề, luận điểm, lí lẽ, bằng chứng và "
+                        "sửa lỗi viết đoạn văn."
+                    ),
+                    (
+                        (
+                            "Viết được bài luận thuyết phục người khác từ bỏ một thói quen "
+                            "hay quan niệm."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 4: Sức sống của sử thi",
+                    "Đọc hiểu sử thi anh hùng và viết báo cáo nghiên cứu có trích dẫn",
+                    99,
+                    124,
+                    4,
+                    (
+                        "Phân tích không gian cộng đồng, nhân vật anh hùng sử thi và biện "
+                        "pháp so sánh phóng đại."
+                    ),
+                    (
+                        (
+                            "Nhận biết được đặc trưng thể loại sử thi và viết báo cáo nghiên "
+                            "cứu có chú thích."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-10-t2",
+            "Ngữ văn",
+            "10",
+            "Tập hai",
+            136,
+            [
+                (
+                    "Bài 6: Nguyễn Trãi – 'Dành còn để trợ dân này'",
+                    "Đọc hiểu văn chính luận, thơ Nôm Nguyễn Trãi và viết văn bản nghị luận xã hội",
+                    6,
+                    38,
+                    5,
+                    (
+                        "Tìm hiểu tư tưởng nhân nghĩa, nghệ thuật chính luận và vẻ đẹp tâm "
+                        "hồn trong thơ văn Nguyễn Trãi."
+                    ),
+                    (
+                        (
+                            "Phân tích được tư tưởng nhân nghĩa và nghệ thuật lập luận trong "
+                            "văn chính luận trung đại."
+                        ),
+                        "Viết được bài văn nghị luận về một vấn đề xã hội có lập luận chặt chẽ.",
+                    ),
+                ),
+                (
+                    "Bài 7: Quyền năng của người kể chuyện",
+                    "Đọc hiểu truyện ngắn hiện đại và viết bài phân tích một tác phẩm truyện",
+                    39,
+                    68,
+                    5,
+                    (
+                        "Khảo sát vai trò người kể chuyện toàn tri, hạn tri, lời người kể "
+                        "chuyện và lời nhân vật."
+                    ),
+                    ("Phân tích được sự dịch chuyển điểm nhìn và quyền năng của người kể chuyện.",),
+                ),
+                (
+                    "Bài 8: Thế giới đa dạng của thông tin",
+                    "Đọc hiểu văn bản thông tin tổng hợp và viết bản nội quy, hướng dẫn",
+                    69,
+                    98,
+                    4,
+                    (
+                        "Đánh giá tính cập nhật, khách quan của dữ liệu và phương tiện phi "
+                        "ngôn ngữ trong văn bản thông tin."
+                    ),
+                    (
+                        (
+                            "Phân tích được cách trình bày dữ liệu, biểu đồ và thông điệp "
+                            "trong văn bản thông tin."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-10-cd",
+            "Ngữ văn",
+            "10",
+            "Chuyên đề học tập",
+            88,
+            [
+                (
+                    "Chuyên đề 1: Tập nghiên cứu và viết báo cáo về một vấn đề văn học dân gian",
+                    "Quy trình chọn đề tài, thu thập tư liệu và viết báo cáo văn học dân gian",
+                    5,
+                    32,
+                    5,
+                    (
+                        "Hướng dẫn phương pháp điền dã, phân loại tư liệu và trích dẫn chuẩn "
+                        "trong nghiên cứu văn học dân gian."
+                    ),
+                    (
+                        (
+                            "Viết và thuyết trình được báo cáo nghiên cứu về một vấn đề văn "
+                            "học dân gian."
+                        ),
+                    ),
+                ),
+                (
+                    "Chuyên đề 2: Sân khấu hóa tác phẩm văn học",
+                    "Chuyển thể kịch bản và dàn dựng trích đoạn tác phẩm văn học",
+                    33,
+                    58,
+                    5,
+                    (
+                        "Chuyển hóa cốt truyện, lời thoại văn học sang kịch bản sân khấu và "
+                        "trình diễn."
+                    ),
+                    ("Xây dựng được kịch bản chuyển thể từ một tác phẩm văn học đã học.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-11-t1",
+            "Ngữ văn",
+            "11",
+            "Tập một",
+            148,
+            [
+                (
+                    "Bài 1: Câu chuyện và điểm nhìn trong truyện kể",
+                    "Đọc hiểu truyện ngắn hiện đại và viết văn bản nghị luận về tác phẩm truyện",
+                    10,
+                    40,
+                    5,
+                    (
+                        "Phân tích sự kết hợp giữa câu chuyện, truyện kể, điểm nhìn trần "
+                        "thuật và đặc điểm ngôn ngữ nói, viết."
+                    ),
+                    (
+                        (
+                            "Phân tích được nghệ thuật tổ chức điểm nhìn và lời trần thuật "
+                            "trong truyện ngắn."
+                        ),
+                        (
+                            "Viết được bài nghị luận phân tích giá trị nội dung và nghệ thuật "
+                            "tác phẩm truyện."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 2: Cấu tứ và hình ảnh trong thơ trữ tình",
+                    "Đọc hiểu thơ trữ tình có yếu tố tượng trưng và viết bài phân tích thơ",
+                    41,
+                    72,
+                    5,
+                    (
+                        "Nhận diện cấu tứ độc đáo, hình ảnh biểu tượng, yếu tố tượng trưng "
+                        "trong thơ hiện đại."
+                    ),
+                    (
+                        (
+                            "Phân tích được cấu tứ, hình ảnh và vai trò của yếu tố tượng "
+                            "trưng trong thơ trữ tình."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 3: Cấu trúc của văn bản nghị luận",
+                    "Đọc hiểu văn bản nghị luận xã hội, văn học và viết bài nghị luận xã hội",
+                    73,
+                    102,
+                    5,
+                    (
+                        "Phân tích cấu trúc lập luận tầng bậc, yếu tố biểu cảm và cách phản "
+                        "biện trong văn bản nghị luận."
+                    ),
+                    ("Viết được bài văn nghị luận về một vấn đề xã hội có lập luận đa chiều.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-11-t2",
+            "Ngữ văn",
+            "11",
+            "Tập hai",
+            140,
+            [
+                (
+                    "Bài 6: Nguyễn Du – 'Những điều trông thấy mà đau đớn lòng'",
+                    (
+                        "Đọc hiểu Truyện Kiều, thơ chữ Hán Nguyễn Du và viết bài thuyết minh "
+                        "tác phẩm văn học"
+                    ),
+                    6,
+                    38,
+                    5,
+                    (
+                        "Khảo sát chủ nghĩa nhân đạo, nghệ thuật miêu tả nội tâm và ngôn ngữ "
+                        "văn học trong Truyện Kiều."
+                    ),
+                    (
+                        "Phân tích được giá trị nhân đạo và bút pháp nghệ thuật của Nguyễn Du.",
+                        "Viết được văn bản thuyết minh về một tác phẩm văn học.",
+                    ),
+                ),
+                (
+                    "Bài 7: Ghi chép và tưởng tượng trong kí",
+                    (
+                        "Đọc hiểu tùy bút, tản văn, truyện kí và viết bài thuyết minh về một "
+                        "sự vật, hiện tượng"
+                    ),
+                    39,
+                    68,
+                    5,
+                    (
+                        "Nhận diện sự đan xen giữa tính xác thực và cảm xúc chủ quan, cái tôi "
+                        "trữ tình trong kí."
+                    ),
+                    (
+                        (
+                            "Phân tích được sự kết hợp giữa tự sự, trữ tình và cái tôi tác "
+                            "giả trong tùy bút, tản văn."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 8: Cấu trúc của văn bản thông tin",
+                    "Đọc hiểu văn bản thông tin tổng hợp và viết báo cáo nghiên cứu",
+                    69,
+                    98,
+                    4,
+                    (
+                        "Phân tích bố cục, dữ liệu sơ cấp/thứ cấp và quan điểm người viết "
+                        "trong văn bản thông tin."
+                    ),
+                    ("Đánh giá được độ tin cậy thông tin và viết báo cáo nghiên cứu khoa học.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-11-cd",
+            "Ngữ văn",
+            "11",
+            "Chuyên đề học tập",
+            88,
+            [
+                (
+                    (
+                        "Chuyên đề 1: Tập nghiên cứu và viết báo cáo về một vấn đề văn học "
+                        "trung đại Việt Nam"
+                    ),
+                    "Phương pháp nghiên cứu thi pháp và giá trị văn học trung đại",
+                    5,
+                    34,
+                    5,
+                    (
+                        "Tìm hiểu đặc trưng thể loại, quy phạm thẩm mĩ và cách lập hồ sơ tư "
+                        "liệu văn học trung đại."
+                    ),
+                    (
+                        (
+                            "Viết được báo cáo nghiên cứu có luận điểm rõ ràng về một vấn đề "
+                            "văn học trung đại."
+                        ),
+                    ),
+                ),
+                (
+                    "Chuyên đề 2: Tìm hiểu ngôn ngữ trong đời sống xã hội hiện đại",
+                    "Bản chất xã hội của ngôn ngữ và các yếu tố mới của tiếng Việt",
+                    35,
+                    62,
+                    5,
+                    (
+                        "Khảo sát hiện tượng từ ngữ mới, ngôn ngữ truyền thông số và giữ gìn "
+                        "sự trong sáng của tiếng Việt."
+                    ),
+                    ("Phân tích được tác động của truyền thông hiện đại đến ngôn ngữ giao tiếp.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-12-t1",
+            "Ngữ văn",
+            "12",
+            "Tập một",
+            156,
+            [
+                (
+                    "Bài 1: Khả năng lớn lao của tiểu thuyết",
+                    (
+                        "Đọc hiểu tiểu thuyết hiện đại và viết bài nghị luận so sánh hai tác "
+                        "phẩm truyện"
+                    ),
+                    10,
+                    42,
+                    5,
+                    (
+                        "Phân tích đặc trưng tiểu thuyết hiện đại, giọng điệu châm biếm, đa "
+                        "thanh và biện pháp nói mỉa, nghịch ngữ."
+                    ),
+                    (
+                        (
+                            "Phân tích được cốt truyện, nhân vật, điểm nhìn và ngôn ngữ tiểu "
+                            "thuyết hiện đại."
+                        ),
+                        "Viết được bài văn nghị luận so sánh, đánh giá hai tác phẩm truyện.",
+                    ),
+                ),
+                (
+                    "Bài 2: Những thế giới thơ",
+                    "Đọc hiểu thơ có yếu tố lãng mạn, siêu thực và so sánh hai tác phẩm thơ",
+                    43,
+                    74,
+                    5,
+                    (
+                        "Khảo sát phong cách cổ điển, lãng mạn, yếu tố siêu thực trong thơ và "
+                        "mở rộng hình ảnh biểu tượng."
+                    ),
+                    (
+                        (
+                            "Phân tích được biểu hiện của yếu tố lãng mạn và siêu thực trong "
+                            "thơ trữ tình."
+                        ),
+                        "Viết được bài nghị luận so sánh, đánh giá hai tác phẩm thơ.",
+                    ),
+                ),
+                (
+                    "Bài 3: Lập luận trong văn bản nghị luận",
+                    (
+                        "Đọc hiểu văn bản nghị luận xã hội, văn học và viết bài nghị luận "
+                        "liên quan đến tuổi trẻ"
+                    ),
+                    75,
+                    106,
+                    5,
+                    (
+                        "Đánh giá nghệ thuật lập luận, dẫn chứng xác thực, thao tác bác bỏ và "
+                        "bác lập trong văn nghị luận."
+                    ),
+                    ("Viết được bài văn nghị luận về một vấn đề liên quan đến tuổi trẻ hiện nay.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-12-t2",
+            "Ngữ văn",
+            "12",
+            "Tập hai",
+            148,
+            [
+                (
+                    "Bài 6: Hồ Chí Minh – 'Văn hóa phải soi đường cho quốc dân đi'",
+                    "Đọc hiểu văn chính luận, truyện ngắn và thơ Hồ Chí Minh",
+                    6,
+                    40,
+                    5,
+                    (
+                        "Phân tích phong cách nghệ thuật đa dạng, lập luận sắc bén và tinh "
+                        "thần lạc quan trong sáng tác Hồ Chí Minh."
+                    ),
+                    (
+                        (
+                            "Phân tích được phong cách nghệ thuật và giá trị tư tưởng trong "
+                            "tác phẩm Hồ Chí Minh."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 7: Sự thật trong tác phẩm kí",
+                    "Đọc hiểu phóng sự, hồi kí, nhật kí và viết thư trao đổi công việc",
+                    41,
+                    72,
+                    5,
+                    (
+                        "Nhận diện tính phi hư cấu, chi tiết xác thực và nghệ thuật kể chuyện "
+                        "trong phóng sự, hồi kí."
+                    ),
+                    (
+                        (
+                            "Phân tích được sự kết hợp giữa tính phi hư cấu và thủ pháp nghệ "
+                            "thuật trong kí."
+                        ),
+                    ),
+                ),
+                (
+                    "Bài 8: Dữ liệu trong văn bản thông tin",
+                    "Đọc hiểu văn bản thông tin hiện đại và viết báo cáo dự án",
+                    73,
+                    104,
+                    4,
+                    (
+                        "Phân biệt dữ liệu sơ cấp, thứ cấp, độ tin cậy nguồn tin và trình bày "
+                        "thông tin khoa học."
+                    ),
+                    (
+                        (
+                            "Đánh giá được tính chính xác, khách quan của dữ liệu trong văn "
+                            "bản thông tin."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-ngu-van-12-cd",
+            "Ngữ văn",
+            "12",
+            "Chuyên đề học tập",
+            88,
+            [
+                (
+                    "Chuyên đề 1: Tập nghiên cứu và viết báo cáo về một vấn đề văn học hiện đại",
+                    "Nghiên cứu trào lưu, tác giả và phong cách văn học hiện đại",
+                    5,
+                    34,
+                    5,
+                    (
+                        "Triển khai đề tài nghiên cứu văn học hiện đại với trích dẫn và danh "
+                        "mục tài liệu tham khảo chuẩn."
+                    ),
+                    ("Viết được báo cáo nghiên cứu hoàn chỉnh về một vấn đề văn học hiện đại.",),
+                ),
+                (
+                    "Chuyên đề 2: Tìm hiểu về một tác phẩm nghệ thuật chuyển thể từ văn học",
+                    "Phân tích sự sáng tạo giữa nguyên tác văn học và tác phẩm điện ảnh, hội họa",
+                    35,
+                    62,
+                    5,
+                    (
+                        "So sánh ngôn ngữ văn học với ngôn ngữ điện ảnh, âm nhạc trong tác "
+                        "phẩm chuyển thể."
+                    ),
+                    ("Phân tích và đánh giá được giá trị sáng tạo của một tác phẩm chuyển thể.",),
+                ),
+            ],
+        ),
+        # ==================== TIẾNG ANH 3–12 (GLOBAL SUCCESS) ====================
+        (
+            "kntt-tieng-anh-3-t1",
+            "Tiếng Anh",
+            "3",
+            "Tập một",
+            72,
+            [
+                (
+                    "Unit 1–5: Hello, Our names, Our friends, Our bodies, My hobbies",
+                    "Greetings, introductions, body parts and hobbies",
+                    10,
+                    39,
+                    6,
+                    (
+                        "Basic greetings, asking names and ages, naming body parts and "
+                        "talking about simple hobbies."
+                    ),
+                    (
+                        (
+                            "Greet and introduce oneself using 'What is your name?' and 'How "
+                            "old are you?'."
+                        ),
+                        "Identify basic body parts and express simple hobbies with 'I like...'.",
+                    ),
+                ),
+                (
+                    (
+                        "Unit 6–10: Our school, Classroom instructions, My school things, "
+                        "Colours, Break time activities"
+                    ),
+                    "School rooms, instructions, stationery, colours and games",
+                    44,
+                    71,
+                    6,
+                    (
+                        "Following classroom instructions, naming school items, colours and "
+                        "break-time activities."
+                    ),
+                    (
+                        (
+                            "Use 'Do you have...?' and 'What colour is it?' in simple "
+                            "classroom exchanges."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-3-t2",
+            "Tiếng Anh",
+            "3",
+            "Tập hai",
+            72,
+            [
+                (
+                    "Unit 11–15: My family, Jobs, My house, My bedroom, At the dining table",
+                    "Family members, occupations, rooms and food",
+                    6,
+                    35,
+                    6,
+                    "Talking about family members, jobs, rooms in a house and polite food offers.",
+                    ("Ask and answer about family jobs and rooms using 'There is / There are'.",),
+                ),
+                (
+                    (
+                        "Unit 16–20: My pets, Our toys, Playing and doing, Outdoor "
+                        "activities, At the zoo"
+                    ),
+                    "Pets, toys, present continuous actions and zoo animals",
+                    40,
+                    69,
+                    6,
+                    (
+                        "Describing ongoing activities with present continuous and naming "
+                        "common animals."
+                    ),
+                    ("Describe actions happening now with 'What are you doing? - I am...'.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-4-t1",
+            "Tiếng Anh",
+            "4",
+            "Tập một",
+            72,
+            [
+                (
+                    (
+                        "Unit 1–5: All about me, Time and daily routines, My week, My "
+                        "birthday party, Things we can do"
+                    ),
+                    "Countries, telling time, days of the week, months and abilities",
+                    10,
+                    39,
+                    6,
+                    (
+                        "Talking about nationalities, daily schedules, birthdays and "
+                        "expressing abilities with 'can'."
+                    ),
+                    (
+                        "Tell the time and describe daily routines and weekly timetables.",
+                        "Use 'can / can't' to ask and answer about abilities.",
+                    ),
+                ),
+                (
+                    (
+                        "Unit 6–10: Our school facilities, Our timetables, My favourite "
+                        "subjects, Our sports day, Our summer holidays"
+                    ),
+                    "School facilities, subjects, sports and past simple 'were'",
+                    44,
+                    71,
+                    6,
+                    (
+                        "Describing school rooms, favourite subjects and asking where someone "
+                        "was last summer."
+                    ),
+                    (
+                        (
+                            "Explain reasons for favourite subjects and use 'Were you at...?' "
+                            "accurately."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-4-t2",
+            "Tiếng Anh",
+            "4",
+            "Tập hai",
+            72,
+            [
+                (
+                    "Unit 11–15: My home, Jobs, Appearance, Daily activities, My family's weekends",
+                    "Addresses, jobs, describing appearance and weekend routines",
+                    6,
+                    35,
+                    6,
+                    (
+                        "Asking about addresses, describing people's physical appearance and "
+                        "weekend activities."
+                    ),
+                    ("Describe appearance with 'What does he/she look like?' and weekend habits.",),
+                ),
+                (
+                    (
+                        "Unit 16–20: Weather, In the city, At the shopping centre, The animal "
+                        "world, At summer camp"
+                    ),
+                    "Weather, directions, shopping prices and animals",
+                    40,
+                    69,
+                    6,
+                    (
+                        "Asking about the weather, giving simple street directions and asking "
+                        "prices with 'How much'."
+                    ),
+                    (
+                        (
+                            "Ask and answer about weather, directions and item prices in "
+                            "daily contexts."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-5-t1",
+            "Tiếng Anh",
+            "5",
+            "Tập một",
+            72,
+            [
+                (
+                    (
+                        "Unit 1–5: All about me, Our homes, My foreign friends, Our free-time "
+                        "activities, My future job"
+                    ),
+                    "Personal profiles, homes, personality adjectives, free time and future jobs",
+                    10,
+                    39,
+                    6,
+                    (
+                        "Describing personality, frequency of hobbies and expressing future "
+                        "career wishes with 'would like to be'."
+                    ),
+                    ("Use adverbs of frequency and 'would like to be' in simple conversations.",),
+                ),
+                (
+                    (
+                        "Unit 6–10: Our school rooms, Our favourite school activities, In our "
+                        "classroom, Our outdoor activities, Our school trip"
+                    ),
+                    "Floor locations, possessions, past simple regular and irregular verbs",
+                    44,
+                    71,
+                    6,
+                    (
+                        "Asking locations in school and recounting past outdoor trips using "
+                        "past simple tense."
+                    ),
+                    ("Recount past events accurately using 'Did you...?' and past simple verbs.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-5-t2",
+            "Tiếng Anh",
+            "5",
+            "Tập hai",
+            72,
+            [
+                (
+                    (
+                        "Unit 11–15: Family time, Our Tet holiday, Our special days, Staying "
+                        "healthy, Our health"
+                    ),
+                    "Family trips, Tet plans with 'will', healthy habits and health advice",
+                    6,
+                    35,
+                    6,
+                    (
+                        "Talking about festival plans, healthy eating habits and giving "
+                        "health advice with 'should'."
+                    ),
+                    (
+                        (
+                            "Give simple health advice with 'should / shouldn't' and talk "
+                            "about future holiday plans."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Unit 16–20: Seasons and the weather, Stories for children, Means of "
+                        "transport, Places of interest, Our summer holidays"
+                    ),
+                    "Seasonal clothing, characters, transport and 'be going to' plans",
+                    40,
+                    69,
+                    6,
+                    (
+                        "Talking about means of transport, famous landmarks and summer plans "
+                        "with 'be going to'."
+                    ),
+                    ("Ask and answer about travel plans and distances using 'be going to'.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-6-t1",
+            "Tiếng Anh",
+            "6",
+            "Tập một",
+            72,
+            [
+                (
+                    "Unit 1–3: My New School, My House, My Friends",
+                    "Present simple, possessive case, prepositions of place and present continuous",
+                    6,
+                    35,
+                    6,
+                    (
+                        "Talking about school routines, describing houses and furniture, and "
+                        "describing friends' appearance and personality."
+                    ),
+                    (
+                        (
+                            "Distinguish present simple for routines and present continuous "
+                            "for current actions."
+                        ),
+                        "Use prepositions of place and possessive 's accurately.",
+                    ),
+                ),
+                (
+                    "Unit 4–6: My Neighbourhood, Natural Wonders of Viet Nam, Our Tet Holiday",
+                    (
+                        "Comparative adjectives, countable/uncountable nouns, must/mustn't "
+                        "and should/shouldn't"
+                    ),
+                    38,
+                    67,
+                    6,
+                    (
+                        "Comparing neighbourhoods, discussing Vietnamese natural wonders and "
+                        "Tet customs."
+                    ),
+                    ("Form comparative adjectives and use 'must / should' for rules and advice.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-6-t2",
+            "Tiếng Anh",
+            "6",
+            "Tập hai",
+            72,
+            [
+                (
+                    "Unit 7–9: Television, Sports and Games, Cities of the World",
+                    "Wh-questions, conjunctions, past simple, imperatives and possessive pronouns",
+                    6,
+                    35,
+                    6,
+                    (
+                        "Discussing TV programmes, sports events in the past and famous "
+                        "cities around the world."
+                    ),
+                    (
+                        (
+                            "Use past simple tense and coordinating conjunctions (and, but, "
+                            "so) accurately."
+                        ),
+                    ),
+                ),
+                (
+                    "Unit 10–12: Our Houses in the Future, Our Greener World, Robots",
+                    "Future simple 'will', might, first conditional and superlative adjectives",
+                    38,
+                    67,
+                    6,
+                    (
+                        "Predicting future homes, environmental protection with first "
+                        "conditional and comparing robots."
+                    ),
+                    ("Form first conditional sentences and superlative adjectives accurately.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-7-t1",
+            "Tiếng Anh",
+            "7",
+            "Tập một",
+            72,
+            [
+                (
+                    "Unit 1–3: Hobbies, Healthy Living, Community Service",
+                    "Verbs of liking + V-ing, simple sentences and past simple",
+                    8,
+                    37,
+                    6,
+                    (
+                        "Talking about hobbies, health tips and volunteer community "
+                        "activities in the past."
+                    ),
+                    ("Use verbs of liking + V-ing and past simple to recount volunteer work.",),
+                ),
+                (
+                    "Unit 4–6: Music and Arts, Food and Drink, A Visit to a School",
+                    (
+                        "Comparisons (like, different from, as...as), some/any/lots of and "
+                        "prepositions of time/place"
+                    ),
+                    40,
+                    69,
+                    6,
+                    "Comparing art forms, ordering traditional food and describing school visits.",
+                    (
+                        (
+                            "Use 'as...as', 'different from', quantifiers and prepositions "
+                            "'in, on, at' correctly."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-7-t2",
+            "Tiếng Anh",
+            "7",
+            "Tập hai",
+            72,
+            [
+                (
+                    "Unit 7–9: Traffic, Films, Festivals around the World",
+                    (
+                        "It indicating distance, should/shouldn't, although/however and "
+                        "Yes/No questions"
+                    ),
+                    8,
+                    37,
+                    6,
+                    (
+                        "Talking about traffic rules, reviewing films with concessive linkers "
+                        "and describing world festivals."
+                    ),
+                    ("Connect contrasting clauses with 'although / though' and 'however'.",),
+                ),
+                (
+                    (
+                        "Unit 10–12: Energy Sources, Travelling in the Future, "
+                        "English-speaking Countries"
+                    ),
+                    "Present continuous, future simple, possessive pronouns and articles a/an/the",
+                    40,
+                    69,
+                    6,
+                    (
+                        "Discussing renewable energy, future transport predictions and "
+                        "English-speaking cultures."
+                    ),
+                    ("Use articles 'a, an, the' and future simple predictions accurately.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-8-t1",
+            "Tiếng Anh",
+            "8",
+            "Tập một",
+            72,
+            [
+                (
+                    "Unit 1–3: Leisure Time, Life in the Countryside, Teenagers",
+                    "Verbs of liking + V-ing/to-V, comparative adverbs and compound sentences",
+                    8,
+                    37,
+                    6,
+                    (
+                        "Comparing rural and urban life, discussing teenage stress and "
+                        "linking clauses with coordinating/conjunctive adverbs."
+                    ),
+                    (
+                        (
+                            "Form comparative adverbs and build compound sentences with "
+                            "'however, therefore, otherwise'."
+                        ),
+                    ),
+                ),
+                (
+                    "Unit 4–6: Ethnic Groups of Viet Nam, Our Customs and Traditions, Lifestyles",
+                    (
+                        "Yes/No & Wh-questions, countable/uncountable nouns, zero article and "
+                        "first conditional with 'unless'"
+                    ),
+                    40,
+                    69,
+                    6,
+                    (
+                        "Exploring Vietnamese ethnic cultures, traditional customs and "
+                        "diverse modern lifestyles."
+                    ),
+                    ("Use zero article and first conditional with 'if / unless' accurately.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-8-t2",
+            "Tiếng Anh",
+            "8",
+            "Tập hai",
+            72,
+            [
+                (
+                    "Unit 7–9: Environmental Protection, Shopping, Natural Disasters",
+                    (
+                        "Complex sentences with adverb clauses of time, adverbs of frequency "
+                        "and past continuous"
+                    ),
+                    8,
+                    37,
+                    6,
+                    (
+                        "Discussing environmental conservation, shopping habits and "
+                        "recounting natural disasters with past continuous."
+                    ),
+                    ("Combine past simple and past continuous with 'when / while' accurately.",),
+                ),
+                (
+                    (
+                        "Unit 10–12: Communication in the Future, Science and Technology, "
+                        "Life on Other Planets"
+                    ),
+                    "Prepositions of place/time, reported speech (statements and questions)",
+                    40,
+                    69,
+                    6,
+                    (
+                        "Reporting statements and questions about technology breakthroughs "
+                        "and space exploration."
+                    ),
+                    ("Transform direct statements and questions into reported speech accurately.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-9-t1",
+            "Tiếng Anh",
+            "9",
+            "Tập một",
+            72,
+            [
+                (
+                    "Unit 1–3: Local Community, City Life, Healthy Living for Teens",
+                    (
+                        "Question words before to-infinitives, phrasal verbs, double "
+                        "comparatives and modal verbs in first conditional"
+                    ),
+                    8,
+                    37,
+                    6,
+                    (
+                        "Exploring local craft villages, city challenges and balanced "
+                        "study-health habits for teenagers."
+                    ),
+                    (
+                        (
+                            "Use 'question word + to-V', double comparatives ('the more..., "
+                            "the more...') and phrasal verbs."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Unit 4–6: Remembering the Past, Our Experiences, Vietnamese "
+                        "Lifestyle: Then and Now"
+                    ),
+                    "Past continuous, wish + past simple, present perfect and verbs + to-V / V-ing",
+                    40,
+                    69,
+                    6,
+                    (
+                        "Expressing present wishes, sharing memorable life experiences and "
+                        "contrasting lifestyles across generations."
+                    ),
+                    ("Use 'wish + past simple' and present perfect tense accurately in context.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-9-t2",
+            "Tiếng Anh",
+            "9",
+            "Tập hai",
+            72,
+            [
+                (
+                    "Unit 7–9: Natural Wonders of the World, Tourism, World Englishes",
+                    "Reported Yes/No questions, defining relative clauses (who, which, whose)",
+                    8,
+                    37,
+                    6,
+                    (
+                        "Reporting inquiries about natural wonders, planning tourism "
+                        "itineraries and exploring global varieties of English."
+                    ),
+                    ("Use defining relative clauses and reported Yes/No questions accurately.",),
+                ),
+                (
+                    "Unit 10–12: Planet Earth, Electronic Devices, Career Choices",
+                    (
+                        "Non-defining relative clauses, suggest/advise/recommend + "
+                        "V-ing/clause, adverbial clauses of concession/result/reason"
+                    ),
+                    40,
+                    69,
+                    6,
+                    (
+                        "Discussing ecosystems, digital devices and future career pathways "
+                        "with complex adverbial clauses."
+                    ),
+                    (
+                        (
+                            "Use non-defining relative clauses and 'so...that / such...that / "
+                            "although' accurately."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-10-t1",
+            "Tiếng Anh",
+            "10",
+            "Tập một",
+            64,
+            [
+                (
+                    "Unit 1–3: Family Life, Humans and the Environment, Music",
+                    (
+                        "Present simple vs. present continuous, passive voice, will vs. be "
+                        "going to, compound sentences & to-infinitives"
+                    ),
+                    8,
+                    37,
+                    6,
+                    (
+                        "Discussing household chores, reducing carbon footprints and "
+                        "exploring musical genres."
+                    ),
+                    (
+                        (
+                            "Use passive voice, future forms and compound sentences "
+                            "accurately in academic topics."
+                        ),
+                    ),
+                ),
+                (
+                    "Unit 4–5: For a Better Community, Inventions",
+                    "Past simple vs. past continuous, present perfect, gerunds and to-infinitives",
+                    42,
+                    61,
+                    5,
+                    (
+                        "Sharing community volunteer projects and evaluating modern "
+                        "technological inventions."
+                    ),
+                    (
+                        (
+                            "Distinguish gerunds and to-infinitives as subjects and objects; "
+                            "apply present perfect."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-10-t2",
+            "Tiếng Anh",
+            "10",
+            "Tập hai",
+            64,
+            [
+                (
+                    (
+                        "Unit 6–8: Gender Equality, Viet Nam and International Organisations, "
+                        "New Ways to Learn"
+                    ),
+                    "Passive voice with modals, comparatives/superlatives and relative clauses",
+                    66,
+                    95,
+                    6,
+                    (
+                        "Discussing gender equality, international cooperation and "
+                        "blended/online learning methods."
+                    ),
+                    (
+                        (
+                            "Form passive voice with modal verbs and defining/non-defining "
+                            "relative clauses."
+                        ),
+                    ),
+                ),
+                (
+                    "Unit 9–10: Protecting the Environment, Ecotourism",
+                    "Reported speech and conditional sentences type 1 and type 2",
+                    100,
+                    119,
+                    5,
+                    (
+                        "Reporting environmental viewpoints and proposing sustainable "
+                        "ecotourism solutions."
+                    ),
+                    ("Use reported speech and conditional type 1 & 2 accurately in context.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-11-t1",
+            "Tiếng Anh",
+            "11",
+            "Tập một",
+            64,
+            [
+                (
+                    "Unit 1–3: A Long and Healthy Life, The Generation Gap, Cities of the Future",
+                    (
+                        "Past simple vs. present perfect, modal verbs (must, have to, "
+                        "should), stative verbs and linking verbs"
+                    ),
+                    8,
+                    37,
+                    6,
+                    (
+                        "Analysing healthy habits, bridging generational differences and "
+                        "designing smart sustainable cities."
+                    ),
+                    (
+                        (
+                            "Distinguish past simple and present perfect; use modals of "
+                            "obligation and stative verbs."
+                        ),
+                    ),
+                ),
+                (
+                    "Unit 4–5: ASEAN and Viet Nam, Global Warming",
+                    "Gerunds as subjects and objects, present and past participle clauses",
+                    42,
+                    61,
+                    5,
+                    (
+                        "Exploring ASEAN youth programmes and analysing causes and solutions "
+                        "for global warming."
+                    ),
+                    (
+                        (
+                            "Use present and past participle clauses to condense complex "
+                            "sentences accurately."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-11-t2",
+            "Tiếng Anh",
+            "11",
+            "Tập hai",
+            64,
+            [
+                (
+                    (
+                        "Unit 6–8: Preserving Our Heritage, Education Options for "
+                        "School-Leavers, Becoming Independent"
+                    ),
+                    (
+                        "To-infinitive clauses, perfect gerunds, perfect participle clauses "
+                        "and cleft sentences"
+                    ),
+                    66,
+                    95,
+                    6,
+                    (
+                        "Discussing heritage conservation, post-secondary education pathways "
+                        "and independent life skills."
+                    ),
+                    (
+                        (
+                            "Use cleft sentences ('It is... that...') and perfect participle "
+                            "clauses accurately."
+                        ),
+                    ),
+                ),
+                (
+                    "Unit 9–10: Social Issues, The Ecosystem",
+                    "Linking words/phrases (because of, despite, in addition) and compound nouns",
+                    100,
+                    119,
+                    5,
+                    (
+                        "Addressing peer pressure, social issues and biodiversity "
+                        "conservation in ecosystems."
+                    ),
+                    (
+                        (
+                            "Use cohesive discourse markers to structure persuasive essays "
+                            "and discussions."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-12-t1",
+            "Tiếng Anh",
+            "12",
+            "Tập một",
+            72,
+            [
+                (
+                    "Unit 1–3: Life Stories We Admire, A Multicultural World, Green Living",
+                    (
+                        "Past simple & past continuous, articles, verbs with prepositions and "
+                        "relative clauses referring to a whole sentence"
+                    ),
+                    8,
+                    43,
+                    6,
+                    (
+                        "Examining inspiring biographies, cultural diversity and zero-waste "
+                        "green living practices."
+                    ),
+                    (
+                        (
+                            "Use sentential relative clauses (', which...') and academic "
+                            "verb-preposition collocations."
+                        ),
+                    ),
+                ),
+                (
+                    "Unit 4–5: Urbanisation, The World of Work",
+                    "Present perfect, double comparatives and simple/compound/complex sentences",
+                    48,
+                    71,
+                    5,
+                    (
+                        "Evaluating urbanisation trends and preparing job applications for "
+                        "the modern workplace."
+                    ),
+                    (
+                        (
+                            "Apply double comparatives and varied sentence structures in "
+                            "academic writing."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tieng-anh-12-t2",
+            "Tiếng Anh",
+            "12",
+            "Tập hai",
+            72,
+            [
+                (
+                    (
+                        "Unit 6–8: Artificial Intelligence, The World of Mass Media, Wildlife "
+                        "Conservation"
+                    ),
+                    (
+                        "Active & passive causatives (have/get something done), adverbial "
+                        "clauses of manner/result/condition/comparison"
+                    ),
+                    76,
+                    111,
+                    6,
+                    (
+                        "Evaluating AI applications, digital media literacy and endangered "
+                        "wildlife protection."
+                    ),
+                    ("Use causative structures and complex adverbial clauses accurately.",),
+                ),
+                (
+                    "Unit 9–10: Career Paths, Lifelong Learning",
+                    (
+                        "Three-word phrasal verbs and reported speech (orders, requests, "
+                        "offers, advice)"
+                    ),
+                    116,
+                    139,
+                    5,
+                    "Planning adaptive career paths and cultivating lifelong learning habits.",
+                    (
+                        (
+                            "Use reporting verbs (advise, offer, remind) and three-word "
+                            "phrasal verbs accurately."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        # ==================== KHOA HỌC TỰ NHIÊN 6–9 ====================
+        (
+            "kntt-khtn-6-t1",
+            "Khoa học tự nhiên",
+            "6",
+            "Tập một",
+            96,
+            [
+                (
+                    "Chương I: Mở đầu về Khoa học tự nhiên",
+                    "Bài 4–7: Đo chiều dài, khối lượng, thời gian và nhiệt độ",
+                    16,
+                    31,
+                    4,
+                    (
+                        "Lựa chọn dụng cụ đo phù hợp, đọc kết quả theo GHĐ, ĐCNN và chuyển "
+                        "đổi đơn vị đo cơ bản."
+                    ),
+                    (
+                        (
+                            "Thực hành đo được chiều dài, khối lượng, thời gian và nhiệt độ "
+                            "đúng quy trình."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II–III: Chất quanh ta và Hỗn hợp",
+                    "Bài 12–16: Nhiên liệu, lương thực, dung dịch và tách chất ra khỏi hỗn hợp",
+                    42,
+                    63,
+                    5,
+                    (
+                        "Phân biệt chất tinh khiết, hỗn hợp, dung dịch và vận dụng phương "
+                        "pháp lọc, cô cạn, chiết tách chất."
+                    ),
+                    ("Đề xuất và thực hiện được cách tách chất đơn giản ra khỏi hỗn hợp.",),
+                ),
+                (
+                    "Chương IV–V: Tế bào và Cơ thể sinh vật",
+                    "Bài 18–21: Tế bào – đơn vị cơ bản của sự sống và tổ chức cơ thể đa bào",
+                    66,
+                    85,
+                    4,
+                    (
+                        "Nhận biết cấu tạo tế bào nhân sơ, nhân thực và các cấp độ tổ chức từ "
+                        "tế bào đến cơ thể."
+                    ),
+                    (
+                        (
+                            "Nêu được chức năng các thành phần chính của tế bào và quá trình "
+                            "lớn lên, sinh sản của tế bào."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-khtn-6-t2",
+            "Khoa học tự nhiên",
+            "6",
+            "Tập hai",
+            96,
+            [
+                (
+                    "Chương VI: Phân loại thế giới sống",
+                    "Bài 23–28: Khóa lưỡng phân, virus, vi khuẩn, thực vật và động vật",
+                    6,
+                    38,
+                    5,
+                    (
+                        "Xây dựng khóa lưỡng phân phân loại sinh vật và nhận biết vai trò đa "
+                        "dạng sinh học."
+                    ),
+                    (
+                        (
+                            "Xây dựng được khóa lưỡng phân đơn giản và nêu biện pháp bảo vệ "
+                            "đa dạng sinh học."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương VII–IX: Lực, Năng lượng và Trái Đất – Bầu trời",
+                    "Bài 35–44: Lực và biểu diễn lực, ma sát, chuyển hóa năng lượng và Hệ Mặt Trời",
+                    42,
+                    88,
+                    6,
+                    (
+                        "Biểu diễn lực bằng mũi tên, đo lực bằng lực kế, phân loại năng lượng "
+                        "tái tạo và chuyển động Trái Đất."
+                    ),
+                    (
+                        (
+                            "Tính được trọng lượng $P = 10m$, giải thích tác dụng lực ma sát "
+                            "và bảo toàn năng lượng."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-khtn-7-t1",
+            "Khoa học tự nhiên",
+            "7",
+            "Tập một",
+            96,
+            [
+                (
+                    "Chương I–II: Nguyên tử, Bảng tuần hoàn và Phân tử – Liên kết hóa học",
+                    "Bài 2–7: Nguyên tử, nguyên tố hóa học, liên kết ion, cộng hóa trị và hóa trị",
+                    12,
+                    45,
+                    6,
+                    (
+                        "Mô tả mô hình nguyên tử, vị trí nguyên tố trong bảng tuần hoàn và "
+                        "lập công thức hóa học theo quy tắc hóa trị."
+                    ),
+                    (
+                        (
+                            "Xác định được khối lượng nguyên tử, phân tử và lập công thức hóa "
+                            "học đúng quy tắc hóa trị."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương III–IV: Tốc độ và Âm thanh",
+                    "Bài 8–13: Tốc độ chuyển động, đồ thị quãng đường – thời gian và sóng âm",
+                    46,
+                    75,
+                    5,
+                    (
+                        "Tính tốc độ $v = s/t$, vẽ đồ thị $s-t$ và phân tích biên độ, tần số, "
+                        "độ cao, độ to của âm."
+                    ),
+                    (
+                        (
+                            "Vẽ và đọc được đồ thị quãng đường – thời gian; giải thích phản "
+                            "xạ âm và chống ô nhiễm tiếng ồn."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-khtn-7-t2",
+            "Khoa học tự nhiên",
+            "7",
+            "Tập hai",
+            96,
+            [
+                (
+                    "Chương V–VI: Ánh sáng và Từ",
+                    "Bài 15–20: Phản xạ ánh sáng, ảnh qua gương phẳng, nam châm và từ trường",
+                    6,
+                    38,
+                    5,
+                    (
+                        "Vận dụng định luật phản xạ ánh sáng dựng ảnh qua gương phẳng và khảo "
+                        "sát từ phổ, nam châm điện."
+                    ),
+                    (
+                        (
+                            "Vận dụng được định luật phản xạ ánh sáng và giải thích hoạt động "
+                            "của nam châm điện."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương VII–IX: Trao đổi chất, Cảm ứng và Sinh trưởng, Sinh sản ở sinh vật",
+                    "Bài 22–38: Quang hợp, hô hấp tế bào, trao đổi nước và sinh sản ở sinh vật",
+                    42,
+                    88,
+                    6,
+                    (
+                        "Trình bày phương trình chữ quang hợp, hô hấp tế bào và con đường vận "
+                        "chuyển nước, muối khoáng."
+                    ),
+                    (
+                        (
+                            "Giải thích được mối liên hệ giữa quang hợp và hô hấp tế bào "
+                            "trong thực tiễn trồng trọt."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-khtn-8-t1",
+            "Khoa học tự nhiên",
+            "8",
+            "Tập một",
+            104,
+            [
+                (
+                    "Chương I: Phản ứng hóa học",
+                    (
+                        "Bài 3–7: Mol, tỉ khối khí, nồng độ dung dịch, định luật bảo toàn "
+                        "khối lượng và tốc độ phản ứng"
+                    ),
+                    16,
+                    37,
+                    6,
+                    (
+                        "Tính số mol, nồng độ phần trăm, nồng độ mol, cân bằng phương trình "
+                        "hóa học và tính theo PTHH."
+                    ),
+                    (
+                        (
+                            "Lập được phương trình hóa học và tính lượng chất theo định luật "
+                            "bảo toàn khối lượng."
+                        ),
+                        (
+                            "Tính được nồng độ $C\\%$, $C_M$ và phân tích yếu tố ảnh hưởng "
+                            "tốc độ phản ứng."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II: Một số hợp chất thông dụng",
+                    "Bài 8–12: Acid, Base, thang pH, Oxide, Muối và phân bón hóa học",
+                    38,
+                    59,
+                    5,
+                    (
+                        "Nhận biết tính chất hóa học đặc trưng của acid, base, oxide, muối và "
+                        "ý nghĩa thang pH."
+                    ),
+                    (
+                        (
+                            "Viết được phương trình hóa học minh họa tính chất của acid, "
+                            "base, oxide và muối."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương III–IV: Khối lượng riêng, Áp suất và Tác dụng làm quay của lực",
+                    (
+                        "Bài 13–19: Khối lượng riêng, áp suất chất lỏng, lực đẩy Archimedes "
+                        "và moment lực"
+                    ),
+                    60,
+                    87,
+                    5,
+                    (
+                        "Tính khối lượng riêng $D = m/V$, áp suất $p = F/S$, lực đẩy $F_A = d "
+                        "\\cdot V$ và ứng dụng đòn bẩy."
+                    ),
+                    (
+                        (
+                            "Vận dụng được công thức áp suất, lực đẩy Archimedes và điều kiện "
+                            "cân bằng đòn bẩy."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-khtn-8-t2",
+            "Khoa học tự nhiên",
+            "8",
+            "Tập hai",
+            104,
+            [
+                (
+                    "Chương V–VI: Điện và Nhiệt",
+                    "Bài 20–29: Dòng điện, mạch điện, tác dụng của dòng điện và truyền nhiệt",
+                    6,
+                    44,
+                    5,
+                    (
+                        "Vẽ sơ đồ mạch điện, đo cường độ dòng điện, hiệu điện thế và phân "
+                        "tích dẫn nhiệt, đối lưu, bức xạ nhiệt."
+                    ),
+                    (
+                        (
+                            "Lắp được mạch điện đơn giản, đọc chỉ số ampe kế, vôn kế và giải "
+                            "thích hiện tượng truyền nhiệt."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương VII–VIII: Sinh học cơ thể người và Sinh vật – Môi trường",
+                    (
+                        "Bài 30–44: Hệ tiêu hóa, tuần hoàn, hô hấp, thần kinh và quần thể, "
+                        "quần xã, hệ sinh thái"
+                    ),
+                    46,
+                    96,
+                    6,
+                    (
+                        "Trình bày cấu tạo và chức năng các hệ cơ quan người, lưới thức ăn và "
+                        "bảo vệ cân bằng sinh thái."
+                    ),
+                    (
+                        (
+                            "Giải thích được cơ chế bảo vệ sức khỏe các hệ cơ quan và mối "
+                            "quan hệ trong hệ sinh thái."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-khtn-9-t1",
+            "Khoa học tự nhiên",
+            "9",
+            "Tập một",
+            112,
+            [
+                (
+                    "Chương I–II: Năng lượng cơ học và Ánh sáng",
+                    "Bài 2–9: Động năng, thế năng, công, công suất, khúc xạ ánh sáng và thấu kính",
+                    10,
+                    49,
+                    6,
+                    (
+                        "Tính động năng, thế năng, công suất; vận dụng định luật khúc xạ và "
+                        "dựng ảnh qua thấu kính hội tụ, phân kì."
+                    ),
+                    ("Tính được cơ năng, công, công suất và dựng ảnh vật qua thấu kính mỏng.",),
+                ),
+                (
+                    "Chương III–IV: Điện và Điện từ",
+                    (
+                        "Bài 11–16: Định luật Ôm, đoạn mạch nối tiếp – song song, năng lượng "
+                        "điện và cảm ứng điện từ"
+                    ),
+                    52,
+                    79,
+                    5,
+                    (
+                        "Vận dụng định luật Ôm $I = U/R$, tính điện trở tương đương, công "
+                        "suất điện và nguyên tắc tạo dòng điện xoay chiều."
+                    ),
+                    (
+                        (
+                            "Giải được bài toán mạch điện nối tiếp, song song và tính tiền "
+                            "điện tiêu thụ."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương VI: Kim loại. Sự khác nhau cơ bản giữa phi kim và kim loại",
+                    (
+                        "Bài 18–20: Tính chất chung của kim loại, dãy hoạt động hóa học và "
+                        "tách kim loại"
+                    ),
+                    86,
+                    104,
+                    4,
+                    (
+                        "Vận dụng dãy hoạt động hóa học dự đoán phản ứng của kim loại với "
+                        "nước, acid và dung dịch muối."
+                    ),
+                    (
+                        (
+                            "Viết được phương trình phản ứng của kim loại và nêu nguyên tắc "
+                            "luyện gang, thép."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-khtn-9-t2",
+            "Khoa học tự nhiên",
+            "9",
+            "Tập hai",
+            112,
+            [
+                (
+                    (
+                        "Chương VII–IX: Hợp chất hữu cơ, Hydrocarbon, Ethylic alcohol, Acetic "
+                        "acid, Lipid, Carbohydrate, Protein"
+                    ),
+                    (
+                        "Bài 22–31: Alkane, alkene, phản ứng cháy, ester hóa và ứng dụng hợp "
+                        "chất hữu cơ"
+                    ),
+                    6,
+                    54,
+                    6,
+                    (
+                        "Viết công thức cấu tạo, tính chất hóa học đặc trưng của ethylene, "
+                        "ethylic alcohol, acetic acid, glucose và tinh bột."
+                    ),
+                    (
+                        (
+                            "Viết được phương trình phản ứng đặc trưng của hydrocarbon, "
+                            "alcohol, acid hữu cơ và carbohydrate."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương XI–XIII: Di truyền học Mendel, Cơ sở phân tử của di truyền và Tiến hóa",
+                    (
+                        "Bài 36–46: Quy luật phân li, DNA, RNA, đột biến gene, nguyên phân, "
+                        "giảm phân và tiến hóa"
+                    ),
+                    62,
+                    104,
+                    6,
+                    (
+                        "Vận dụng quy luật Mendel viết sơ đồ lai; mô tả cấu trúc DNA, quá "
+                        "trình tái bản, phiên mã, dịch mã."
+                    ),
+                    (
+                        (
+                            "Giải được bài tập lai một và hai cặp tính trạng; phân biệt "
+                            "nguyên phân, giảm phân."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        # ==================== VẬT LÍ 10–12 ====================
+        (
+            "kntt-vat-li-10-t1",
+            "Vật lí",
+            "10",
+            "Tập một",
+            144,
+            [
+                (
+                    "Chương II: Động học",
+                    (
+                        "Bài 4–10: Độ dịch chuyển, vận tốc, gia tốc, chuyển động thẳng biến "
+                        "đổi đều và rơi tự do"
+                    ),
+                    20,
+                    49,
+                    6,
+                    (
+                        "Thiết lập đồ thị $d-t, v-t$ và các phương trình chuyển động thẳng "
+                        "biến đổi đều, rơi tự do, chuyển động ném ngang."
+                    ),
+                    (
+                        (
+                            "Tính được độ dịch chuyển, vận tốc, gia tốc từ đồ thị và công "
+                            "thức động học."
+                        ),
+                        "Giải được bài toán rơi tự do và chuyển động ném ngang.",
+                    ),
+                ),
+                (
+                    "Chương III: Động lực học",
+                    (
+                        "Bài 13–19: Tổng hợp lực, ba định luật Newton, trọng lực, lực ma sát "
+                        "và lực cản"
+                    ),
+                    56,
+                    81,
+                    6,
+                    (
+                        "Vận dụng định luật II Newton $\\vec{F} = m\\vec{a}$ phân tích lực "
+                        "trên mặt phẳng ngang, mặt phẳng nghiêng."
+                    ),
+                    ("Vận dụng được ba định luật Newton giải bài toán động lực học chất điểm.",),
+                ),
+                (
+                    "Chương IV–V: Năng lượng, Công, Công suất và Động lượng",
+                    (
+                        "Bài 23–29: Công cơ học, động năng, thế năng, định luật bảo toàn cơ "
+                        "năng và bảo toàn động lượng"
+                    ),
+                    90,
+                    118,
+                    6,
+                    (
+                        "Áp dụng định luật bảo toàn cơ năng và bảo toàn động lượng giải bài "
+                        "toán va chạm đàn hồi, va chạm mềm."
+                    ),
+                    (
+                        (
+                            "Vận dụng được định luật bảo toàn cơ năng và bảo toàn động lượng "
+                            "vào bài toán va chạm."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-vat-li-10-cd",
+            "Vật lí",
+            "10",
+            "Chuyên đề học tập",
+            72,
+            [
+                (
+                    "Chuyên đề 1–2: Vật lí trong một số ngành nghề và Trái Đất – Bầu trời",
+                    "Ứng dụng vật lí hiện đại và mô hình chuyển động biểu kiến của thiên thể",
+                    5,
+                    42,
+                    5,
+                    (
+                        "Khảo sát vai trò vật lí trong kĩ thuật y sinh, năng lượng và quy "
+                        "luật chuyển động nhìn thấy của Mặt Trời, Mặt Trăng."
+                    ),
+                    (
+                        (
+                            "Giải thích được hiện tượng tuần trăng, nhật thực, nguyệt thực và "
+                            "ứng dụng vật lí kĩ thuật."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-vat-li-11-t1",
+            "Vật lí",
+            "11",
+            "Tập một",
+            120,
+            [
+                (
+                    "Chương I: Dao động",
+                    "Bài 1–6: Dao động điều hòa, năng lượng dao động, con lắc và cộng hưởng",
+                    6,
+                    31,
+                    6,
+                    (
+                        "Viết phương trình li độ, vận tốc, gia tốc $x = A\\cos(\\omega t + "
+                        "\\varphi)$ và tính cơ năng dao động điều hòa."
+                    ),
+                    (
+                        (
+                            "Xác định được biên độ, chu kì, tần số, pha và năng lượng của dao "
+                            "động điều hòa."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II: Sóng",
+                    "Bài 8–13: Sóng cơ, sóng điện từ, giao thoa ánh sáng và sóng dừng",
+                    34,
+                    57,
+                    6,
+                    (
+                        "Tính bước sóng $\\lambda = vT$, khoảng vân giao thoa $i = \\lambda D "
+                        "/ a$ và điều kiện sóng dừng trên dây."
+                    ),
+                    ("Giải được bài toán giao thoa sóng, giao thoa khe Young và sóng dừng.",),
+                ),
+                (
+                    "Chương III–IV: Điện trường và Dòng điện – Mạch điện",
+                    (
+                        "Bài 16–25: Lực Coulomb, điện trường, tụ điện, định luật Ôm toàn mạch "
+                        "và công suất điện"
+                    ),
+                    62,
+                    108,
+                    7,
+                    (
+                        "Tính lực tương tác điện, cường độ điện trường, điện dung tụ điện, "
+                        "suất điện động và điện trở trong nguồn điện."
+                    ),
+                    (
+                        (
+                            "Vận dụng được định luật Coulomb và định luật Ôm cho toàn mạch "
+                            "tính hiệu suất nguồn."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-vat-li-11-cd",
+            "Vật lí",
+            "11",
+            "Chuyên đề học tập",
+            72,
+            [
+                (
+                    "Chuyên đề 1–2: Trường hấp dẫn và Truyền thông tin bằng sóng vô tuyến",
+                    "Cường độ trường hấp dẫn, thế hấp dẫn và điều chế tín hiệu AM, FM",
+                    5,
+                    48,
+                    5,
+                    (
+                        "Tính lực hấp dẫn, tốc độ vũ trụ cấp I và phân biệt nguyên lí điều "
+                        "chế biên độ AM, tần số FM."
+                    ),
+                    (
+                        (
+                            "Vận dụng được công thức trường hấp dẫn và giải thích sơ đồ khối "
+                            "hệ thống truyền thông vô tuyến."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-vat-li-12-t1",
+            "Vật lí",
+            "12",
+            "Tập một",
+            128,
+            [
+                (
+                    "Chương I: Vật lí nhiệt",
+                    (
+                        "Bài 1–6: Mô hình động học phân tử, nội năng, định luật I nhiệt động "
+                        "lực học và nhiệt dung riêng"
+                    ),
+                    6,
+                    31,
+                    6,
+                    (
+                        "Tính nhiệt lượng trao đổi $Q = mc\\Delta T$, nhiệt nóng chảy, nhiệt "
+                        "hóa hơi và vận dụng $\\Delta U = A + Q$."
+                    ),
+                    (
+                        (
+                            "Vận dụng được định luật I nhiệt động lực học và công thức nhiệt "
+                            "lượng giải bài toán cân bằng nhiệt."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II: Khí lí tưởng",
+                    (
+                        "Bài 8–12: Định luật Boyle, Charles, phương trình trạng thái khí lí "
+                        "tưởng và áp suất khí theo mô hình động học"
+                    ),
+                    34,
+                    55,
+                    6,
+                    (
+                        "Vận dụng phương trình $pV = nRT$ giải bài toán các đẳng quá trình và "
+                        "tính động năng tịnh tiến trung bình."
+                    ),
+                    (
+                        (
+                            "Giải được bài toán đẳng nhiệt, đẳng áp, phương trình trạng thái "
+                            "khí lí tưởng."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương III: Từ trường",
+                    (
+                        "Bài 14–18: Cảm ứng từ, lực từ, cảm ứng điện từ và máy biến áp, điện "
+                        "xoay chiều"
+                    ),
+                    58,
+                    87,
+                    6,
+                    (
+                        "Tính lực từ $F = BIL\\sin\\alpha$, suất điện động cảm ứng theo "
+                        "Faraday và giá trị hiệu dụng dòng xoay chiều."
+                    ),
+                    ("Vận dụng được định luật Faraday, quy tắc Lenz và công thức máy biến áp.",),
+                ),
+                (
+                    "Chương IV: Vật lí hạt nhân",
+                    (
+                        "Bài 21–24: Cấu trúc hạt nhân, độ hụt khối, năng lượng liên kết, phản "
+                        "ứng hạt nhân và phóng xạ"
+                    ),
+                    90,
+                    116,
+                    6,
+                    (
+                        "Tính năng lượng liên kết riêng, năng lượng tỏa/thu phản ứng hạt nhân "
+                        "và định luật phóng xạ $N = N_0 2^{-t/T}$."
+                    ),
+                    ("Tính được độ hụt khối, năng lượng phản ứng hạt nhân và chu kì bán rã.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-vat-li-12-cd",
+            "Vật lí",
+            "12",
+            "Chuyên đề học tập",
+            72,
+            [
+                (
+                    "Chuyên đề 1–2: Dòng điện xoay chiều và Ứng dụng vật lí trong chẩn đoán y học",
+                    "Mạch RLC nối tiếp, chỉnh lưu dòng xoay chiều và nguyên lí tia X, siêu âm, MRI",
+                    5,
+                    52,
+                    5,
+                    (
+                        "Phân tích tổng trở, cộng hưởng điện trong mạch RLC và nguyên lí tạo "
+                        "ảnh y học bằng tia X, siêu âm."
+                    ),
+                    (
+                        (
+                            "Tính được các đại lượng trong mạch RLC và giải thích nguyên lí "
+                            "chẩn đoán hình ảnh y học."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        # ==================== HOÁ HỌC 10–12 ====================
+        (
+            "kntt-hoa-hoc-10-t1",
+            "Hoá học",
+            "10",
+            "Tập một",
+            128,
+            [
+                (
+                    "Chương I–II: Cấu tạo nguyên tử và Bảng tuần hoàn các nguyên tố hóa học",
+                    "Bài 2–8: Đồng vị, cấu hình electron nguyên tử và quy luật biến đổi tuần hoàn",
+                    12,
+                    47,
+                    6,
+                    (
+                        "Viết cấu hình electron theo phân lớp, tính nguyên tử khối trung bình "
+                        "và so sánh bán kính, độ âm điện, tính kim loại – phi kim."
+                    ),
+                    (
+                        (
+                            "Viết được cấu hình electron và dự đoán tính chất nguyên tố từ vị "
+                            "trí trong bảng tuần hoàn."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương III–IV: Liên kết hóa học và Phản ứng oxi hóa – khử",
+                    (
+                        "Bài 10–15: Liên kết ion, cộng hóa trị, liên kết hydrogen và cân bằng "
+                        "phản ứng oxi hóa – khử"
+                    ),
+                    52,
+                    79,
+                    6,
+                    (
+                        "Xác định số oxi hóa, chất khử, chất oxi hóa và cân bằng phương trình "
+                        "theo phương pháp thăng bằng electron."
+                    ),
+                    (
+                        (
+                            "Lập được phương trình hóa học của phản ứng oxi hóa – khử bằng "
+                            "thăng bằng electron."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương V–VII: Năng lượng hóa học, Tốc độ phản ứng và Nguyên tố nhóm VIIA",
+                    (
+                        "Bài 17–23: Biến thiên enthalpy, định luật tác dụng khối lượng và "
+                        "tính chất halogen"
+                    ),
+                    82,
+                    118,
+                    6,
+                    (
+                        "Tính biến thiên enthalpy chuẩn $\\Delta_r H^\\circ_{298}$ theo nhiệt "
+                        "tạo thành, năng lượng liên kết và tính chất dãy halogen."
+                    ),
+                    (
+                        (
+                            "Tính được biến thiên enthalpy phản ứng và giải thích quy luật "
+                            "biến đổi tính oxi hóa của halogen."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-hoa-hoc-10-cd",
+            "Hoá học",
+            "10",
+            "Chuyên đề học tập",
+            64,
+            [
+                (
+                    "Chuyên đề 1–2: Cơ sở hóa học và Hóa học trong việc phòng chống cháy nổ",
+                    "Cấu trúc hình học phân tử VSEPR và nguyên tắc dập tắt đám cháy",
+                    5,
+                    44,
+                    5,
+                    (
+                        "Dự đoán dạng hình học phân tử đơn giản và vận dụng kiến thức phản "
+                        "ứng cháy trong an toàn phòng cháy chữa cháy."
+                    ),
+                    (
+                        (
+                            "Giải thích được điều kiện phát sinh cháy nổ và lựa chọn phương "
+                            "tiện chữa cháy phù hợp."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-hoa-hoc-11-t1",
+            "Hoá học",
+            "11",
+            "Tập một",
+            156,
+            [
+                (
+                    "Chương I: Cân bằng hóa học",
+                    (
+                        "Bài 1–3: Cân bằng hóa học, nguyên lí Le Chatelier, thuyết "
+                        "Brønsted–Lowry và pH"
+                    ),
+                    6,
+                    25,
+                    6,
+                    (
+                        "Viết biểu thức hằng số cân bằng $K_C$, dự đoán chuyển dịch cân bằng "
+                        "và tính pH dung dịch acid, base mạnh, chuẩn độ."
+                    ),
+                    (
+                        (
+                            "Vận dụng nguyên lí Le Chatelier và tính pH trong bài toán chuẩn "
+                            "độ acid – base."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương II: Nitrogen – Sulfur",
+                    (
+                        "Bài 4–8: Ammonia, muối ammonium, nitric acid, hiện tượng phú dưỡng "
+                        "và sulfuric acid"
+                    ),
+                    26,
+                    53,
+                    5,
+                    (
+                        "Phân tích tính chất hóa học của $\\ce{NH3}$, $\\ce{HNO3}$, "
+                        "$\\ce{SO2}$, $\\ce{H2SO4}$ loãng và đặc."
+                    ),
+                    (
+                        (
+                            "Viết được phương trình hóa học của hợp chất nitrogen, sulfur và "
+                            "giải thích mưa acid."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Chương IV–VI: Hydrocarbon, Dẫn xuất halogen – Alcohol – Phenol và "
+                        "Hợp chất carbonyl – Carboxylic acid"
+                    ),
+                    (
+                        "Bài 15–24: Alkane, alkene, alkyne, arene, alcohol, phenol, aldehyde "
+                        "và carboxylic acid"
+                    ),
+                    82,
+                    148,
+                    7,
+                    (
+                        "Gọi tên thay thế IUPAC, viết đồng phân và phản ứng đặc trưng của các "
+                        "nhóm chức hữu cơ quan trọng."
+                    ),
+                    (
+                        (
+                            "Gọi đúng tên IUPAC và viết phương trình phản ứng nhận biết, điều "
+                            "chế các hợp chất hữu cơ lớp 11."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-hoa-hoc-11-cd",
+            "Hoá học",
+            "11",
+            "Chuyên đề học tập",
+            68,
+            [
+                (
+                    "Chuyên đề 1–2: Phân bón và Trải nghiệm thực hành hóa học hữu cơ",
+                    "Phân bón vô cơ, hữu cơ và quy trình tách tinh dầu, điều chế xà phòng",
+                    5,
+                    48,
+                    5,
+                    (
+                        "Đánh giá hàm lượng dinh dưỡng phân đạm, lân, kali và thực hành chiết "
+                        "xuất tinh dầu từ nguồn thảo mộc."
+                    ),
+                    (
+                        (
+                            "Tính được độ dinh dưỡng của phân bón và giải thích nguyên tắc sử "
+                            "dụng phân bón hợp lí."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-hoa-hoc-12-t1",
+            "Hoá học",
+            "12",
+            "Tập một",
+            152,
+            [
+                (
+                    "Chương I–II: Ester – Lipid và Carbohydrate",
+                    (
+                        "Bài 1–6: Ester, chất béo, xà phòng, glucose, saccharose, tinh bột và "
+                        "cellulose"
+                    ),
+                    6,
+                    35,
+                    6,
+                    (
+                        "Phân tích phản ứng thủy phân ester trong môi trường acid, kiềm (xà "
+                        "phòng hóa) và tính chất carbohydrate."
+                    ),
+                    (
+                        (
+                            "Viết được phương trình phản ứng xà phòng hóa và phân biệt các "
+                            "carbohydrate tiêu biểu."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương III–IV: Hợp chất chứa nitrogen và Polymer",
+                    "Bài 8–13: Amine, amino acid, peptide, protein và vật liệu polymer",
+                    38,
+                    67,
+                    6,
+                    (
+                        "Tính lưỡng tính của amino acid, phản ứng màu biuret của peptide và "
+                        "phản ứng trùng hợp, trùng ngưng tạo polymer."
+                    ),
+                    ("Giải được bài toán thủy phân peptide và phân loại chất dẻo, tơ, cao su.",),
+                ),
+                (
+                    (
+                        "Chương V–VIII: Pin điện và điện phân, Đại cương kim loại, Nhóm "
+                        "IA–IIA và Kim loại chuyển tiếp"
+                    ),
+                    (
+                        "Bài 15–29: Thế điện cực chuẩn, sức điện động pin Galvani, điện phân, "
+                        "ăn mòn kim loại và phức chất"
+                    ),
+                    72,
+                    142,
+                    7,
+                    (
+                        "Tính sức điện động chuẩn $E^\\circ_{\\text{pin}}$, viết quá trình ở "
+                        "các điện cực khi điện phân và tính chất kim loại kiềm, kiềm thổ."
+                    ),
+                    (
+                        (
+                            "Vận dụng bảng thế điện cực chuẩn dự đoán chiều phản ứng và tính "
+                            "lượng chất sinh ra khi điện phân."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-hoa-hoc-12-cd",
+            "Hoá học",
+            "12",
+            "Chuyên đề học tập",
+            68,
+            [
+                (
+                    "Chuyên đề 1–2: Cơ chế phản ứng hữu cơ và Trải nghiệm thực hành hóa học vô cơ",
+                    "Phản ứng thế gốc tự do, cộng electrophile và tái chế kim loại",
+                    5,
+                    48,
+                    5,
+                    (
+                        "Mô tả cơ chế phản ứng cơ bản của hydrocarbon và quy trình xử lí nước "
+                        "cứng, bảo vệ môi trường."
+                    ),
+                    (
+                        (
+                            "Giải thích được quy tắc Markovnikov theo cơ chế phản ứng cộng "
+                            "electrophile."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        # ==================== SINH HỌC 10–12 ====================
+        (
+            "kntt-sinh-hoc-10-t1",
+            "Sinh học",
+            "10",
+            "Tập một",
+            148,
+            [
+                (
+                    "Phần 1: Sinh học tế bào",
+                    (
+                        "Bài 5–14: Các phân tử sinh học, cấu trúc tế bào, trao đổi chất qua "
+                        "màng và chuyển hóa năng lượng"
+                    ),
+                    26,
+                    71,
+                    6,
+                    (
+                        "Phân tích cấu trúc carbohydrate, lipid, protein, nucleic acid; vận "
+                        "chuyển thụ động, chủ động, quang hợp và hô hấp tế bào."
+                    ),
+                    (
+                        (
+                            "Phân biệt được cấu trúc tế bào nhân sơ, nhân thực và cơ chế thẩm "
+                            "thấu qua màng sinh chất."
+                        ),
+                        (
+                            "Giải thích được vai trò của enzyme, ATP trong chuyển hóa năng "
+                            "lượng tế bào."
+                        ),
+                    ),
+                ),
+                (
+                    "Phần 1: Chu kì tế bào và phân bào",
+                    "Bài 16–18: Chu kì tế bào, nguyên phân, giảm phân và công nghệ tế bào",
+                    78,
+                    95,
+                    5,
+                    (
+                        "Trình bày diễn biến nhiễm sắc thể trong nguyên phân, giảm phân và cơ "
+                        "sở kiểm soát ung thư."
+                    ),
+                    ("So sánh được kết quả và ý nghĩa sinh học của nguyên phân và giảm phân.",),
+                ),
+                (
+                    "Phần 2: Sinh học vi sinh vật và virus",
+                    (
+                        "Bài 20–29: Dinh dưỡng, sinh trưởng vi sinh vật, ứng dụng lên men và "
+                        "cấu tạo, nhân lên của virus"
+                    ),
+                    98,
+                    142,
+                    5,
+                    (
+                        "Phân tích các pha sinh trưởng của quần thể vi khuẩn, ứng dụng công "
+                        "nghệ vi sinh và cơ chế phòng chống bệnh do virus."
+                    ),
+                    (
+                        (
+                            "Trình bày được chu trình nhân lên của virus và ứng dụng vi sinh "
+                            "vật trong đời sống."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-sinh-hoc-10-cd",
+            "Sinh học",
+            "10",
+            "Chuyên đề học tập",
+            72,
+            [
+                (
+                    "Chuyên đề 1–2: Công nghệ tế bào và Công nghệ enzyme",
+                    "Nuôi cấy mô tế bào thực vật, tế bào gốc và ứng dụng enzyme trong công nghiệp",
+                    5,
+                    48,
+                    5,
+                    (
+                        "Tìm hiểu quy trình nhân giống vô tính bằng nuôi cấy mô và ứng dụng "
+                        "enzyme cố định trong chế biến thực phẩm."
+                    ),
+                    ("Trình bày được thành tựu của công nghệ tế bào gốc và công nghệ enzyme.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-sinh-hoc-11-t1",
+            "Sinh học",
+            "11",
+            "Tập một",
+            172,
+            [
+                (
+                    "Chương 1: Trao đổi chất và chuyển hóa năng lượng ở sinh vật",
+                    (
+                        "Bài 2–13: Trao đổi nước, dinh dưỡng khoáng, quang hợp ở thực vật và "
+                        "tiêu hóa, hô hấp, tuần hoàn, miễn dịch ở động vật"
+                    ),
+                    12,
+                    87,
+                    7,
+                    (
+                        "So sánh quang hợp ở thực vật C3, C4, CAM; cơ chế tuần hoàn máu, điều "
+                        "hòa huyết áp và miễn dịch đặc hiệu, không đặc hiệu."
+                    ),
+                    (
+                        (
+                            "Phân tích được các nhân tố ảnh hưởng quang hợp và cơ chế miễn "
+                            "dịch ở người."
+                        ),
+                    ),
+                ),
+                (
+                    "Chương 2–4: Cảm ứng, Sinh trưởng – Phát triển và Sinh sản ở sinh vật",
+                    (
+                        "Bài 15–27: Hướng động, cung phản xạ, hormone thực vật – động vật và "
+                        "cơ chế điều hòa sinh sản"
+                    ),
+                    92,
+                    164,
+                    6,
+                    (
+                        "Trình bày cơ chế dẫn truyền xung thần kinh qua synapse, vai trò "
+                        "hormone sinh trưởng và ứng dụng điều khiển sinh sản."
+                    ),
+                    ("Giải thích được cơ chế hoạt động của cung phản xạ và vai trò của hormone.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-sinh-hoc-11-cd",
+            "Sinh học",
+            "11",
+            "Chuyên đề học tập",
+            72,
+            [
+                (
+                    (
+                        "Chuyên đề 1–2: Dinh dưỡng khoáng – Tăng năng suất cây trồng và Một "
+                        "số bệnh dịch ở người"
+                    ),
+                    "Thủy canh, khí canh và nguyên nhân, biện pháp phòng chống bệnh truyền nhiễm",
+                    5,
+                    50,
+                    5,
+                    (
+                        "Vận dụng kiến thức dinh dưỡng khoáng thiết kế mô hình trồng cây sạch "
+                        "và phân tích dịch tễ học cơ bản."
+                    ),
+                    ("Đề xuất được biện pháp bón phân hợp lí và phòng chống bệnh truyền nhiễm.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-sinh-hoc-12-t1",
+            "Sinh học",
+            "12",
+            "Tập một",
+            168,
+            [
+                (
+                    "Phần 4: Di truyền học",
+                    (
+                        "Bài 1–13: DNA, phiên mã, dịch mã, điều hòa biểu hiện gene (operon "
+                        "Lac), đột biến, quy luật Mendel, liên kết gene và di truyền quần thể"
+                    ),
+                    6,
+                    79,
+                    7,
+                    (
+                        "Phân tích cơ chế di truyền phân tử, quy luật di truyền Mendel, hoán "
+                        "vị gene, liên kết giới tính và định luật Hardy–Weinberg."
+                    ),
+                    (
+                        (
+                            "Giải được bài toán phiên mã, dịch mã, quy luật di truyền và cấu "
+                            "trúc di truyền quần thể."
+                        ),
+                    ),
+                ),
+                (
+                    "Phần 5–6: Tiến hóa và Sinh thái học",
+                    (
+                        "Bài 16–29: Bằng chứng tiến hóa, học thuyết tiến hóa tổng hợp, quần "
+                        "thể, quần xã, hệ sinh thái và sinh quyển"
+                    ),
+                    88,
+                    160,
+                    6,
+                    (
+                        "Phân tích các nhân tố tiến hóa, cơ chế hình thành loài, diễn thế "
+                        "sinh thái, dòng năng lượng và chu trình sinh địa hóa."
+                    ),
+                    (
+                        (
+                            "Giải thích được vai trò chọn lọc tự nhiên và đề xuất giải pháp "
+                            "bảo tồn hệ sinh thái."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-sinh-hoc-12-cd",
+            "Sinh học",
+            "12",
+            "Chuyên đề học tập",
+            72,
+            [
+                (
+                    "Chuyên đề 1–2: Sinh học phân tử và Kiểm soát sinh học",
+                    "Kĩ thuật PCR, điện di DNA, liệu pháp gene và thiên địch kiểm soát sâu hại",
+                    5,
+                    50,
+                    5,
+                    (
+                        "Tìm hiểu nguyên lí nhân bản DNA bằng PCR và ứng dụng thiên địch "
+                        "trong nông nghiệp bền vững."
+                    ),
+                    ("Trình bày được nguyên lí kĩ thuật PCR và ưu điểm của kiểm soát sinh học.",),
+                ),
+            ],
+        ),
+        # ==================== TIN HỌC 10–12 ====================
+        (
+            "kntt-tin-hoc-10-t1",
+            "Tin học",
+            "10",
+            "Tập một",
+            168,
+            [
+                (
+                    "Chủ đề 1–2: Máy tính và xã hội tri thức – Mạng máy tính và Internet",
+                    (
+                        "Bài 1–9: Biểu diễn dữ liệu nhị phân, đơn vị đo thông tin, Internet "
+                        "và an toàn không gian mạng"
+                    ),
+                    5,
+                    51,
+                    5,
+                    (
+                        "Chuyển đổi hệ đếm nhị phân – thập phân, mã hóa văn bản Unicode và "
+                        "phòng tránh phần mềm độc hại."
+                    ),
+                    (
+                        (
+                            "Biểu diễn được số nguyên, văn bản trong hệ nhị phân và nhận biết "
+                            "nguy cơ an toàn mạng."
+                        ),
+                    ),
+                ),
+                (
+                    "Chủ đề 5: Giải quyết vấn đề với sự trợ giúp của máy tính (Python)",
+                    (
+                        "Bài 16–28: Biến, câu lệnh rẽ nhánh if, vòng lặp for/while, danh "
+                        "sách, xâu kí tự và hàm trong Python"
+                    ),
+                    82,
+                    143,
+                    7,
+                    (
+                        "Viết và gỡ lỗi chương trình Python sử dụng cấu trúc rẽ nhánh, lặp, "
+                        "kiểu list, string và định nghĩa hàm."
+                    ),
+                    (
+                        (
+                            "Viết được chương trình Python giải bài toán xử lí số, xâu kí tự "
+                            "và danh sách."
+                        ),
+                        "Tổ chức được chương trình theo hàm và phát hiện lỗi cú pháp, lỗi logic.",
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tin-hoc-10-cd",
+            "Tin học",
+            "10",
+            "Chuyên đề học tập",
+            76,
+            [
+                (
+                    (
+                        "Chuyên đề 1–2: Thực hành làm việc với tệp văn bản, bảng tính và phần "
+                        "mềm trình chiếu"
+                    ),
+                    "Tự động hóa mục lục, trộn thư và phân tích dữ liệu bảng tính nâng cao",
+                    5,
+                    52,
+                    5,
+                    (
+                        "Thiết lập kiểu định dạng tự động, hàm tra cứu và trình bày báo cáo "
+                        "số chuyên nghiệp."
+                    ),
+                    (
+                        (
+                            "Vận dụng được các tính năng nâng cao của bộ công cụ văn phòng "
+                            "trong học tập."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tin-hoc-11-t1",
+            "Tin học",
+            "11",
+            "Tập một",
+            156,
+            [
+                (
+                    "Chủ đề 1–2: Hệ điều hành, phần mềm nguồn mở và tổ chức lưu trữ, tìm kiếm",
+                    (
+                        "Bài 1–8: Hệ điều hành, phần mềm thương mại – nguồn mở và cấu tạo bên "
+                        "trong máy tính"
+                    ),
+                    5,
+                    41,
+                    4,
+                    (
+                        "Phân biệt vai trò hệ điều hành, cổng logic cơ bản AND/OR/NOT và tổ "
+                        "chức dữ liệu an toàn."
+                    ),
+                    ("Giải thích được chức năng hệ điều hành và hoạt động cơ bản của CPU, RAM.",),
+                ),
+                (
+                    "Chủ đề 4: Giới thiệu các hệ cơ sở dữ liệu",
+                    "Bài 10–15: Cơ sở dữ liệu quan hệ, khóa chính, khóa ngoài và truy vấn SQL",
+                    48,
+                    79,
+                    6,
+                    (
+                        "Thiết kế bảng dữ liệu chuẩn hóa, xác định khóa chính, khóa ngoài và "
+                        "viết câu lệnh SELECT, JOIN, WHERE."
+                    ),
+                    ("Thiết kế được bảng cơ sở dữ liệu quan hệ và viết truy vấn SQL cơ bản.",),
+                ),
+                (
+                    "Chủ đề 6 (CS): Kĩ thuật lập trình và Thuật toán",
+                    "Bài 17–26: Mảng hai chiều, tìm kiếm nhị phân, sắp xếp và đệ quy",
+                    88,
+                    146,
+                    6,
+                    (
+                        "Cài đặt thuật toán tìm kiếm tuần tự, tìm kiếm nhị phân, sắp xếp "
+                        "chọn/chèn và đánh giá độ phức tạp thời gian."
+                    ),
+                    (
+                        (
+                            "Cài đặt được thuật toán tìm kiếm nhị phân, sắp xếp cơ bản và ước "
+                            "lượng độ phức tạp."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tin-hoc-11-cd",
+            "Tin học",
+            "11",
+            "Chuyên đề học tập",
+            76,
+            [
+                (
+                    (
+                        "Chuyên đề 1: Thực hành thiết kế thuật toán theo kĩ thuật đệ quy và "
+                        "chia để trị"
+                    ),
+                    "Đệ quy, quay lui cơ bản và thuật toán sắp xếp nhanh, sắp xếp trộn",
+                    5,
+                    46,
+                    5,
+                    (
+                        "Phân tích bài toán thành bài toán con và cài đặt thuật toán chia để "
+                        "trị bằng Python."
+                    ),
+                    ("Vận dụng được kĩ thuật đệ quy và chia để trị giải quyết bài toán tin học.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-tin-hoc-12-t1",
+            "Tin học",
+            "12",
+            "Tập một",
+            160,
+            [
+                (
+                    "Chủ đề 1–2: Máy tính và xã hội tri thức (AI) – Mạng máy tính và Internet",
+                    (
+                        "Bài 1–5: Trí tuệ nhân tạo, thiết bị mạng, giao thức TCP/IP và chia "
+                        "sẻ tài nguyên mạng"
+                    ),
+                    5,
+                    31,
+                    5,
+                    (
+                        "Phân biệt AI hẹp/tổng quát, vai trò router, switch, giao thức IP, "
+                        "TCP, DNS và đạo đức ứng dụng AI."
+                    ),
+                    (
+                        (
+                            "Giải thích được đặc trưng hệ thống AI và vai trò các giao thức "
+                            "mạng TCP/IP."
+                        ),
+                    ),
+                ),
+                (
+                    "Chủ đề 4: Giải quyết vấn đề với sự trợ giúp của máy tính (HTML & CSS)",
+                    (
+                        "Bài 7–18: Cấu trúc trang HTML, danh sách, bảng, biểu mẫu, bộ chọn "
+                        "CSS và bố cục hộp"
+                    ),
+                    38,
+                    103,
+                    7,
+                    (
+                        "Xây dựng trang web ngữ nghĩa với HTML5, tạo form nhập liệu và định "
+                        "kiểu bố cục bằng CSS."
+                    ),
+                    (
+                        (
+                            "Tạo được trang web hoàn chỉnh dùng thẻ HTML ngữ nghĩa, biểu mẫu "
+                            "và bộ chọn CSS."
+                        ),
+                    ),
+                ),
+                (
+                    "Chủ đề 6 (CS): Học máy và Khoa học dữ liệu",
+                    "Bài 23–28: Học có giám sát, phân lớp, hồi quy và mô phỏng dữ liệu",
+                    118,
+                    152,
+                    5,
+                    (
+                        "Giới thiệu quy trình khoa học dữ liệu, phân biệt học có giám sát và "
+                        "không giám sát."
+                    ),
+                    (
+                        (
+                            "Nêu được các bước cơ bản của bài toán học máy có giám sát và "
+                            "đánh giá mô hình."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-tin-hoc-12-cd",
+            "Tin học",
+            "12",
+            "Chuyên đề học tập",
+            76,
+            [
+                (
+                    (
+                        "Chuyên đề 1–2: Thực hành thiết kế thuật toán duyệt đồ thị và cấu "
+                        "trúc dữ liệu cây"
+                    ),
+                    "Ngăn xếp, hàng đợi, tìm kiếm theo chiều sâu DFS và chiều rộng BFS",
+                    5,
+                    50,
+                    5,
+                    (
+                        "Cài đặt stack, queue, biểu diễn đồ thị bằng danh sách kề và duyệt đồ "
+                        "thị DFS, BFS."
+                    ),
+                    (
+                        (
+                            "Vận dụng được DFS, BFS giải bài toán tìm đường đi và thành phần "
+                            "liên thông."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        # ==================== LỊCH SỬ VÀ ĐỊA LÍ 4–9 ====================
+        (
+            "kntt-lsdl-4-t1",
+            "Lịch sử và Địa lí",
+            "4",
+            "Tập một",
+            64,
+            [
+                (
+                    (
+                        "Chủ đề 1–2: Làm quen phương tiện học tập và Địa phương em – Trung "
+                        "du, miền núi Bắc Bộ"
+                    ),
+                    "Bài 1–8: Bản đồ, thiên nhiên, dân cư và Đền Hùng – lễ giỗ Tổ Hùng Vương",
+                    6,
+                    38,
+                    5,
+                    (
+                        "Đọc kí hiệu bản đồ, mô tả đặc điểm thiên nhiên, văn hóa vùng Trung "
+                        "du và miền núi Bắc Bộ."
+                    ),
+                    (
+                        (
+                            "Sử dụng được bản đồ xác định vị trí địa lí và nêu nét văn hóa "
+                            "tiêu biểu vùng Bắc Bộ."
+                        ),
+                    ),
+                ),
+                (
+                    "Chủ đề 3: Đồng bằng Bắc Bộ",
+                    "Bài 10–14: Thiên nhiên, Thăng Long – Hà Nội và Văn Miếu – Quốc Tử Giám",
+                    40,
+                    62,
+                    4,
+                    (
+                        "Tìm hiểu địa hình châu thổ sông Hồng, lịch sử Thăng Long và truyền "
+                        "thống hiếu học."
+                    ),
+                    (
+                        (
+                            "Trình bày được đặc điểm tự nhiên Đồng bằng Bắc Bộ và giá trị di "
+                            "tích lịch sử Hà Nội."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-4-t2",
+            "Lịch sử và Địa lí",
+            "4",
+            "Tập hai",
+            64,
+            [
+                (
+                    "Chủ đề 4–6: Duyên hải miền Trung, Tây Nguyên và Nam Bộ",
+                    (
+                        "Bài 15–28: Cố đô Huế, phố cổ Hội An, không gian văn hóa Cồng chiêng "
+                        "và Địa đạo Củ Chi"
+                    ),
+                    6,
+                    60,
+                    6,
+                    (
+                        "Khám phá đặc điểm tự nhiên, hoạt động kinh tế và di sản lịch sử các "
+                        "vùng miền Trung, Tây Nguyên, Nam Bộ."
+                    ),
+                    (
+                        (
+                            "Mô tả được nét đặc trưng tự nhiên, dân cư và di sản văn hóa tiêu "
+                            "biểu ba vùng miền."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-5-t1",
+            "Lịch sử và Địa lí",
+            "5",
+            "Tập một",
+            64,
+            [
+                (
+                    (
+                        "Chủ đề 1–2: Đất nước và con người Việt Nam – Những quốc gia đầu tiên "
+                        "trên lãnh thổ"
+                    ),
+                    "Bài 1–9: Vị trí địa lí, vùng biển đảo, Văn Lang – Âu Lạc, Phù Nam và Chăm-pa",
+                    6,
+                    42,
+                    5,
+                    (
+                        "Xác định vị trí địa lí, chủ quyền biển đảo và tìm hiểu các nhà nước "
+                        "cổ đại trên lãnh thổ Việt Nam."
+                    ),
+                    (
+                        (
+                            "Xác định được vị trí địa lí Việt Nam, hai quần đảo Hoàng Sa, "
+                            "Trường Sa và nét chính Văn Lang – Âu Lạc."
+                        ),
+                    ),
+                ),
+                (
+                    "Chủ đề 3: Xây dựng và bảo vệ đất nước Việt Nam",
+                    "Bài 10–14: Triều Lý, Triều Trần, khởi nghĩa Lam Sơn và Triều Hậu Lê",
+                    44,
+                    62,
+                    4,
+                    (
+                        "Tìm hiểu công cuộc định đô Thăng Long, ba lần kháng chiến chống Mông "
+                        "– Nguyên và thắng lợi Lam Sơn."
+                    ),
+                    ("Kể được những sự kiện và nhân vật lịch sử tiêu biểu thời Lý, Trần, Hậu Lê.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-5-t2",
+            "Lịch sử và Địa lí",
+            "5",
+            "Tập hai",
+            64,
+            [
+                (
+                    (
+                        "Chủ đề 3–6: Việt Nam hiện đại, Các nước láng giềng và Các châu lục "
+                        "trên thế giới"
+                    ),
+                    (
+                        "Bài 15–28: Cách mạng tháng Tám 1945, Chiến dịch Điện Biên Phủ, Đại "
+                        "thắng mùa Xuân 1975 và các châu lục"
+                    ),
+                    6,
+                    60,
+                    6,
+                    (
+                        "Tìm hiểu các mốc son lịch sử hiện đại Việt Nam và vị trí, tự nhiên "
+                        "năm châu lục, đại dương."
+                    ),
+                    (
+                        (
+                            "Nêu được ý nghĩa các mốc lịch sử 1945, 1954, 1975 và xác định "
+                            "các châu lục trên bản đồ thế giới."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-6-t1",
+            "Lịch sử và Địa lí",
+            "6",
+            "Tập một",
+            96,
+            [
+                (
+                    "Lịch sử 6 – Chương 1–3: Thời nguyên thủy và Xã hội cổ đại",
+                    (
+                        "Bài 1–10: Nguồn gốc loài người, Ai Cập, Lưỡng Hà, Ấn Độ, Trung Quốc "
+                        "và Hy Lạp – La Mã cổ đại"
+                    ),
+                    8,
+                    48,
+                    6,
+                    (
+                        "Khảo sát cách tính thời gian trong lịch sử và thành tựu văn minh "
+                        "phương Đông, phương Tây cổ đại."
+                    ),
+                    (
+                        (
+                            "Nêu được thành tựu văn minh tiêu biểu của các quốc gia cổ đại "
+                            "phương Đông và phương Tây."
+                        ),
+                    ),
+                ),
+                (
+                    "Địa lí 6 – Chương 1–2: Bản đồ và Trái Đất – Hành tinh của Hệ Mặt Trời",
+                    (
+                        "Bài 1–8: Kinh tuyến, vĩ tuyến, tọa độ địa lí, tỉ lệ bản đồ và chuyển "
+                        "động của Trái Đất"
+                    ),
+                    50,
+                    90,
+                    5,
+                    (
+                        "Xác định tọa độ địa lí, tính khoảng cách theo tỉ lệ bản đồ và giải "
+                        "thích hiện tượng ngày đêm, các mùa."
+                    ),
+                    (
+                        (
+                            "Xác định được tọa độ địa lí, tính giờ khu vực và giải thích hệ "
+                            "quả chuyển động Trái Đất."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-6-t2",
+            "Lịch sử và Địa lí",
+            "6",
+            "Tập hai",
+            96,
+            [
+                (
+                    (
+                        "Lịch sử 6 – Chương 4–5: Đông Nam Á cổ đại và Việt Nam từ thế kỉ VII "
+                        "TCN đến thế kỉ X"
+                    ),
+                    (
+                        "Bài 11–20: Nhà nước Văn Lang – Âu Lạc, thời kì Bắc thuộc và chiến "
+                        "thắng Bạch Đằng năm 938"
+                    ),
+                    8,
+                    48,
+                    6,
+                    (
+                        "Trình bày các cuộc khởi nghĩa tiêu biểu thời Bắc thuộc và bước ngoặt "
+                        "độc lập năm 938."
+                    ),
+                    (
+                        (
+                            "Phân tích được ý nghĩa của chiến thắng Bạch Đằng năm 938 chấm "
+                            "dứt hơn một nghìn năm Bắc thuộc."
+                        ),
+                    ),
+                ),
+                (
+                    "Địa lí 6 – Chương 3–6: Cấu tạo Trái Đất, Khí hậu, Nước và Đất – Sinh vật",
+                    (
+                        "Bài 9–26: Nội lực, ngoại lực, các đới khí hậu, sông hồ, biển đại "
+                        "dương và rừng nhiệt đới"
+                    ),
+                    50,
+                    90,
+                    5,
+                    (
+                        "Giải thích tác động nội lực – ngoại lực, đọc biểu đồ nhiệt độ – "
+                        "lượng mưa và mối quan hệ tự nhiên – con người."
+                    ),
+                    (
+                        (
+                            "Đọc được biểu đồ khí hậu và trình bày đặc điểm các đới khí hậu "
+                            "trên Trái Đất."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-7-t1",
+            "Lịch sử và Địa lí",
+            "7",
+            "Tập một",
+            96,
+            [
+                (
+                    (
+                        "Lịch sử 7 – Chương 1–3: Tây Âu, Trung Quốc, Ấn Độ và Đông Nam Á thời "
+                        "phong kiến"
+                    ),
+                    (
+                        "Bài 1–9: Phát kiến địa lí, văn hóa Phục hưng và các triều đại phong "
+                        "kiến phương Đông"
+                    ),
+                    8,
+                    46,
+                    5,
+                    (
+                        "Đánh giá tác động của các cuộc phát kiến địa lí, phong trào Văn hóa "
+                        "Phục hưng và văn hóa Angkor."
+                    ),
+                    (
+                        (
+                            "Trình bày được nguyên nhân, hệ quả các cuộc phát kiến địa lí và "
+                            "thành tựu Văn hóa Phục hưng."
+                        ),
+                    ),
+                ),
+                (
+                    "Địa lí 7 – Chương 1–2: Châu Âu và Châu Á",
+                    "Bài 1–8: Vị trí địa lí, thiên nhiên, dân cư, kinh tế châu Âu và châu Á",
+                    48,
+                    90,
+                    5,
+                    (
+                        "Phân tích đặc điểm địa hình, khí hậu, cơ cấu dân số già châu Âu và "
+                        "đặc điểm gió mùa châu Á."
+                    ),
+                    (
+                        (
+                            "Phân tích được mối liên hệ giữa vị trí địa lí, khí hậu và phân "
+                            "bố dân cư châu Âu, châu Á."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-7-t2",
+            "Lịch sử và Địa lí",
+            "7",
+            "Tập hai",
+            96,
+            [
+                (
+                    (
+                        "Lịch sử 7 – Chương 4–5: Đất nước thời Ngô – Đinh – Tiền Lê – Lý – "
+                        "Trần – Hồ – Lê sơ"
+                    ),
+                    (
+                        "Bài 10–18: Kháng chiến chống Tống, Mông – Nguyên, khởi nghĩa Lam Sơn "
+                        "và bộ luật Hồng Đức"
+                    ),
+                    8,
+                    48,
+                    6,
+                    (
+                        "Phân tích nguyên nhân thắng lợi các cuộc kháng chiến bảo vệ Tổ quốc "
+                        "và thành tựu kinh tế, văn hóa Đại Việt."
+                    ),
+                    (
+                        (
+                            "Đánh giá được vai trò các anh hùng dân tộc và thành tựu văn hóa "
+                            "Đại Việt thế kỉ X–XVI."
+                        ),
+                    ),
+                ),
+                (
+                    "Địa lí 7 – Chương 3–5: Châu Phi, Châu Mỹ, Châu Đại Dương và Châu Nam Cực",
+                    (
+                        "Bài 9–22: Tự nhiên, tài nguyên, dân cư và vấn đề bảo vệ môi trường "
+                        "các châu lục"
+                    ),
+                    50,
+                    90,
+                    5,
+                    (
+                        "Khảo sát môi trường hoang mạc châu Phi, rừng Amazon châu Mỹ và biến "
+                        "đổi khí hậu tại Nam Cực."
+                    ),
+                    (
+                        (
+                            "So sánh được đặc điểm tự nhiên và vấn đề phát triển kinh tế – "
+                            "môi trường các châu lục."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-8-t1",
+            "Lịch sử và Địa lí",
+            "8",
+            "Tập một",
+            96,
+            [
+                (
+                    (
+                        "Lịch sử 8 – Chương 1–3: Cách mạng tư sản, Cách mạng công nghiệp và "
+                        "Việt Nam thế kỉ XVI–XVIII"
+                    ),
+                    (
+                        "Bài 1–8: Cách mạng tư sản Anh – Mỹ – Pháp, phong trào Tây Sơn và "
+                        "chiến thắng Ngọc Hồi – Đống Đa"
+                    ),
+                    8,
+                    48,
+                    6,
+                    (
+                        "Phân tích nguyên nhân, tính chất cách mạng tư sản cận đại và công "
+                        "lao thống nhất đất nước của phong trào Tây Sơn."
+                    ),
+                    (
+                        (
+                            "So sánh được các cuộc cách mạng tư sản và đánh giá vai trò Quang "
+                            "Trung – Nguyễn Huệ."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Địa lí 8 – Chương 1–2: Vị trí địa lí, Địa hình, Khoáng sản và Khí "
+                        "hậu – Thủy văn Việt Nam"
+                    ),
+                    (
+                        "Bài 1–7: Đặc điểm vị trí lãnh thổ, địa hình đồi núi, khí hậu nhiệt "
+                        "đới ẩm gió mùa và hệ thống sông ngòi"
+                    ),
+                    50,
+                    90,
+                    5,
+                    (
+                        "Phân tích ảnh hưởng vị trí địa lí, gió mùa đến khí hậu và chế độ "
+                        "nước sông ngòi Việt Nam."
+                    ),
+                    (
+                        (
+                            "Trình bày được tính chất nhiệt đới ẩm gió mùa của khí hậu và đặc "
+                            "điểm sông ngòi Việt Nam."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-8-t2",
+            "Lịch sử và Địa lí",
+            "8",
+            "Tập hai",
+            96,
+            [
+                (
+                    (
+                        "Lịch sử 8 – Chương 4–5: Chiến tranh thế giới thứ nhất, Cách mạng "
+                        "tháng Mười Nga và Việt Nam 1858–1918"
+                    ),
+                    (
+                        "Bài 9–18: Cuộc kháng chiến chống Pháp xâm lược, phong trào Cần vương "
+                        "và xu hướng cứu nước đầu thế kỉ XX"
+                    ),
+                    8,
+                    48,
+                    6,
+                    (
+                        "Phân tích nguyên nhân mất nước cuối thế kỉ XIX và các khuynh hướng "
+                        "cứu nước của Phan Bội Châu, Phan Châu Trinh, Nguyễn Tất Thành."
+                    ),
+                    ("So sánh được chủ trương cứu nước của các sĩ phu yêu nước đầu thế kỉ XX.",),
+                ),
+                (
+                    "Địa lí 8 – Chương 3–4: Thổ nhưỡng, Sinh vật và Biển đảo Việt Nam",
+                    (
+                        "Bài 8–12: Đất feralit, đất phù sa, đa dạng sinh học và chủ quyền "
+                        "biển đảo Việt Nam"
+                    ),
+                    50,
+                    90,
+                    5,
+                    (
+                        "Trình bày đặc điểm ba nhóm đất chính, giá trị tài nguyên biển và "
+                        "chứng cứ chủ quyền Hoàng Sa, Trường Sa."
+                    ),
+                    (
+                        (
+                            "Nêu được giải pháp bảo vệ đa dạng sinh học và chủ quyền vùng "
+                            "biển đảo Việt Nam."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-9-t1",
+            "Lịch sử và Địa lí",
+            "9",
+            "Tập một",
+            96,
+            [
+                (
+                    "Lịch sử 9 – Chương 1–3: Thế giới 1918–1945 và Việt Nam 1918–1945",
+                    (
+                        "Bài 1–10: Chiến tranh thế giới thứ hai, Đảng Cộng sản Việt Nam ra "
+                        "đời năm 1930 và Cách mạng tháng Tám 1945"
+                    ),
+                    8,
+                    48,
+                    6,
+                    (
+                        "Phân tích bước ngoặt thành lập Đảng năm 1930 và diễn biến, ý nghĩa "
+                        "lịch sử Cách mạng tháng Tám năm 1945."
+                    ),
+                    (
+                        (
+                            "Đánh giá được vai trò lãnh đạo của Đảng và Nguyễn Ái Quốc trong "
+                            "thắng lợi Cách mạng tháng Tám 1945."
+                        ),
+                    ),
+                ),
+                (
+                    "Địa lí 9 – Chương 1–2: Địa lí dân cư và Địa lí các ngành kinh tế Việt Nam",
+                    (
+                        "Bài 1–9: Dân số, lao động, đô thị hóa, nông nghiệp, công nghiệp và "
+                        "dịch vụ Việt Nam"
+                    ),
+                    50,
+                    90,
+                    5,
+                    (
+                        "Phân tích cơ cấu dân số, chuyển dịch cơ cấu kinh tế và các nhân tố "
+                        "phát triển nông – công nghiệp, du lịch."
+                    ),
+                    ("Đọc và phân tích được biểu đồ cơ cấu dân số, cơ cấu kinh tế Việt Nam.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-lsdl-9-t2",
+            "Lịch sử và Địa lí",
+            "9",
+            "Tập hai",
+            96,
+            [
+                (
+                    "Lịch sử 9 – Chương 4–6: Thế giới sau 1945 và Việt Nam từ 1945 đến nay",
+                    (
+                        "Bài 11–22: Kháng chiến chống Pháp (1945–1954), chống Mỹ (1954–1975) "
+                        "và công cuộc Đổi mới từ 1986"
+                    ),
+                    8,
+                    48,
+                    6,
+                    (
+                        "Phân tích chiến thắng Điện Biên Phủ 1954, Đại thắng mùa Xuân 1975 và "
+                        "thành tựu công cuộc Đổi mới."
+                    ),
+                    (
+                        (
+                            "Trình bày được nguyên nhân thắng lợi hai cuộc kháng chiến và "
+                            "thành tựu Đổi mới đất nước."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Địa lí 9 – Chương 3: Sự phân hóa lãnh thổ – 6 vùng kinh tế – xã hội "
+                        "và Kinh tế biển"
+                    ),
+                    (
+                        "Bài 10–21: Thế mạnh phát triển các vùng kinh tế từ Bắc vào Nam và "
+                        "kinh tế biển đảo"
+                    ),
+                    50,
+                    90,
+                    5,
+                    (
+                        "So sánh thế mạnh tự nhiên, kinh tế – xã hội của 6 vùng kinh tế Việt "
+                        "Nam và định hướng phát triển bền vững."
+                    ),
+                    (
+                        (
+                            "Phân tích được thế mạnh kinh tế của từng vùng và liên kết vùng "
+                            "kinh tế trọng điểm."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        # ==================== LỊCH SỬ & ĐỊA LÍ THPT 10–12 ====================
+        (
+            "kntt-lich-su-10-t1",
+            "Lịch sử",
+            "10",
+            "Tập một",
+            128,
+            [
+                (
+                    (
+                        "Chủ đề 1–3: Lịch sử, Sử học và Một số nền văn minh thế giới thời cổ "
+                        "– trung đại"
+                    ),
+                    (
+                        "Bài 1–8: Tri thức lịch sử, văn minh Ai Cập, Trung Hoa, Ấn Độ, Hy Lạp "
+                        "– La Mã và Phục hưng"
+                    ),
+                    6,
+                    58,
+                    6,
+                    (
+                        "Phân biệt hiện thực lịch sử và nhận thức lịch sử; so sánh thành tựu "
+                        "các nền văn minh lớn cổ – trung đại."
+                    ),
+                    (
+                        (
+                            "Đánh giá được giá trị trường tồn của các nền văn minh cổ – trung "
+                            "đại đối với nhân loại."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Chủ đề 4–7: Các cuộc cách mạng công nghiệp và Văn minh Đại Việt, "
+                        "cộng đồng các dân tộc Việt Nam"
+                    ),
+                    (
+                        "Bài 9–17: Cách mạng công nghiệp 1.0–4.0, văn minh Văn Lang – Âu Lạc "
+                        "và văn minh Đại Việt"
+                    ),
+                    62,
+                    122,
+                    6,
+                    (
+                        "Phân tích tác động của bốn cuộc cách mạng công nghiệp và bản sắc văn "
+                        "minh Đại Việt qua các triều đại."
+                    ),
+                    (
+                        (
+                            "Phân tích được cơ sở hình thành và thành tựu tiêu biểu của văn "
+                            "minh Đại Việt."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lich-su-11-t1",
+            "Lịch sử",
+            "11",
+            "Tập một",
+            112,
+            [
+                (
+                    (
+                        "Chủ đề 1–3: Cách mạng tư sản, Chủ nghĩa xã hội và Quá trình giành "
+                        "độc lập ở Đông Nam Á"
+                    ),
+                    (
+                        "Bài 1–6: Cách mạng tư sản cận đại, Liên Xô – hệ thống XHCN và cuộc "
+                        "đấu tranh giải phóng ở Đông Nam Á"
+                    ),
+                    6,
+                    48,
+                    6,
+                    (
+                        "So sánh mục tiêu, kết quả các cuộc cách mạng tư sản và con đường "
+                        "giành độc lập của các nước Đông Nam Á."
+                    ),
+                    (
+                        (
+                            "Phân tích được nguyên nhân thành công và bài học kinh nghiệm của "
+                            "phong trào giải phóng dân tộc."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Chủ đề 4–6: Chiến tranh bảo vệ Tổ quốc, Cải cách trong lịch sử và "
+                        "Chủ quyền Biển Đông"
+                    ),
+                    (
+                        "Bài 7–13: Các cuộc kháng chiến chống ngoại xâm, cải cách Hồ Quý Ly – "
+                        "Lê Thánh Tông – Minh Mạng và Biển Đông"
+                    ),
+                    52,
+                    104,
+                    6,
+                    (
+                        "Đánh giá nghệ thuật quân sự dân tộc, giá trị lịch sử các cuộc cải "
+                        "cách và tầm quan trọng chiến lược của Biển Đông."
+                    ),
+                    (
+                        (
+                            "Trình bày được cơ sở lịch sử, pháp lí khẳng định chủ quyền Việt "
+                            "Nam đối với Hoàng Sa và Trường Sa."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-lich-su-12-t1",
+            "Lịch sử",
+            "12",
+            "Tập một",
+            116,
+            [
+                (
+                    "Chủ đề 1–2: Thế giới trong và sau Chiến tranh lạnh – ASEAN",
+                    (
+                        "Bài 1–5: Liên hợp quốc, Trật tự hai cực Ianta, xu thế đa cực và Cộng "
+                        "đồng ASEAN"
+                    ),
+                    6,
+                    38,
+                    5,
+                    (
+                        "Phân tích vai trò Liên hợp quốc, sự sụp đổ Trật tự hai cực Ianta và "
+                        "tiến trình hội nhập ASEAN."
+                    ),
+                    (
+                        (
+                            "Đánh giá được cơ hội, thách thức của Việt Nam trong Cộng đồng "
+                            "ASEAN và trật tự đa cực."
+                        ),
+                    ),
+                ),
+                (
+                    (
+                        "Chủ đề 3–6: Cách mạng tháng Tám, Kháng chiến 1945–1975, Đổi mới, Đối "
+                        "ngoại và Hồ Chí Minh"
+                    ),
+                    (
+                        "Bài 6–17: Thắng lợi 1945, 1954, 1975, đường lối Đổi mới 1986 và hoạt "
+                        "động đối ngoại Việt Nam"
+                    ),
+                    40,
+                    110,
+                    7,
+                    (
+                        "Hệ thống hóa tiến trình giải phóng dân tộc, công cuộc Đổi mới, hội "
+                        "nhập quốc tế và di sản Hồ Chí Minh."
+                    ),
+                    (
+                        (
+                            "Phân tích được bài học kinh nghiệm của cách mạng Việt Nam và "
+                            "công cuộc Đổi mới."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-dia-li-10-t1",
+            "Địa lí",
+            "10",
+            "Tập một",
+            136,
+            [
+                (
+                    "Phần 1: Địa lí tự nhiên",
+                    (
+                        "Bài 1–19: Bản đồ, Thạch quyển, Khí quyển, Thủy quyển, Sinh quyển và "
+                        "quy luật vỏ địa lí"
+                    ),
+                    6,
+                    64,
+                    6,
+                    (
+                        "Phân tích thuyết kiến tạo mảng, hoàn lưu khí quyển, dòng biển và quy "
+                        "luật thống nhất, địa đới, phi địa đới."
+                    ),
+                    (
+                        (
+                            "Giải thích được cơ chế hình thành các vành đai khí áp, gió và "
+                            "quy luật phân hóa tự nhiên."
+                        ),
+                    ),
+                ),
+                (
+                    "Phần 2: Địa lí kinh tế – xã hội",
+                    (
+                        "Bài 20–40: Dân số, đô thị hóa, nông nghiệp, công nghiệp, dịch vụ và "
+                        "phát triển bền vững"
+                    ),
+                    68,
+                    128,
+                    6,
+                    (
+                        "Phân tích tháp dân số, cơ cấu ngành kinh tế, vai trò giao thông vận "
+                        "tải, thương mại và tăng trưởng xanh."
+                    ),
+                    ("Vận dụng được kiến thức địa lí kinh tế phân tích bảng số liệu và biểu đồ.",),
+                ),
+            ],
+        ),
+        (
+            "kntt-dia-li-11-t1",
+            "Địa lí",
+            "11",
+            "Tập một",
+            160,
+            [
+                (
+                    "Phần 1: Một số vấn đề về kinh tế – xã hội thế giới",
+                    (
+                        "Bài 1–6: Các nhóm nước, toàn cầu hóa, khu vực hóa, tổ chức kinh tế "
+                        "và an ninh toàn cầu"
+                    ),
+                    6,
+                    36,
+                    5,
+                    (
+                        "Phân biệt chỉ số phát triển GDP/người, HDI; đánh giá tác động toàn "
+                        "cầu hóa và an ninh lương thực, năng lượng."
+                    ),
+                    (
+                        (
+                            "Phân tích được tác động của toàn cầu hóa và vai trò các tổ chức "
+                            "quốc tế lớn."
+                        ),
+                    ),
+                ),
+                (
+                    "Phần 2: Địa lí khu vực và quốc gia",
+                    (
+                        "Bài 7–30: Mỹ La-tinh, EU, Đông Nam Á, Tây Nam Á, Hoa Kỳ, Nga, Nhật "
+                        "Bản, Trung Quốc, Ô-xtrây-li-a"
+                    ),
+                    38,
+                    152,
+                    7,
+                    (
+                        "Phân tích thế mạnh tự nhiên, dân cư và mô hình phát triển kinh tế "
+                        "của các khu vực và cường quốc kinh tế."
+                    ),
+                    (
+                        (
+                            "So sánh được đặc điểm phát triển kinh tế và quan hệ hợp tác giữa "
+                            "các khu vực, quốc gia với Việt Nam."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "kntt-dia-li-12-t1",
+            "Địa lí",
+            "12",
+            "Tập một",
+            168,
+            [
+                (
+                    "Phần 1–2: Địa lí tự nhiên và Địa lí dân cư Việt Nam",
+                    (
+                        "Bài 1–8: Vị trí địa lí, thiên nhiên nhiệt đới ẩm gió mùa, phân hóa "
+                        "đa dạng tự nhiên, dân số và đô thị hóa"
+                    ),
+                    6,
+                    48,
+                    6,
+                    (
+                        "Phân tích sự phân hóa thiên nhiên theo Bắc – Nam, Đông – Tây, độ cao "
+                        "và cơ cấu lao động, đô thị hóa."
+                    ),
+                    (
+                        (
+                            "Giải thích được tính phân hóa đa dạng của tự nhiên và vấn đề "
+                            "việc làm ở Việt Nam."
+                        ),
+                    ),
+                ),
+                (
+                    "Phần 3–4: Địa lí các ngành kinh tế và Các vùng kinh tế – xã hội Việt Nam",
+                    (
+                        "Bài 9–31: Chuyển dịch cơ cấu kinh tế, nông – công nghiệp, dịch vụ và "
+                        "6 vùng kinh tế, phát triển kinh tế biển đảo"
+                    ),
+                    50,
+                    160,
+                    7,
+                    (
+                        "Đánh giá thế mạnh, hạn chế và định hướng chuyển dịch cơ cấu ngành, "
+                        "lãnh thổ các vùng kinh tế Việt Nam."
+                    ),
+                    (
+                        (
+                            "Phân tích được số liệu, biểu đồ và giải thích thế mạnh phát "
+                            "triển kinh tế của các vùng Việt Nam."
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    ]
+
+
 def lesson_catalog() -> list[dict[str, Any]]:
-    """Trả về danh mục bộ học liệu tự biên soạn đa môn có licenseStatus='allowed'."""
+    """Trả về danh mục bộ học liệu tự biên soạn đa môn và SGK KNTT có licenseStatus='allowed'."""
     collections = [
         (
             "toan-9-dai-so-1",
@@ -1850,14 +8469,16 @@ def lesson_catalog() -> list[dict[str, Any]]:
             ],
         ),
     ]
-    return [
+    built: list[dict[str, Any]] = [
         {
             "id": str(uuid5(NAMESPACE_URL, f"soan-de-thi/hoc-lieu/{key}/1")),
             "version": 1,
             "subject": subject,
             "grade": grade,
             "book": book,
+            "series": book,
             "volume": volume,
+            "catalogKind": "sample",
             "name": f"{subject} {grade} · {book} · {volume}",
             "sourceTitle": f"Khung học liệu tự biên soạn · {subject} {grade} ({book})",
             "curriculumStandard": "GDPT 2018",
@@ -1869,17 +8490,92 @@ def lesson_catalog() -> list[dict[str, Any]]:
             "sha256": _catalog_sha256(subject, grade, book, volume, lessons),
             "lessons": [
                 {
+                    "id": f"{key}-b{index}",
                     "number": index,
                     "chapter": chapter,
                     "title": title,
                     "outcome": outcome,
                     "text": text,
+                    "summary": text,
+                    "learningOutcomes": [outcome],
                 }
                 for index, (chapter, title, outcome, text) in enumerate(lessons, 1)
             ],
         }
         for key, subject, grade, book, volume, lessons in collections
     ]
+    for key, subject, grade, volume, total_pages, kntt_lessons in _kntt_raw_collections():
+        sha_lessons = [
+            (chapter, title, "; ".join(outcomes), summary)
+            for chapter, title, _, _, _, summary, outcomes in kntt_lessons
+        ]
+        built.append(
+            {
+                "id": str(uuid5(NAMESPACE_URL, f"soan-de-thi/hoc-lieu/{key}/1")),
+                "version": 1,
+                "subject": subject,
+                "grade": grade,
+                "book": KNTT_SERIES,
+                "series": KNTT_SERIES,
+                "volume": volume,
+                "totalPages": total_pages,
+                "catalogKind": "sgk",
+                "name": f"{subject} {grade} · {KNTT_SERIES} · {volume}",
+                "sourceTitle": f"Khung học liệu tự biên soạn · {subject} {grade} ({KNTT_SERIES})",
+                "curriculumStandard": "GDPT 2018",
+                "schoolYear": "2026-2027",
+                "gradeLevel": _grade_level(grade),
+                "licenseStatus": "allowed",
+                "licenseNote": (
+                    "Mục lục và yêu cầu cần đạt theo Chương trình GDPT 2018 (Bộ GD&ĐT); "
+                    "tóm tắt tự biên soạn"
+                ),
+                "sourceOrigin": "lesson_catalog",
+                "sha256": _catalog_sha256(subject, grade, KNTT_SERIES, volume, sha_lessons),
+                "lessons": [
+                    {
+                        "id": f"{key}-b{index}",
+                        "number": index,
+                        "chapter": chapter,
+                        "title": title,
+                        "pageStart": page_start,
+                        "pageEnd": page_end,
+                        "pageRange": (
+                            f"tr. {page_start}-{page_end}"
+                            if page_end > page_start
+                            else f"tr. {page_start}"
+                        ),
+                        "periods": periods,
+                        "summary": summary,
+                        "learningOutcomes": list(outcomes),
+                        "outcome": "; ".join(outcomes),
+                        "text": summary,
+                    }
+                    for index, (
+                        chapter,
+                        title,
+                        page_start,
+                        page_end,
+                        periods,
+                        summary,
+                        outcomes,
+                    ) in enumerate(kntt_lessons, 1)
+                ],
+            }
+        )
+
+    volumes_by_group: dict[tuple[str, str, str], list[str]] = {}
+    for col in built:
+        group_key = (col["subject"], col["grade"], col["book"])
+        group_vols = volumes_by_group.setdefault(group_key, [])
+        if col["volume"] not in group_vols:
+            group_vols.append(col["volume"])
+    for group_vols in volumes_by_group.values():
+        group_vols.sort(key=lambda v: (_VOLUME_ORDER.get(v, 99), v))
+    for col in built:
+        group_key = (col["subject"], col["grade"], col["book"])
+        col["volumesAvailable"] = list(volumes_by_group[group_key])
+    return built
 
 
 def search_lesson_catalog(
@@ -1930,6 +8626,7 @@ def search_lesson_catalog(
                             lesson["title"],
                             lesson["outcome"],
                             lesson["text"],
+                            lesson.get("pageRange", ""),
                         ]
                     )
                 )
@@ -1955,6 +8652,21 @@ def to_curriculum_source_payload(
     )
     if lesson is None:
         raise ValueError(f"Không tìm thấy bài số {lesson_number} trong bộ {collection.get('id')}.")
+    page_range = str(lesson.get("pageRange") or "").strip()
+    locator = (
+        f"Bài {lesson['number']} · {lesson['chapter']} ({page_range})"
+        if page_range
+        else f"Bài {lesson['number']} · {lesson['chapter']}"
+    )
+    if len(locator) > 300:
+        locator = locator[:297] + "..."
+    content_excerpt = (
+        f"Bài {lesson['number']}. {lesson['title']}\n"
+        f"{lesson['text']}\n"
+        f"Mục tiêu: {lesson['outcome']}"
+    )
+    if len(content_excerpt) > 12_000:
+        content_excerpt = content_excerpt[:11_997] + "..."
     return {
         "grade": int(collection["grade"]),
         "subject": collection["subject"],
@@ -1966,10 +8678,6 @@ def to_curriculum_source_payload(
         "license_status": collection["licenseStatus"],
         "license_note": collection["licenseNote"],
         "source_origin": collection["sourceOrigin"],
-        "locator": f"Bài {lesson['number']} · {lesson['chapter']}",
-        "content_excerpt": (
-            f"Bài {lesson['number']}. {lesson['title']}\n"
-            f"{lesson['text']}\n"
-            f"Mục tiêu: {lesson['outcome']}"
-        ),
+        "locator": locator,
+        "content_excerpt": content_excerpt,
     }
