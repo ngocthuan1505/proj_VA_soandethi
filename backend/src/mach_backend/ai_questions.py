@@ -200,9 +200,14 @@ def validate_options(question_type: QuestionType, options: tuple[str, ...]) -> N
         raise AIError("invalid_options", "Các phương án hoặc nhận định bị lặp.")
 
 
-def validate_answer(question_type: QuestionType, answer: Answer) -> None:
+def validate_answer(
+    question_type: QuestionType,
+    answer: Answer,
+    option_count: int | None = None,
+) -> None:
+    max_mcq = 4 if option_count is None else max(4, min(option_count, 8))
     valid = {
-        "mcq": type(answer) is int and 0 <= answer <= 3,
+        "mcq": type(answer) is int and 0 <= answer < max_mcq,
         "truefalse": isinstance(answer, tuple)
         and len(answer) == 4
         and all(type(value) is bool for value in answer),
@@ -229,7 +234,9 @@ def saved_answer(question: dict) -> Answer:
     if answer is not None:
         if kind not in {"mcq", "short", "truefalse"}:
             raise AIError("invalid_answer", "Dạng câu hỏi đang lưu chưa hợp lệ.")
-        validate_answer(kind, answer)
+        options = question.get("options")
+        option_count = len(options) if isinstance(options, (list, tuple)) else None
+        validate_answer(kind, answer, option_count=option_count)
     return answer
 
 
@@ -238,7 +245,7 @@ def saved_answer_label(question: dict) -> str:
     if answer is None:
         return "Chưa nhập đáp án"
     if type(answer) is int:
-        return "ABCD"[answer]
+        return chr(65 + answer)
     if isinstance(answer, tuple):
         return " · ".join(f"{i}. {'Đúng' if value else 'Sai'}" for i, value in enumerate(answer, 1))
     return str(answer)

@@ -60,10 +60,91 @@ export function rebalanceMatrixRowsToTen(rows){
  if(!Array.isArray(rows)||!rows.length)throw Error('Ma trận cần ít nhất 1 dòng.');
  const next=clone(rows);
  const rowCount=r=>Array.isArray(r?.targets)?r.targets.reduce((a,b)=>a+Math.max(0,Number(b)||0),0):0;
- const existingUnit=r=>{
-  if(r?.points!=null&&r.points!=='')return Number(r.points);
-  if(r?.pointsQ4!=null)return Number(r.pointsQ4)/4;
+ const hasPerLevelSpec=r=>Array.isArray(r?.pointsByLevel)||Array.isArray(r?.pointsByLevelQ4);
+ const rowFallbackUnit=r=>{
+  if(Array.isArray(r?.pointsByLevel)){
+   const nums=r.pointsByLevel.filter(v=>v!=null&&v!==''&&Number.isFinite(Number(v))).map(Number);
+   if(nums.length)return Math.max(0.05,nums.reduce((a,b)=>a+b,0)/nums.length);
+  }
+  if(Array.isArray(r?.pointsByLevelQ4)){
+   const nums=r.pointsByLevelQ4.filter(v=>v!=null&&Number.isFinite(Number(v))).map(v=>Number(v)/4);
+   if(nums.length)return Math.max(0.05,nums.reduce((a,b)=>a+b,0)/nums.length);
+  }
+  if(r?.points!=null&&r.points!=='')return Math.max(0.05,Number(r.points)||0.05);
+  if(r?.pointsQ4!=null)return Math.max(0.05,Number(r.pointsQ4)/4||0.05);
   return 1;
+ };
+ const cellWeight=(r,l)=>{
+  if(Array.isArray(r?.pointsByLevel)&&r.pointsByLevel[l]!=null&&r.pointsByLevel[l]!=='')return Math.max(0.05,Number(r.pointsByLevel[l])||0.05);
+  if(Array.isArray(r?.pointsByLevelQ4)&&r.pointsByLevelQ4[l]!=null)return Math.max(0.05,Number(r.pointsByLevelQ4[l])/4||0.05);
+  return rowFallbackUnit(r);
+ };
+ const rowTotalWeight=r=>{
+  if(!hasPerLevelSpec(r))return rowCount(r)*rowFallbackUnit(r);
+  return (r.targets||[]).reduce((sum,n,l)=>{
+   const cnt=Math.max(0,Number(n)||0);
+   return sum+(cnt>0?cnt*cellWeight(r,l):0);
+  },0);
+ };
+ const solveUnitsDP=(items,targetUnits,allowClosest,maxBudget)=>{
+  const m=items.length;
+  if(!m)return [];
+  const minSum=items.reduce((s,it)=>s+it.count,0);
+  if(minSum>maxBudget)return null;
+  const sumW=items.reduce((s,it)=>s+it.weight,0)||1;
+  const idealUnits=items.map(it=>(targetUnits*it.weight/sumW)/it.count);
+  const remTarget=Math.max(0,Math.min(maxBudget-minSum,targetUnits-minSum));
+  const remMax=maxBudget-minSum;
+  const costAt=(k,uVal)=>{
+   const rel=(uVal-idealUnits[k])/Math.max(0.5,idealUnits[k]);
+   return rel*rel*Math.max(0.05,items[k].weight)+1e-6*Math.abs(uVal-idealUnits[k]);
+  };
+  const runDP=windowSpan=>{
+   let dp=new Float64Array(remMax+1).fill(Infinity);
+   dp[0]=0;
+   const choice=Array.from({length:m},()=>new Int16Array(remMax+1).fill(-1));
+   for(let k=0;k<m;k++){
+    const c=items[k].count;
+    const idealE=Math.max(0,Math.round(idealUnits[k])-1);
+    const nextDp=new Float64Array(remMax+1).fill(Infinity);
+    const ch=choice[k];
+    for(let s=0;s<=remMax;s++){
+     if(dp[s]===Infinity)continue;
+     const maxE=Math.floor((remMax-s)/c);
+     const lo=windowSpan>0?Math.max(0,idealE-windowSpan):0;
+     const hi=windowSpan>0?Math.min(maxE,idealE+windowSpan):maxE;
+     for(let e=lo;e<=hi;e++){
+      const ns=s+e*c;
+      const cand=dp[s]+costAt(k,1+e);
+      if(cand<nextDp[ns]){nextDp[ns]=cand;ch[ns]=e;}
+     }
+    }
+    dp=nextDp;
+   }
+   let bestS=-1;
+   if(!allowClosest){
+    if(targetUnits-minSum>=0&&targetUnits-minSum<=remMax&&dp[targetUnits-minSum]<Infinity)bestS=targetUnits-minSum;
+   }else{
+    let bestDist=Infinity;
+    for(let s=0;s<=remMax;s++){
+     if(dp[s]===Infinity)continue;
+     const dist=Math.abs(s-remTarget);
+     if(dist<bestDist||(dist===bestDist&&s<=remTarget&&bestS>remTarget)||(dist===bestDist&&dp[s]<dp[bestS])){
+      bestDist=dist;bestS=s;
+     }
+    }
+   }
+   if(bestS<0)return null;
+   const out=Array(m).fill(1);
+   let cur=bestS;
+   for(let k=m-1;k>=0;k--){
+    const e=choice[k][cur];
+    out[k]=1+e;
+    cur-=e*items[k].count;
+   }
+   return out;
+  };
+  return runDP(24)??runDP(0);
  };
  const commonRows=next.filter(r=>!(r.choiceGroup||'').trim()&&rowCount(r)>0);
  const groups=[...new Set(next.map(r=>(r.choiceGroup||'').trim()).filter(Boolean))];
@@ -71,73 +152,81 @@ export function rebalanceMatrixRowsToTen(rows){
  const commonQ=commonRows.reduce((s,r)=>s+rowCount(r),0);
  const effTotal=commonQ+trackMaxQ;
  if(effTotal<1||effTotal>30)throw Error('Cần tổng hiệu lực từ 1 đến 30 câu để phân bổ 10,00 điểm.');
- const allocateSubset=(subset,targetUnits,{allowAuto=true}={})=>{
+ const allocateSubset=(subset,targetUnits,{allowAuto=true,maxBudget=targetUnits}={})=>{
   const active=subset.filter(r=>rowCount(r)>0);
   if(!active.length)return 0;
-  const weights=active.map(r=>rowCount(r)*Math.max(0.05,existingUnit(r)));
-  const sumW=weights.reduce((a,b)=>a+b,0)||1;
-  const counts=active.map(rowCount);
-  const perQUnits=active.map((r,i)=>Math.max(1,Math.round((targetUnits*weights[i]/sumW)/counts[i])));
-  let used=perQUnits.reduce((s,u,i)=>s+u*counts[i],0);
-  let diff=targetUnits-used;
-  let guard=0;
-  while(diff!==0&&guard++<400){
-   let progressed=false;
-   for(let i=active.length-1;i>=0&&diff!==0;i--){
-    const c=counts[i];
-    if(diff>0&&diff>=c){perQUnits[i]++;diff-=c;progressed=true;}
-    else if(diff<0&&-diff>=c&&perQUnits[i]>1){perQUnits[i]--;diff+=c;progressed=true;}
-   }
-   if(!progressed)break;
-  }
-  active.forEach((r,i)=>{
-   delete r.pointsQ4;delete r.pointsByLevelQ4;delete r.pointsByLevel;
-   r.points=Number((perQUnits[i]*0.05).toFixed(2));
-  });
-  if(diff!==0){
-   const targetRow=active.find(r=>counts[active.indexOf(r)]===1)||active[active.length-1];
-   const activeIdx=active.indexOf(targetRow);
-   const othersUnits=perQUnits.reduce((s,u,idx)=>s+(idx===activeIdx?0:u*counts[idx]),0);
-   const remUnits=targetUnits-othersUnits;
-   const cnt=counts[activeIdx];
-   if(remUnits>=cnt){
-    const lvls=(targetRow.targets||[]).map((n,l)=>({n:Math.max(0,Number(n)||0),l})).filter(x=>x.n>0);
-    if(remUnits%cnt===0){
-     targetRow.points=Number(((remUnits/cnt)*0.05).toFixed(2));
-    }else if(lvls.length>1){
-     const baseU=Math.floor(remUnits/cnt);
-     let extra=remUnits-baseU*cnt;
-     const arr=[null,null,null,null].slice(0,targetRow.targets.length);
-     for(const {n,l}of lvls){
-      if(extra===0){arr[l]=Number((baseU*0.05).toFixed(2));}
-      else if(extra>=n){arr[l]=Number(((baseU+1)*0.05).toFixed(2));extra-=n;}
-      else if(n===1){arr[l]=Number(((baseU+1)*0.05).toFixed(2));extra--;}
-      else{arr[l]=null;}
-     }
-     if(arr.some(x=>x==null)){if(allowAuto){delete targetRow.points;delete targetRow.pointsByLevel;}}
-     else{delete targetRow.points;targetRow.pointsByLevel=arr;}
-    }else if(allowAuto){
-     delete targetRow.points;
-    }
-   }else if(!allowAuto&&remUnits<cnt){
-    let totalNow=active.reduce((s,r,i)=>s+(perQUnits[i]*counts[i]),0);
-    for(let i=0;i<active.length&&totalNow>targetUnits;i++){
-     while(perQUnits[i]>1&&totalNow-counts[i]>=targetUnits){perQUnits[i]--;totalNow-=counts[i];}
-     active[i].points=Number((perQUnits[i]*0.05).toFixed(2));
-    }
+  let items=[];
+  for(const r of active){
+   if(hasPerLevelSpec(r)){
+    (r.targets||[]).forEach((n,l)=>{
+     const cnt=Math.max(0,Number(n)||0);
+     if(cnt>0)items.push({row:r,level:l,count:cnt,weight:cnt*cellWeight(r,l)});
+    });
+   }else{
+    items.push({row:r,level:-1,count:rowCount(r),weight:rowTotalWeight(r)});
    }
   }
-  return active.reduce((s,r)=>s+(r.points!=null?Math.round(r.points*20)*rowCount(r):0),0);
+  let sol=solveUnitsDP(items,targetUnits,!allowAuto,allowAuto?targetUnits:maxBudget);
+  if(sol===null&&allowAuto){
+   const expanded=[];
+   for(const it of items){
+    const r=it.row;
+    const lvls=(r.targets||[]).map((n,l)=>({n:Math.max(0,Number(n)||0),l})).filter(x=>x.n>0);
+    if(it.level===-1&&lvls.length>1){
+     for(const {n,l}of lvls)expanded.push({row:r,level:l,count:n,weight:n*cellWeight(r,l)});
+    }else{
+     expanded.push(it);
+    }
+   }
+   const expandedSol=expanded.length!==items.length?solveUnitsDP(expanded,targetUnits,false,targetUnits):null;
+   if(expandedSol!==null){items=expanded;sol=expandedSol;}
+  }
+  for(const r of active){delete r.points;delete r.pointsQ4;delete r.pointsByLevel;delete r.pointsByLevelQ4;}
+  if(sol!==null){
+   const perLevelRows=new Set(items.filter(it=>it.level>=0).map(it=>it.row));
+   for(const r of perLevelRows)r.pointsByLevel=Array(r.targets.length).fill(null);
+   items.forEach((it,idx)=>{
+    const pt=Number((sol[idx]*0.05).toFixed(2));
+    if(it.level>=0)it.row.pointsByLevel[it.level]=pt;
+    else it.row.points=pt;
+   });
+  }else{
+   const sumW=items.reduce((s,it)=>s+it.weight,0)||1;
+   const units=items.map(it=>Math.max(1,Math.round((targetUnits*it.weight/sumW)/it.count)));
+   const perLevelRows=new Set(items.filter(it=>it.level>=0).map(it=>it.row));
+   for(const r of perLevelRows)r.pointsByLevel=Array(r.targets.length).fill(null);
+   items.forEach((it,idx)=>{
+    const pt=Number((units[idx]*0.05).toFixed(2));
+    if(it.level>=0)it.row.pointsByLevel[it.level]=pt;
+    else it.row.points=pt;
+   });
+   if(allowAuto){
+    const autoRow=active.find(r=>rowCount(r)===1)||active[active.length-1];
+    delete autoRow.points;delete autoRow.pointsByLevel;
+   }
+  }
+  let allocated=0;
+  for(const r of active){
+   if(Array.isArray(r.pointsByLevel)){
+    (r.targets||[]).forEach((n,l)=>{
+     const cnt=Math.max(0,Number(n)||0);
+     if(cnt>0&&r.pointsByLevel[l]!=null)allocated+=cnt*Math.round(r.pointsByLevel[l]*20);
+    });
+   }else if(r.points!=null){
+    allocated+=rowCount(r)*Math.round(r.points*20);
+   }
+  }
+  return allocated;
  };
  for(const r of next)if(rowCount(r)===0){delete r.points;delete r.pointsQ4;delete r.pointsByLevel;delete r.pointsByLevelQ4;}
  if(!groups.length){
   allocateSubset(commonRows,200);
  }else{
-  const commonWeightSum=commonRows.reduce((s,r)=>s+rowCount(r)*Math.max(0.05,existingUnit(r)),0);
-  const trackWeightMax=Math.max(...groups.map(g=>next.filter(r=>(r.choiceGroup||'').trim()===g).reduce((s,r)=>s+rowCount(r)*Math.max(0.05,existingUnit(r)),0)),0.05);
+  const commonWeightSum=commonRows.reduce((s,r)=>s+rowTotalWeight(r),0);
+  const trackWeightMax=Math.max(...groups.map(g=>next.filter(r=>(r.choiceGroup||'').trim()===g).reduce((s,r)=>s+rowTotalWeight(r),0)),0.05);
   const maxCommonBudget=Math.max(commonQ,200-trackMaxQ);
-  const commonShare=Math.min(maxCommonBudget,Math.max(commonQ,Math.round(200*(commonWeightSum/(commonWeightSum+trackWeightMax)))));
-  const actualCommonFixed=allocateSubset(commonRows,commonShare,{allowAuto:false});
+  const commonShare=commonQ>0?Math.min(maxCommonBudget,Math.max(commonQ,Math.round(200*(commonWeightSum/(commonWeightSum+trackWeightMax))))):0;
+  const actualCommonFixed=commonQ>0?allocateSubset(commonRows,commonShare,{allowAuto:false,maxBudget:maxCommonBudget}):0;
   const trackShare=Math.max(1,200-actualCommonFixed);
   for(const g of groups){
    allocateSubset(next.filter(r=>(r.choiceGroup||'').trim()===g),trackShare);
@@ -258,7 +347,7 @@ export function commit(e,label,fn){const before=snapshot(e);const revision=Math.
 export function undo(e){if(!e.undo.length)return false;const previous=e.undo.pop();e.redo.push({label:previous.label,state:snapshot(e)});const {history,undo,redo}=e;Object.assign(e,clone(previous.state),{history,undo,redo});e.revision=Math.max(...history.map(x=>x.revision),e.revision)+1;e.history.push({id:uid(),label:'Hoàn tác: '+previous.label,at:Date.now(),revision:e.revision,state:snapshot(e)});return true;}
 export function redo(e){if(!e.redo.length)return false;const next=e.redo.pop();e.undo.push({label:next.label,state:snapshot(e)});const {history,undo,redo}=e;Object.assign(e,clone(next.state),{history,undo,redo});e.revision=Math.max(...history.map(x=>x.revision),e.revision)+1;e.history.push({id:uid(),label:'Làm lại: '+next.label,at:Date.now(),revision:e.revision,state:snapshot(e)});return true;}
 export function touch(q){q.v++;q.check=null;q.approval=null;}
-export function isApproved(q){return q.approval?.version===q.v&&q.approval.status==='approved'||q.check?.version===q.v&&q.check.status==='approved';}
+export function isApproved(q){if(!q||q.v==null)return false;return Boolean((q.approval?.version===q.v&&q.approval.status==='approved')||(q.check?.version===q.v&&q.check.status==='approved'));}
 export function approveQuestion(q,at=Date.now()){q.approval={version:q.v,status:'approved',at,method:'Giáo viên duyệt thủ công'};}
 export function recordCheck(q,result){if(q.check?.version===q.v&&q.check.status==='approved'&&!q.approval)approveQuestion(q,q.check.at);q.check=result;return result;}
 export function derive(e,q){if(q.rule?.startsWith('math-'))return deriveMath(q);if(q.rule==='max'){const max=Math.max(...e.data.map(x=>x.value));const matches=e.data.map((x,i)=>x.value===max?i:-1).filter(i=>i>=0);if(matches.length!==1)return {error:'Có nhiều khu vực cùng giá trị lớn nhất. Cần sửa phương án để có đáp án duy nhất.'};const label=e.data[matches[0]].label;const opts=q.options.map((o,i)=>o.trim().toLocaleLowerCase()===label.toLocaleLowerCase()?i:-1).filter(i=>i>=0);return {answer:opts.length===1?opts[0]:null,explanation:`${label} có ${max} người, lớn nhất trong bảng.`,error:opts.length!==1?'Không có duy nhất phương án đúng với tên khu vực lớn nhất.':null};}if(q.rule==='difference'){const a=e.data[0],b=e.data[1];if(!a||!b)return {error:'Bảng thiếu dữ kiện của hai khu vực cần so sánh.'};const result=b.value-a.value;if(result<=0)return {error:'Khu vực B không nhiều hơn khu vực A. Sửa tiền đề trong thân câu trước khi duyệt.'};const matches=q.options.map((x,i)=>/^\s*-?\d+\s*(người)?\s*$/iu.test(x)&&Number(x.replace(/[^\d-]/g,''))===result?i:-1).filter(i=>i>=0);return {answer:matches.length===1?matches[0]:null,result,explanation:`${e.data[1].value} − ${e.data[0].value} = ${result} người.`,error:matches.length!==1?'Phương án chưa chứa duy nhất một kết quả đúng.':null};}return null;}
@@ -286,7 +375,74 @@ export function updateData(exam,index,value){
  const update=planDataUpdate(exam,values);
  if(update)Object.assign(exam,update);
 }
-export function matrix(e){return e.matrix.map(row=>({...row,cells:LEVELS.map((_,l)=>({actual:e.questions.filter(q=>q.topic===row.topic&&q.level===l&&(!row.type||q.type===row.type)).length,target:row.targets[l]||0}))}));}
+const SPLIT_POINT_SUFFIX_RE=/\s*\((?:[\d.,]+\s*đ|chưa có điểm)(?:\s*·\s*#\d+)?\)$/iu;
+const normMatrixStr=s=>String(s??'').trim().toLocaleLowerCase('vi-VN');
+const rowBaseTopicKey=row=>{
+ const topic=String(row?.topic??'').trim();
+ const base=topic.replace(SPLIT_POINT_SUFFIX_RE,'').trim()||topic;
+ return normMatrixStr(base)+'|'+(row?.type||'')+'|'+normMatrixStr(row?.choiceGroup||'');
+};
+const cellTargetP100=(row,level)=>{
+ if(Array.isArray(row?.pointsByLevelQ4)&&row.pointsByLevelQ4[level]!=null)return Math.round(Number(row.pointsByLevelQ4[level])*25);
+ if(Array.isArray(row?.pointsByLevel)&&row.pointsByLevel[level]!=null)return Math.round(Number(row.pointsByLevel[level])*100);
+ if(row?.pointsQ4!=null)return Math.round(Number(row.pointsQ4)*25);
+ if(row?.points!=null&&row.points!=='')return Math.round(Number(row.points)*100);
+ return null;
+};
+const questionPointsP100=q=>{
+ if(q?.points!=null&&q.points!==''&&Number.isFinite(Number(q.points)))return Math.round(Number(q.points)*100);
+ if(q?.pointsQ4!=null&&Number.isFinite(Number(q.pointsQ4)))return Math.round(Number(q.pointsQ4)*25);
+ return null;
+};
+const rowTopicMatchesQuestion=(rowTopic,qTopic)=>{
+ const rt=String(rowTopic??'').trim(),qt=String(qTopic??'').trim();
+ if(rt===qt)return true;
+ return Boolean(qt&&rt.startsWith(qt+' (')&&SPLIT_POINT_SUFFIX_RE.test(rt));
+};
+export function matrix(e){
+ const rows=Array.isArray(e?.matrix)?e.matrix:[];
+ const questions=Array.isArray(e?.questions)?e.questions:[];
+ const byKey=new Map();
+ for(const row of rows){
+  const k=rowBaseTopicKey(row);
+  if(!byKey.has(k))byKey.set(k,[]);
+  byKey.get(k).push(row);
+ }
+ return rows.map(row=>{
+  const baseKey=rowBaseTopicKey(row);
+  const siblings=byKey.get(baseKey)||[row];
+  const rowGrp=normMatrixStr(row?.choiceGroup||'');
+  const isSplitTopic=SPLIT_POINT_SUFFIX_RE.test(String(row?.topic||'').trim());
+  const filterByPoints=siblings.length>1||isSplitTopic;
+  return {
+   ...row,
+   cells:LEVELS.map((_,l)=>{
+    const expectedP100=cellTargetP100(row,l);
+    const siblingFixedP100s=new Set();
+    if(filterByPoints&&expectedP100==null){
+     for(const sib of siblings){
+      const sp=cellTargetP100(sib,l);
+      if(sp!=null)siblingFixedP100s.add(sp);
+     }
+    }
+    const actual=questions.filter(q=>{
+     if(!rowTopicMatchesQuestion(row?.topic,q?.topic))return false;
+     if(q?.level!==l)return false;
+     if(row?.type&&q?.type!==row.type)return false;
+     if(normMatrixStr(q?.choiceGroup||q?.track||'')!==rowGrp)return false;
+     if(filterByPoints){
+      const qP100=questionPointsP100(q);
+      if(expectedP100!=null)return qP100===expectedP100;
+      if(/\((?:chưa có điểm)(?:\s*·\s*#\d+)?\)$/iu.test(String(row?.topic||'').trim()))return qP100==null;
+      if(qP100!=null&&siblingFixedP100s.has(qP100))return false;
+     }
+     return true;
+    }).length;
+    return {actual,target:row.targets[l]||0};
+   }),
+  };
+ });
+}
 const fieldHTML=(text,doc)=>doc&&documentPlain(doc)===text?renderRichDocument(doc):richTextHTML(text);
 export function exportHTML(e,teacher=false){return `<!doctype html><html lang="vi"><meta charset="utf-8"><title>${esc(e.title)}${teacher?' — Giáo viên':''}</title><style>body{max-width:780px;margin:36px auto;font:16px/1.6 Georgia,serif;color:#111}h1{text-align:center;font-size:23px}header{text-align:center}section{break-inside:avoid;margin:24px 0}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:7px}.options{display:grid;grid-template-columns:1fr 1fr;gap:8px}aside{background:#f4f4f4;padding:12px}svg{max-width:100%}@media print{body{margin:0}button{display:none}}.chart{display:flex;align-items:end;height:140px;gap:20px;margin:10px 0 50px}.bar{background:#536f66;text-align:center;width:100px;position:relative}.bar span{position:absolute;top:100%;left:0;width:100%;font-size:12px}</style><body><header>${esc(e.school)}<h1>${esc(e.title)}</h1><p>Môn ${esc(e.subject)} · Lớp ${esc(e.grade)} · ${esc(e.minutes)} phút</p><p>${teacher?'BẢN GIÁO VIÊN • ĐÁP ÁN VÀ GIẢI THÍCH':'Họ và tên: ........................................ Lớp: ............'}</p></header><p>${esc(e.instructions)}</p>${teacher&&e.appliedPrefs.length?'<p>Yêu cầu áp dụng: '+e.appliedPrefs.map(p=>esc(p.text)).join(' · ')+'</p>':''}${(e.subject==='Ngữ văn'||e.quote.chosen)&&e.quote.text?`<aside><p>${esc(e.quote.text).replace(/\n/g,'<br>')}</p><small>${e.quote.chosen?'Ngữ liệu đã được giáo viên chọn':'Ngữ liệu chưa duyệt'}${e.sample?' • Ngữ liệu tự soạn minh họa':''}</small></aside>`:''}${e.questions.some(usesTable)?`<p><b>Bảng 1. Số người sử dụng thư viện (người)</b> — dữ liệu minh họa tự tạo</p><table><tr>${e.data.map(d=>`<th>${esc(d.label)}</th>`).join('')}</tr><tr>${e.data.map(d=>`<td>${d.value}</td>`).join('')}</tr></table><div class="chart">${e.data.map(d=>`<div class="bar" style="height:${d.value/Math.max(...e.data.map(x=>x.value),1)*130}px"><span>${esc(d.label)}<br>${d.value}</span></div>`).join('')}</div>`:''}${e.questions.map((q,i)=>`<section><b>${q.type==='essay'?'Bài':'Câu'} ${i+1}${q.points?' ('+q.points+' điểm)':''}.</b> ${esc(q.stem).replace(/\n/g,'<br>')}<div class="options">${q.options.map((o,j)=>`<div>${String.fromCharCode(65+j)}. ${fieldHTML(o,q.optionDocs?.[j])}</div>`).join('')}</div>${teacher&&!e.fullExam?`<aside><b>${q.type==='essay'?'Hướng dẫn giải':q.answerKnown===false?'Chưa nhập đáp án':'Đáp án lưu: '+String.fromCharCode(65+q.answer)}</b><p>${fieldHTML(q.explanation,q.explanationDoc)}</p>${q.type==='essay'&&q.rubric?.length?`<table><tr><th>Nội dung</th><th>Điểm</th></tr>${q.rubric.map(r=>`<tr><td>${fieldHTML(r.text,r.richDoc)}</td><td>${r.points}</td></tr>`).join('')}</table>`:''}<small>${esc(q.check?.version===q.v?q.check.status==='approved'?'Giáo viên đã duyệt':q.check.problems.join(' ')||q.check.evidence:'Chưa kiểm tra bản hiện tại')} · Câu v${q.v}</small><p>Nguồn: ${esc(e.docs.find(d=>d.id===q.source?.docId)?.name||'Chưa có')} · ${esc(q.source?.location||'')}</p></aside>`:''}</section>`).join('')}${teacher&&e.fullExam?`<section style="break-before:page"><h1>HƯỚNG DẪN CHẤM VÀ BIỂU ĐIỂM</h1><h2>A. HƯỚNG DẪN CHUNG</h2><p>${esc(e.markingGuidance||'Học sinh có cách giải khác đúng được điểm tương ứng. Chấm theo từng bước, đơn vị điểm 0,25.')}</p><h2>B. ĐÁP ÁN VÀ THANG ĐIỂM</h2><table><tr><th>Bài</th><th>Nội dung / lời giải</th><th>Điểm</th></tr>${e.questions.map((q,i)=>`<tr><td>Bài ${i+1} (${q.points} điểm)</td><td>${fieldHTML(q.explanation,q.explanationDoc)}</td><td></td></tr>${(q.rubric||[]).map(r=>`<tr><td></td><td>${fieldHTML(r.text,r.richDoc)}</td><td>${r.points}</td></tr>`).join('')}`).join('')}</table></section>`:''}<footer>— Hết —${e.sample?' · Đề mẫu dùng để trải nghiệm':''}</footer><button onclick="window.print()">In / Lưu PDF</button></body></html>`;}
 

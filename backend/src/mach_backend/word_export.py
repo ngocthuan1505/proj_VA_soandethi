@@ -125,10 +125,150 @@ def field_document(text, doc=None, runs=None):
     }
 
 
+def build_passages_catalog(exam: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Chuẩn hóa danh mục ngữ liệu từ exam['passages'] dạng list hoặc dict."""
+    catalog: dict[str, dict[str, Any]] = {}
+    raw = exam.get("passages")
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, dict) and item.get("id") is not None:
+                pid = str(item["id"]).strip()
+                if pid:
+                    catalog[pid] = item
+    elif isinstance(raw, dict):
+        for key, item in raw.items():
+            key_id = str(key).strip()
+            if isinstance(item, dict):
+                pid = str(item["id"]).strip() if item.get("id") is not None else key_id
+                if pid:
+                    catalog[pid] = item
+                if key_id and key_id not in catalog:
+                    catalog[key_id] = item
+            elif isinstance(item, str) and key_id:
+                catalog[key_id] = {"id": key_id, "text": item}
+    return catalog
+
+
+def resolve_question_passage(
+    question: dict[str, Any],
+    passages_catalog: dict[str, dict[str, Any]],
+    rendered_passages: set[str],
+) -> dict[str, Any] | None:
+    """Lấy khối ngữ liệu trước câu đầu tiên của từng nhóm, không lặp ở các câu sau."""
+    raw_pid = question.get("passageId")
+    passage_id = str(raw_pid).strip() if raw_pid is not None and str(raw_pid).strip() else None
+    raw_gid = question.get("groupId")
+    group_id = str(raw_gid).strip() if raw_gid is not None and str(raw_gid).strip() else None
+    dedup_key = f"p:{passage_id}" if passage_id else (f"g:{group_id}" if group_id else None)
+    if dedup_key is not None and dedup_key in rendered_passages:
+        return None
+
+    p_title = question.get("passageTitle") or question.get("groupTitle")
+    p_lead = question.get("passageLead") or question.get("groupLead") or question.get("lead")
+    p_text = question.get("passageText")
+    p_doc: dict[str, Any] | None = None
+
+    if passage_id and passage_id in passages_catalog:
+        p_cat = passages_catalog[passage_id]
+        if not (isinstance(p_title, str) and p_title.strip()):
+            p_title = p_cat.get("title") or p_cat.get("passageTitle")
+        if not (isinstance(p_lead, str) and p_lead.strip()):
+            p_lead = p_cat.get("lead") or p_cat.get("passageLead") or p_cat.get("groupLead")
+        if not (isinstance(p_text, str) and p_text.strip()):
+            p_text = p_cat.get("text") or p_cat.get("passageText") or p_cat.get("description")
+        raw_doc = p_cat.get("richDoc")
+        if isinstance(raw_doc, dict) and not (
+            isinstance(question.get("passageText"), str) and question["passageText"].strip()
+        ):
+            plain_doc = project(raw_doc, [])
+            if not (isinstance(p_text, str) and p_text.strip()) or plain_doc == str(p_text or ""):
+                p_doc = raw_doc
+                if not (isinstance(p_text, str) and p_text.strip()):
+                    p_text = plain_doc
+
+    clean_title = p_title.strip() if isinstance(p_title, str) and p_title.strip() else None
+    clean_lead = p_lead.strip() if isinstance(p_lead, str) and p_lead.strip() else None
+    clean_text = p_text if isinstance(p_text, str) and p_text.strip() else None
+    if clean_lead and (clean_lead == clean_title or clean_lead == (clean_text or "").strip()):
+        clean_lead = None
+    if not (clean_title or clean_lead or clean_text or p_doc is not None):
+        return None
+    if dedup_key is not None:
+        rendered_passages.add(dedup_key)
+    return {
+        "title": clean_title,
+        "lead": clean_lead,
+        "text": clean_text,
+        "richDoc": p_doc,
+    }
+
+
+def format_points_vi(p100: int) -> str:
+    if p100 % 100 == 0:
+        return f"{p100 // 100} điểm"
+    text = f"{p100 / 100:.2f}".rstrip("0").rstrip(".")
+    return text.replace(".", ",") + " điểm"
+
+
+def question_points_p100(question: dict[str, Any]) -> int:
+    raw_pts = question.get("points")
+    if raw_pts is not None and not isinstance(raw_pts, bool):
+        try:
+            val = float(raw_pts)
+            if math.isfinite(val) and val > 0:
+                return round(val * 100)
+        except (TypeError, ValueError):
+            pass
+    raw_q4 = question.get("pointsQ4")
+    if isinstance(raw_q4, (int, float)) and not isinstance(raw_q4, bool) and raw_q4 > 0:
+        return round(float(raw_q4) * 25)
+    return 0
+
+
+def build_choice_track_plan(questions: list[dict[str, Any]]) -> dict[str, Any] | None:
+    tracks: list[tuple[str, str]] = []
+    seen_tracks: dict[str, str] = {}
+    track_p100: dict[str, int] = {}
+    common_p100 = 0
+    has_common = False
+    for q in questions:
+        grp = str(q.get("choiceGroup") or "").strip()
+        p100 = question_points_p100(q)
+        if grp:
+            key = grp.casefold()
+            if key not in seen_tracks:
+                seen_tracks[key] = grp
+                tracks.append((key, grp))
+            track_p100[key] = track_p100.get(key, 0) + p100
+        else:
+            has_common = True
+            common_p100 += p100
+    if not tracks:
+        return None
+    return {
+        "has_common": has_common,
+        "common_p100": common_p100,
+        "tracks": tracks,
+        "track_index": {key: idx for idx, (key, _) in enumerate(tracks, 1)},
+        "track_names": seen_tracks,
+        "track_p100": track_p100,
+    }
+
+
 def field_inputs(exam, teacher):
     yield from ((exam.get(k, ""), None, None) for k in ("title", "school", "instructions"))
     yield exam.get("quote", {}).get("text", ""), None, None
+    passages_catalog = build_passages_catalog(exam)
+    rendered_passages: set[str] = set()
     for q in exam["questions"]:
+        passage = resolve_question_passage(q, passages_catalog, rendered_passages)
+        if passage is not None:
+            if passage["title"]:
+                yield passage["title"], None, None
+            if passage["lead"]:
+                yield passage["lead"], None, None
+            if passage["text"] or passage["richDoc"] is not None:
+                yield passage["text"] or "", passage["richDoc"], None
         yield q.get("stem", ""), q.get("richDoc"), q.get("runs")
         for i, text in enumerate(q.get("options", [])):
             docs = q.get("optionDocs") or []
@@ -653,11 +793,35 @@ class WordWriter:
             self.field(
                 option,
                 docs[j] if j < len(docs) else None,
-                prefix=f"{'ABCD'[j]}. ",
+                prefix=f"{chr(65 + j)}. ",
                 container=cell,
             )
             if len(cell._tc) == 0 or cell._tc[-1].tag != qn("w:p"):
                 cell.add_paragraph()
+
+    @staticmethod
+    def _apply_box_style(p_el: Any, border_xml: str, fill_hex: str) -> None:
+        p_pr = p_el.find(qn("w:pPr"))
+        if p_pr is None:
+            p_pr = OxmlElement("w:pPr")
+            p_el.insert(0, p_pr)
+        p_bdr = parse_xml(border_xml)
+        shd = parse_xml(
+            '<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+            f'w:val="clear" w:color="auto" w:fill="{fill_hex}"/>'
+        )
+        insert_at = len(p_pr)
+        for idx, child in enumerate(list(p_pr)):
+            if child.tag in {qn("w:spacing"), qn("w:ind"), qn("w:jc")}:
+                insert_at = idx
+                break
+        p_pr.insert(insert_at, p_bdr)
+        p_pr.insert(insert_at + 1, shd)
+        if p_pr.find(qn("w:ind")) is None:
+            ind = OxmlElement("w:ind")
+            ind.set(qn("w:left"), "140")
+            ind.set(qn("w:right"), "140")
+            p_pr.append(ind)
 
     def _add_draft_paragraph(self, prefix: str, body: str = "") -> None:
         p = self.doc.add_paragraph()
@@ -679,6 +843,68 @@ class WordWriter:
         if body:
             r_body = p.add_run(body)
             r_body.font.color.rgb = RGBColor(120, 53, 15)
+
+    def _add_section_heading(self, text: str) -> None:
+        p = self.doc.add_paragraph()
+        p.paragraph_format.keep_with_next = True
+        p.paragraph_format.space_before = Pt(10)
+        p.paragraph_format.space_after = Pt(4)
+        run = p.add_run(text)
+        run.bold = True
+        run.font.size = Pt(self.font_size + 1)
+        run.font.color.rgb = RGBColor(15, 76, 129)
+
+    def _add_choice_instruction_box(self, body: str) -> None:
+        p = self.doc.add_paragraph()
+        p.paragraph_format.keep_with_next = True
+        p.paragraph_format.space_before = Pt(8)
+        p.paragraph_format.space_after = Pt(6)
+        border_xml = (
+            '<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            '<w:top w:val="single" w:sz="10" w:space="6" w:color="0F4C81"/>'
+            '<w:left w:val="single" w:sz="18" w:space="8" w:color="0F4C81"/>'
+            '<w:bottom w:val="single" w:sz="10" w:space="6" w:color="0F4C81"/>'
+            '<w:right w:val="single" w:sz="10" w:space="6" w:color="0F4C81"/>'
+            "</w:pBdr>"
+        )
+        self._apply_box_style(p._p, border_xml, "EFF6FF")
+        r_head = p.add_run("PHẦN RIÊNG — ")
+        r_head.bold = True
+        r_head.font.color.rgb = RGBColor(15, 76, 129)
+        r_body = p.add_run(body)
+        r_body.bold = True
+        r_body.font.color.rgb = RGBColor(15, 23, 42)
+
+    def _add_passage_box(self, passage: dict[str, Any]) -> None:
+        body_el = self.doc._body._body
+        start_idx = len(body_el)
+        if passage.get("title"):
+            self.blocks(self.doc, field_document(passage["title"]).get("content", []), bold=True)
+        if passage.get("lead"):
+            self.field(passage["lead"])
+        if passage.get("text") or passage.get("richDoc") is not None:
+            self.field(passage.get("text") or "", passage.get("richDoc"))
+        border_xml = (
+            '<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            '<w:top w:val="single" w:sz="6" w:space="6" w:color="CBD5E1"/>'
+            '<w:left w:val="single" w:sz="18" w:space="8" w:color="0F4C81"/>'
+            '<w:bottom w:val="single" w:sz="6" w:space="6" w:color="CBD5E1"/>'
+            '<w:right w:val="single" w:sz="6" w:space="6" w:color="CBD5E1"/>'
+            "</w:pBdr>"
+        )
+        added_paras = [el for el in list(body_el)[start_idx:] if el.tag == qn("w:p")]
+        for idx, p_el in enumerate(added_paras):
+            self._apply_box_style(p_el, border_xml, "F8FAFC")
+            if idx == len(added_paras) - 1:
+                p_pr = p_el.find(qn("w:pPr"))
+                if p_pr is not None and p_pr.find(qn("w:spacing")) is None:
+                    spacing = OxmlElement("w:spacing")
+                    spacing.set(qn("w:after"), "140")
+                    ind = p_pr.find(qn("w:ind"))
+                    if ind is not None:
+                        p_pr.insert(list(p_pr).index(ind), spacing)
+                    else:
+                        p_pr.append(spacing)
 
     def write(self):
         e = self.exam
@@ -735,10 +961,52 @@ class WordWriter:
             )
             self.picture(self.assets["figures"][self.figure_at]["png"], "Biểu đồ dữ kiện Bảng 1")
             self.figure_at += 1
+        passages_catalog = build_passages_catalog(e)
+        rendered_passages: set[str] = set()
+        track_plan = build_choice_track_plan(e["questions"])
+        rendered_common = False
+        rendered_elective_box = False
+        current_track_key: str | None = None
         for i, q in enumerate(e["questions"], 1):
             if q.get("pageBreak"):
                 self.doc.add_page_break()
-            score = " (" + str(q["points"]).replace(".", ",") + " điểm)" if "points" in q else ""
+            if track_plan is not None:
+                grp = str(q.get("choiceGroup") or "").strip()
+                grp_key = grp.casefold() if grp else ""
+                if not grp_key:
+                    if not rendered_common:
+                        rendered_common = True
+                        pts_suffix = (
+                            f" ({format_points_vi(track_plan['common_p100'])})"
+                            if track_plan["common_p100"] > 0
+                            else ""
+                        )
+                        self._add_section_heading(f"PHẦN CHUNG{pts_suffix}")
+                else:
+                    if not rendered_elective_box:
+                        rendered_elective_box = True
+                        track_labels = " / ".join(
+                            f"Hướng {idx}: {name}"
+                            for idx, (_, name) in enumerate(track_plan["tracks"], 1)
+                        )
+                        self._add_choice_instruction_box(
+                            f"Thí sinh chỉ chọn làm MỘT trong các hướng sau ({track_labels})."
+                        )
+                    if grp_key != current_track_key:
+                        current_track_key = grp_key
+                        idx = track_plan["track_index"][grp_key]
+                        name = track_plan["track_names"][grp_key]
+                        pts = track_plan["track_p100"].get(grp_key, 0)
+                        pts_suffix = f" ({format_points_vi(pts)})" if pts > 0 else ""
+                        self._add_section_heading(f"Hướng {idx}: {name}{pts_suffix}")
+            passage = resolve_question_passage(q, passages_catalog, rendered_passages)
+            if passage is not None:
+                self._add_passage_box(passage)
+            score = (
+                " (" + str(q["points"]).replace(".", ",") + " điểm)"
+                if q.get("points") is not None
+                else ""
+            )
             self.field(
                 q.get("stem", ""),
                 q.get("richDoc"),
@@ -802,7 +1070,11 @@ class WordWriter:
                 self._write_mcq_two_column(options, docs)
             else:
                 for j, option in enumerate(options):
-                    self.field(option, docs[j] if j < len(docs) else None, prefix=f"{'ABCD'[j]}. ")
+                    self.field(
+                        option,
+                        docs[j] if j < len(docs) else None,
+                        prefix=f"{chr(65 + j)}. ",
+                    )
             if self.teacher:
                 answer = saved_answer_label(q)
                 self.field("Lời giải tham khảo" if q.get("type") == "essay" else "Đáp án " + answer)

@@ -30,15 +30,19 @@ from mach_backend.matrix_import import validate_raster
 from mach_backend.presentation import PRESENTATION_CONTROLS, PRESENTATION_CSS, PRESENTATION_SCRIPT
 from mach_backend.word_export import (
     DRAFT_BANNER_TITLE,
+    build_choice_track_plan,
+    build_passages_catalog,
     export_docx,
     export_inputs,
     field_document,
     format_draft_warning,
+    format_points_vi,
     image_bytes,
     match_question_warnings,
     math_parts,
     normalize_draft_warnings,
     recipient_line,
+    resolve_question_passage,
     uses_table,
     watermark_image_bytes,
 )
@@ -512,40 +516,64 @@ def exam_html(
     mcq_two_cols = layout.get("mcqColumns") == 2
     if presenting and has_reference:
         body += "</div>"
-    passages_catalog: dict[str, dict[str, Any]] = {}
-    if isinstance(exam.get("passages"), list):
-        for p in exam["passages"]:
-            if isinstance(p, dict) and p.get("id"):
-                passages_catalog[str(p["id"])] = p
-
+    passages_catalog = build_passages_catalog(exam)
     rendered_passages: set[str] = set()
+    track_plan = build_choice_track_plan(exam["questions"])
+    rendered_common = False
+    rendered_elective_box = False
+    current_track_key: str | None = None
     for i, q in enumerate(exam["questions"]):
         if q.get("figure") and not figures:
             raise AIError("unsupported_export", "Chưa có bản dựng hình để xuất; không bỏ hình.")
-        p_title = q.get("passageTitle")
-        p_text = q.get("passageText")
-        passage_id = q.get("passageId")
-        if (
-            passage_id
-            and str(passage_id) in passages_catalog
-            and str(passage_id) not in rendered_passages
-        ):
-            p_cat = passages_catalog[str(passage_id)]
-            if not p_title:
-                p_title = p_cat.get("title")
-            if not p_text:
-                p_text = p_cat.get("text")
+        if track_plan is not None:
+            grp = str(q.get("choiceGroup") or "").strip()
+            grp_key = grp.casefold() if grp else ""
+            if not grp_key:
+                if not rendered_common:
+                    rendered_common = True
+                    pts_suffix = (
+                        f" ({format_points_vi(track_plan['common_p100'])})"
+                        if track_plan["common_p100"] > 0
+                        else ""
+                    )
+                    body += f'<h2 class="exam-part-heading">PHẦN CHUNG{plain(pts_suffix)}</h2>'
+            else:
+                if not rendered_elective_box:
+                    rendered_elective_box = True
+                    track_labels = " / ".join(
+                        f"Hướng {idx}: {name}"
+                        for idx, (_, name) in enumerate(track_plan["tracks"], 1)
+                    )
+                    body += (
+                        '<div class="choice-track-banner" role="note">'
+                        "<strong>PHẦN RIÊNG — Thí sinh chỉ chọn làm MỘT "
+                        "trong các hướng sau:</strong> "
+                        f"{plain(track_labels)}.</div>"
+                    )
+                if grp_key != current_track_key:
+                    current_track_key = grp_key
+                    t_idx = track_plan["track_index"][grp_key]
+                    t_name = track_plan["track_names"][grp_key]
+                    t_pts = track_plan["track_p100"].get(grp_key, 0)
+                    pts_suffix = f" ({format_points_vi(t_pts)})" if t_pts > 0 else ""
+                    body += (
+                        f'<h3 class="choice-track-heading">'
+                        f"Hướng {t_idx}: {plain(t_name)}{plain(pts_suffix)}</h3>"
+                    )
 
-        if (p_title or p_text) and (passage_id is None or str(passage_id) not in rendered_passages):
-            if passage_id:
-                rendered_passages.add(str(passage_id))
+        passage = resolve_question_passage(q, passages_catalog, rendered_passages)
+        if passage is not None:
             body += '<div class="passage">'
-            if p_title:
-                body += f"<b>{inline_html(p_title)}</b>"
-            if p_text:
-                body += f"<p>{inline_html(p_text)}</p>"
+            if passage["title"]:
+                body += f"<b>{inline_html(passage['title'])}</b>"
+            if passage["lead"]:
+                body += f'<p class="passage-lead"><em>{inline_html(passage["lead"])}</em></p>'
+            if passage["richDoc"] is not None:
+                body += f"<div>{rich(passage['richDoc'])}</div>"
+            elif passage["text"]:
+                body += f"<p>{inline_html(passage['text'])}</p>"
             body += "</div>"
-        score = " (" + plain(points(q["points"])) + ")" if "points" in q else ""
+        score = " (" + plain(points(q["points"])) + ")" if q.get("points") is not None else ""
         page_class = ' class="page-break"' if q.get("pageBreak") else ""
         slide_attr = " data-exam-question" if presenting else ""
         body += f"<section{page_class}{slide_attr}><b>Câu {i + 1}{score}.</b> " + field(
@@ -727,13 +755,28 @@ def exam_html(
         "justify-content:center;pointer-events:none;z-index:-1;opacity:0.12}"
         ".watermark-img img{max-width:65%;max-height:65%;object-fit:contain}"
         "table{border-collapse:collapse;width:100%}td,th{border:1px solid;padding:6px}"
+        "table{table-layout:auto}td,th{vertical-align:top}"
         "figure svg{max-width:100%;height:auto}"
         "figure{break-inside:avoid;text-align:center;margin:12px 0}"
         "figure img{display:block;margin:auto}"
         "td img{max-width:100%;max-height:180px;display:block;margin:4px auto}"
         ".cell-caption{display:block;text-align:center;margin-top:4px}"
-        ".code-block{background:#f4f6f5;padding:10px 12px;border-radius:6px;"
-        'font-family:Consolas,"Courier New",monospace;white-space:pre-wrap;overflow-wrap:anywhere}'
+        ".code-block,pre{background:#f4f6f5;padding:10px 12px;border-radius:6px;"
+        'border:1px solid #d7e0dc;font-family:Consolas,"Courier New",monospace;font-size:9.5pt;'
+        "line-height:1.45;white-space:pre-wrap;tab-size:4;-moz-tab-size:4;"
+        "overflow-wrap:normal;word-break:normal;margin:8px 0}"
+        ".code-block code,pre code{font-family:inherit;font-size:inherit;"
+        "white-space:inherit;tab-size:inherit;overflow-wrap:normal;word-break:normal}"
+        "td .code-block,th .code-block{margin:2px 0;padding:6px 8px;font-size:9.5pt;"
+        "white-space:pre-wrap;tab-size:4;overflow-wrap:normal;word-break:normal}"
+        ".passage{border:1px solid #cbd5e1;border-left:4px solid #0f4c81;background:#f8fafc;"
+        "padding:10px 14px;border-radius:6px;margin:12px 0}"
+        ".passage-lead{margin:4px 0}"
+        ".exam-part-heading,.choice-track-heading{font-size:1.08em;font-weight:700;"
+        "color:#0f4c81;margin:16px 0 8px;break-after:avoid}"
+        ".choice-track-banner{border:2px solid #0f4c81;background:#eff6ff;color:#0f172a;"
+        "padding:10px 14px;border-radius:6px;margin:16px 0 10px;"
+        "break-inside:avoid;break-after:avoid}"
         "li>p,td>p,th>p{margin:0}tr{break-inside:avoid}"
         "blockquote,small{font-size:11pt;color:#444}@page{size:A4;margin:18mm}"
         ".page-break{break-before:page}"
@@ -908,25 +951,63 @@ def _block_identity(question):
     return (passage_id, group_id)
 
 
+def _singular_q_word(word: str) -> str:
+    if word.lower().startswith("questions"):
+        return word[:-1]
+    return word
+
+
 def _update_range_in_text(text: str, start: int, end: int) -> str:
     if not isinstance(text, str) or not text.strip():
         return text
 
-    def _repl(m: re.Match[str]) -> str:
-        prefix = m.group(1) or ""
-        sep = m.group(2)
-        has_second_cau = bool(m.group(3))
-        is_upper = m.group(0).lstrip().startswith("C") or (
-            bool(prefix.strip()) and prefix.strip()[0].isupper()
-        )
-        cau_word = "Câu" if is_upper and not prefix.strip() else "câu"
-        if start == end:
-            return f"{prefix}{cau_word} {start}"
-        second_cau = (f"{cau_word} " if is_upper else "câu ") if has_second_cau else ""
-        return f"{prefix}{cau_word} {start}{sep}{second_cau}{end}"
+    range_pattern = re.compile(
+        r"(?i)\b(từ\s+|from\s+)?(questions?|câu(?:\s+hỏi)?(?:\s+số)?)\s+\d+"
+        r"(\s*(?:–|—|-|−|\.\.|đến|tới|to)\s*)"
+        r"((?:questions?|câu(?:\s+hỏi)?(?:\s+số)?)\s+)?\d+\b"
+    )
+    list_pattern = re.compile(
+        r"(?i)\b(questions?|câu(?:\s+hỏi)?(?:\s+số)?)\s+\d+"
+        r"((?:\s*(?:,|và|and)\s*(?:(?:questions?|câu(?:\s+hỏi)?(?:\s+số)?)\s+)?\d+)+)\b"
+    )
+    tail_item_pattern = re.compile(
+        r"(\s*(?:,|và|and)\s*)((?:questions?|câu(?:\s+hỏi)?(?:\s+số)?)\s+)?(\d+)",
+        re.IGNORECASE,
+    )
 
-    pattern = re.compile(r"(?i)\b(từ\s+)?câu\s+\d+(\s*(?:đến|–|-)\s*)(câu\s+)?\d+\b")
-    return pattern.sub(_repl, text)
+    def _repl_range(m: re.Match[str]) -> str:
+        prefix = m.group(1) or ""
+        word1 = m.group(2)
+        sep = m.group(3)
+        word2 = m.group(4) or ""
+        if start == end:
+            head = _singular_q_word(word1)
+            if prefix and prefix.strip()[0].isupper() and head[0].islower():
+                head = head[0].upper() + head[1:]
+            return f"{head} {start}"
+        return f"{prefix}{word1} {start}{sep}{word2}{end}"
+
+    def _repl_list(m: re.Match[str]) -> str:
+        word1 = m.group(1)
+        tail = m.group(2)
+        items = tail_item_pattern.findall(tail)
+        if start == end:
+            return f"{_singular_q_word(word1)} {start}"
+        if not items:
+            return m.group(0)
+        count = 1 + len(items)
+        if end - start + 1 == count:
+            out = f"{word1} {start}"
+            for idx, (sep, word2, _) in enumerate(items, 1):
+                out += f"{sep}{word2}{start + idx}"
+            return out
+        if len(items) == 1 and end - start > 1:
+            sep_char = " to " if word1.lower().startswith("question") else "–"
+            return f"{word1} {start}{sep_char}{end}"
+        return f"{word1} {start}–{end}"
+
+    updated = range_pattern.sub(_repl_range, text)
+    return list_pattern.sub(_repl_list, updated)
 
 
 def _block_display_label(block_key, title=None):
@@ -1473,19 +1554,26 @@ def exam_variant(exam, variant):
     for _key, indices in block_map.items():
         if not indices:
             continue
-        first_idx = indices[0]
-        start_num = first_idx + 1
+        start_num = indices[0] + 1
         end_num = indices[-1] + 1
-        q_first = reordered[first_idx]
-        updates = {}
-        for header_field in ("passageTitle", "passageText", "passageLead", "lead", "groupLead"):
-            val = q_first.get(header_field)
-            if isinstance(val, str) and val.strip():
-                new_val = _update_range_in_text(val, start_num, end_num)
-                if new_val != val:
-                    updates[header_field] = new_val
-        if updates:
-            reordered[first_idx] = {**q_first, **updates}
+        for q_idx in indices:
+            q_item = reordered[q_idx]
+            updates = {}
+            for header_field in (
+                "passageTitle",
+                "passageText",
+                "passageLead",
+                "lead",
+                "groupLead",
+                "groupTitle",
+            ):
+                val = q_item.get(header_field)
+                if isinstance(val, str) and val.strip():
+                    new_val = _update_range_in_text(val, start_num, end_num)
+                    if new_val != val:
+                        updates[header_field] = new_val
+            if updates:
+                reordered[q_idx] = {**q_item, **updates}
 
     code = str(101 + offset)
     res_exam = {
@@ -1493,23 +1581,74 @@ def exam_variant(exam, variant):
         "title": f"{exam.get('title') or 'Đề thi'} · Mã đề {code}",
         "questions": reordered,
     }
-    if isinstance(exam.get("passages"), list):
+    raw_passages = exam.get("passages")
+    passage_fields = (
+        "title",
+        "text",
+        "lead",
+        "description",
+        "passageTitle",
+        "passageText",
+        "passageLead",
+        "groupTitle",
+        "groupLead",
+    )
+
+    def _passage_range(pid_candidates: list[str]) -> tuple[int, int] | None:
+        matched_indices = [
+            idx
+            for idx, q in enumerate(reordered)
+            if q.get("passageId") is not None and str(q.get("passageId")).strip() in pid_candidates
+        ]
+        if not matched_indices:
+            return None
+        return matched_indices[0] + 1, matched_indices[-1] + 1
+
+    if isinstance(raw_passages, list):
         updated_passages = []
-        for p in exam["passages"]:
+        for p in raw_passages:
+            if not isinstance(p, dict):
+                updated_passages.append(p)
+                continue
             p_copy = dict(p)
-            pid = p_copy.get("id")
-            if pid is not None:
-                p_indices = [
-                    idx for idx, q in enumerate(reordered) if str(q.get("passageId")) == str(pid)
-                ]
-                if p_indices:
-                    p_start = p_indices[0] + 1
-                    p_end = p_indices[-1] + 1
-                    for k in ("title", "text", "lead", "description"):
+            pid = p_copy.get("id") if p_copy.get("id") is not None else p_copy.get("passageId")
+            if pid is not None and str(pid).strip():
+                span = _passage_range([str(pid).strip()])
+                if span is not None:
+                    p_start, p_end = span
+                    for k in passage_fields:
                         if isinstance(p_copy.get(k), str):
                             p_copy[k] = _update_range_in_text(p_copy[k], p_start, p_end)
             updated_passages.append(p_copy)
         res_exam["passages"] = updated_passages
+    elif isinstance(raw_passages, dict):
+        updated_passages_dict: dict[Any, Any] = {}
+        for key, p in raw_passages.items():
+            key_str = str(key).strip()
+            if isinstance(p, dict):
+                p_copy = dict(p)
+                pid_val = (
+                    p_copy.get("id") if p_copy.get("id") is not None else p_copy.get("passageId")
+                )
+                candidates = [
+                    c for c in (key_str, str(pid_val).strip() if pid_val is not None else "") if c
+                ]
+                span = _passage_range(candidates) if candidates else None
+                if span is not None:
+                    p_start, p_end = span
+                    for k in passage_fields:
+                        if isinstance(p_copy.get(k), str):
+                            p_copy[k] = _update_range_in_text(p_copy[k], p_start, p_end)
+                updated_passages_dict[key] = p_copy
+            elif isinstance(p, str):
+                span = _passage_range([key_str]) if key_str else None
+                if span is not None:
+                    updated_passages_dict[key] = _update_range_in_text(p, span[0], span[1])
+                else:
+                    updated_passages_dict[key] = p
+            else:
+                updated_passages_dict[key] = p
+        res_exam["passages"] = updated_passages_dict
     return res_exam
 
 
@@ -1517,7 +1656,27 @@ def preview_exam_variant(payload):
     exam = payload.get("exam")
     if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
         raise AIError("invalid_exam", "Đề cần danh sách câu để xem trước.")
-    variant = exam_variant(exam, payload.get("variant"))
+    variant_cfg = payload.get("variant")
+    variant = exam_variant(exam, variant_cfg)
+    max_variants = 1
+    if isinstance(variant_cfg, dict) and isinstance(variant_cfg.get("questionIds"), list):
+        max_variants = min(
+            6, len(_plan_variant_units(exam["questions"], variant_cfg["questionIds"])["units"])
+        )
+    elif (
+        isinstance(variant_cfg, dict)
+        and isinstance(variant_cfg.get("sections"), list)
+        and variant_cfg["sections"]
+    ):
+        sec_counts = [
+            len(_plan_variant_units(exam["questions"], sec["questionIds"])["units"])
+            for sec in variant_cfg["sections"]
+            if isinstance(sec, dict) and isinstance(sec.get("questionIds"), list)
+        ]
+        max_variants = min(6, max(sec_counts, default=1))
+
+    variant_passages_catalog = build_passages_catalog(variant)
+    seen_catalog_passages: set[str] = set()
     original_by_id = {
         q["id"]: (i + 1, q) for i, q in enumerate(exam["questions"]) if isinstance(q.get("id"), str)
     }
@@ -1543,6 +1702,19 @@ def preview_exam_variant(payload):
             for field in ("passageTitle", "passageText", "passageId", "groupId")
             if field in q
         }
+        raw_pid = q.get("passageId")
+        pid_str = str(raw_pid).strip() if raw_pid is not None and str(raw_pid).strip() else None
+        if pid_str and pid_str in variant_passages_catalog and pid_str not in seen_catalog_passages:
+            seen_catalog_passages.add(pid_str)
+            p_cat = variant_passages_catalog[pid_str]
+            if not passage_meta.get("passageTitle"):
+                cat_title = p_cat.get("title") or p_cat.get("passageTitle")
+                if isinstance(cat_title, str) and cat_title.strip():
+                    passage_meta["passageTitle"] = cat_title
+            if not passage_meta.get("passageText"):
+                cat_text = p_cat.get("text") or p_cat.get("passageText") or p_cat.get("description")
+                if isinstance(cat_text, str) and cat_text.strip():
+                    passage_meta["passageText"] = cat_text
         question_passages.append(passage_meta)
         question_mappings.append(
             {
@@ -1559,6 +1731,7 @@ def preview_exam_variant(payload):
         )
     return {
         "title": variant["title"],
+        "maxVariants": max_variants,
         "questions": questions_out,
         "questionPassages": question_passages,
         "questionMappings": question_mappings,

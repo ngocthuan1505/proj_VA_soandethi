@@ -135,6 +135,35 @@ function quickPlanForm(c,flow){
  }catch(e){error.textContent=e.message;}finally{button.disabled=false;}};
 }
 
+export function buildMatrixPlanOverviewHTML({rows,notes='',reverseReport=null}){
+ const safeRows=Array.isArray(rows)?rows:[];
+ const formatPreviewPt=v=>{
+  const n=Number(v);
+  if(!Number.isFinite(n)||n<=0)return '';
+  return n.toFixed(2).replace('.',',')+'đ';
+ };
+ const stripTopicPointTag=t=>String(t??'').replace(/\s*\(\s*\d+(?:[.,]\d+)?\s*đ(?:\s*·\s*#\d+)?\s*\)\s*$/iu,'').trim();
+ const sumTargets=r=>(r.targets||[]).reduce((a,b)=>a+(Number(b)||0),0);
+ const commonQ=safeRows.filter(r=>!(r.choiceGroup||'').trim()).reduce((n,r)=>n+sumTargets(r),0);
+ const trackGroups=[...new Set(safeRows.map(r=>(r.choiceGroup||'').trim()).filter(Boolean))];
+ const trackMaxQ=trackGroups.length?Math.max(...trackGroups.map(g=>safeRows.filter(r=>(r.choiceGroup||'').trim()===g).reduce((n,r)=>n+sumTargets(r),0))):0;
+ const effCount=commonQ+trackMaxQ;
+ return `<h4>Cơ cấu đề xuất · ${effCount} câu/ý · 10 điểm</h4><p>${esc(notes||'Xem lại chủ đề, mức và điểm trước khi dùng.')}</p><div class="matrix-overview-scroll"><table><thead><tr><th>Chủ đề / dạng câu</th>${LEVELS.map((x,i)=>`<th title="${x}" aria-label="${x}">${['NB','TH','VD','VDC'][i]}</th>`).join('')}</tr></thead><tbody>${safeRows.map(r=>{
+  const flag=rowFlagForReverseReport(reverseReport,r);
+  const flagTag=flag?` <span class="pill warn matrix-row-flag" data-row-flag="${flag.pointConflict?'pointConflict':'needsReview'}">${esc(flag.label)}</span>`:'';
+  const cellPts=LEVELS.map((_,i)=>{
+   const pts=r.pointsByLevelQ4?r.pointsByLevelQ4[i]/4:r.pointsByLevel?r.pointsByLevel[i]:r.pointsQ4!=null?r.pointsQ4/4:r.points;
+   return (r.targets?.[i])&&pts?pts:null;
+  });
+  const hasCellPts=cellPts.some(Boolean);
+  const displayTopic=hasCellPts?(stripTopicPointTag(r.topic)||r.topic):r.topic;
+  return `<tr><td>${esc(displayTopic)}${r.choiceGroup?` <small>[${esc(r.choiceGroup)}]</small>`:''}${flagTag}<small style="display:block">${esc(QUESTION_TYPES[r.type||'mcq'])}</small></td>${LEVELS.map((_,i)=>{
+   const ptText=cellPts[i]!=null?formatPreviewPt(cellPts[i]):'';
+   return `<td>${r.targets?.[i]||0}${ptText?`<small style="display:block">${esc(ptText)}</small>`:''}</td>`;
+  }).join('')}</tr>`;
+ }).join('')}</tbody></table></div><p class="hint">NB: Nhận biết · TH: Thông hiểu · VD: Vận dụng · VDC: Vận dụng cao. Điểm ghi dưới số câu là điểm mỗi câu.</p>`;
+}
+
 function matrixForm(c,flow){
  flow.controller=null;flow.phase='plan';flow.dock?.remove();flow.dock=null;
  const exam=c.getState().exams.find(e=>e.id===flow.examId);
@@ -169,14 +198,7 @@ function matrixForm(c,flow){
   }catch(err){revStatus.textContent=err.message;}finally{if(revBtn.isConnected)revBtn.disabled=false;}
  };
  if(flow.autoPreview){
-  const summary=document.createElement('div');summary.className='matrix-plan-overview';summary.innerHTML=`<h4>Cơ cấu đề xuất · ${rows.reduce((n,r)=>n+r.targets.reduce((a,b)=>a+b,0),0)} câu/ý · 10 điểm</h4><p>${esc(flow.notes||'Xem lại chủ đề, mức và điểm trước khi dùng.')}</p><div class="matrix-overview-scroll"><table><thead><tr><th>Chủ đề / dạng câu</th>${LEVELS.map((x,i)=>`<th title="${x}" aria-label="${x}">${['NB','TH','VD','VDC'][i]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>{
-   const flag=rowFlagForReverseReport(reverseReport,r);
-   const flagTag=flag?` <span class="pill warn matrix-row-flag" data-row-flag="${flag.pointConflict?'pointConflict':'needsReview'}">${esc(flag.label)}</span>`:'';
-   return `<tr><td>${esc(r.topic)}${r.choiceGroup?` <small>[${esc(r.choiceGroup)}]</small>`:''}${flagTag}<small>${esc(QUESTION_TYPES[r.type||'mcq'])}</small></td>${LEVELS.map((_,i)=>{
-    const pts=r.pointsByLevelQ4?r.pointsByLevelQ4[i]/4:r.pointsByLevel?r.pointsByLevel[i]:r.pointsQ4!=null?r.pointsQ4/4:r.points;
-    return `<td>${r.targets[i]||0}${r.targets[i]&&pts?`<small>${String(pts).replace('.',',')}đ</small>`:''}</td>`;
-   }).join('')}</tr>`;
-  }).join('')}</tbody></table></div><p class="hint">NB: Nhận biết · TH: Thông hiểu · VD: Vận dụng · VDC: Vận dụng cao. Điểm ghi dưới số câu là điểm mỗi câu.</p>`;
+  const summary=document.createElement('div');summary.className='matrix-plan-overview';summary.innerHTML=buildMatrixPlanOverviewHTML({rows,notes:flow.notes,reverseReport});
   const mix=document.createElement('p');mix.className='matrix-plan-types';mix.textContent=Object.entries(QUESTION_TYPES).map(([key,label])=>{const n=rows.filter(r=>(r.type||'mcq')===key).reduce((sum,r)=>sum+r.targets.reduce((a,b)=>a+b,0),0);return n?n+' '+label.toLocaleLowerCase():'';}).filter(Boolean).join(' · ');summary.querySelector('h4').after(mix);if(!flow.fromFile){const detail=document.createElement('details');detail.className='matrix-auto-distribution';detail.innerHTML='<summary>Xem phân bố chủ đề và mức độ</summary>';detail.append(summary.querySelector('.matrix-overview-scroll'),summary.querySelector('.hint'));summary.append(detail);}form.prepend(summary);const advanced=document.createElement('details');advanced.className='matrix-plan-advanced';advanced.innerHTML='<summary>Chỉnh từng chủ đề, số câu và điểm</summary>';advanced.append(form.querySelector('[data-rows]'),form.querySelector('[data-add-row]'));summary.after(advanced);
  }
  if(flow.metadata){const meta=flow.metadata;const info=document.createElement('p');info.className='matrix-plan-metadata';info.textContent=[meta.title,meta.subject,meta.grade?'Nội dung lớp '+meta.grade:'',meta.minutes?meta.minutes+' phút':''].filter(Boolean).join(' · ');form.prepend(info);

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 import time
 import unicodedata
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
@@ -58,6 +60,23 @@ def _strict_int(value: Any, message: str) -> int:
     return value
 
 
+def _strict_decimal_points(value: Any, message: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(message)
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(message)
+    try:
+        scaled = Decimal(str(value)) * 100
+    except InvalidOperation:
+        raise ValueError(message) from None
+    if not scaled.is_finite() or scaled != scaled.to_integral_value():
+        raise ValueError(message)
+    p100 = int(scaled)
+    if not 5 <= p100 <= 1000 or p100 % 5 != 0:
+        raise ValueError(message)
+    return round(p100 / 100, 2)
+
+
 class MatrixTemplateRow(BaseModel):
     """Một dòng cấu trúc theo chủ đề/dạng câu trong mẫu ma trận cá nhân."""
 
@@ -68,6 +87,9 @@ class MatrixTemplateRow(BaseModel):
     targets: list[int] = Field(min_length=3, max_length=4)
     pointsQ4: int | None = None
     pointsByLevelQ4: list[int | None] | None = None
+    points: float | None = None
+    pointsByLevel: list[float | None] | None = None
+    choiceGroup: str | None = Field(default=None, max_length=80)
 
     @field_validator("topic", mode="after")
     @classmethod
@@ -76,6 +98,16 @@ class MatrixTemplateRow(BaseModel):
         if not cleaned:
             raise ValueError("Chủ đề trong mẫu ma trận không được để trống.")
         return cleaned
+
+    @field_validator("choiceGroup", mode="before")
+    @classmethod
+    def clean_choice_group(cls, value: Any) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("Nhóm tự chọn (choiceGroup) phải là chuỗi ký tự.")
+        cleaned = _norm_text(value)
+        return cleaned or None
 
     @field_validator("targets", mode="before")
     @classmethod
@@ -98,6 +130,15 @@ class MatrixTemplateRow(BaseModel):
             raise ValueError("Điểm/câu (pointsQ4) phải nằm trong khoảng 1..40.")
         return num
 
+    @field_validator("points", mode="before")
+    @classmethod
+    def validate_points_decimal(cls, value: Any) -> float | None:
+        if value is None:
+            return None
+        return _strict_decimal_points(
+            value, "Điểm/câu (points) phải từ 0,05 đến 10,00 điểm theo bội 0,05."
+        )
+
     @field_validator("pointsByLevelQ4", mode="before")
     @classmethod
     def validate_points_by_level(cls, value: Any) -> Any:
@@ -116,26 +157,91 @@ class MatrixTemplateRow(BaseModel):
             cleaned.append(num)
         return cleaned
 
+    @field_validator("pointsByLevel", mode="before")
+    @classmethod
+    def validate_decimal_points_by_level(cls, value: Any) -> list[float | None] | None:
+        if value is None:
+            return None
+        if not isinstance(value, list):
+            raise ValueError("pointsByLevel phải là danh sách điểm theo mức.")
+        cleaned: list[float | None] = []
+        for item in value:
+            if item is None:
+                cleaned.append(None)
+                continue
+            cleaned.append(
+                _strict_decimal_points(
+                    item, "Điểm theo mức (pointsByLevel) phải từ 0,05 đến 10,00 điểm theo bội 0,05."
+                )
+            )
+        return cleaned
+
     @model_validator(mode="after")
     def match_level_points_length(self) -> MatrixTemplateRow:
         if self.pointsByLevelQ4 is not None and len(self.pointsByLevelQ4) != len(self.targets):
             raise ValueError("pointsByLevelQ4 phải có cùng độ dài với targets.")
+        if self.pointsByLevel is not None and len(self.pointsByLevel) != len(self.targets):
+            raise ValueError("pointsByLevel phải có cùng độ dài với targets.")
+        active_modes = sum(
+            field is not None
+            for field in (self.pointsQ4, self.pointsByLevelQ4, self.points, self.pointsByLevel)
+        )
+        if active_modes > 1:
+            raise ValueError("Chỉ chọn một cách ghi điểm (chung hoặc theo mức) trên mỗi dòng.")
         return self
 
 
+def _row_cell_p100(row: MatrixTemplateRow, level: int) -> int | None:
+    if row.pointsByLevelQ4 is not None:
+        val = row.pointsByLevelQ4[level]
+        return val * 25 if val is not None else None
+    if row.pointsByLevel is not None:
+        val_f = row.pointsByLevel[level]
+        return round(val_f * 100) if val_f is not None else None
+    if row.pointsQ4 is not None:
+        return row.pointsQ4 * 25
+    if row.points is not None:
+        return round(row.points * 100)
+    return None
+
+
 def _compute_totals(rows: list[MatrixTemplateRow]) -> tuple[int, int]:
-    total_questions = sum(sum(row.targets) for row in rows)
+    common_q = 0
+    track_q: dict[str, int] = {}
+    common_fixed_p100 = 0
+    track_fixed_p100: dict[str, int] = {}
+
+    for row in rows:
+        grp = (row.choiceGroup or "").strip().casefold()
+        row_q = sum(row.targets)
+        row_p100 = 0
+        for idx, count in enumerate(row.targets):
+            if not count:
+                continue
+            cell_p100 = _row_cell_p100(row, idx)
+            if cell_p100 is not None:
+                row_p100 += cell_p100 * count
+        if grp:
+            track_q[grp] = track_q.get(grp, 0) + row_q
+            track_fixed_p100[grp] = track_fixed_p100.get(grp, 0) + row_p100
+        else:
+            common_q += row_q
+            common_fixed_p100 += row_p100
+
+    total_questions = common_q + (max(track_q.values()) if track_q else 0)
     if not 1 <= total_questions <= MAX_TEMPLATE_QUESTIONS:
         raise ValueError(f"Tổng số câu trong mẫu ma trận phải từ 1 đến {MAX_TEMPLATE_QUESTIONS}.")
-    explicit_q4 = 0
-    for row in rows:
-        if row.pointsByLevelQ4 is not None:
-            explicit_q4 += sum(
-                (row.pointsByLevelQ4[idx] or 0) * count for idx, count in enumerate(row.targets)
-            )
-        elif row.pointsQ4 is not None:
-            explicit_q4 += row.pointsQ4 * sum(row.targets)
-    return total_questions, explicit_q4 if explicit_q4 > 0 else 40
+
+    if track_q:
+        has_explicit = common_fixed_p100 > 0 or any(v > 0 for v in track_fixed_p100.values())
+        if has_explicit:
+            total_p100 = max(common_fixed_p100 + track_fixed_p100.get(grp, 0) for grp in track_q)
+        else:
+            total_p100 = 1000
+    else:
+        total_p100 = common_fixed_p100 if common_fixed_p100 > 0 else 1000
+
+    return total_questions, round(total_p100 / 25)
 
 
 class MatrixTemplateCreate(BaseModel):
