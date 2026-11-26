@@ -1,15 +1,42 @@
 import {examRequestDefaults} from './subject-profiles.js';
 import {esc, LEVELS, QUESTION_TYPES, validateMatrixRows} from './core.js';
 import {richTextHTML} from './math-content.js';
-import {openMatrixSynthesis} from './matrix-synthesis.js';
+import {
+ openMatrixSynthesis,
+ isAutoPilotEnabled,
+ setAutoPilotEnabled,
+ parseAutoCreateSse,
+ renderAutoCreateCardHTML,
+ streamAutoCreateExam,
+ runAutoCreateExam as runAutoCreateExamCore,
+} from './matrix-synthesis.js';
 import {flushEditor} from './editor.js';
 import {workspaceHeaders} from './storage.js';
 import {summarizeReverseMatrixReport, rowFlagForReverseReport, reverseMatrixWarningBannerHTML} from './reference.js';
-export {summarizeReverseMatrixReport, rowFlagForReverseReport, reverseMatrixWarningBannerHTML};
+export {
+ summarizeReverseMatrixReport,
+ rowFlagForReverseReport,
+ reverseMatrixWarningBannerHTML,
+ isAutoPilotEnabled,
+ setAutoPilotEnabled,
+ parseAutoCreateSse,
+ renderAutoCreateCardHTML,
+ streamAutoCreateExam,
+};
 
 const flows=new Map(),restoring=new Set(),reverseReports=new Map();
+let latestChatContext=null,autoCreateListenerBound=false;
 export const matrixChatRunning=c=>flows.get(c.exam().id)?.phase==='running';
 export const isMatrixRequest=text=>!/^(?:giải thích|hướng dẫn|tại sao|cách)\b/iu.test(text)&&/(?:soạn|tạo|sinh|gen|làm)\b/iu.test(text.normalize('NFC'))&&/ma\s*trận/iu.test(text);
+
+export async function runAutoCreateExam(ctx,promptText,opts={}){
+ flushEditor();
+ if(typeof document!=='undefined')document.querySelector('#dialog')?.close?.();
+ return runAutoCreateExamCore(ctx,promptText,{
+  ...opts,
+  onOpenManualMatrix:opts.onOpenManualMatrix||((targetCtx,req)=>openMatrixChat(targetCtx,{request:req,manual:true})),
+ });
+}
 
 export function setReverseMatrixReport(examId,revision,report){
  if(!examId)return;
@@ -231,12 +258,32 @@ export async function openMatrixChat(c,options={}){
  if(c.exam().id!==exam.id){flows.delete(exam.id);root.remove();if(c.getState().matrixChatExamId===exam.id)c.getState().matrixChatExamId=null;return;}
  mountMatrixChat(c);
  const count=(exam.matrix||[]).flatMap(row=>row.targets).reduce((n,x)=>n+x,0);
- try{if(options.request&&!/ma\s*trận/iu.test(options.request))quickPlanForm(c,flow);else if(!exam.matrixConfirmed||count<1||count>30)matrixForm(c,flow);else await startSession(c,flow);}
+ try{if(options.manual)matrixForm(c,flow);else if(options.request&&!/ma\s*trận/iu.test(options.request))quickPlanForm(c,flow);else if(!exam.matrixConfirmed||count<1||count>30)matrixForm(c,flow);else await startSession(c,flow);}
  catch(error){root.innerHTML=`<h3>Chưa mở được tác vụ</h3><p role="alert">${esc(error.message)}</p><button type="button">Đóng</button>`;root.querySelector('button').onclick=()=>finish(c,flow,'dismissed');}
  root.scrollIntoView({block:'nearest'});
 }
 
 export function mountMatrixChat(c){
+ latestChatContext=c;
+ if(!autoCreateListenerBound&&typeof globalThis.window?.addEventListener==='function'){
+  autoCreateListenerBound=true;
+  globalThis.window.addEventListener('mach:auto-create-exam',event=>{
+   const detail=event?.detail||{};
+   if(!latestChatContext||!detail.prompt)return;
+   if(detail.examId&&latestChatContext.getState?.()?.exams?.some(e=>e.id===detail.examId)){
+    latestChatContext.getState().current=detail.examId;
+   }
+   void runAutoCreateExam(latestChatContext,detail.prompt,{
+    examId:detail.examId,
+    campaignId:detail.campaignId,
+    subject:detail.subject,
+    grade:detail.grade,
+    durationMinutes:detail.durationMinutes,
+    consentGiven:detail.consentGiven,
+    saveWorkspaceConsent:detail.saveWorkspaceConsent,
+   });
+  });
+ }
  const flow=flows.get(c.exam().id),body=document.querySelector('.assistant-body'),scroll=document.querySelector('.paper-scroll');
  if(flow){
   if(body&&!body.contains(flow.root))body.append(flow.root);

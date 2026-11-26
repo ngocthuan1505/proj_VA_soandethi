@@ -1,6 +1,22 @@
 import {AI_PROVIDERS,CLOUD_PROVIDERS,PROVIDER_INFO} from './ai-providers.js';
 import {esc} from './core.js';
 
+export const DEFAULT_AGY_ORCHESTRATOR_MODEL='gemini-pro-orchestrator-neon';
+export const DEFAULT_AGY_FAST_MODEL='gemini-3.8-flash-medium';
+export const AGY_RECOMMENDED_MODELS=[
+ 'gemini-pro-orchestrator-neon',
+ 'gemini-3.8-flash-medium',
+ 'gemini-4-neon-medium',
+ 'gemini-4-hydrogen-medium',
+];
+const AGY_EFFORT_OPTIONS=[
+ ['low','Thấp (nhanh, tiết kiệm token)'],
+ ['medium','Trung bình (cân bằng — mặc định)'],
+ ['high','Cao (suy luận sâu & tự sửa)'],
+ ['xhigh','Rất cao (đề chuyên sâu)'],
+ ['max','Tối đa'],
+];
+
 export function connectionSettings(config){
  if(config.localPoC)return pocConnectionSettings(config);
  const providerCard=p=>{const x=config[p]||{},info=PROVIDER_INFO[p];return `<section class="settings-section provider-card" data-provider-card="${p}"><h3>${esc(info.label)}</h3><label>${p==='greennode'?'Địa chỉ máy chủ JupyterLab':'Địa chỉ API'}<input name="${p}-url" value="${esc(x.url||info.url)}" spellcheck="false"></label><label>Tên mô hình<input name="${p}-model" value="${esc(x.model||'')}" list="${p}-models" placeholder="Kiểm tra kết nối rồi chọn mã mô hình" spellcheck="false"><datalist id="${p}-models"></datalist></label>${p!=='ollama'?`<label>${p==='greennode'?'Mã truy cập (nếu máy chủ yêu cầu)':'Khóa API'}<input name="${p}-key" type="password" autocomplete="off" placeholder="${x.hasKey?'Đã có khóa trong phiên — để trống để giữ':p==='greennode'?'Để trống nếu máy chủ không yêu cầu':'Chưa nhập khóa'}"></label><label class="consent"><input type="checkbox" name="${p}-clear-key"> Xóa khóa khỏi phiên</label>`:''}${p==='gemini'?'<p class="hint">Gợi ý cho kiểm tra đề: <b>gemini-3.8-flash</b> (bản ổn định). Cần thử sinh nội dung thật với khóa đang dùng.</p>':''}${info.keyURL?`<a href="${info.keyURL}" target="_blank" rel="noopener noreferrer">Mở trang lấy khóa API</a>`:''}<button type="button" data-action="test-provider" data-provider="${p}">Kiểm tra &amp; xem mô hình</button><div id="${p}-result" class="hint" role="status"></div></section>`;};
@@ -45,6 +61,11 @@ export function connectionFormData(form){
  const deepseekModel=String(fd.get('deepseek-model')||'').trim();
  const deepseekReasonerModel=String(fd.get('deepseek-reasoner-model')||'').trim();
  const deepseekCrossModel=String(fd.get('deepseek-cross-model')||'').trim();
+ const agyModel=String(fd.get('agy-model')||'').trim();
+ const agyFastModel=String(fd.get('agy-fast-model')||'').trim();
+ const agyEffort=String(fd.get('agy-effort')||'').trim();
+ const hasAutoPilot=fd.has('auto-pilot-field')||fd.has('auto-pilot');
+ const hasWorkspaceConsent=fd.has('workspace-ai-consent-field')||fd.has('workspace-ai-consent');
  return {
   ...providers,
   routes:Object.fromEntries(['generate','patch','check'].map(t=>[t,fd.get('route-'+t)])),
@@ -66,6 +87,11 @@ export function connectionFormData(form){
     timePreset:fd.get('fixed-time-preset')||'standard',
     timeoutSeconds:Number(fd.get('fixed-timeout-seconds')||300),
     agyCustomPath:fd.get('agy-custom-path')||'',
+    ...(agyModel?{agyModel}:{}),
+    ...(agyFastModel?{agyFastModel}:{}),
+    ...(agyEffort?{agyEffort}:{}),
+    ...(hasAutoPilot?{autoPilot:fd.has('auto-pilot')}:{}),
+    ...(hasWorkspaceConsent?{workspaceAiConsent:fd.has('workspace-ai-consent')}:{}),
    },
   }:{}),
   search:{provider:fd.get('search-provider'),url:fd.get('search-url'),key:fd.get('search-key')},
@@ -92,10 +118,10 @@ export function renderProvidersHealthHTML(health,fallback={config:{}}){
  const cards=[
   {
    id:'agy',
-   title:'AGY CLI tại máy',
+   title:'AGY Orchestrator Neon',
    ok:Boolean(agy.available||agy.detected),
    status:agy.available?`Sẵn sàng${agy.version?' · '+agy.version:''}`:(translateProviderErrorMessage('agy',agy.error)||'Chưa phát hiện trên máy'),
-   detail:agy.agyModel?`Mô hình: ${agy.agyModel}`:'Tự động dùng cho tác vụ soạn & kiểm tra sâu',
+   detail:`Chính: ${agy.agyModel||DEFAULT_AGY_ORCHESTRATOR_MODEL} · Nhanh: ${agy.agyFastModel||DEFAULT_AGY_FAST_MODEL}`,
   },
   {
    id:'gemini',
@@ -134,6 +160,12 @@ export function formatProviderTestResultHTML(provider,result){
 function pocConnectionSettings(config){
  const selected=config.routes?.generate||'ollama',g=config.gemini||{},d=config.deepseek||{},fr=config.fixedRouter||{},check=config.routes?.check||selected;
  const timePreset=fr.timePreset||'standard',timeoutSeconds=Number(fr.timeoutSeconds||300);
+ const agyModel=fr.agyModel||DEFAULT_AGY_ORCHESTRATOR_MODEL;
+ const agyFastModel=fr.agyFastModel||DEFAULT_AGY_FAST_MODEL;
+ const agyEffort=fr.agyEffort||'medium';
+ const autoPilot=fr.autoPilot!==false;
+ const workspaceAiConsent=fr.workspaceAiConsent===true;
+ const agyList=Array.isArray(fr.agyRecommendedModels)&&fr.agyRecommendedModels.length?fr.agyRecommendedModels:AGY_RECOMMENDED_MODELS;
  const extraCount=Array.isArray(g.extraKeys)?g.extraKeys.length:Number(g.extraKeysCount||0);
  const totalGeminiKeys=g.totalKeysCount||((g.hasKey?1:0)+(g.hasBackupKey?1:0)+extraCount);
  const providers=value=>['ollama','gemini'].map(p=>`<option value="${p}" ${value===p?'selected':''}>${p==='ollama'?'Ollama trên máy':'Gemini · Google'}</option>`).join('');
@@ -148,10 +180,16 @@ function pocConnectionSettings(config){
  <section class="settings-section poc-time-router-section">
   <div class="row space"><h3>Tầng 1 · Thời gian xử lý &amp; Trạng thái các kênh AI</h3><button type="button" class="tiny-btn" data-action="refresh-providers-health">Kiểm tra nhanh</button></div>
   <p class="poc-intro hint">Hệ thống tự động chọn đường xử lý phù hợp cho từng yêu cầu và đối chiếu chéo để tăng độ tin cậy. Thầy cô chỉ cần chọn thời lượng xử lý.</p>
+  <div class="auto-pilot-banner">
+   <input type="hidden" name="auto-pilot-field" value="1">
+   <label class="consent"><input type="checkbox" name="auto-pilot" ${autoPilot?'checked':''}> <b>Tự động hoàn toàn (Plan → Swarm → Goal)</b> — Tự lập ma trận, sinh song song nhiều lô và kiểm định lên trang A4</label>
+   <input type="hidden" name="workspace-ai-consent-field" value="1">
+   <label class="consent"><input type="checkbox" name="workspace-ai-consent" ${workspaceAiConsent?'checked':''}> Cho phép gửi nội dung tới AI cho toàn không gian làm việc (không hỏi lặp từng đề)</label>
+  </div>
   <div class="time-preset-grid" role="radiogroup" aria-label="Chế độ thời gian và độ kỹ">${presets.map(([id,title,desc])=>`<label class="time-preset-card ${timePreset===id?'is-active':''}"><input type="radio" name="fixed-time-preset" value="${id}" ${timePreset===id?'checked':''}><div><b>${esc(title)}</b><small>${esc(desc)}</small></div></label>`).join('')}</div>
   <label class="fixed-timeout-label">Thời gian chờ tối đa (giây · tối đa 7200s)<input type="number" name="fixed-timeout-seconds" min="30" max="7200" value="${timeoutSeconds}"></label>
   <div id="providers-health-strip" class="fixed-router-status-strip" role="status" aria-label="Trạng thái 4 kênh AI">
-   <div class="router-tier-badge"><b>AGY CLI tại máy</b><span>${fr.agyAvailable?'Sẵn sàng (Ưu tiên việc khó & chat sâu)':'Tự động bật khi có AGY CLI'}</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="agy">Thử kênh</button><span id="provider-test-status-agy" class="hint"></span></div></div>
+   <div class="router-tier-badge" data-agy-neon-card="1"><b>AGY Orchestrator Neon</b><span>${fr.agyAvailable?'Sẵn sàng (Ưu tiên việc khó & chat sâu)':'Tự động bật khi có AGY CLI'}</span><small class="hint" style="margin:0">Điều phối: <code>${esc(agyModel)}</code> · Nhanh: <code>${esc(agyFastModel)}</code> (${esc(agyEffort)})</small><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="agy">Thử kênh</button><span id="provider-test-status-agy" class="hint"></span></div></div>
    <div class="router-tier-badge"><b>Gemini xoay vòng</b><span>${totalGeminiKeys} khóa xoay vòng</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="gemini">Thử kênh</button><span id="provider-test-status-gemini" class="hint"></span></div></div>
    <div class="router-tier-badge"><b>DeepSeek / Cổng API riêng</b><span>${d.hasKey?'Đã nạp khóa':'Chưa nạp khóa'} · Trần $${d.sessionLimitUsd??0.50}/phiên · $${d.totalLimitUsd??5.00}/tổng</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="deepseek">Thử kênh</button><span id="provider-test-status-deepseek" class="hint"></span></div></div>
    <div class="router-tier-badge"><b>Ollama trên máy</b><span>Dự phòng ngoại tuyến (${esc(config.ollama?.model||'qwen3:4b')})</span><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="ollama">Khám phá &amp; thử</button><span id="provider-test-status-ollama" class="hint"></span></div></div>
@@ -168,7 +206,16 @@ function pocConnectionSettings(config){
   <label class="consent"><input type="checkbox" name="gemini-auto-fallback" ${g.autoFallback!==false?'checked':''}> Tự đổi mô hình khi hết hạn mức</label><label class="consent"><input type="checkbox" name="gemini-free-tier" ${g.freeTierConfirmed?'checked':''}> Tôi xác nhận các khóa đang dùng ở mức miễn phí hợp lệ.</label>
   <a class="poc-key-link" href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">Lấy khóa tại Google AI Studio</a></section>
   <section class="settings-section poc-deepseek-agy-section">
-   <div class="row space"><h3>DeepSeek / Cổng API riêng &amp; AGY CLI tại máy</h3><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="deepseek">Thử Cổng riêng</button><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="agy">Thử AGY CLI</button></div></div>
+   <div class="row space"><h3>DeepSeek / Cổng API riêng &amp; AGY Orchestrator Neon</h3><div class="buttons"><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="deepseek">Thử Cổng riêng</button><button type="button" class="tiny-btn" data-action="test-single-provider" data-provider="agy">Thử AGY CLI</button></div></div>
+   <div class="grid2">
+    <label>Mô hình AGY điều phối chính (Neon)<input name="agy-model" list="agy-models-list" value="${esc(agyModel)}" spellcheck="false" autocomplete="off" placeholder="${DEFAULT_AGY_ORCHESTRATOR_MODEL}"></label>
+    <label>Mô hình AGY tầng nhanh (tiết kiệm token)<input name="agy-fast-model" list="agy-models-list" value="${esc(agyFastModel)}" spellcheck="false" autocomplete="off" placeholder="${DEFAULT_AGY_FAST_MODEL}"></label>
+   </div>
+   <datalist id="agy-models-list">${agyList.map(m=>`<option value="${esc(m)}"></option>`).join('')}</datalist>
+   <div class="grid2">
+    <label>Mức độ suy luận AGY<select name="agy-effort">${AGY_EFFORT_OPTIONS.map(([val,lbl])=>`<option value="${val}" ${agyEffort===val?'selected':''}>${esc(lbl)}</option>`).join('')}</select></label>
+    <label>Đường dẫn AGY CLI (tùy chọn)<input name="agy-custom-path" value="${esc(fr.agyCustomPath||'')}" spellcheck="false" autocomplete="off" placeholder="Tự động tìm agy trên máy"></label>
+   </div>
    <div class="grid2">
     <label>Địa chỉ cổng API (HTTPS · chuẩn OpenAI)<input type="url" name="deepseek-url" value="${esc(d.url||'https://api.deepseek.com/v1')}" spellcheck="false" autocomplete="off" placeholder="https://api.deepseek.com/v1"></label>
     <label>Khóa API Cổng / DeepSeek<input type="password" name="deepseek-key" autocomplete="off" placeholder="${d.hasKey?'Đã có khóa DeepSeek — để trống để giữ':'Nhập khóa cổng API / DeepSeek…'}"></label>
@@ -179,13 +226,12 @@ function pocConnectionSettings(config){
    </div>
    <div class="grid2">
     <label>Mô hình đối chiếu chéo<input name="deepseek-cross-model" value="${esc(d.crossModel||'qwen3.8-max')}" spellcheck="false" autocomplete="off" placeholder="qwen3.8-max"></label>
-    <label>Đường dẫn AGY CLI (tùy chọn)<input name="agy-custom-path" value="${esc(fr.agyCustomPath||'')}" spellcheck="false" autocomplete="off" placeholder="Tự động tìm agy trên máy"></label>
+    <label>Giới hạn chi phí mỗi phiên ($ USD)<input type="number" step="0.05" min="0.05" max="30" name="deepseek-session-limit" value="${d.sessionLimitUsd??0.5}"></label>
    </div>
    <div class="grid2">
-    <label>Giới hạn chi phí mỗi phiên ($ USD)<input type="number" step="0.05" min="0.05" max="30" name="deepseek-session-limit" value="${d.sessionLimitUsd??0.5}"></label>
     <label>Giới hạn chi phí tổng ($ USD)<input type="number" step="0.5" min="0.1" max="30" name="deepseek-total-limit" value="${d.totalLimitUsd??5.0}"></label>
+    <label class="consent"><input type="checkbox" name="deepseek-clear-key"> Xóa khóa DeepSeek / Cổng riêng</label>
    </div>
-   <label class="consent"><input type="checkbox" name="deepseek-clear-key"> Xóa khóa DeepSeek / Cổng riêng</label>
   </section>
   <details class="poc-advanced"><summary>Giới hạn lượt gọi &amp; Xóa khóa nhanh</summary><div class="grid2"><label>Số lượt gọi tối đa<input type="number" name="max-model-calls" min="4" max="64" required value="${config.runBudget?.maxModelCalls||24}"></label><label>Thời gian tối đa (giây)<input type="number" name="run-timeout" min="30" max="900" required value="${config.runBudget?.timeoutSeconds||900}"></label></div><div data-poc-provider="gemini" ${selected!=='gemini'&&check!=='gemini'?'hidden':''}><label class="consent"><input type="checkbox" name="gemini-clear-backup-key"> Xóa khóa dự phòng</label><label class="consent"><input type="checkbox" name="gemini-clear-key"> Xóa khóa chính</label></div></details>
  </details>

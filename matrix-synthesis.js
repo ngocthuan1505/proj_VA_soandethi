@@ -4,6 +4,323 @@ import * as db from './storage.js';
 import {selectedDocumentPages,sourcePageLabel} from './assistant-sources.js';
 import {citationContextHTML} from './citation-context.js';
 
+let cachedAutoPilot=null;
+
+export const AUTO_CREATE_STEPS=[
+ {phase:'plan',label:'Lập kế hoạch & ma trận'},
+ {phase:'swarm',label:'Sinh song song nhiều lô'},
+ {phase:'goal',label:'Kiểm định & tự sửa'},
+ {phase:'apply',label:'Áp lên trang A4'},
+];
+
+export function setAutoPilotEnabled(value){
+ cachedAutoPilot=Boolean(value);
+ try{globalThis.localStorage?.setItem('mach:autoPilot',String(cachedAutoPilot));}catch{}
+ return cachedAutoPilot;
+}
+
+export function isAutoPilotEnabled(configOrFlag){
+ if(typeof configOrFlag==='boolean')return configOrFlag;
+ if(configOrFlag&&typeof configOrFlag==='object'){
+  if(typeof configOrFlag.fixedRouter?.autoPilot==='boolean')return configOrFlag.fixedRouter.autoPilot;
+  if(typeof configOrFlag.autoPilot==='boolean')return configOrFlag.autoPilot;
+ }
+ if(typeof cachedAutoPilot==='boolean')return cachedAutoPilot;
+ if(typeof globalThis.__machAutoPilot==='boolean')return globalThis.__machAutoPilot;
+ try{
+  const stored=globalThis.localStorage?.getItem('mach:autoPilot');
+  if(stored==='false')return false;
+  if(stored==='true')return true;
+ }catch{}
+ return true;
+}
+
+export function parseAutoCreateSse(chunkBuffer){
+ const records=[];
+ let buffer=String(chunkBuffer||'').replace(/\r\n/g,'\n');
+ let end;
+ while((end=buffer.indexOf('\n\n'))>=0){
+  const raw=buffer.slice(0,end);
+  buffer=buffer.slice(end+2);
+  const type=raw.match(/^event:\s*(.+)$/m)?.[1]?.trim()||'message';
+  const dataLines=raw.split('\n').filter(line=>line.startsWith('data:')).map(line=>line.slice(5).trim());
+  if(!dataLines.length)continue;
+  try{records.push({type,data:JSON.parse(dataLines.join('\n'))});}catch{}
+ }
+ return {records,rest:buffer};
+}
+
+export function renderAutoCreateCardHTML(state){
+ const phases=state?.phases||{};
+ const stepsHTML=AUTO_CREATE_STEPS.map((step,idx)=>{
+  const st=phases[step.phase]||'pending';
+  const cls=st==='done'?'is-done':st==='running'?'is-active':st==='error'?'is-error':'';
+  return `<li class="auto-create-step ${cls}" data-phase="${step.phase}"><span class="auto-create-step-num">${st==='done'?'✓':idx+1}</span><span>${esc(step.label)}</span></li>`;
+ }).join('');
+ const batchMeta=state?.totalBatches
+  ?`<p class="auto-create-batch-meta">Tiến độ lô: ${state.completedBatches||0}/${state.totalBatches} lô · ${state.completedCount||0}/${state.totalSlots||0} câu${state.lastModel?` · Mô hình: <code>${esc(state.lastModel)}</code>`:''}</p>`
+  :'';
+ const summaryHTML=state?.complete
+  ?`<p class="auto-create-summary">${esc(state.complete.message||`Đã áp ${state.complete.totalQuestions||0} câu lên trang A4.`)}</p>`
+  :'';
+ const consentHTML=state?.needsConsent
+  ?`<div class="auto-create-consent"><p role="alert">${esc(state.error||'Cần xác nhận cho phép gửi nội dung tới AI trước khi tự động soạn đề.')}</p><label class="consent"><input type="checkbox" data-auto-save-consent> Ghi nhớ cho toàn không gian làm việc</label><div class="auto-create-actions"><button type="button" class="primary" data-action="auto-create-consent-retry">✓ Cho phép &amp; Tự động soạn ngay</button></div></div>`
+  :'';
+ const errHTML=!state?.needsConsent&&state?.error
+  ?`<p class="auto-create-error" role="alert">${esc(state.error)}</p>`
+  :'';
+ const controlsHTML=`<div class="auto-create-actions">${state?.running?'<button type="button" data-action="auto-create-cancel">Dừng</button>':''}<button type="button" class="ghost" data-action="open-manual-matrix">Mở bảng ma trận chi tiết</button></div>`;
+ return `<div class="auto-create-card" data-status="${esc(state?.status||'running')}" role="region" aria-label="Tự động soạn đề"><div class="auto-create-head"><b>Tự động soạn đề (Plan → Swarm → Goal)</b><span class="auto-create-status">${esc(state?.statusText||'Đang khởi chạy…')}</span></div><ol class="auto-create-steps" aria-live="polite">${stepsHTML}</ol>${batchMeta}${summaryHTML}${consentHTML}${errHTML}${controlsHTML}</div>`;
+}
+
+export async function streamAutoCreateExam(examId,payload,{fetchImpl=fetch,signal,headers={},onEvent}={}){
+ const response=await fetchImpl(`/api/exams/${encodeURIComponent(examId)}/agent/auto-create`,{
+  method:'POST',
+  signal,
+  headers:{...db.workspaceHeaders(),...headers,'Content-Type':'application/json'},
+  body:JSON.stringify(payload),
+ });
+ const ct=String(response.headers?.get?.('content-type')||'');
+ if(!response.ok){
+  let errBody={};
+  try{errBody=await response.json();}catch{}
+  const err=new Error(errBody.error||errBody.detail?.message||'Chưa bắt đầu được luồng tự động soạn đề.');
+  err.code=errBody.code||errBody.detail?.code||(response.status===409?'stale_snapshot':'auto_create_error');
+  err.status=response.status;
+  throw err;
+ }
+ if(!ct.includes('text/event-stream')||!response.body?.getReader){
+  const jsonRes=await response.json();
+  onEvent?.('complete',jsonRes);
+  return jsonRes;
+ }
+ const reader=response.body.getReader(),decoder=new TextDecoder();
+ let buffer='',completeData=null;
+ const handleRecords=records=>{
+  for(const rec of records){
+   onEvent?.(rec.type,rec.data);
+   if(rec.type==='error'){
+    const err=new Error(rec.data?.error||'Lỗi trong quá trình tự động soạn đề.');
+    err.code=rec.data?.code||'auto_create_error';
+    err.status=rec.data?.status||500;
+    throw err;
+   }
+   if(rec.type==='complete')completeData=rec.data;
+  }
+ };
+ while(true){
+  const {value,done}=await reader.read();
+  if(done)break;
+  buffer+=decoder.decode(value,{stream:true});
+  const parsed=parseAutoCreateSse(buffer);
+  buffer=parsed.rest;
+  handleRecords(parsed.records);
+ }
+ if(buffer.trim()){
+  const parsed=parseAutoCreateSse(buffer+'\n\n');
+  handleRecords(parsed.records);
+ }
+ if(!completeData)throw new Error('Kết nối bị ngắt trước khi hoàn tất bộ đề.');
+ return completeData;
+}
+
+export async function runAutoCreateExam(ctx,promptText,opts={}){
+ const prompt=String(promptText||'').trim();
+ if(!prompt)throw new Error('Vui lòng nhập yêu cầu đề cần soạn.');
+ const exam=ctx.exam();
+ if(!exam?.id)throw new Error('Chưa có đề đang mở để tự động soạn.');
+ const examId=opts.examId||exam.id;
+ const fetchImpl=opts.fetchImpl||globalThis.fetch;
+ const doc=typeof document!=='undefined'?document:null;
+ if(doc){
+  doc.querySelector('.workspace')?.classList.remove('chat-hidden','focus-mode');
+  doc.querySelector('.assistant')?.classList.add('open');
+ }
+ const host=opts.host||doc?.querySelector('.assistant-body')||null;
+ let container=null;
+ if(host&&doc){
+  container=doc.createElement('section');
+  container.className='auto-create-session';
+  host.append(container);
+ }
+ const controller=new AbortController();
+ const onAbort=()=>controller.abort();
+ opts.signal?.addEventListener?.('abort',onAbort,{once:true});
+
+ const state={
+  status:'running',
+  running:true,
+  statusText:'Đang lập kế hoạch & ma trận…',
+  phases:{plan:'running',swarm:'pending',goal:'pending',apply:'pending'},
+  totalBatches:0,
+  completedBatches:0,
+  completedCount:0,
+  totalSlots:0,
+  lastModel:'',
+  complete:null,
+  needsConsent:false,
+  error:'',
+ };
+
+ const paint=()=>{
+  if(!container)return;
+  container.innerHTML=renderAutoCreateCardHTML(state);
+  const cancelBtn=container.querySelector('[data-action="auto-create-cancel"]');
+  if(cancelBtn)cancelBtn.onclick=()=>{controller.abort();};
+  const manualBtn=container.querySelector('[data-action="open-manual-matrix"]');
+  if(manualBtn)manualBtn.onclick=()=>{
+   if(state.running)controller.abort();
+   opts.onOpenManualMatrix?.(ctx,prompt);
+  };
+  const consentBtn=container.querySelector('[data-action="auto-create-consent-retry"]');
+  if(consentBtn)consentBtn.onclick=()=>{
+   const saveWs=Boolean(container.querySelector('[data-auto-save-consent]')?.checked);
+   exam.aiConsent=true;
+   container.remove();
+   void runAutoCreateExam(ctx,prompt,{...opts,consentGiven:true,saveWorkspaceConsent:saveWs});
+  };
+  if(host&&typeof host.scrollTop==='number')host.scrollTop=host.scrollHeight;
+ };
+ paint();
+
+ const currentDocs=(exam.docs||[]).filter(d=>!exam.assistantSources?.length||exam.assistantSources.includes(d.id));
+ const attachedSources=opts.sources||currentDocs.flatMap(d=>selectedDocumentPages(exam,d)
+  .filter(p=>p?.text?.trim())
+  .map(p=>({
+   docId:d.id,
+   name:d.name,
+   page:p.number,
+   location:d.name+' · '+sourcePageLabel(d,p.number),
+   text:p.text,
+  })));
+
+ const requestPayload={
+  prompt,
+  subject:opts.subject??exam.subject??null,
+  grade:opts.grade??exam.grade??null,
+  durationMinutes:opts.durationMinutes??exam.minutes??null,
+  expectedRevision:exam.revision??null,
+  sourceIds:opts.sourceIds??(exam.assistantSources||[]),
+  sources:attachedSources,
+  consentGiven:opts.consentGiven!==undefined?Boolean(opts.consentGiven):Boolean(exam.aiConsent),
+  saveWorkspaceConsent:Boolean(opts.saveWorkspaceConsent),
+  campaignId:opts.campaignId??null,
+  persistToStore:opts.persistToStore===true,
+ };
+
+ try{
+  const complete=await streamAutoCreateExam(examId,requestPayload,{
+   fetchImpl,
+   signal:controller.signal,
+   onEvent:(type,data)=>{
+    if(type==='step'&&data?.phase){
+     state.phases[data.phase]=data.status||'running';
+     if(data.totalBatches)state.totalBatches=data.totalBatches;
+     if(data.totalQuestions||data.totalSlots)state.totalSlots=data.totalQuestions||data.totalSlots;
+     if(data.message)state.statusText=data.message;
+     else if(data.phase==='plan'&&data.status==='done')state.statusText=`Đã lập ma trận ${data.totalQuestions||''} câu · ${data.subject||''} ${data.grade||''}`.trim();
+     else if(data.phase==='swarm'&&data.status==='done')state.statusText=`Đã sinh xong ${data.completedCount||0} câu từ ${data.totalBatches||0} lô song song`;
+     else if(data.phase==='goal'&&data.status==='done')state.statusText=`Đã kiểm định đạt 10 điểm (${data.repairRounds||0} vòng tự sửa)`;
+     else if(data.phase==='apply'&&data.status==='done')state.statusText='Đang nạp lên trang A4…';
+     paint();
+    }else if(type==='batch'&&data){
+     state.completedBatches+=1;
+     if(data.totalBatches)state.totalBatches=data.totalBatches;
+     if(data.completedCount!=null)state.completedCount=data.completedCount;
+     if(data.totalSlots)state.totalSlots=data.totalSlots;
+     if(data.model)state.lastModel=data.model;
+     state.statusText=`Đã xong lô ${state.completedBatches}/${state.totalBatches||state.completedBatches} (${state.completedCount}/${state.totalSlots||state.completedCount} câu)`;
+     paint();
+    }else if(type==='verify'&&data){
+     state.statusText=data.repairing
+      ?`Đang tự sửa vòng ${data.round||1} (${data.issueCount||0} mục cần chuẩn hóa)…`
+      :`Kiểm định đạt: ${data.totalQuestions||0} câu · ${data.totalPoints??10} điểm`;
+     paint();
+    }
+   },
+  });
+
+  if(ctx.exam()?.id!==examId)throw new Error('Đã chuyển sang đề khác trong lúc AI đang soạn.');
+  const applyChange=arg=>{
+   const target=arg||ctx.exam();
+   target.questions=Array.isArray(complete.questions)?complete.questions:[];
+   if(Array.isArray(complete.matrix)&&complete.matrix.length){
+    target.matrix=complete.matrix;
+    target.matrixConfirmed=true;
+   }
+   if(complete.title)target.title=complete.title;
+   if(complete.subject)target.subject=complete.subject;
+   if(complete.grade!=null)target.grade=String(complete.grade);
+   if(complete.minutes)target.minutes=Number(complete.minutes);
+   target.sample=false;
+   target.fullExam=true;
+  };
+  ctx.change('AI tự động soạn đề',applyChange);
+  const updatedExam=ctx.exam();
+  const undoRevision=updatedExam.revision;
+  const modelsText=Array.isArray(complete.stats?.modelsUsed)&&complete.stats.modelsUsed.length
+   ?` · Mô hình: ${complete.stats.modelsUsed.join(', ')}`
+   :'';
+  const chatSummary=complete.message||`Đã tự động soạn xong ${complete.questions?.length||0} câu hỏi bản nháp (tổng ${complete.totalPoints??10} điểm)${modelsText}. Có thể bấm Hoàn tác để về bản trước.`;
+  updatedExam.chat=Array.isArray(updatedExam.chat)?updatedExam.chat:[];
+  updatedExam.chat.push({
+   role:'assistant',
+   text:chatSummary,
+   at:Date.now(),
+   undoRevision,
+   modelUsed:complete.stats?.modelsUsed?.[0]||complete.stats?.orchestratorModel||'',
+   autoCreateStats:complete.stats||null,
+  });
+  await ctx.persist?.();
+  ctx.render?.();
+
+  if(opts.campaignId){
+   try{
+    await fetchImpl(`/api/campaigns/${encodeURIComponent(opts.campaignId)}/link-exam`,{
+     method:'POST',
+     headers:{...db.workspaceHeaders(),'Content-Type':'application/json'},
+     body:JSON.stringify({examId:updatedExam.id}),
+    });
+   }catch{}
+   try{
+    globalThis.window?.dispatchEvent?.(new CustomEvent('mach:campaign-updated',{
+     detail:{campaignId:opts.campaignId,examId:updatedExam.id},
+    }));
+   }catch{}
+  }
+
+  state.running=false;
+  state.status='complete';
+  state.phases={plan:'done',swarm:'done',goal:'done',apply:'done'};
+  state.complete=complete;
+  state.statusText='Hoàn tất · Đã áp lên trang A4';
+  paint();
+  ctx.toast?.('Đã tự động soạn đề xong. Mọi câu ở trạng thái bản nháp · bấm Hoàn tác nếu muốn quay lại.');
+  return {ok:true,undoRevision,complete};
+ }catch(error){
+  state.running=false;
+  if(error?.code==='consent_required'){
+   state.status='consent_required';
+   state.needsConsent=true;
+   state.statusText='Cần xác nhận cho phép AI';
+   state.error=error.message;
+   paint();
+   return {ok:false,code:'consent_required',error:error.message};
+  }
+  const aborted=error?.name==='AbortError';
+  state.status=aborted?'cancelled':'error';
+  state.statusText=aborted?'Đã dừng tự động soạn đề':'Chưa hoàn tất tự động soạn đề';
+  state.error=aborted?'Đã dừng theo yêu cầu. Nội dung đề cũ được giữ nguyên.':(error?.message||'Đã xảy ra lỗi khi tự động soạn đề.');
+  const activePhase=AUTO_CREATE_STEPS.find(s=>state.phases[s.phase]==='running')?.phase;
+  if(activePhase)state.phases[activePhase]='error';
+  paint();
+  if(opts.rethrow)throw error;
+  return {ok:false,code:error?.code||(aborted?'cancelled':'auto_create_error'),error:state.error};
+ }finally{
+  opts.signal?.removeEventListener?.('abort',onAbort);
+ }
+}
+
 async function api(url, body, headers={}){
  const response=await fetch(url,{
   headers:{...db.workspaceHeaders(),...headers,...(body===undefined?{}:{'Content-Type':'application/json'})},

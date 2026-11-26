@@ -12,7 +12,15 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import ValidationError
 
-from mach_backend.agy_cli_model import build_sanitized_env, detect_agy_cli
+from mach_backend.agy_cli_model import (
+    AGY_RECOMMENDED_MODELS,
+    DEFAULT_AGY_FAST_MODEL,
+    DEFAULT_AGY_ORCHESTRATOR_MODEL,
+    VALID_EFFORT_LEVELS,
+    build_sanitized_env,
+    detect_agy_cli,
+    is_blocked_agy_model,
+)
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_router import reset_shared_circuit_breaker
 from mach_backend.ai_safety import (
@@ -166,7 +174,14 @@ def connection_config(provider: AgentGeneration, *, mask_gateway_url: bool = Fal
             "maxRepairRounds": extended.maxRepairRounds,
             "agyAvailable": bool(getattr(provider, "agy_available", False)),
             "agyCustomPathSet": bool(getattr(provider, "agy_custom_path", "")),
-            "agyModel": getattr(provider, "agy_model", "") or "",
+            "agyModel": getattr(provider, "agy_model", DEFAULT_AGY_ORCHESTRATOR_MODEL)
+            or DEFAULT_AGY_ORCHESTRATOR_MODEL,
+            "agyFastModel": getattr(provider, "agy_fast_model", DEFAULT_AGY_FAST_MODEL)
+            or DEFAULT_AGY_FAST_MODEL,
+            "agyEffort": getattr(provider, "agy_effort", "medium") or "medium",
+            "autoPilot": bool(getattr(provider, "auto_pilot", True)),
+            "workspaceAiConsent": bool(getattr(provider, "workspace_ai_consent", False)),
+            "agyRecommendedModels": list(AGY_RECOMMENDED_MODELS),
         },
         "routes": {
             "generate": provider.provider_name,
@@ -196,6 +211,12 @@ def install_poc_connections(app: FastAPI, provider: AgentGeneration):
             for field in ("model", "checkModel"):
                 if saved.get("gemini", {}).get(field) == "gemini-3.5-flash-lite":
                     saved["gemini"][field] = GEMINI_MODEL
+            saved_fr = saved.get("fixedRouter")
+            if isinstance(saved_fr, dict):
+                if is_blocked_agy_model(saved_fr.get("agyModel")):
+                    saved_fr["agyModel"] = DEFAULT_AGY_ORCHESTRATOR_MODEL
+                if is_blocked_agy_model(saved_fr.get("agyFastModel")):
+                    saved_fr["agyFastModel"] = DEFAULT_AGY_FAST_MODEL
             apply_config(provider, saved, store, persist=False)
     except (OSError, ValueError, HTTPException, AIError):
         provider.persistence_error = (
@@ -385,9 +406,27 @@ def _parse_deepseek_config(
     )
 
 
+def _parse_agy_model_field(value: object, *, default: str, label: str) -> str:
+    if value is None:
+        return default
+    if not isinstance(value, str) or "\r" in value or "\n" in value:
+        raise HTTPException(400, f"{label} không hợp lệ (2–80 ký tự chữ/số/._:/-).")
+    cleaned = value.strip()
+    if not cleaned:
+        return default
+    if is_blocked_agy_model(cleaned):
+        raise HTTPException(
+            400,
+            f"{label} chứa mô hình không được phép sử dụng; hãy chọn mô hình gợi ý hợp lệ.",
+        )
+    if not _VALID_AGY_MODEL_RE.fullmatch(cleaned):
+        raise HTTPException(400, f"{label} không hợp lệ (2–80 ký tự chữ/số/._:/-).")
+    return cleaned
+
+
 def _parse_fixed_router_config(
     provider: AgentGeneration, fixed_router: object
-) -> tuple[bool, ExtendedRunPolicy, str, str]:
+) -> tuple[bool, ExtendedRunPolicy, str, str, str, str, bool, bool]:
     if not isinstance(fixed_router, dict):
         raise HTTPException(400, "Cấu hình kết nối không hợp lệ.")
     fixed_enabled = fixed_router.get("enabled", getattr(provider, "fixed_router_enabled", True))
@@ -403,22 +442,57 @@ def _parse_fixed_router_config(
         raise HTTPException(400, "Đường dẫn AGY CLI không hợp lệ.")
     agy_custom_path = agy_custom_path.strip()
 
-    raw_agy_model = fixed_router.get("agyModel", getattr(provider, "agy_model", ""))
-    if raw_agy_model is None:
-        agy_model = ""
-    elif (
-        not isinstance(raw_agy_model, str)
-        or "\r" in raw_agy_model
-        or "\n" in raw_agy_model
-        or (raw_agy_model.strip() and not _VALID_AGY_MODEL_RE.fullmatch(raw_agy_model.strip()))
-    ):
-        raise HTTPException(400, "Tên model AGY CLI không hợp lệ (2–80 ký tự chữ/số/._:/-).")
+    default_agy_model = (
+        getattr(provider, "agy_model", DEFAULT_AGY_ORCHESTRATOR_MODEL)
+        or DEFAULT_AGY_ORCHESTRATOR_MODEL
+    )
+    agy_model = _parse_agy_model_field(
+        fixed_router.get("agyModel", default_agy_model),
+        default=DEFAULT_AGY_ORCHESTRATOR_MODEL,
+        label="Tên model AGY CLI",
+    )
+
+    default_fast_model = (
+        getattr(provider, "agy_fast_model", DEFAULT_AGY_FAST_MODEL) or DEFAULT_AGY_FAST_MODEL
+    )
+    agy_fast_model = _parse_agy_model_field(
+        fixed_router.get("agyFastModel", default_fast_model),
+        default=DEFAULT_AGY_FAST_MODEL,
+        label="Tên model tầng nhanh AGY CLI",
+    )
+
+    raw_effort = fixed_router.get("agyEffort", getattr(provider, "agy_effort", "medium"))
+    if raw_effort is None or (isinstance(raw_effort, str) and not raw_effort.strip()):
+        agy_effort = getattr(provider, "agy_effort", "medium") or "medium"
+    elif not isinstance(raw_effort, str) or raw_effort.strip().lower() not in VALID_EFFORT_LEVELS:
+        raise HTTPException(
+            400, "Mức độ suy luận AGY không hợp lệ (chọn low, medium, high, xhigh hoặc max)."
+        )
     else:
-        agy_model = raw_agy_model.strip()
+        agy_effort = raw_effort.strip().lower()
+
+    auto_pilot = fixed_router.get("autoPilot", getattr(provider, "auto_pilot", True))
+    if type(auto_pilot) is not bool:
+        raise HTTPException(400, "Lựa chọn tự động hoàn toàn không hợp lệ.")
+
+    workspace_ai_consent = fixed_router.get(
+        "workspaceAiConsent", getattr(provider, "workspace_ai_consent", False)
+    )
+    if type(workspace_ai_consent) is not bool:
+        raise HTTPException(400, "Lựa chọn cho phép AI toàn không gian làm việc không hợp lệ.")
 
     current_ext = getattr(provider, "extended_policy", None) or ExtendedRunPolicy()
     if not fixed_router:
-        return fixed_enabled, current_ext, agy_custom_path, agy_model
+        return (
+            fixed_enabled,
+            current_ext,
+            agy_custom_path,
+            agy_model,
+            agy_fast_model,
+            agy_effort,
+            auto_pilot,
+            workspace_ai_consent,
+        )
 
     preset = fixed_router.get("timePreset")
     raw_timeout = fixed_router.get("timeoutSeconds")
@@ -464,7 +538,16 @@ def _parse_fixed_router_config(
         raise HTTPException(
             400, "Khung thời gian mở rộng phải từ 30–7200 giây và 4–240 lần gọi AI."
         ) from None
-    return fixed_enabled, extended_policy, agy_custom_path, agy_model
+    return (
+        fixed_enabled,
+        extended_policy,
+        agy_custom_path,
+        agy_model,
+        agy_fast_model,
+        agy_effort,
+        auto_pilot,
+        workspace_ai_consent,
+    )
 
 
 def apply_config(provider, body, store, *, persist=True):
@@ -521,9 +604,16 @@ def apply_config(provider, body, store, *, persist=True):
         ds_session_limit,
         ds_total_limit,
     ) = _parse_deepseek_config(provider, body.get("deepseek", {}))
-    fixed_enabled, extended_policy, agy_custom_path, agy_model = _parse_fixed_router_config(
-        provider, body.get("fixedRouter", {})
-    )
+    (
+        fixed_enabled,
+        extended_policy,
+        agy_custom_path,
+        agy_model,
+        agy_fast_model,
+        agy_effort,
+        auto_pilot,
+        workspace_ai_consent,
+    ) = _parse_fixed_router_config(provider, body.get("fixedRouter", {}))
     free_tier = gemini.get("freeTierConfirmed", provider.gemini_free_tier) is True
     auto_fallback = gemini.get("autoFallback", provider.gemini_auto_fallback)
     if type(auto_fallback) is not bool:
@@ -581,6 +671,10 @@ def apply_config(provider, body, store, *, persist=True):
                             "maxRepairRounds": extended_policy.maxRepairRounds,
                             "agyCustomPath": agy_custom_path,
                             "agyModel": agy_model,
+                            "agyFastModel": agy_fast_model,
+                            "agyEffort": agy_effort,
+                            "autoPilot": auto_pilot,
+                            "workspaceAiConsent": workspace_ai_consent,
                         },
                         "ollama": {"model": local_model, "checkModel": check_local_model},
                         "runBudget": policy.model_dump(),
@@ -614,6 +708,10 @@ def apply_config(provider, body, store, *, persist=True):
     provider.extended_policy = extended_policy
     provider.agy_custom_path = agy_custom_path
     provider.agy_model = agy_model
+    provider.agy_fast_model = agy_fast_model
+    provider.agy_effort = agy_effort
+    provider.auto_pilot = auto_pilot
+    provider.workspace_ai_consent = workspace_ai_consent
     provider.provider_name = selected
     provider.review_provider_name = (
         check_provider if routes.get("check") else provider.review_provider_name
@@ -663,7 +761,14 @@ def _resolve_health_inputs(
             or config.get("agyCustomPath")
             or ""
         ).strip()
-        agy_model = str(fixed_cfg.get("agyModel") or config.get("agyModel") or "").strip()
+        agy_model = (
+            str(fixed_cfg.get("agyModel") or config.get("agyModel") or "").strip()
+            or DEFAULT_AGY_ORCHESTRATOR_MODEL
+        )
+        agy_fast_model = (
+            str(fixed_cfg.get("agyFastModel") or config.get("agyFastModel") or "").strip()
+            or DEFAULT_AGY_FAST_MODEL
+        )
         ds_url = str(
             secret_map.get("gatewayBaseUrl")
             or secret_map.get("deepseekUrl")
@@ -704,7 +809,12 @@ def _resolve_health_inputs(
         agy_custom_path = str(
             secret_map.get("agyCustomPath") or getattr(config, "agy_custom_path", "") or ""
         ).strip()
-        agy_model = str(getattr(config, "agy_model", "") or "").strip()
+        agy_model = (
+            str(getattr(config, "agy_model", "") or "").strip() or DEFAULT_AGY_ORCHESTRATOR_MODEL
+        )
+        agy_fast_model = (
+            str(getattr(config, "agy_fast_model", "") or "").strip() or DEFAULT_AGY_FAST_MODEL
+        )
         ds_url = str(
             secret_map.get("gatewayBaseUrl")
             or getattr(config, "deepseek_url", DEEPSEEK_BASE)
@@ -744,6 +854,7 @@ def _resolve_health_inputs(
             "ollamaModel": ollama_model,
             "agyCustomPath": agy_custom_path,
             "agyModel": agy_model,
+            "agyFastModel": agy_fast_model,
             "dsUrl": ds_url,
             "dsKey": ds_key,
             "dsModel": ds_model,
@@ -837,6 +948,7 @@ async def _probe_ollama_health(
 async def _probe_agy_health(state: dict[str, Any], agy_runner: Any = None) -> dict[str, Any]:
     custom_path = state["agyCustomPath"]
     agy_model = state["agyModel"]
+    agy_fast_model = state.get("agyFastModel") or DEFAULT_AGY_FAST_MODEL
     exe = detect_agy_cli(custom_path)
     if not exe:
         return {
@@ -845,6 +957,7 @@ async def _probe_agy_health(state: dict[str, Any], agy_runner: Any = None) -> di
             "path": "",
             "version": None,
             "agyModel": agy_model,
+            "agyFastModel": agy_fast_model,
             "error": "Không tìm thấy tệp thực thi AGY CLI.",
         }
     run_fn = agy_runner or subprocess.run
@@ -866,6 +979,7 @@ async def _probe_agy_health(state: dict[str, Any], agy_runner: Any = None) -> di
             "path": exe,
             "version": None,
             "agyModel": agy_model,
+            "agyFastModel": agy_fast_model,
             "error": "Kiểm tra phiên bản AGY CLI quá thời hạn 5 giây.",
         }
     except (OSError, subprocess.SubprocessError) as exc:
@@ -875,6 +989,7 @@ async def _probe_agy_health(state: dict[str, Any], agy_runner: Any = None) -> di
             "path": exe,
             "version": None,
             "agyModel": agy_model,
+            "agyFastModel": agy_fast_model,
             "error": f"Không chạy được AGY CLI: {exc}",
         }
 
@@ -892,6 +1007,7 @@ async def _probe_agy_health(state: dict[str, Any], agy_runner: Any = None) -> di
         "path": exe,
         "version": text_out.splitlines()[0].strip() if text_out else None,
         "agyModel": agy_model,
+        "agyFastModel": agy_fast_model,
         "error": None if ok else (text_out[:240] or f"AGY CLI thoát mã {returncode}."),
     }
 

@@ -16,7 +16,13 @@ from typing import Any
 
 import httpx
 
-from mach_backend.agy_cli_model import AgyCliModel, detect_agy_cli
+from mach_backend.agy_cli_model import (
+    DEFAULT_AGY_FAST_MODEL,
+    DEFAULT_AGY_ORCHESTRATOR_MODEL,
+    AgyCliModel,
+    detect_agy_cli,
+    resolve_agy_effort,
+)
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_router import FixedTaskRouter, get_shared_circuit_breaker
 from mach_backend.ai_safety import CostTracker
@@ -884,7 +890,11 @@ class AgentGeneration:
         self.fixed_router_enabled: bool = True
         self.extended_policy: ExtendedRunPolicy = ExtendedRunPolicy()
         self.agy_custom_path: str = ""
-        self.agy_model: str = ""
+        self.agy_model: str = DEFAULT_AGY_ORCHESTRATOR_MODEL
+        self.agy_fast_model: str = DEFAULT_AGY_FAST_MODEL
+        self.agy_effort: str = "medium"
+        self.auto_pilot: bool = True
+        self.workspace_ai_consent: bool = False
         self.early_stop_jobs: set[str] = set()
         self.review_provider_name = None
         self.review_gemini_model = GEMINI_MODEL
@@ -1047,6 +1057,9 @@ class AgentGeneration:
                 "deepseekReasonerModel": self.deepseek_reasoner_model,
                 "deepseekCrossModel": self.deepseek_cross_model,
                 "deepseekBackupModels": list(self.deepseek_backup_models),
+                "agyModel": self.agy_model,
+                "agyFastModel": self.agy_fast_model,
+                "agyEffort": self.agy_effort,
                 "credentialHash": sha256_json(cred_items),
             }
         )
@@ -1170,19 +1183,37 @@ class AgentGeneration:
             if use_fixed_router:
                 router_providers: dict[str, Any] = {}
                 if self.agy_available:
-                    agy_kwargs = _accepted_kwargs(
-                        AgyCliModel,
-                        {
-                            "custom_path": self.agy_custom_path,
-                            "budget": budget,
-                            "model": self.agy_model or None,
-                        },
-                    )
+                    orch_model = self.agy_model or DEFAULT_AGY_ORCHESTRATOR_MODEL
+                    fast_model = self.agy_fast_model or DEFAULT_AGY_FAST_MODEL
+                    time_preset_val = self.extended_policy.timePreset
+                    base_effort = getattr(self, "agy_effort", "medium") or "medium"
 
-                    async def _call_agy(p: str, b: dict[str, Any]) -> dict[str, Any]:
-                        return await AgyCliModel(log, **agy_kwargs)(p, b)
+                    def _make_agy_caller(target_model: str, tier: str):
+                        async def _caller(p: str, b: dict[str, Any]) -> dict[str, Any]:
+                            eff = resolve_agy_effort(
+                                p,
+                                tier=tier,
+                                time_preset=time_preset_val,
+                                default_effort=base_effort,
+                            )
+                            agy_kwargs = _accepted_kwargs(
+                                AgyCliModel,
+                                {
+                                    "custom_path": self.agy_custom_path,
+                                    "budget": budget,
+                                    "model": target_model,
+                                    "effort": eff,
+                                },
+                            )
+                            return await AgyCliModel(log, **agy_kwargs)(p, b)
 
-                    router_providers["agy"] = _call_agy
+                        return _caller
+
+                    call_agy_orch = _make_agy_caller(orch_model, "orchestrator")
+                    call_agy_fast = _make_agy_caller(fast_model, "fast")
+                    router_providers["agy_orchestrator"] = call_agy_orch
+                    router_providers["agy_fast"] = call_agy_fast
+                    router_providers["agy"] = call_agy_orch
                 if api_key and free_tier and key_pool is not None:
 
                     def _make_router_gemini(target_model: str):

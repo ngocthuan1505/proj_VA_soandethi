@@ -41,7 +41,7 @@ def structured_tool_request(body: dict[str, Any]) -> dict[str, Any]:
                 "additionalProperties": False,
             }
         )
-    schema: dict[str, Any] = {"oneOf": choices}
+    schema: dict[str, Any] = {"type": "object", "oneOf": choices}
     if definitions:
         schema["$defs"] = definitions
     history = list(body.get("messages", []))
@@ -298,12 +298,18 @@ def classify_micro_task(
     if hard_hint:
         return M05_GEN_HARD
     if body:
-        serialized = json.dumps(body.get("messages", []), ensure_ascii=False).casefold()
-        if any(
-            token in serialized
-            for token in ("van_dung", "van_dung_cao", "vận dụng", '"level": 2', '"level": 3')
-        ):
-            return M05_GEN_HARD
+        user_contents = [
+            str(msg.get("content", ""))
+            for msg in (body.get("messages") or [])
+            if isinstance(msg, dict) and str(msg.get("role", "")).strip().casefold() == "user"
+        ]
+        if user_contents:
+            serialized = "\n".join(user_contents).casefold()
+            compact = re.sub(r"\s+", "", serialized)
+            if any(
+                token in serialized for token in ("van_dung", "van_dung_cao", "vận dụng")
+            ) or any(token in compact for token in ('"level":2', '"level":3')):
+                return M05_GEN_HARD
     return M04_GEN_STANDARD
 
 
@@ -410,9 +416,128 @@ class FixedTaskRouter:
             m11_mode = "fast" if self.fast_chat else non_fast_mode
         else:
             m11_mode = "fast" if eff_preset == "fast" else non_fast_mode
-        if task_code == M06_BLIND_SOLVE:
+        has_tiered_agy = "agy_orchestrator" in self.providers or "agy_fast" in self.providers
+        agy_or_gemini_family = {
+            "agy",
+            "agy_orchestrator",
+            "agy_fast",
+            "gemini",
+            "gemini_flash",
+            "gemini_pro",
+            "gemini_hydrogen",
+        }
+        if not has_tiered_agy:
+            if task_code == M06_BLIND_SOLVE:
+                if gen.startswith("deepseek"):
+                    base = [
+                        "agy",
+                        "gemini_hydrogen",
+                        "gemini_flash",
+                        "gemini_pro",
+                        "gateway_cross",
+                        "deepseek_reasoner",
+                        "deepseek_chat",
+                        "ollama",
+                    ]
+                elif gen in agy_or_gemini_family:
+                    base = [
+                        "deepseek_reasoner",
+                        "deepseek_chat",
+                        "gateway_cross",
+                        "agy",
+                        "gemini_hydrogen",
+                        "gemini_pro",
+                        "gemini_flash",
+                        "ollama",
+                    ]
+                else:
+                    base = [
+                        "deepseek_reasoner",
+                        "gemini_hydrogen",
+                        "gemini_pro",
+                        "gateway_cross",
+                        "agy",
+                        "deepseek_chat",
+                        "gemini_flash",
+                        "ollama",
+                    ]
+            elif task_code == M11_FLEXIBLE_CHAT:
+                if m11_mode == "fast":
+                    base = [
+                        "deepseek_chat",
+                        "gemini_flash",
+                        "agy",
+                        "ollama",
+                        "gemini_pro",
+                        "gemini_hydrogen",
+                        "gemini",
+                        "deepseek_reasoner",
+                        "gateway_cross",
+                    ]
+                elif m11_mode == "standard":
+                    base = [
+                        "agy",
+                        "deepseek_chat",
+                        "gemini_flash",
+                        "deepseek_reasoner",
+                        "gemini_pro",
+                        "gemini_hydrogen",
+                        "gemini",
+                        "gateway_cross",
+                        "ollama",
+                    ]
+                else:
+                    base = [
+                        "agy",
+                        "deepseek_reasoner",
+                        "gemini_pro",
+                        "gemini_hydrogen",
+                        "deepseek_chat",
+                        "gemini_flash",
+                        "gemini",
+                        "gateway_cross",
+                        "ollama",
+                    ]
+            elif task_code in {
+                M03_EXAM_BLUEPRINT,
+                M05_GEN_HARD,
+                M09_SURGICAL_REPAIR,
+            }:
+                base = [
+                    "agy",
+                    "gemini_hydrogen",
+                    "gemini_pro",
+                    "deepseek_reasoner",
+                    "gemini_flash",
+                    "deepseek_chat",
+                    "ollama",
+                ]
+            elif task_code == M04_GEN_STANDARD:
+                base = [
+                    "deepseek_chat",
+                    "gemini_flash",
+                    "agy",
+                    "gemini_pro",
+                    "gemini_hydrogen",
+                    "deepseek_reasoner",
+                    "ollama",
+                ]
+            else:
+                # M01_OCR, M02_SOURCE_INDEX, M07, M08, M10_SCOPED_PATCH
+                base = [
+                    "gemini_flash",
+                    "deepseek_chat",
+                    "agy",
+                    "gemini_pro",
+                    "gemini_hydrogen",
+                    "deepseek_reasoner",
+                    "ollama",
+                ]
+        elif task_code == M06_BLIND_SOLVE:
             if gen.startswith("deepseek"):
                 base = [
+                    "agy_orchestrator",
+                    "agy_fast",
                     "agy",
                     "gemini_hydrogen",
                     "gemini_flash",
@@ -422,11 +547,13 @@ class FixedTaskRouter:
                     "deepseek_chat",
                     "ollama",
                 ]
-            elif gen in {"agy", "gemini", "gemini_flash", "gemini_pro", "gemini_hydrogen"}:
+            elif gen in agy_or_gemini_family:
                 base = [
                     "deepseek_reasoner",
                     "deepseek_chat",
                     "gateway_cross",
+                    "agy_orchestrator",
+                    "agy_fast",
                     "agy",
                     "gemini_hydrogen",
                     "gemini_pro",
@@ -436,9 +563,11 @@ class FixedTaskRouter:
             else:
                 base = [
                     "deepseek_reasoner",
+                    "agy_orchestrator",
                     "gemini_hydrogen",
                     "gemini_pro",
                     "gateway_cross",
+                    "agy_fast",
                     "agy",
                     "deepseek_chat",
                     "gemini_flash",
@@ -447,9 +576,11 @@ class FixedTaskRouter:
         elif task_code == M11_FLEXIBLE_CHAT:
             if m11_mode == "fast":
                 base = [
+                    "agy_fast",
                     "deepseek_chat",
                     "gemini_flash",
                     "agy",
+                    "agy_orchestrator",
                     "ollama",
                     "gemini_pro",
                     "gemini_hydrogen",
@@ -459,8 +590,10 @@ class FixedTaskRouter:
                 ]
             elif m11_mode == "standard":
                 base = [
-                    "agy",
+                    "agy_fast",
                     "deepseek_chat",
+                    "agy_orchestrator",
+                    "agy",
                     "gemini_flash",
                     "deepseek_reasoner",
                     "gemini_pro",
@@ -471,10 +604,12 @@ class FixedTaskRouter:
                 ]
             else:
                 base = [
+                    "agy_orchestrator",
                     "agy",
                     "deepseek_reasoner",
                     "gemini_pro",
                     "gemini_hydrogen",
+                    "agy_fast",
                     "deepseek_chat",
                     "gemini_flash",
                     "gemini",
@@ -482,23 +617,30 @@ class FixedTaskRouter:
                     "ollama",
                 ]
         elif task_code in {
+            M01_OCR,
+            M02_SOURCE_INDEX,
             M03_EXAM_BLUEPRINT,
             M05_GEN_HARD,
+            M07_DISTRACTOR_CHECK,
             M09_SURGICAL_REPAIR,
         }:
             base = [
+                "agy_orchestrator",
                 "agy",
                 "gemini_hydrogen",
                 "gemini_pro",
                 "deepseek_reasoner",
+                "agy_fast",
                 "gemini_flash",
                 "deepseek_chat",
                 "ollama",
             ]
         elif task_code == M04_GEN_STANDARD:
             base = [
+                "agy_fast",
                 "deepseek_chat",
                 "gemini_flash",
+                "agy_orchestrator",
                 "agy",
                 "gemini_pro",
                 "gemini_hydrogen",
@@ -506,10 +648,12 @@ class FixedTaskRouter:
                 "ollama",
             ]
         else:
-            # M01_OCR, M02_SOURCE_INDEX, M07, M08, M10_SCOPED_PATCH
+            # M08_DUPLICATE_SCOPE_CHECK, M10_SCOPED_PATCH
             base = [
+                "agy_fast",
                 "gemini_flash",
                 "deepseek_chat",
+                "agy_orchestrator",
                 "agy",
                 "gemini_pro",
                 "gemini_hydrogen",

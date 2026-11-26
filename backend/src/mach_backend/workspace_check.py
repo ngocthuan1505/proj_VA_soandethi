@@ -7,7 +7,12 @@ from typing import Annotated, Any, Literal
 import httpx
 from pydantic import Field, ValidationError
 
-from mach_backend.agy_cli_model import AgyCliModel
+from mach_backend.agy_cli_model import (
+    DEFAULT_AGY_FAST_MODEL,
+    DEFAULT_AGY_ORCHESTRATOR_MODEL,
+    AgyCliModel,
+    resolve_agy_effort,
+)
 from mach_backend.ai_contract import AIError
 from mach_backend.ai_questions import BlindQuestion, CheckProposal, saved_answer
 from mach_backend.ai_router import FixedTaskRouter, get_shared_circuit_breaker
@@ -51,21 +56,38 @@ def build_check_router_for_provider(
         )
         all_gemini_keys = tuple(dict.fromkeys(k for k in raw_keys if k))
 
+    time_preset = getattr(getattr(provider, "extended_policy", None), "timePreset", "standard")
     providers: dict[str, Any] = {}
     if getattr(provider, "agy_available", False):
-        agy_kwargs = _accepted_kwargs(
-            AgyCliModel,
-            {
-                "custom_path": getattr(provider, "agy_custom_path", ""),
-                "budget": budget,
-                "model": getattr(provider, "agy_model", "") or None,
-            },
-        )
+        orch_model = getattr(provider, "agy_model", "") or DEFAULT_AGY_ORCHESTRATOR_MODEL
+        fast_model = getattr(provider, "agy_fast_model", "") or DEFAULT_AGY_FAST_MODEL
 
-        async def _call_agy(p: str, b: dict[str, Any]) -> dict[str, Any]:
-            return await AgyCliModel(log, **agy_kwargs)(p, b)
+        def _make_agy(target_model: str, tier: str):
+            async def _caller(p: str, b: dict[str, Any]) -> dict[str, Any]:
+                eff = resolve_agy_effort(
+                    p,
+                    tier=tier,
+                    time_preset=time_preset,
+                    default_effort="low",
+                )
+                agy_kwargs = _accepted_kwargs(
+                    AgyCliModel,
+                    {
+                        "custom_path": getattr(provider, "agy_custom_path", ""),
+                        "budget": budget,
+                        "model": target_model,
+                        "effort": eff,
+                    },
+                )
+                return await AgyCliModel(log, **agy_kwargs)(p, b)
 
-        providers["agy"] = _call_agy
+            return _caller
+
+        call_orch = _make_agy(orch_model, "orchestrator")
+        call_fast = _make_agy(fast_model, "fast")
+        providers["agy_orchestrator"] = call_orch
+        providers["agy_fast"] = call_fast
+        providers["agy"] = call_orch
 
     gemini_key = getattr(provider, "gemini_key", "")
     free_tier = bool(getattr(provider, "gemini_free_tier", False))

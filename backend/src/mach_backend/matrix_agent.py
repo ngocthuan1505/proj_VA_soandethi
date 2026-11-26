@@ -827,6 +827,7 @@ async def _run_matrix_agent_single(
     skip_explanation_on_blind_fail=False,
     prior_stems: Sequence[str | Mapping[str, Any]] = (),
     should_stop: Callable[[], bool] | None = None,
+    auto_finish_on_ok: bool = False,
     _validate_full_plan: bool = True,
 ):
     if max_attempts is not None and (type(max_attempts) is not int or not 1 <= max_attempts <= 3):
@@ -1065,6 +1066,15 @@ async def _run_matrix_agent_single(
                     if k not in {"checks", "reviews", "explanations"}
                 }
                 emit("generation_result", generationAttempt=attempts, **report)
+                if auto_finish_on_ok and report.get("ok") and last is not None:
+                    return {
+                        "status": "ready_for_teacher_review",
+                        "generationAttempts": attempts,
+                        "toolCalls": tool_calls,
+                        "report": report,
+                        "proposal": last.model_dump(mode="json"),
+                        "saved": False,
+                    }
                 if max_attempts is not None and attempts == max_attempts and not report["ok"]:
                     return {
                         "status": "attempt_limit",
@@ -1102,6 +1112,7 @@ async def run_chunked_matrix_agent(
     prior_stems: Sequence[str | Mapping[str, Any]] = (),
     should_stop: Callable[[], bool] | None = None,
     on_batch_verified: Callable[..., Any] | None = None,
+    auto_finish_on_ok: bool = True,
 ):
     """Sinh đề dài 7–60 câu theo từng batch nhóm theo phần/dạng câu, có checkpoint và dừng sớm."""
     validate_sources(job)
@@ -1160,6 +1171,7 @@ async def run_chunked_matrix_agent(
             skip_explanation_on_blind_fail=skip_explanation_on_blind_fail,
             prior_stems=running_prior,
             should_stop=should_stop,
+            auto_finish_on_ok=auto_finish_on_ok,
             _validate_full_plan=False,
         )
         total_attempts += int(batch_res.get("generationAttempts", 0) or 0)
@@ -1277,6 +1289,7 @@ async def run_matrix_agent(
     chunked: bool | None = None,
     should_stop: Callable[[], bool] | None = None,
     on_batch_verified: Callable[..., Any] | None = None,
+    auto_finish_on_ok: bool | None = None,
 ):
     use_chunked = (
         (len(job.slots) > 6) if chunked is None else (bool(chunked) and len(job.slots) > 6)
@@ -1294,6 +1307,7 @@ async def run_matrix_agent(
             prior_stems=prior_stems,
             should_stop=should_stop,
             on_batch_verified=on_batch_verified,
+            auto_finish_on_ok=True if auto_finish_on_ok is None else bool(auto_finish_on_ok),
         )
     return await _run_matrix_agent_single(
         job,
@@ -1306,6 +1320,7 @@ async def run_matrix_agent(
         skip_explanation_on_blind_fail=skip_explanation_on_blind_fail,
         prior_stems=prior_stems,
         should_stop=should_stop,
+        auto_finish_on_ok=False if auto_finish_on_ok is None else bool(auto_finish_on_ok),
     )
 
 
