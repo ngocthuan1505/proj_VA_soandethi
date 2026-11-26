@@ -216,9 +216,9 @@ export async function runAutoCreateExam(ctx,promptText,opts={}){
   const consentBtn=container.querySelector('[data-action="auto-create-consent-retry"]');
   if(consentBtn)consentBtn.onclick=()=>{
    const saveWs=Boolean(container.querySelector('[data-auto-save-consent]')?.checked);
-   exam.aiConsent=true;
+   if(saveWs)exam.aiConsent=true;
    container.remove();
-   void runAutoCreateExam(ctx,prompt,{...opts,consentGiven:true,saveWorkspaceConsent:saveWs});
+   void runAutoCreateExam(ctx,prompt,{...opts,consentGiven:true,saveWorkspaceConsent:saveWs,explicitWorkspaceConsent:saveWs});
   };
   const dismissBtn=container.querySelector('[data-action="auto-create-dismiss"]');
   if(dismissBtn)dismissBtn.onclick=()=>{container.remove();};
@@ -249,7 +249,7 @@ export async function runAutoCreateExam(ctx,promptText,opts={}){
   sourceIds:opts.sourceIds??(exam.assistantSources||[]),
   sources:attachedSources,
   consentGiven:opts.consentGiven!==undefined?Boolean(opts.consentGiven):Boolean(exam.aiConsent),
-  saveWorkspaceConsent:Boolean(opts.saveWorkspaceConsent),
+  saveWorkspaceConsent:Boolean(opts.explicitWorkspaceConsent===true||(opts.saveWorkspaceConsent===true&&!opts.onOpenManualMatrix)),
   campaignId:opts.campaignId??null,
   persistToStore:opts.persistToStore===true,
  };

@@ -54,6 +54,7 @@ from mach_backend.matrix_import import matrix_slots
 from mach_backend.mixed_questions import decode_answer
 from mach_backend.poc_matrix import LocalModel, RunLog
 from mach_backend.poc_policy import ExtendedCallBudget
+from mach_backend.source_policy import collect_status_map, require_citable_source
 
 AUTO_CREATE_MAX_CONCURRENCY = 3
 AUTO_CREATE_MAX_REPAIR_ROUNDS = 2
@@ -265,51 +266,123 @@ def partition_auto_batches(
 def _collect_sources_for_request(
     body: AutoCreateRequest,
     exam: dict[str, Any] | None,
+    *,
+    db: Any = None,
 ) -> list[dict[str, Any]]:
     collected: list[dict[str, Any]] = []
     seen_keys: set[tuple[str, int]] = set()
     strict_teacher = bool(isinstance(exam, dict) and exam.get("strictTeacherOnly"))
 
+    exam_docs: list[dict[str, Any]] = (
+        [doc for doc in exam.get("docs", []) if isinstance(doc, dict)]
+        if isinstance(exam, dict) and isinstance(exam.get("docs"), list)
+        else []
+    )
+    docs_by_id: dict[str, dict[str, Any]] = {}
+    for doc in exam_docs:
+        for field in ("id", "sourceId"):
+            val = str(doc.get(field) or "").strip()
+            if val:
+                docs_by_id[val] = doc
+
+    status_map = collect_status_map(db, [*body.sources, *body.sourceIds, *exam_docs])
+
+    raw_pages_map = exam.get("assistantSourcePages") if isinstance(exam, dict) else None
+    has_body_sources = len(body.sources) > 0
+
     for item in body.sources:
         if not isinstance(item, dict):
             continue
-        if strict_teacher and not is_teacher_owned_source(item):
+        doc_id = str(item.get("docId") or item.get("sourceId") or item.get("id") or "").strip()
+        matching_doc = docs_by_id.get(doc_id) if doc_id else None
+        require_citable_source(item, db=db, status_map=status_map)
+        if matching_doc is not None:
+            require_citable_source(matching_doc, db=db, status_map=status_map)
+        if strict_teacher and (
+            not is_teacher_owned_source(item)
+            or (matching_doc is not None and not is_teacher_owned_source(matching_doc))
+        ):
             continue
         text = str(item.get("text") or item.get("excerpt") or "").strip()
         if not text:
             continue
-        doc_id = str(item.get("docId") or item.get("sourceId") or item.get("id") or "").strip()
         page_num = int(item.get("page") or item.get("pageNumber") or 1)
+        if (
+            doc_id
+            and isinstance(raw_pages_map, dict)
+            and isinstance(raw_pages_map.get(doc_id), list)
+        ):
+            allowed_pages = {
+                int(n)
+                for n in raw_pages_map[doc_id]
+                if isinstance(n, (int, float, str)) and str(n).strip().lstrip("-").isdigit()
+            }
+            if page_num not in allowed_pages:
+                continue
         name = str(item.get("name") or item.get("location") or "Tài liệu đính kèm").strip()
         key = (doc_id or name, page_num)
         if key in seen_keys:
             continue
         seen_keys.add(key)
+        doc_ver = int(
+            item.get("version")
+            or item.get("sourceVersion")
+            or (matching_doc or {}).get("version")
+            or 1
+        )
         collected.append(
             {
                 "docId": doc_id or f"src-{len(collected) + 1}",
                 "name": name,
+                "version": doc_ver,
                 "page": page_num,
                 "location": str(item.get("location") or f"{name} · Trang {page_num}"),
                 "text": text[:4000],
             }
         )
 
-    if isinstance(exam, dict) and isinstance(exam.get("docs"), list):
-        target_ids = {str(s).strip() for s in body.sourceIds if str(s or "").strip()}
-        if not target_ids and not collected:
-            raw_attached = exam.get("assistantSources")
-            if isinstance(raw_attached, list):
-                target_ids = {str(s).strip() for s in raw_attached if str(s or "").strip()}
-        for doc in exam["docs"]:
-            if not isinstance(doc, dict):
-                continue
+    if not has_body_sources:
+        body_source_ids = {str(s).strip() for s in body.sourceIds if str(s or "").strip()}
+        raw_attached = exam.get("assistantSources") if isinstance(exam, dict) else None
+        has_explicit_attached = isinstance(raw_attached, list)
+        target_ids: set[str] | None
+        if body_source_ids:
+            target_ids = body_source_ids
+        elif has_explicit_attached:
+            target_ids = {str(s).strip() for s in raw_attached if str(s or "").strip()}
+            if not target_ids:
+                return collected[:12]
+        else:
+            target_ids = None
+
+        if target_ids is not None:
+            for sid in target_ids:
+                require_citable_source(
+                    docs_by_id.get(sid) or {"id": sid},
+                    db=db,
+                    status_map=status_map,
+                )
+
+        for doc in exam_docs:
             doc_id = str(doc.get("id") or doc.get("sourceId") or "").strip()
-            if not doc_id or (target_ids and doc_id not in target_ids):
+            if not doc_id or (target_ids is not None and doc_id not in target_ids):
                 continue
+            require_citable_source(doc, db=db, status_map=status_map)
             if strict_teacher and not is_teacher_owned_source(doc):
                 continue
+
+            allowed_doc_pages: set[int] | None = None
+            if isinstance(raw_pages_map, dict) and isinstance(raw_pages_map.get(doc_id), list):
+                allowed_doc_pages = {
+                    int(n)
+                    for n in raw_pages_map[doc_id]
+                    if isinstance(n, (int, float, str)) and str(n).strip().lstrip("-").isdigit()
+                }
+                if not allowed_doc_pages:
+                    continue
+
             name = str(doc.get("name") or "Tài liệu giáo viên").strip()
+            doc_ver = int(doc.get("version") or 1)
             pages = doc.get("pages")
             if isinstance(pages, list) and pages:
                 for p_idx, page in enumerate(pages, start=1):
@@ -319,6 +392,8 @@ def _collect_sources_for_request(
                     if not text:
                         continue
                     p_num = int(page.get("number") or p_idx)
+                    if allowed_doc_pages is not None and p_num not in allowed_doc_pages:
+                        continue
                     key = (doc_id, p_num)
                     if key in seen_keys:
                         continue
@@ -327,12 +402,15 @@ def _collect_sources_for_request(
                         {
                             "docId": doc_id,
                             "name": name,
+                            "version": doc_ver,
                             "page": p_num,
                             "location": f"{name} · Trang {p_num}",
                             "text": text[:4000],
                         }
                     )
             elif isinstance(doc.get("text"), str) and doc["text"].strip():
+                if allowed_doc_pages is not None and 1 not in allowed_doc_pages:
+                    continue
                 key = (doc_id, 1)
                 if key not in seen_keys:
                     seen_keys.add(key)
@@ -340,6 +418,7 @@ def _collect_sources_for_request(
                         {
                             "docId": doc_id,
                             "name": name,
+                            "version": doc_ver,
                             "page": 1,
                             "location": f"{name} · Trang 1",
                             "text": doc["text"].strip()[:4000],
@@ -389,6 +468,7 @@ def _source_ref_for_question(
     src = sources[idx]
     return {
         "docId": src["docId"],
+        "version": int(src.get("version") or 1),
         "page": src["page"],
         "location": src["location"],
         "quote": src["text"][:280],
@@ -1256,7 +1336,11 @@ def register_auto_create_routes(
                 status_code=409,
             )
 
-        sources = _collect_sources_for_request(body, stored_exam)
+        if active_store is not None and hasattr(active_store, "connect"):
+            with active_store.connect() as policy_db:
+                sources = _collect_sources_for_request(body, stored_exam, db=policy_db)
+        else:
+            sources = _collect_sources_for_request(body, stored_exam)
         inferred = infer_exam_request_params(
             body.prompt,
             subject=body.subject,

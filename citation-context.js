@@ -88,10 +88,24 @@ function detectStaleNotice(evidence, options, quote, sourceId, kind, index) {
  return '';
 }
 
+function parseCitationVersion(raw) {
+ if (raw === null || raw === undefined || raw === '') return null;
+ const num = Number(raw);
+ return Number.isFinite(num) && num >= 1 ? num : null;
+}
+
+function resolveDoc(docList, sourceId) {
+ if (!sourceId) return null;
+ return docList.find(item => String(item?.id ?? item?.sourceId ?? '') === sourceId) || null;
+}
+
 export function resolveCitationContext(evidence, docs = [], options = {}) {
  const docList = Array.isArray(docs) ? docs.filter(Boolean) : [];
- const sourceId = String(evidence?.sourceId ?? '');
- const sourceVersion = evidence?.sourceVersion ?? 1;
+ const sourceId = String(evidence?.sourceId ?? evidence?.docId ?? '');
+ const explicitSourceVersion =
+  parseCitationVersion(evidence?.sourceVersion) ?? parseCitationVersion(evidence?.version);
+ const fallbackCurrentSourceVersion = parseCitationVersion(options?.currentSource?.version);
+ const sourceVersion = explicitSourceVersion ?? fallbackCurrentSourceVersion ?? 1;
  const rawLocator = evidence?.locator && typeof evidence.locator === 'object' ? evidence.locator : {};
  const kind = rawLocator.kind || 'page';
  const index = rawLocator.index ?? 1;
@@ -106,7 +120,9 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
  if (kind === 'passage') {
   const pastedRefs = Array.isArray(options?.pastedRefs) ? options.pastedRefs.filter(Boolean) : [];
   const sameIdRefs = pastedRefs.filter(ref => ref.sourceId === sourceId && ref.locator?.kind === 'passage');
-  const sameVersionRefs = sameIdRefs.filter(ref => (ref.sourceVersion ?? 1) === sourceVersion);
+  const sameVersionRefs = sameIdRefs.filter(
+   ref => (parseCitationVersion(ref.sourceVersion) ?? 1) === sourceVersion,
+  );
   const refForLabel = sameVersionRefs[0] || sameIdRefs[0];
   const pastedName = String(refForLabel?.name ?? options?.pastedName ?? '').trim() || 'Ngữ liệu đã dán';
   const label = refForLabel ? `${pastedName} · Đoạn ${index}` : `Nguồn của lượt sinh · Đoạn ${index}`;
@@ -118,7 +134,7 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
     hasSourceDoc: false,
     sourceId,
     sourceVersion,
-    currentVersion: refForLabel ? (refForLabel.sourceVersion ?? 1) : null,
+    currentVersion: refForLabel ? (parseCitationVersion(refForLabel.sourceVersion) ?? 1) : null,
     locator,
     quote,
     label,
@@ -144,7 +160,7 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
   }
 
   if (!sameVersionRefs.length) {
-   const currentVersion = refForLabel.sourceVersion ?? 1;
+   const currentVersion = parseCitationVersion(refForLabel.sourceVersion) ?? 1;
    return {
     status: 'version_changed',
     canOpen: false,
@@ -198,14 +214,30 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
   };
  }
 
- const doc = docList.find(item => item.id === sourceId) || null;
+ const doc = resolveDoc(docList, sourceId);
  const unit = kind === 'region' ? 'Vùng ' : 'Trang ';
  const docName = doc ? (String(doc.name ?? '').trim() || 'Tài liệu nguồn') : '';
  const locationLabel = doc ? (kind === 'page' ? sourcePageLabel(doc, index) : `Vùng ${index}`) : `${unit}${index}`;
  const label = doc ? `${docName} · ${locationLabel}` : `Nguồn của lượt sinh · ${unit}${index}`;
- const currentVersion = doc ? (doc.version || 1) : null;
+ const currentVersion = doc ? (parseCitationVersion(doc.version) ?? 1) : null;
+ const missingEvVersionOnUpdatedDoc =
+  doc !== null && explicitSourceVersion === null && currentVersion !== null && currentVersion > 1;
+ const versionChanged =
+  doc !== null &&
+  currentVersion !== null &&
+  (currentVersion !== sourceVersion || currentVersion > sourceVersion || missingEvVersionOnUpdatedDoc);
+ const hardSourceStale =
+  evidence?.stale === true ||
+  (options && 'currentSource' in options && (
+   options.currentSource === null ||
+   (options.currentSource && typeof options.currentSource === 'object' && (
+    ('docId' in options.currentSource && options.currentSource.docId === null && sourceId) ||
+    (options.currentSource.docId !== undefined && options.currentSource.docId !== sourceId) ||
+    (kind === 'page' && options.currentSource.page != null && options.currentSource.page !== '' && Number(options.currentSource.page) !== Number(index))
+   ))
+  ));
 
- if (staleNotice) {
+ if (staleNotice && (!versionChanged || hardSourceStale)) {
   return {
    status: 'stale',
    canOpen: false,
@@ -237,7 +269,7 @@ export function resolveCitationContext(evidence, docs = [], options = {}) {
   };
  }
 
- if (currentVersion !== sourceVersion) {
+ if (versionChanged) {
   return {
    status: 'version_changed',
    canOpen: false,

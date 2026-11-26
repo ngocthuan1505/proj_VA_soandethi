@@ -6,6 +6,7 @@ import io
 import json
 import math
 import re
+import sqlite3
 import zipfile
 from copy import deepcopy
 from pathlib import Path
@@ -48,6 +49,32 @@ OFFICE = {
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xl/",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": "ppt/",
 }
+AUDIO_MIME = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".ogg": "audio/ogg",
+    ".m4a": "audio/mp4",
+    ".webm": "audio/webm",
+}
+_AUDIO_MIME_ALIASES = {
+    "audio/wav": "wav",
+    "audio/x-wav": "wav",
+    "audio/wave": "wav",
+    "audio/vnd.wave": "wav",
+    "audio/mpeg": "mp3",
+    "audio/mp3": "mp3",
+    "audio/ogg": "ogg",
+    "application/ogg": "ogg",
+    "audio/mp4": "m4a",
+    "audio/x-m4a": "m4a",
+    "audio/m4a": "m4a",
+    "audio/aac": "aac",
+    "audio/webm": "webm",
+}
+EXAM_EXPORTS_NOTICE = (
+    "Lịch sử bản in đã phát (exam_exports) gắn với kho nguồn và "
+    "không di chuyển sang kho mới khi phục hồi JSON."
+)
 ATTACHMENT_MIME = {
     **MIME,
     ".txt": "text/plain",
@@ -55,7 +82,40 @@ ATTACHMENT_MIME = {
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    **AUDIO_MIME,
 }
+
+
+def _has_valid_audio_magic(mime: str, raw: bytes) -> bool:
+    kind = _AUDIO_MIME_ALIASES.get(mime.lower())
+    if kind == "wav":
+        return len(raw) >= 12 and raw[:4] == b"RIFF" and raw[8:12] == b"WAVE"
+    if kind == "mp3":
+        return raw.startswith(b"ID3") or (
+            len(raw) >= 2 and raw[0] == 0xFF and (raw[1] & 0xE0) == 0xE0 and (raw[1] & 0x06) != 0
+        )
+    if kind == "ogg":
+        return raw.startswith(b"OggS")
+    if kind == "m4a":
+        return len(raw) >= 12 and raw[4:8] == b"ftyp"
+    if kind == "aac":
+        return (len(raw) >= 12 and raw[4:8] == b"ftyp") or (
+            len(raw) >= 2 and raw[0] == 0xFF and (raw[1] & 0xF6) == 0xF0
+        )
+    if kind == "webm":
+        return raw.startswith(b"\x1a\x45\xdf\xa3")
+    return False
+
+
+def _count_owner_exam_exports(db: sqlite3.Connection, owner_id: str) -> int:
+    try:
+        row = db.execute(
+            "SELECT COUNT(*) FROM exam_exports WHERE owner_id = ?",
+            (owner_id,),
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return 0
+    return int(row[0]) if row else 0
 
 
 def invalid(message="Bản sao không đúng định dạng hoặc thiếu dữ liệu đề.") -> Never:
@@ -84,11 +144,15 @@ def file_references(value):
                 if not isinstance(key, str) or not FILE_ID.fullmatch(key):
                     invalid("Mã tệp trong bản sao không hợp lệ.")
                 types = found.setdefault(key, set())
-                name = item.get("name")
+                name = item.get("name") or item.get("filename")
                 if isinstance(name, str) and (
                     mime := ATTACHMENT_MIME.get(Path(name).suffix.lower())
                 ):
                     types.add(mime)
+                elif isinstance(item.get("mimeType"), str):
+                    raw_mime = item["mimeType"].strip().lower()
+                    if raw_mime in _AUDIO_MIME_ALIASES:
+                        types.add(raw_mime)
             stack.extend((v, depth + 1) for v in item.values() if isinstance(v, (dict, list)))
         elif isinstance(item, list):
             stack.extend((v, depth + 1) for v in item if isinstance(v, (dict, list)))
@@ -126,6 +190,9 @@ def check_file(key, value, referenced_types):
                     raise ValueError
         elif mime in {"text/plain", "text/markdown"}:
             raw.decode("utf-8-sig")
+        elif mime.lower() in _AUDIO_MIME_ALIASES:
+            if not _has_valid_audio_magic(mime, raw):
+                raise ValueError
         else:
             raise ValueError
     except (
@@ -251,21 +318,35 @@ def _validate_exam_entry(exam: Any, ids: set[str], *, require_full_fields: bool)
             or any(not isinstance(v, str) for v in options)
         ):
             invalid("Câu hỏi trong bản sao không hợp lệ.")
-        if (
-            len(options) != (0 if kind in {"essay", "short"} else 4)
-            or type(q.get("level")) is not int
-            or q["level"] not in range(4)
-        ):
+        options_ok = (
+            len(options) == 0
+            if kind in {"essay", "short"}
+            else (len(options) == 4 if kind == "truefalse" else 2 <= len(options) <= 6)
+        )
+        if not options_ok or type(q.get("level")) is not int or q["level"] not in range(4):
             invalid("Loại câu hoặc mức độ trong bản sao không hợp lệ.")
-        legacy = type(answer) is int and answer in range(4)
+        answer_unknown = q.get("answerKnown") is False
+        mcq_answer_ok = kind == "mcq" and (
+            (answer_unknown and answer is None)
+            or (type(answer) is int and 0 <= answer < len(options))
+        )
+        legacy = type(answer) is int and 0 <= answer < len(options)
         if (
-            not legacy
-            and not (kind == "short" and isinstance(answer, str))
+            not mcq_answer_ok
+            and not legacy
+            and not (
+                kind == "short" and (isinstance(answer, str) or (answer_unknown and answer is None))
+            )
             and not (
                 kind == "truefalse"
-                and isinstance(answer, list)
-                and len(answer) == 4
-                and all(type(v) is bool for v in answer)
+                and (
+                    (answer_unknown and answer is None)
+                    or (
+                        isinstance(answer, list)
+                        and len(answer) == 4
+                        and all(type(v) is bool or (answer_unknown and v is None) for v in answer)
+                    )
+                )
             )
             and not (kind == "essay" and answer in (None, ""))
         ):
@@ -278,7 +359,10 @@ def _validate_exam_entry(exam: Any, ids: set[str], *, require_full_fields: bool)
             and (
                 not isinstance(q["truthValues"], list)
                 or len(q["truthValues"]) != 4
-                or any(type(v) is not bool for v in q["truthValues"])
+                or any(
+                    type(v) is not bool and not (answer_unknown and v is None)
+                    for v in q["truthValues"]
+                )
             )
         ):
             invalid("Đáp án đúng–sai cần đủ bốn giá trị.")
@@ -495,6 +579,7 @@ def export_workspace_backup(store):
         curriculum_sources = _list_owner_curriculum_sources(db, store.owner)
         exam_campaigns = list_owner_campaigns(db, store.owner)
         teacher_reminders = list_owner_reminders(db, store.owner)
+        exam_exports_count = _count_owner_exam_exports(db, store.owner)
     return {
         "format": "tro-ly-soan-de",
         "version": 1,
@@ -505,6 +590,14 @@ def export_workspace_backup(store):
         "curriculumSources": curriculum_sources,
         "examCampaigns": exam_campaigns,
         "teacherReminders": teacher_reminders,
+        **(
+            {
+                "examExportsCount": exam_exports_count,
+                "examExportsNotice": EXAM_EXPORTS_NOTICE,
+            }
+            if exam_exports_count > 0
+            else {}
+        ),
     }
 
 
@@ -578,6 +671,8 @@ def restore(store, backup, base_revision):
             "importedExams": imported_exams,
             "skippedExams": skipped_exams,
             "importedFiles": imported_files,
+            "examExportsMigrated": False,
+            "examExportsWarning": EXAM_EXPORTS_NOTICE,
         }
 
     with store.connect() as db:
@@ -595,7 +690,12 @@ def restore(store, backup, base_revision):
         db.execute("DELETE FROM matrix_trace")
         db.execute("DELETE FROM kv WHERE key LIKE 'matrix%'")
         db.execute("DELETE FROM kv WHERE key LIKE 'scoped-patch:%'")
-    return {"revision": revision, "restored": True}
+    return {
+        "revision": revision,
+        "restored": True,
+        "examExportsMigrated": False,
+        "examExportsWarning": EXAM_EXPORTS_NOTICE,
+    }
 
 
 def install_backup(app, store, runner, chat_lock, connection_lock):
@@ -631,9 +731,38 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
             bank_count = apply_question_bank_records(db, store.owner, backup, dry_run=True)
             campaign_count = apply_campaign_records(db, store.owner, backup, dry_run=True)
             reminder_count = apply_reminder_records(db, store.owner, backup, dry_run=True)
+            local_exports_count = _count_owner_exam_exports(db, store.owner)
             current_entry = store.get("state", db)
             revision = current_entry["revision"]
             current_state = current_entry["value"]
+        raw_backup_exports_count = backup.get("examExportsCount")
+        backup_exports_list = backup.get("examExports")
+        backup_exports_count = (
+            int(raw_backup_exports_count)
+            if isinstance(raw_backup_exports_count, int)
+            else (len(backup_exports_list) if isinstance(backup_exports_list, list) else 0)
+        )
+        has_printed_exam = any(
+            isinstance(ex, dict) and ex.get("workflowStatus") == "printed"
+            for ex in state.get("exams", [])
+        )
+        show_exports_notice = bool(
+            local_exports_count > 0
+            or backup_exports_count > 0
+            or has_printed_exam
+            or "examExports" in backup
+            or "examExportsCount" in backup
+        )
+        exports_warning_fields: dict[str, Any] = (
+            {
+                "examExportsCount": backup_exports_count or local_exports_count,
+                "examExportsMigrated": False,
+                "examExportsWarning": EXAM_EXPORTS_NOTICE,
+                "warnings": [EXAM_EXPORTS_NOTICE],
+            }
+            if show_exports_notice
+            else {}
+        )
         if backup.get("format") == "tro-ly-soan-de-batch":
             existing_exams = (
                 current_state.get("exams") or [] if isinstance(current_state, dict) else []
@@ -661,6 +790,7 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
                 **({"questionBank": bank_count} if bank_count else {}),
                 **({"examCampaigns": campaign_count} if campaign_count else {}),
                 **({"teacherReminders": reminder_count} if reminder_count else {}),
+                **exports_warning_fields,
             }
         return {
             "revision": revision,
@@ -669,6 +799,7 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
             **({"questionBank": bank_count} if bank_count else {}),
             **({"examCampaigns": campaign_count} if campaign_count else {}),
             **({"teacherReminders": reminder_count} if reminder_count else {}),
+            **exports_warning_fields,
             "exams": len(state["exams"]),
             "files": len(files),
             "prefs": len(state["prefs"]),

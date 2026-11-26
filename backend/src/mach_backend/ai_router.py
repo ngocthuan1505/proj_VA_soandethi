@@ -7,7 +7,7 @@ import json
 import re
 import threading
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 from uuid import uuid4
 
@@ -141,6 +141,88 @@ def _parse_json_action_payload(raw_text: str) -> Any:
     return None
 
 
+def attach_error_diagnostic(err: AIError, diag: Mapping[str, Any] | None) -> AIError:
+    """Gắn metadata chẩn đoán đã redact lên AIError mà không đổi chữ ký hàm tạo."""
+    if isinstance(diag, Mapping) and diag:
+        safe = dict(redact_secrets(dict(diag)))
+        err.__dict__["detail"] = safe
+        err.__dict__["diagnostic"] = safe
+    return err
+
+
+def get_error_diagnostic(err: BaseException) -> dict[str, Any] | None:
+    """Đọc dictionary chẩn đoán đã gắn trên ngoại lệ nếu có."""
+    raw = getattr(err, "detail", None) or getattr(err, "diagnostic", None)
+    return dict(redact_secrets(raw)) if isinstance(raw, dict) and raw else None
+
+
+def diagnose_invalid_response(
+    raw_text: Any,
+    *,
+    expected_schema: dict[str, Any] | None = None,
+    has_tools: bool = False,
+    allowed_tools: Iterable[str] | None = None,
+    reason_hint: str | None = None,
+    parsed_payload: Any = None,
+) -> dict[str, Any]:
+    """Phân loại lỗi phản hồi đã redact (rỗng / JSON hỏng / sai công cụ / sai schema)."""
+    parsed = parsed_payload
+    if isinstance(raw_text, (dict, list)):
+        if parsed is None:
+            parsed = raw_text
+        text = json.dumps(raw_text, ensure_ascii=False)
+    else:
+        text = str(raw_text or "")
+    response_len = len(text)
+    if parsed is None and text.strip():
+        parsed = _parse_json_action_payload(text)
+
+    top_keys: list[str] = []
+    if isinstance(parsed, dict):
+        top_keys = [str(redact_secrets(str(k)))[:64] for k in list(parsed.keys())[:12]]
+
+    subcode: str
+    if not text.strip():
+        subcode = "empty_response"
+    elif parsed is None:
+        subcode = "malformed_json"
+    elif reason_hint in {
+        "empty_response",
+        "malformed_json",
+        "invalid_tool_action",
+        "schema_mismatch",
+    }:
+        subcode = reason_hint
+    elif has_tools:
+        allowed = frozenset(allowed_tools) if allowed_tools is not None else _DEFAULT_ALLOWED_TOOLS
+        subcode = "invalid_tool_action"
+        if isinstance(parsed, dict):
+            raw_act = parsed.get("action") or parsed.get("name")
+            if (
+                isinstance(raw_act, str)
+                and raw_act in allowed
+                and isinstance(parsed.get("arguments"), dict)
+            ):
+                subcode = "schema_mismatch"
+    else:
+        subcode = "schema_mismatch"
+
+    result: dict[str, Any] = {
+        "subcode": subcode,
+        "response_len": response_len,
+        "top_keys": top_keys,
+    }
+    if isinstance(expected_schema, dict) and isinstance(expected_schema.get("required"), list):
+        missing = [
+            str(redact_secrets(str(k)))[:64]
+            for k in expected_schema["required"]
+            if not (isinstance(parsed, dict) and k in parsed)
+        ]
+        if missing:
+            result["missing_required"] = missing[:12]
+    return dict(redact_secrets(result))
+
+
 def structured_tool_response(
     message: dict[str, Any] | str,
     *,
@@ -150,7 +232,8 @@ def structured_tool_response(
 ) -> dict[str, Any]:
     """Chuyển phản hồi JSON {action, arguments} thành tool_calls chuẩn cho run_matrix_agent."""
     raw_content = message.get("content", "") if isinstance(message, dict) else message
-    action = _parse_json_action_payload(str(raw_content or ""))
+    raw_text = str(raw_content or "")
+    action = _parse_json_action_payload(raw_text)
     allowed = frozenset(allowed_tools) if allowed_tools is not None else _DEFAULT_ALLOWED_TOOLS
     action_name: str | None = None
     arguments: Any = None
@@ -174,14 +257,30 @@ def structured_tool_response(
             action_name = "check_exam"
             arguments = {"questions": action["questions"]}
     if action_name is None:
-        raise AIError(raise_code, "Model trả yêu cầu công cụ không hợp lệ.")
+        diag = diagnose_invalid_response(
+            raw_text,
+            has_tools=True,
+            allowed_tools=allowed,
+            parsed_payload=action,
+            reason_hint="invalid_tool_action" if action is not None else None,
+        )
+        err = AIError(raise_code, "Model trả yêu cầu công cụ không hợp lệ.")
+        raise attach_error_diagnostic(err, diag)
     if isinstance(arguments, str):
         try:
             arguments = json.loads(sanitize_json_latex_escapes(arguments))
         except (ValueError, TypeError):
             arguments = None
     if not isinstance(arguments, dict):
-        raise AIError(raise_code, "Model trả yêu cầu công cụ không hợp lệ.")
+        diag = diagnose_invalid_response(
+            raw_text,
+            has_tools=True,
+            allowed_tools=allowed,
+            parsed_payload=action,
+            reason_hint="invalid_tool_action",
+        )
+        err = AIError(raise_code, "Model trả yêu cầu công cụ không hợp lệ.")
+        raise attach_error_diagnostic(err, diag)
     tool_call: dict[str, Any] = {"function": {"name": action_name, "arguments": arguments}}
     if include_call_id:
         tool_call["id"] = f"call_{uuid4().hex[:12]}"
@@ -762,7 +861,21 @@ class FixedTaskRouter:
             except AIError as error:
                 safe_msg = str(redact_secrets(str(error)))
                 sanitized_error = AIError(error.code, safe_msg, http_status=error.http_status)
+                safe_diag = get_error_diagnostic(error)
+                if safe_diag is not None:
+                    attach_error_diagnostic(sanitized_error, safe_diag)
                 if error.code not in FALLBACK_ERROR_CODES:
+                    if self.log is not None and safe_diag is not None:
+                        self.log.emit(
+                            "router_error",
+                            purpose=purpose,
+                            taskCode=task_code,
+                            family=family,
+                            reason=error.code,
+                            subcode=safe_diag.get("subcode"),
+                            diagnostic=safe_diag,
+                            httpStatus=error.http_status,
+                        )
                     raise sanitized_error from None
                 self.circuit_breaker.record_failure(family)
                 last_error = sanitized_error
@@ -771,6 +884,14 @@ class FixedTaskRouter:
                     fallback_reason = safe_msg
                 next_family = available[idx + 1] if idx + 1 < len(available) else None
                 if self.log is not None:
+                    extra_diag = (
+                        {
+                            "subcode": safe_diag.get("subcode"),
+                            "diagnostic": safe_diag,
+                        }
+                        if safe_diag is not None
+                        else {}
+                    )
                     self.log.emit(
                         "router_fallback",
                         purpose=purpose,
@@ -779,6 +900,7 @@ class FixedTaskRouter:
                         toFamily=next_family,
                         reason=error.code,
                         httpStatus=error.http_status,
+                        **extra_diag,
                     )
                 continue
 

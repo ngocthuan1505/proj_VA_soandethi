@@ -17,7 +17,13 @@ from pathlib import Path
 from typing import Any
 
 from mach_backend.ai_contract import AIError
-from mach_backend.ai_router import structured_tool_request, structured_tool_response
+from mach_backend.ai_router import (
+    attach_error_diagnostic,
+    diagnose_invalid_response,
+    get_error_diagnostic,
+    structured_tool_request,
+    structured_tool_response,
+)
 from mach_backend.ai_safety import redact_secrets, sanitize_json_latex_escapes
 
 DEFAULT_AGY_ORCHESTRATOR_MODEL = "gemini-pro-orchestrator-neon"
@@ -795,7 +801,15 @@ class AgyCliModel:
                 prefer_tool_action=has_tools,
             )
             if not content:
-                raise AIError("invalid_response", "AGY CLI trả về phản hồi rỗng.")
+                diag = diagnose_invalid_response(
+                    stdout_str,
+                    expected_schema=expected_schema,
+                    has_tools=has_tools,
+                    allowed_tools=allowed_tools or None,
+                    reason_hint="empty_response",
+                )
+                err = AIError("invalid_response", "AGY CLI trả về phản hồi rỗng.")
+                raise attach_error_diagnostic(err, diag)
 
             if has_tools:
                 result = structured_tool_response(
@@ -805,6 +819,54 @@ class AgyCliModel:
                     raise_code="invalid_response",
                 )
             else:
+                if (
+                    "format" in effective_body
+                    and not has_tools
+                    and content.lstrip().startswith(("{", "["))
+                ):
+                    parsed_obj: Any = None
+                    try:
+                        parsed_obj = json.loads(content)
+                    except (ValueError, TypeError):
+                        try:
+                            parsed_obj = json.loads(sanitize_json_latex_escapes(content))
+                        except (ValueError, TypeError):
+                            parsed_obj = None
+                    if parsed_obj is None:
+                        diag = diagnose_invalid_response(
+                            content,
+                            expected_schema=expected_schema,
+                            has_tools=False,
+                            reason_hint="malformed_json",
+                        )
+                        err = AIError("invalid_response", "AGY CLI trả về JSON không hợp lệ.")
+                        raise attach_error_diagnostic(err, diag)
+                    if (
+                        isinstance(expected_schema, dict)
+                        and expected_schema.get("type") == "object"
+                    ):
+                        schema_bad = not isinstance(parsed_obj, dict)
+                        req_keys = expected_schema.get("required")
+                        if (
+                            not schema_bad
+                            and isinstance(req_keys, list)
+                            and isinstance(parsed_obj, dict)
+                            and any(k not in parsed_obj for k in req_keys)
+                        ):
+                            schema_bad = True
+                        if schema_bad:
+                            diag = diagnose_invalid_response(
+                                content,
+                                expected_schema=expected_schema,
+                                has_tools=False,
+                                reason_hint="schema_mismatch",
+                                parsed_payload=parsed_obj,
+                            )
+                            err = AIError(
+                                "invalid_response",
+                                "AGY CLI trả về cấu trúc JSON không khớp schema.",
+                            )
+                            raise attach_error_diagnostic(err, diag)
                 result = {
                     "role": "assistant",
                     "content": content,
@@ -823,8 +885,24 @@ class AgyCliModel:
                     seconds=round(time.perf_counter() - started, 6),
                 )
             return result
-        except BaseException:
+        except BaseException as exc:
             if self.log is not None:
+                safe_diag = get_error_diagnostic(exc)
+                extra_fields: dict[str, Any] = {}
+                if isinstance(exc, AIError):
+                    extra_fields["errorCode"] = exc.code
+                if safe_diag is not None:
+                    extra_fields["subcode"] = safe_diag.get("subcode")
+                    extra_fields["diagnostic"] = safe_diag
+                    if isinstance(exc, AIError) and exc.code == "invalid_response":
+                        self.log.emit(
+                            "model_invalid_response",
+                            modelCall=index,
+                            purpose=purpose,
+                            model=model_label,
+                            provider="agy",
+                            **safe_diag,
+                        )
                 self.log.emit(
                     "model_end",
                     modelCall=index,
@@ -833,5 +911,6 @@ class AgyCliModel:
                     provider="agy",
                     ok=False,
                     seconds=round(time.perf_counter() - started, 6),
+                    **extra_fields,
                 )
             raise

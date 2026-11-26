@@ -5,11 +5,13 @@ import base64
 import hashlib
 import importlib
 import inspect
+import io
 import json
 import os
 import re
 import sqlite3
 import time
+import zipfile
 from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID, uuid4
@@ -38,6 +40,9 @@ from mach_backend.ai_questions import (
 from mach_backend.ai_router import (
     FALLBACK_ERROR_CODES,
     FixedTaskRouter,
+    attach_error_diagnostic,
+    diagnose_invalid_response,
+    get_error_diagnostic,
     get_shared_circuit_breaker,
 )
 from mach_backend.ai_service import check_question
@@ -102,6 +107,12 @@ from mach_backend.poc_trace import inspect_run
 from mach_backend.question_bank import register_question_bank_routes
 from mach_backend.question_parser import install_question_parser
 from mach_backend.source_ocr import read_source
+from mach_backend.source_policy import (
+    collect_status_map,
+    filter_allowed_docs_for_hybrid,
+    is_source_revoked,
+    require_citable_source,
+)
 from mach_backend.tnmaker_export import export_tnmaker_pack
 from mach_backend.workspace_agent import AgentGeneration, _make_gemini_key_pool
 from mach_backend.workspace_backup import BACKUP_PATHS, MAX_BACKUP, install_backup
@@ -673,8 +684,12 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
 
     @app.exception_handler(AIError)
     async def ai_error(_request, error):
+        payload: dict[str, Any] = {"error": str(error), "code": error.code}
+        raw_diag = get_error_diagnostic(error)
+        if raw_diag is not None:
+            payload["detail"] = raw_diag
         return JSONResponse(
-            {"error": str(error), "code": error.code},
+            payload,
             error.http_status or (404 if error.code == "exam_not_found" else 409),
         )
 
@@ -1189,6 +1204,39 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             return Response(
                 decoded, media_type="application/pdf", headers={"Cache-Control": "no-store"}
             )
+        if decoded.startswith(b"PK\x03\x04"):
+            try:
+                with zipfile.ZipFile(io.BytesIO(decoded)) as archive:
+                    names = archive.namelist()
+            except (zipfile.BadZipFile, OSError, ValueError):
+                raise HTTPException(404) from None
+            office_types = (
+                (
+                    "ppt/",
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "source.pptx",
+                ),
+                (
+                    "word/",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "source.docx",
+                ),
+                (
+                    "xl/",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "source.xlsx",
+                ),
+            )
+            for prefix, media_type, default_name in office_types:
+                if any(name.startswith(prefix) for name in names):
+                    return Response(
+                        decoded,
+                        media_type=media_type,
+                        headers={
+                            "Cache-Control": "no-store",
+                            "Content-Disposition": f'inline; filename="{default_name}"',
+                        },
+                    )
         raise HTTPException(404)
 
     @app.post("/api/ai/matrix")
@@ -1270,6 +1318,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             or (isinstance(exam_obj, dict) and exam_obj.get("strictTeacherOnly"))
         )
         exam_docs_by_id: dict[str, dict[str, Any]] = {}
+        has_explicit_selection = False
         selected_doc_ids: set[str] = set()
         selected_pages_map: dict[str, set[int]] = {}
         if isinstance(exam_obj, dict):
@@ -1282,6 +1331,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                         exam_docs_by_id[val] = doc
             raw_selected = exam_obj.get("assistantSources")
             if isinstance(raw_selected, list):
+                has_explicit_selection = True
                 selected_doc_ids = {str(s).strip() for s in raw_selected if str(s or "").strip()}
             raw_page_map = exam_obj.get("assistantSourcePages")
             if isinstance(raw_page_map, dict):
@@ -1294,8 +1344,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                         for p in raw_plist
                         if isinstance(p, (int, float, str)) and str(p).strip().isdigit()
                     }
-                    if parsed_pages:
-                        selected_pages_map[sid] = parsed_pages
+                    selected_pages_map[sid] = parsed_pages
 
         def _is_source_dict(item: Any) -> bool:
             return isinstance(item, dict) and (
@@ -1304,6 +1353,20 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             )
 
         raw_context: list[JsonValue] = list(request.context)
+        with store.connect() as policy_db:
+            status_map = collect_status_map(
+                policy_db,
+                [
+                    *raw_context,
+                    *((exam_obj.get("docs") or []) if isinstance(exam_obj, dict) else ()),
+                    *selected_doc_ids,
+                ],
+            )
+        for sid in selected_doc_ids:
+            require_citable_source(
+                exam_docs_by_id.get(sid) or {"id": sid},
+                status_map=status_map,
+            )
         filtered_context: list[JsonValue] = []
         had_requested_sources = False
         for item in raw_context:
@@ -1313,17 +1376,28 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             ):
                 had_requested_sources = True
                 assert isinstance(item, dict)
-                sid = str(item.get("sourceId") or item.get("id") or "").strip()
+                sid = str(item.get("docId") or item.get("sourceId") or item.get("id") or "").strip()
                 server_doc = exam_docs_by_id.get(sid) if sid else None
+                require_citable_source(item, status_map=status_map)
+                if server_doc is not None:
+                    require_citable_source(server_doc, status_map=status_map)
                 if strict_teacher:
                     if server_doc is not None and not is_teacher_owned_source(server_doc):
                         continue
                     if _is_non_teacher_source_item(item):
                         continue
-                if selected_doc_ids and server_doc is not None and sid not in selected_doc_ids:
+                if (
+                    has_explicit_selection
+                    and (
+                        server_doc is not None or bool(sid) or item.get("kind") == "attached-source"
+                    )
+                    and sid not in selected_doc_ids
+                ):
                     continue
                 if sid and sid in selected_pages_map and _is_source_dict(item):
                     allowed_pages = selected_pages_map[sid]
+                    if not allowed_pages:
+                        continue
                     raw_pno = item.get("pageNumber") or item.get("page_number") or item.get("page")
                     if isinstance(raw_pno, (int, float, str)) and str(raw_pno).strip().isdigit():
                         if int(raw_pno) not in allowed_pages:
@@ -1352,18 +1426,24 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             source_ctx = list(rank_source_fragments(request.text, source_ctx, top_k=8))
             if not source_ctx:
                 no_matching_fragments = True
-        elif isinstance(exam_obj, dict) and exam_obj.get("docs") and not had_requested_sources:
+        elif (
+            isinstance(exam_obj, dict)
+            and exam_obj.get("docs")
+            and not had_requested_sources
+            and not (has_explicit_selection and not selected_doc_ids)
+        ):
             allowed_docs: list[tuple[str, int] | tuple[str, int, int]] = []
             with store.connect() as db:
                 for doc in exam_obj.get("docs", []):
                     if not isinstance(doc, dict):
                         continue
-                    if strict_teacher and not is_teacher_owned_source(doc):
-                        continue
                     doc_id = str(doc.get("id") or doc.get("sourceId") or "").strip()
                     if not doc_id:
                         continue
-                    if selected_doc_ids and doc_id not in selected_doc_ids:
+                    if has_explicit_selection and doc_id not in selected_doc_ids:
+                        continue
+                    require_citable_source(doc, db=db, status_map=status_map)
+                    if strict_teacher and not is_teacher_owned_source(doc):
                         continue
                     version = int(doc.get("version") or 1)
                     title = str(doc.get("name") or doc.get("title") or "")
@@ -1385,16 +1465,20 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                     index_document_chunks(
                         db, owner_id, doc_id, pages_input, version=version, title=title
                     )
-                    allowed_pages = selected_pages_map.get(doc_id)
-                    if allowed_pages:
+                    if doc_id in selected_pages_map:
+                        allowed_pages = selected_pages_map[doc_id]
                         for p in pages_input:
                             pno = int(p["number"])
                             if pno in allowed_pages:
                                 allowed_docs.append((doc_id, version, pno))
                     else:
                         allowed_docs.append((doc_id, version))
+                allowed_docs = filter_allowed_docs_for_hybrid(db, allowed_docs)
                 if allowed_docs:
                     hits = search_hybrid_chunks(db, owner_id, request.text, allowed_docs, top_k=6)
+                    hits = [
+                        h for h in hits if not is_source_revoked(h, db=db, status_map=status_map)
+                    ]
                     if hits:
                         source_ctx = [
                             {
@@ -1409,7 +1493,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                         ]
                     else:
                         no_matching_fragments = True
-        elif had_requested_sources and strict_teacher:
+        elif had_requested_sources:
             no_matching_fragments = True
 
         ordered_context: list[JsonValue] = [*other_ctx, *source_ctx]
@@ -1542,6 +1626,31 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             "presetTimeout": chat_policy.timeoutSeconds,
         }
 
+    def _build_invalid_chat_error(
+        raw_text: Any,
+        *,
+        reason_hint: str | None = None,
+        parsed_payload: Any = None,
+    ) -> AIError:
+        err = AIError("invalid_response", "AI chưa trả lời hợp lệ. Bản đề giữ nguyên.")
+        diag = diagnose_invalid_response(
+            raw_text,
+            expected_schema={"type": "object", "required": ["message"]},
+            has_tools=False,
+            reason_hint=reason_hint,
+            parsed_payload=parsed_payload,
+        )
+        return attach_error_diagnostic(err, diag)
+
+    def _sse_error_frame_from_exc(exc: BaseException) -> str:
+        code = exc.code if isinstance(exc, AIError) else "invalid_response"
+        msg = str(exc) if isinstance(exc, AIError) else "AI chưa trả lời hợp lệ. Bản đề giữ nguyên."
+        payload: dict[str, Any] = {"code": code, "error": msg}
+        raw_diag = get_error_diagnostic(exc)
+        if raw_diag is not None:
+            payload["detail"] = raw_diag
+        return _sse_frame("error", payload)
+
     def _parse_chat_payload(raw_text: str) -> tuple[dict[str, Any], str]:
         cleaned = str(raw_text or "").strip()
         fenced = re.match(r"^```(?:json)?\s*(.*?)\s*```$", cleaned, flags=re.DOTALL)
@@ -1549,24 +1658,41 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             cleaned = fenced.group(1).strip()
         raw_content = _sanitize_latex_json(cleaned)
         parsed: dict[str, Any]
+        loaded_obj: Any = None
         try:
             loaded_obj = json.loads(raw_content)
             if not isinstance(loaded_obj, dict):
-                raise ValueError
+                raise _build_invalid_chat_error(
+                    raw_text, reason_hint="schema_mismatch", parsed_payload=loaded_obj
+                )
             parsed = loaded_obj
+            if "message" not in parsed:
+                raise _build_invalid_chat_error(
+                    raw_text, reason_hint="schema_mismatch", parsed_payload=parsed
+                )
             raw_message = parsed["message"]
             if not isinstance(raw_message, str):
-                raise ValueError
+                raise _build_invalid_chat_error(
+                    raw_text, reason_hint="schema_mismatch", parsed_payload=parsed
+                )
+        except AIError:
+            raise
         except (KeyError, TypeError, ValueError):
             # Cho phép chat tự nhiên M11 nhận văn bản thuần hợp lệ nếu model không bọc JSON,
             # nhưng vẫn chặn JSON hỏng/cắt cụt hoặc phản hồi rỗng.
-            if not cleaned or cleaned.startswith(("{", "[")):
-                raise
+            if not cleaned:
+                raise _build_invalid_chat_error(raw_text, reason_hint="empty_response") from None
+            if cleaned.startswith(("{", "[")):
+                raise _build_invalid_chat_error(raw_text, reason_hint="malformed_json") from None
             parsed = {}
             raw_message = cleaned[:5000]
         message = _sanitize_output_text(raw_message).strip()
         if not 1 <= len(message) <= 5000:
-            raise ValueError
+            raise _build_invalid_chat_error(
+                raw_text,
+                reason_hint="empty_response" if not message else "schema_mismatch",
+                parsed_payload=parsed or None,
+            )
         return parsed, message
 
     def _sse_frame(event_name: str, payload: dict[str, Any]) -> str:
@@ -1641,10 +1767,10 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                     provider.sync_cost_tracker(cost_tracker)
             try:
                 parsed, message = _parse_chat_payload(str(response.get("content") or ""))
+            except AIError:
+                raise
             except (KeyError, TypeError, ValueError):
-                raise AIError(
-                    "invalid_response", "AI chưa trả lời hợp lệ. Bản đề giữ nguyên."
-                ) from None
+                raise _build_invalid_chat_error(response.get("content") or "") from None
             suggested_actions, follow_ups = _extract_chat_actions_and_followups(
                 request.text,
                 request.context,
@@ -1762,13 +1888,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                         )
                         return
                     except (AIError, KeyError, TypeError, ValueError) as exc:
-                        code = exc.code if isinstance(exc, AIError) else "invalid_response"
-                        msg = (
-                            str(exc)
-                            if isinstance(exc, AIError)
-                            else "AI chưa trả lời hợp lệ. Bản đề giữ nguyên."
-                        )
-                        yield _sse_frame("error", {"code": code, "error": msg})
+                        yield _sse_error_frame_from_exc(exc)
                         return
 
                 cb = get_shared_circuit_breaker()
@@ -2102,9 +2222,8 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
 
                             full_msg = _sanitize_output_text("".join(chunks)).strip()[:5000]
                             if not full_msg:
-                                raise AIError(
-                                    "invalid_response",
-                                    "AI chưa trả lời hợp lệ. Bản đề giữ nguyên.",
+                                raise _build_invalid_chat_error(
+                                    "".join(chunks), reason_hint="empty_response"
                                 )
                             cb.record_success(family)
                             suggested_actions, follow_ups = _extract_chat_actions_and_followups(
@@ -2134,14 +2253,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                             )
                             return
                         except (AIError, KeyError, TypeError, ValueError) as exc:
-                            err = (
-                                exc
-                                if isinstance(exc, AIError)
-                                else AIError(
-                                    "invalid_response",
-                                    "AI chưa trả lời hợp lệ. Bản đề giữ nguyên.",
-                                )
-                            )
+                            err = exc if isinstance(exc, AIError) else _build_invalid_chat_error("")
                             if not emitted_any and err.code in FALLBACK_ERROR_CODES:
                                 cb.record_failure(family)
                                 last_error = err
@@ -2149,12 +2261,10 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                                     fallback_from = family
                                     fallback_reason = str(err)
                                 continue
-                            yield _sse_frame("error", {"code": err.code, "error": str(err)})
+                            yield _sse_error_frame_from_exc(err)
                             return
                     if last_error is not None:
-                        yield _sse_frame(
-                            "error", {"code": last_error.code, "error": str(last_error)}
-                        )
+                        yield _sse_error_frame_from_exc(last_error)
                     else:
                         yield _sse_frame(
                             "error",
@@ -2494,6 +2604,16 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                 )
             sources = ()
             if attached:
+                exam_docs_map = {
+                    str(doc.get("id") or doc.get("sourceId") or "").strip(): doc
+                    for doc in (exam.get("docs") or [])
+                    if isinstance(doc, dict)
+                }
+                for sel in request.sources:
+                    require_citable_source(sel, db=db)
+                    matched_doc = exam_docs_map.get(str(sel.sourceId))
+                    if matched_doc is not None:
+                        require_citable_source(matched_doc, db=db)
                 selection = SourceSelection(consent=True, sources=request.sources)
                 keys = selected_source_keys(selection)
                 sources = read_selected_sources(
