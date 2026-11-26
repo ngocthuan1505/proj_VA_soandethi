@@ -81,7 +81,8 @@ export function parsePromptIntent(rawPrompt) {
   const gradeMatch = text.match(/(?:l[oớ]p|kh[oố]i|to[aá]n|v[aă]n|anh|l[iíý]|h[oó]a|sinh|s[uử]|đ[iị]a|tin)\s*(\d{1,2})\b/i);
   const grade = gradeMatch ? gradeMatch[1] : '10';
   const multiMatch = text.match(/(?:b[oộ]|chi[eế]n\s*d[iị]ch|chu[oỗ]i|lo[aạ]t|t[aạ]o|so[aạ]n)\s+(\d{1,2})\s+đ[eề]/i);
-  const campaignTarget = multiMatch ? Math.min(50, Math.max(2, Number(multiMatch[1]))) : 0;
+  const parsedCount = multiMatch ? Number(multiMatch[1]) : 0;
+  const campaignTarget = parsedCount >= 2 ? Math.min(50, parsedCount) : 0;
   const title = text.length > 90 ? text.slice(0, 87).trim() + '…' : text || `Đề ${subject} lớp ${grade}`;
   return {subject, grade, title, campaignTarget};
 }
@@ -763,8 +764,7 @@ export async function handleHomeAction(action, node, ctx) {
       } catch {}
     }
     const prompt = `Soạn đề số ${ordinal} cho chiến dịch "${cTitle}" môn ${subject} lớp ${grade}, bám sát chuẩn GDPT 2018.`;
-    const detail = {prompt, examId: createdExam?.id || null, campaignId: cid || null};
-    window.dispatchEvent(new CustomEvent('mach:auto-create-exam', {detail}));
+    const detail = {prompt, examId: createdExam?.id || null, campaignId: cid || null, subject, grade, consentGiven: true};
     ctx.onAutoCreateExam?.(detail);
     void refreshProactiveUI(ctx);
     return true;
@@ -836,8 +836,7 @@ export async function handleHomeSubmit(form, ctx) {
         }
       } catch {}
     }
-    const detail = {prompt, examId: createdExam?.id || null, campaignId};
-    window.dispatchEvent(new CustomEvent('mach:auto-create-exam', {detail}));
+    const detail = {prompt, examId: createdExam?.id || null, campaignId, subject: intent.subject, grade: intent.grade, consentGiven: true};
     ctx.onAutoCreateExam?.(detail);
     void refreshProactiveUI(ctx);
     return true;

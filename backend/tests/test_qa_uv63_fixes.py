@@ -310,7 +310,7 @@ def test_passage_group_shuffling_and_lead_range_update():
     assert "từ câu 1 đến câu 2" in html_content
     assert "từ câu 3 đến câu 4" in html_content
 
-    # Kiểm tra preview_exam_variant trả về passageTitle, passageText, passageId
+    # Kiểm tra preview_exam_variant giữ 3 khóa tương thích trên questions & trả questionPassages
     preview = preview_exam_variant(
         {
             "exam": exam,
@@ -318,16 +318,19 @@ def test_passage_group_shuffling_and_lead_range_update():
         }
     )
     q0 = preview["questions"][0]
+    p0 = preview["questionPassages"][0]
+    assert set(q0.keys()) == {"originalNumber", "stem", "options"}
     assert q0["originalNumber"] == 3
-    assert q0["passageId"] == "p2"
-    assert "từ câu 1 đến câu 2" in q0["passageTitle"]
-    assert q0["passageText"] == "Nội dung đoạn văn thứ hai về mùa xuân."
+    assert p0["passageId"] == "p2"
+    assert "từ câu 1 đến câu 2" in p0["passageTitle"]
+    assert p0["passageText"] == "Nội dung đoạn văn thứ hai về mùa xuân."
 
     q2 = preview["questions"][2]
+    p2 = preview["questionPassages"][2]
     assert q2["originalNumber"] == 1
-    assert q2["passageId"] == "p1"
-    assert "từ câu 3 đến câu 4" in q2["passageTitle"]
-    assert q2["passageText"] == "Nội dung đoạn văn thứ nhất về mùa thu."
+    assert p2["passageId"] == "p1"
+    assert "từ câu 3 đến câu 4" in p2["passageTitle"]
+    assert p2["passageText"] == "Nội dung đoạn văn thứ nhất về mùa thu."
 
 
 def test_exam_room_js_source_guards():

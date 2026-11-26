@@ -20,11 +20,6 @@ export function setAutoPilotEnabled(value){
 }
 
 export function isAutoPilotEnabled(configOrFlag){
- if(typeof configOrFlag==='boolean')return configOrFlag;
- if(configOrFlag&&typeof configOrFlag==='object'){
-  if(typeof configOrFlag.fixedRouter?.autoPilot==='boolean')return configOrFlag.fixedRouter.autoPilot;
-  if(typeof configOrFlag.autoPilot==='boolean')return configOrFlag.autoPilot;
- }
  if(typeof cachedAutoPilot==='boolean')return cachedAutoPilot;
  if(typeof globalThis.__machAutoPilot==='boolean')return globalThis.__machAutoPilot;
  try{
@@ -32,6 +27,11 @@ export function isAutoPilotEnabled(configOrFlag){
   if(stored==='false')return false;
   if(stored==='true')return true;
  }catch{}
+ if(typeof configOrFlag==='boolean')return configOrFlag;
+ if(configOrFlag&&typeof configOrFlag==='object'){
+  if(typeof configOrFlag.fixedRouter?.autoPilot==='boolean')return configOrFlag.fixedRouter.autoPilot;
+  if(typeof configOrFlag.autoPilot==='boolean')return configOrFlag.autoPilot;
+ }
  return true;
 }
 
@@ -164,6 +164,8 @@ export async function runAutoCreateExam(ctx,promptText,opts={}){
 
  const paint=()=>{
   if(!container)return;
+  const liveHost=doc?.querySelector('.assistant-body');
+  if(liveHost&&!liveHost.contains(container))liveHost.append(container);
   container.innerHTML=renderAutoCreateCardHTML(state);
   const cancelBtn=container.querySelector('[data-action="auto-create-cancel"]');
   if(cancelBtn)cancelBtn.onclick=()=>{controller.abort();};
@@ -179,11 +181,14 @@ export async function runAutoCreateExam(ctx,promptText,opts={}){
    container.remove();
    void runAutoCreateExam(ctx,prompt,{...opts,consentGiven:true,saveWorkspaceConsent:saveWs});
   };
-  if(host&&typeof host.scrollTop==='number')host.scrollTop=host.scrollHeight;
+  const activeHost=liveHost||host;
+  if(activeHost&&typeof activeHost.scrollTop==='number')activeHost.scrollTop=activeHost.scrollHeight;
  };
  paint();
 
- const currentDocs=(exam.docs||[]).filter(d=>!exam.assistantSources?.length||exam.assistantSources.includes(d.id));
+ const currentDocs=Array.isArray(exam.assistantSources)
+  ?(exam.docs||[]).filter(d=>exam.assistantSources.includes(d.id))
+  :(exam.docs||[]);
  const attachedSources=opts.sources||currentDocs.flatMap(d=>selectedDocumentPages(exam,d)
   .filter(p=>p?.text?.trim())
   .map(p=>({
@@ -273,6 +278,9 @@ export async function runAutoCreateExam(ctx,promptText,opts={}){
   });
   await ctx.persist?.();
   ctx.render?.();
+  if(requestPayload.consentGiven&&requestPayload.saveWorkspaceConsent){
+   try{globalThis.window?.dispatchEvent?.(new CustomEvent('mach:workspace-consent-saved'));}catch{}
+  }
 
   if(opts.campaignId){
    try{

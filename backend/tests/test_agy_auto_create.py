@@ -12,6 +12,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 from mach_backend.agy_cli_model import (
     AGY_RECOMMENDED_MODELS,
     DEFAULT_AGY_FAST_MODEL,
@@ -231,7 +232,7 @@ def test_agy_cli_unwraps_tool_action_from_structured_output_envelope_and_streams
         custom_path=str(fake_exe),
         runner=stream_runner,
         effort="low",
-        model=DEFAULT_AGY_FAST_MODEL,
+        model="gemini-3.8-flash",
     )
 
     async def on_delta_cb(chunk: str) -> None:
@@ -251,9 +252,29 @@ def test_agy_cli_unwraps_tool_action_from_structured_output_envelope_and_streams
     assert "--output-format" in stream_cmds[0]
     assert stream_cmds[0][stream_cmds[0].index("--output-format") + 1] == "stream-json"
     assert stream_cmds[0][stream_cmds[0].index("--effort") + 1] == "low"
-    assert stream_cmds[0][stream_cmds[0].index("--model") + 1] == DEFAULT_AGY_FAST_MODEL
+    assert stream_cmds[0][stream_cmds[0].index("--model") + 1] == "gemini-3.8-flash"
     assert received_deltas == ["Xin chào ", "thầy cô!"]
     assert json.loads(stream_res["content"]) == {"message": "Xin chào thầy cô!"}
+
+    # Kiểm tra bảo vệ AGY CLI 1.5.17:
+    # không gửi --effort với orchestrator hoặc model đã gắn suffix.
+    no_effort_cmds: list[list[str]] = []
+
+    def capture_no_effort(cmd, **_kwargs):
+        no_effort_cmds.append(list(cmd))
+        return SimpleNamespace(stdout=b'{"response": "OK"}', returncode=0)
+
+    for suffix_model in (DEFAULT_AGY_ORCHESTRATOR_MODEL, DEFAULT_AGY_FAST_MODEL):
+        m = AgyCliModel(
+            RunLog(tmp_path / f"no-effort-{suffix_model}"),
+            custom_path=str(fake_exe),
+            runner=capture_no_effort,
+            effort="low",
+            model=suffix_model,
+        )
+        asyncio.run(m("plan", {"messages": [{"role": "user", "content": "Test"}]}))
+    assert len(no_effort_cmds) == 2
+    assert all("--effort" not in cmd for cmd in no_effort_cmds)
 
 
 # ---------------------------------------------------------------------------

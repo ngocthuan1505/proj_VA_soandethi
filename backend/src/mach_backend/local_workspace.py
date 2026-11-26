@@ -46,6 +46,8 @@ from mach_backend.ai_sources import (
     selected_source_keys,
     workspace_page_sources,
 )
+from mach_backend.auto_create import register_auto_create_routes
+from mach_backend.campaigns import install_campaign_routes
 from mach_backend.curriculum_sources import install_curriculum_sources
 from mach_backend.deepseek_model import DeepSeekModel
 from mach_backend.exam_analytics import register_exam_analytics_routes
@@ -587,6 +589,8 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
     app.state.provider = provider
     if isinstance(provider, AgentGeneration):
         install_poc_connections(app, provider)
+        if store.get("workspace-ai-consent")["value"] is True:
+            provider.workspace_ai_consent = True
     app.state.runner = runner = PatchJobRunner(
         provider,
         store.is_current,
@@ -2713,6 +2717,23 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
     install_question_parser(app)
     install_extended_exports(app, owner_resolver=lambda _request: owner_id)
     install_export_preflight(app, owner_resolver=lambda _request: owner_id)
+    register_auto_create_routes(
+        app,
+        store,
+        provider,
+        chat_lock=chat_lock,
+        runner=runner,
+        account_info=account_info,
+        agent_call=agent_call,
+        directory=directory,
+        owner_id=owner_id,
+    )
+    install_campaign_routes(
+        app,
+        store.connect,
+        lambda _req=None: (store.get("state") or {}).get("value"),
+        owner_resolver=lambda _request: owner_id,
+    )
 
     if account_info is None:
         install_shares(
@@ -2746,6 +2767,10 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             },
             503,
         )
+
+    @app.get("/home", include_in_schema=False)
+    def home_page():
+        return Response(ui_entry(), media_type="text/html", headers={"Cache-Control": "no-store"})
 
     @app.get("/{file_path:path}")
     def static(file_path: str):

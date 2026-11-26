@@ -1522,6 +1522,7 @@ def preview_exam_variant(payload):
         q["id"]: (i + 1, q) for i, q in enumerate(exam["questions"]) if isinstance(q.get("id"), str)
     }
     questions_out = []
+    question_passages = []
     question_mappings = []
     for i, q in enumerate(variant["questions"]):
         qid = q.get("id")
@@ -1530,15 +1531,19 @@ def preview_exam_variant(payload):
         else:
             orig_num, orig_q = i + 1, exam["questions"][i]
         mapping = describe_variant_option_mapping(orig_q, q)
-        q_item = {
-            "originalNumber": orig_num,
-            "stem": q.get("stem", ""),
-            "options": q.get("options", []),
+        questions_out.append(
+            {
+                "originalNumber": orig_num,
+                "stem": q.get("stem", ""),
+                "options": q.get("options", []),
+            }
+        )
+        passage_meta = {
+            field: q[field]
+            for field in ("passageTitle", "passageText", "passageId", "groupId")
+            if field in q
         }
-        for field in ("passageTitle", "passageText", "passageId", "groupId"):
-            if field in q:
-                q_item[field] = q[field]
-        questions_out.append(q_item)
+        question_passages.append(passage_meta)
         question_mappings.append(
             {
                 "questionNumber": i + 1,
@@ -1555,6 +1560,7 @@ def preview_exam_variant(payload):
     return {
         "title": variant["title"],
         "questions": questions_out,
+        "questionPassages": question_passages,
         "questionMappings": question_mappings,
         "passageGroups": _summarize_passage_groups(exam["questions"], variant["questions"]),
     }

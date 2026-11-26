@@ -281,6 +281,7 @@ export function mountMatrixChat(c){
     durationMinutes:detail.durationMinutes,
     consentGiven:detail.consentGiven,
     saveWorkspaceConsent:detail.saveWorkspaceConsent,
+    onOpenManualMatrix:(ctx,p)=>openMatrixChat(ctx,{request:p,manual:true}),
    });
   });
  }

@@ -357,7 +357,7 @@ export async function openLessonPicker(context) {
    :`<details class="sgk-detail-raw"><summary>Xem học liệu</summary><p><b>Mục tiêu</b> · ${esc(lesson.outcome)}</p><p style="white-space:pre-wrap">${esc(rawText)}</p></details>`;
   const detailHeading=col.record
    ?`Học liệu · ${lesson.title}`
-   :`Bài ${lesson.number} · ${lesson.title}`;
+   :(/^Bài\s+\d+\b/i.test(lesson.title)?lesson.title:`Bài ${lesson.number} · ${lesson.title}`);
   detailPane.innerHTML=`
    <div class="sgk-detail-card">
     <div class="sgk-detail-head">
@@ -742,11 +742,14 @@ export async function openLessonPicker(context) {
    if(changed.size)commitSelectedToExam();
    const col=activePreview?collections.find(c=>c.id===activePreview.collectionId):null;
    const lesson=col?.lessons.find(l=>l.number===activePreview?.lessonNumber);
+   const promptText=lesson?`Soạn nhanh đề kiểm tra bám sát ${col.subject} lớp ${col.grade} – ${lesson.title} (${col.volume}).`:'Soạn nhanh đề kiểm tra theo các bài SGK đã chọn.';
    dialog.close();
-   if(lesson&&typeof context.addChat==='function'){
-    context.addChat('user',`Soạn nhanh đề kiểm tra bám sát ${col.subject} lớp ${col.grade} – ${lesson.title} (${col.volume}).`);
+   if(typeof context.onAutoCreateExam==='function'){
+    context.onAutoCreateExam({prompt:promptText,examId:context.exam().id,subject:col?.subject,grade:col?.grade,consentGiven:true});
+   }else if(lesson&&typeof context.addChat==='function'){
+    context.addChat('user',promptText);
    }
-   context.toast(lesson?`Đã đính kèm "${lesson.title}" để soạn đề nhanh.`:'Đã áp dụng bài đã chọn.');
+   context.toast(lesson?`Đang tự động soạn đề từ "${lesson.title}"…`:'Đang tự động soạn đề theo bài đã chọn…');
    return;
   }
   const unselect=event.target.closest('[data-unselect-lesson]');

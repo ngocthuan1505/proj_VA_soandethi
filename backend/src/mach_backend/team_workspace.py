@@ -306,6 +306,7 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
             changing = path == "/api/config" and request.method == "POST"
             starting = request.method == "POST" and (
                 path.endswith("/proposals/generate")
+                or path.endswith("/agent/auto-create")
                 or path.endswith("/check")
                 or path
                 in {
@@ -388,6 +389,12 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
                                     ),
                                     "agyCustomPath": getattr(master, "agy_custom_path", ""),
                                     "agyModel": getattr(master, "agy_model", ""),
+                                    "agyFastModel": getattr(master, "agy_fast_model", ""),
+                                    "agyEffort": getattr(master, "agy_effort", "medium"),
+                                    "autoPilot": bool(getattr(master, "auto_pilot", True)),
+                                    "workspaceAiConsent": bool(
+                                        getattr(master, "workspace_ai_consent", False)
+                                    ),
                                 },
                                 "ollama": {
                                     "model": master.model,

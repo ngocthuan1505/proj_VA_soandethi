@@ -121,6 +121,19 @@ def validate_agy_model(
     return cleaned
 
 
+_EFFORT_SUFFIXES = ("-low", "-medium", "-high", "-xhigh", "-max")
+
+
+def model_supports_effort_flag(model_name: str | None) -> bool:
+    """AGY CLI 1.5.17 từ chối --effort khi dùng alias orchestrator hoặc model đã gắn mức sẵn."""
+    if not model_name:
+        return True
+    lowered = str(model_name).strip().casefold()
+    if "orchestrator" in lowered:
+        return False
+    return not lowered.endswith(_EFFORT_SUFFIXES)
+
+
 def resolve_agy_effort(
     purpose: str,
     *,
@@ -682,7 +695,9 @@ class AgyCliModel:
                     "--print-timeout",
                     f"{eff_timeout}s",
                 ]
-                if self.effort in VALID_EFFORT_LEVELS:
+                if self.effort in VALID_EFFORT_LEVELS and model_supports_effort_flag(
+                    effective_model
+                ):
                     cmd.extend(["--effort", self.effort])
                 if effective_model:
                     cmd.extend(["--model", effective_model])
@@ -738,10 +753,19 @@ class AgyCliModel:
                             "AGY CLI quá thời gian xử lý; chuyển sang kênh dự phòng.",
                         ) from None
                     except (OSError, subprocess.SubprocessError) as exc:
+                        raw_stderr = getattr(exc, "stderr", b"")
+                        if isinstance(raw_stderr, bytes):
+                            detail_msg = raw_stderr.decode("utf-8", errors="replace").strip()
+                        elif isinstance(raw_stderr, str):
+                            detail_msg = raw_stderr.strip()
+                        else:
+                            detail_msg = ""
+                        if not detail_msg:
+                            detail_msg = str(exc)
                         raise AIError(
                             "provider_unavailable",
                             "AGY CLI tạm thời không phản hồi: "
-                            + str(redact_secrets(str(exc)))[:240],
+                            + str(redact_secrets(detail_msg))[:240],
                         ) from None
 
                     stdout_raw = getattr(completed, "stdout", b"")
