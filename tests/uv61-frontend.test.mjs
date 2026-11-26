@@ -336,3 +336,119 @@ test('Whale UX: strictTeacherOnly, in-place SSE, room preflight, exam-room a) pr
   );
   assert.ok(formatProviderTestResultHTML('ollama', {ok: false, error: 'All connection attempts failed'}).text.includes('127.0.0.1:11434'));
 });
+
+test('UV63 CSS restoration & 3 new features: đủ selector khôi phục, Trang chủ, Proactive/Voice, Modal SGK và tổng !important < 30', () => {
+  const tokens = readText('assets/tokens.css');
+  const layout = readText('assets/layout.css');
+  const paper = readText('assets/paper.css');
+  const allCss = `${tokens}\n${layout}\n${paper}`;
+
+  const countImp = (css) => (css.match(/!\s*important\b/gi) || []).length;
+  const totalImportant = countImp(tokens) + countImp(layout) + countImp(paper);
+  assert.ok(totalImportant < 30, `Tổng !important=${totalImportant}, yêu cầu < 30`);
+
+  const requiredSelectors = [
+    // Form modal & matrix scroll
+    '[data-dialog-feedback]',
+    '.matrix-table-scroll',
+    // Composer
+    '.composer-close',
+    '.composer-search',
+    '.catalog-card-meta',
+    '.catalog-item.selected',
+    '.catalog-load-more',
+    '.builder-fields',
+    '.composer-direct',
+    '.composer-keyboard',
+    '#catalog-items',
+    '#composer-feedback',
+    '#inline-math-input',
+    '#inline-math-preview',
+    // Matrix & Auto-Create
+    '.quick-exam-plan',
+    '.quick-plan-fields',
+    '.matrix-preview-active > .paper',
+    '.matrix-live-steps',
+    '.matrix-step',
+    '.matrix-rubric',
+    '#matrix-confirm-save',
+    '#matrix-composer-stop',
+    '.auto-create-card',
+    '.auto-step-list',
+    '.auto-step.is-done',
+    '.auto-step.is-active',
+    '.auto-step.is-error',
+    '.auto-batch-pills',
+    '.auto-batch-pill',
+    // P1
+    '.export-omr-panel',
+    '.export-preflight-panel',
+    '.export-choice-card',
+    '#export-variants',
+    '.version-text',
+    '.block-diffs',
+    '.question-check-comparison',
+    '.source-group-card.is-attached',
+    '.effort-panel',
+    '.studio-menu-icon',
+    '.find-hit.active',
+    '.visual-figure-form',
+    '#figure-preview',
+    '.formula-block',
+    '.inline-formula',
+    '.rubric-label',
+    '.continuation-label',
+    '.wb-library-card.is-current',
+    '.wb-current-pill',
+    '.online-member [data-action="connections"]',
+    '.chat-list-ordered::before',
+    '.dot.consistent',
+    '.data-value',
+    // UV63 Home
+    '.home-view',
+    '.home-hero',
+    '.home-hero-grid',
+    '.home-prompt-card',
+    '.home-paper-mock',
+    '.home-prompt-box',
+    '.home-quick-tools',
+    '.home-recent-grid',
+    '.home-proactive-strip',
+    // UV63 Proactive & Voice
+    '.proactive-bell',
+    '.proactive-badge',
+    '.proactive-popover',
+    '.proactive-banner',
+    '.campaign-card',
+    '.campaign-progress',
+    '.campaign-bar',
+    '.reminder-pill',
+    '.voice-mic-btn',
+    '.voice-mic-btn.is-listening',
+    // UV63 SGK Modal
+    '.sgk-modal',
+    '.sgk-tabs',
+    '.sgk-tab.is-active',
+    '.sgk-filter-bar',
+    '.sgk-volume-pills',
+    '.sgk-pill.is-active',
+    '.sgk-split',
+    '.sgk-tree-pane',
+    '.sgk-tree-all',
+    '.sgk-chapter-row',
+    '.sgk-lesson-row',
+    '.sgk-lesson-row.is-selected',
+    '.sgk-page-tag',
+    '.sgk-detail-pane',
+    '.sgk-badge',
+    '.sgk-meta-line',
+    '.sgk-outcomes-list',
+    '.sgk-footer',
+    '#dialog:has(.sgk-modal)',
+    '#dialog-layer2:has(.sgk-modal)',
+  ];
+
+  for (const sel of requiredSelectors) {
+    assert.ok(allCss.includes(sel), `Thiếu selector UV63: ${sel}`);
+  }
+});

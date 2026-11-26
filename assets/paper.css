@@ -178,7 +178,7 @@
   color: var(--ink-muted);
 }
 .q-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #94a3b8; }
-.q-status.approved .dot { background: var(--ok); }
+.q-status.approved .dot, .dot.consistent { background: var(--ok); }
 .q-status.review, .q-status.is-stale-source {
   display: inline-flex;
   align-items: center;
@@ -208,9 +208,28 @@
 .ProseMirror p { margin: 0 0 3px; }
 .ProseMirror table { border-collapse: collapse; width: 100%; margin: 8px 0; }
 .ProseMirror th, .ProseMirror td { border: 1px solid #444; padding: 6px 8px; }
+.ProseMirror .selectedCell { background: var(--accent-soft); }
+.ProseMirror:has(> p:only-child > .ProseMirror-trailingBreak:only-child) { display: inline-block; min-width: 140px; min-height: 28px; }
 .math-atom { display: inline-block; cursor: pointer; padding: 0 2px; border-radius: 3px; }
 .math-atom:hover { background: var(--accent-soft); outline: 1px solid var(--accent-border); }
 .math-atom.math-display { display: block; text-align: center; margin: 8px 0; }
+.formula-block {
+  display: block;
+  border: 1px solid transparent;
+  width: 100%;
+  padding: 10px 6px;
+  background: transparent;
+  text-align: center;
+  border-radius: 6px;
+  color: #111111;
+  overflow: auto;
+}
+.formula-block:hover { border-color: var(--brand-border); background: var(--bg-elevated); }
+.formula-block .katex { font-size: 1.12em; }
+.formula-block .katex-display { margin: 4px 0; }
+.inline-formula { display: inline-block; width: auto; text-align: left; padding: 0 4px; }
+.read-formula { overflow-wrap: anywhere; max-width: 100%; overflow-x: auto; }
+.read-formula .katex-display { max-width: 100%; overflow-x: auto; }
 
 /* Phương án trắc nghiệm + đánh dấu 1-click */
 .options {
@@ -313,6 +332,31 @@
 .rubric-table, .full-rubric-table { width: 100%; border-collapse: collapse; margin: 10px 0; font: 13pt/1.55 var(--font-paper); }
 .rubric-table th, .rubric-table td, .full-rubric-table th, .full-rubric-table td { border: 1px solid #222; padding: 8px 10px; vertical-align: top; }
 .full-rubric-table th { font-weight: 700; text-align: center; }
+.full-rubric-table th:first-child, .full-rubric-table td.rubric-label, .rubric-label { width: 70px; text-align: center; font-weight: 700; }
+.full-rubric-table .continuation-label, .continuation-label { font-size: 11pt; font-weight: 400; color: var(--ink-muted); }
+.page-rubric-table th { color: #111111; }
+.answer-select { width: 72px; padding: 4px 6px; font-size: 12px; }
+.paper-school { font-weight: 700; text-transform: uppercase; }
+.section-heading { font: 700 13.5pt/1.5 var(--font-paper); margin: 18px 0 10px; color: #111111; }
+.stem { font: var(--doc-size, 15pt)/var(--doc-line-height, 1.55) var(--doc-font, "Times New Roman"), serif; }
+.empty-paper { padding: 24px 16px; text-align: center; color: var(--ink-muted); font-family: var(--font-ui); }
+.page-separator {
+  height: 44px;
+  background: var(--bg-canvas);
+  margin: 28px -68px 48px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  break-before: page;
+}
+.page-separator::after {
+  content: "Trang tiếp theo";
+  position: absolute;
+  bottom: 10px;
+  right: 24px;
+  font: 10.5px var(--font-ui);
+  color: var(--ink-faint);
+}
 .rubric-point-input { width: 100%; text-align: center; border: 1px solid transparent; background: transparent; font: italic 13pt var(--font-paper); padding: 2px; }
 .rubric-point-input:hover, .rubric-point-input:focus { border-color: var(--brand-border); background: #ffffff; }
 .marking-guide { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 28px; page-break-before: always; }
@@ -349,6 +393,7 @@
 .data-card th, .data-card td { border: 1px solid var(--line-strong); padding: 5px 8px; }
 .data-card th { background: var(--bg-subtle); color: var(--brand); text-align: left; }
 .data-card td.num, .data-card th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-value, .data-card input.data-value { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
 .data-card svg { max-width: 100%; height: auto; }
 .data-card svg rect { fill: #9ec4e6; }
 .data-card svg rect:nth-of-type(2) { fill: #1e78c8; }
@@ -429,5 +474,5 @@
 @media print {
   .paper-scroll { overflow: visible; padding: 0; background: #fff; }
   .paper, .document-page { border: 0; box-shadow: none; width: 100%; padding: 0; margin: 0; }
-  .q-actions, .add-question, .source-link, .essay-rubric-link, .page-number, .empty-paper-canvas, .audio-player-controls audio { display: none !important; }
+  .q-actions, .add-question, .source-link, .essay-rubric-link, .page-number, .page-separator, .empty-paper-canvas, .audio-player-controls audio { display: none !important; }
 }

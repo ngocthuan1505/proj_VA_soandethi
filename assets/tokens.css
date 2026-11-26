@@ -17,8 +17,10 @@
   /* Màu chủ đạo & ngữ nghĩa */
   --brand: #0f4c81;
   --brand-hover: #0b3a63;
+  --brand-deep: #093256;
   --brand-soft: #e8f2fc;
   --brand-border: #b6d4f0;
+  --brand-glow: rgba(15, 76, 129, 0.14);
 
   --accent: #1e78c8;
   --accent-soft: #edf6ff;
