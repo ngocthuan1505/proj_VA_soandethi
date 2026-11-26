@@ -426,7 +426,7 @@ function formatDateShort(ts) {
   }
 }
 
-function renderProactiveCardsHTML(digest) {
+export function renderProactiveCardsHTML(digest, state = null) {
   const cards = [];
 
   for (const camp of digest.activeCampaigns || []) {
@@ -463,6 +463,15 @@ function renderProactiveCardsHTML(digest) {
 
   for (const dl of digest.urgentDeadlines || []) {
     const isRem = dl.source === 'reminder';
+    const attachedExamId =
+      isRem && (dl.targetType === 'exam' || (!dl.targetType && dl.targetId))
+        ? String(dl.targetId || '').trim()
+        : '';
+    const localExam =
+      attachedExamId && Array.isArray(state?.exams)
+        ? state.exams.find((ex) => ex && ex.id === attachedExamId)
+        : null;
+    const attachedExamTitle = String(dl.targetTitle || dl.examTitle || localExam?.title || '').trim();
     cards.push(`
       <article class="proactive-card ${dl.overdue ? 'is-warn' : ''}" data-deadline-id="${esc(dl.id)}">
         <div class="proactive-card-head">
@@ -470,10 +479,16 @@ function renderProactiveCardsHTML(digest) {
           <span class="pill ${dl.overdue ? 'warn' : ''}">${dl.overdue ? 'Quá hạn' : 'Sắp đến hạn'}</span>
         </div>
         <p class="proactive-card-msg">${esc(dl.message)}${dl.dueAt ? ` · ${esc(formatDateShort(dl.dueAt))}` : ''}</p>
+        ${
+          isRem && attachedExamId
+            ? `<p class="proactive-card-msg" data-reminder-exam="${esc(attachedExamId)}"><strong>Đề gắn kèm:</strong> ${esc(attachedExamTitle || attachedExamId)}</p>`
+            : ''
+        }
         <div class="buttons">
           ${
             isRem
-              ? `<button type="button" class="tiny-btn" data-action="proactive-done-reminder" data-id="${esc(dl.id)}">Đã xong</button>
+              ? `${attachedExamId ? `<button type="button" class="tiny-btn primary" data-action="home-open-exam" data-id="${esc(attachedExamId)}">Mở đề</button>` : ''}
+                 <button type="button" class="tiny-btn" data-action="proactive-done-reminder" data-id="${esc(dl.id)}">Đã xong</button>
                  <button type="button" class="tiny-btn ghost" data-action="proactive-snooze-reminder" data-id="${esc(dl.id)}" data-hours="4">Hoãn 4 giờ</button>`
               : `<button type="button" class="tiny-btn" data-action="home-continue-campaign" data-id="${esc(dl.id)}" data-title="${esc(dl.title)}">Mở chiến dịch</button>`
           }
@@ -592,7 +607,7 @@ export function renderHomeViewHTML(state, digest = getCachedProactiveDigest()) {
               <button type="button" class="tiny-btn" data-action="open-new-reminder">+ Nhắc lịch</button>
             </div>
           </div>
-          <div id="home-proactive-body">${renderProactiveCardsHTML(digest)}</div>
+          <div id="home-proactive-body">${renderProactiveCardsHTML(digest, state)}</div>
         </section>
 
         <section aria-label="Đề gần đây">
@@ -629,7 +644,7 @@ export function mountHomeView(ctx) {
 export async function refreshProactiveUI(ctx) {
   const digest = await fetchProactiveDigest(ctx?.workspaceHeaders?.() || {});
   const body = document.getElementById('home-proactive-body');
-  if (body) body.innerHTML = renderProactiveCardsHTML(digest);
+  if (body) body.innerHTML = renderProactiveCardsHTML(digest, ctx?.getState?.());
   const bell = document.querySelector('[data-action="open-proactive-center"]');
   if (bell) {
     let badge = bell.querySelector('.proactive-bell-badge');
@@ -661,7 +676,7 @@ export async function openProactiveCenterModal(ctx) {
           <button type="button" class="tiny-btn" data-action="open-new-reminder">+ Nhắc lịch</button>
         </div>
       </div>
-      ${renderProactiveCardsHTML(digest)}
+      ${renderProactiveCardsHTML(digest, ctx?.getState?.())}
     </div>`,
     'Chiến dịch nhiều đề, nhắc rà soát đề hôm sau và hạn nộp sắp tới',
   );
@@ -685,8 +700,17 @@ function openNewCampaignModal(ctx) {
   );
 }
 
-function openNewReminderModal(ctx) {
+export function openNewReminderModal(ctx) {
   const cur = ctx.exam?.() || {};
+  const stateExams = Array.isArray(ctx?.getState?.()?.exams) ? ctx.getState().exams : [];
+  const examsList = stateExams.length ? stateExams : cur?.id ? [cur] : [];
+  const examOptions = examsList
+    .filter((ex) => ex && ex.id)
+    .map(
+      (ex) =>
+        `<option value="${esc(ex.id)}" ${ex.id === cur.id ? 'selected' : ''}>${esc(ex.title || 'Đề chưa đặt tên')}</option>`,
+    )
+    .join('');
   ctx.modal(
     'Tạo nhắc lịch giáo viên',
     `<form id="new-reminder-form" style="display:flex;flex-direction:column;gap:10px">
@@ -695,11 +719,44 @@ function openNewReminderModal(ctx) {
         <label>Loại nhắc<select name="kind"><option value="review">Rà soát đề</option><option value="deadline">Hạn nộp / in đề</option><option value="grading">Chấm bài</option><option value="general">Khác</option></select></label>
         <label>Thời điểm nhắc<input name="remindAtLocal" type="datetime-local"></label>
       </div>
+      <label>Gắn với đề thi (tùy chọn)<select name="targetId"><option value="">— Không gắn đề cụ thể —</option>${examOptions}</select></label>
       <input type="hidden" name="targetType" value="exam">
-      <input type="hidden" name="targetId" value="${esc(cur.id || '')}">
       <div class="modal-foot"><button type="button" data-action="close">Hủy</button><button type="submit" class="primary">Lưu nhắc lịch</button></div>
     </form>`,
   );
+}
+
+async function patchReminderAction(rid, payload, successMessage, ctx) {
+  if (!rid) return;
+  let res;
+  try {
+    res = await fetch(`/api/reminders/${encodeURIComponent(rid)}`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json', ...(ctx?.workspaceHeaders?.() || {})},
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    ctx?.toast?.('Không thể kết nối máy chủ để cập nhật nhắc lịch. Thầy cô vui lòng thử lại.');
+    return;
+  }
+  if (!res || !res.ok) {
+    let detailMsg = '';
+    try {
+      const errData = await res.json();
+      detailMsg = errData?.detail || errData?.error || '';
+    } catch {}
+    ctx?.toast?.(
+      detailMsg
+        ? `Không thể cập nhật nhắc lịch (${res.status}): ${detailMsg}`
+        : `Không thể cập nhật nhắc lịch (lỗi ${res?.status || 'mạng'}). Vui lòng thử lại.`,
+    );
+    return;
+  }
+  await refreshProactiveUI(ctx);
+  if (typeof document !== 'undefined' && document.getElementById('dialog')?.open) {
+    await openProactiveCenterModal(ctx);
+  }
+  ctx?.toast?.(successMessage);
 }
 
 export async function handleHomeAction(action, node, ctx) {
@@ -727,6 +784,11 @@ export async function handleHomeAction(action, node, ctx) {
   if (action === 'home-open-exam') {
     const examId = node.dataset.id;
     if (examId && ctx.openExamInWorkspace) {
+      const exams = ctx.getState?.()?.exams;
+      if (Array.isArray(exams) && !exams.some((x) => x && x.id === examId)) {
+        ctx.toast?.('Đề gắn kèm không còn trong kho đề hiện tại.');
+        return true;
+      }
       ctx.openExamInWorkspace(examId);
     }
     return true;
@@ -770,32 +832,22 @@ export async function handleHomeAction(action, node, ctx) {
     return true;
   }
   if (action === 'proactive-done-reminder') {
-    const rid = node.dataset.id;
-    if (rid) {
-      await fetch(`/api/reminders/${encodeURIComponent(rid)}`, {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json', ...(ctx.workspaceHeaders?.() || {})},
-        body: JSON.stringify({done: true}),
-      }).catch(() => {});
-      await refreshProactiveUI(ctx);
-      if (document.getElementById('dialog')?.open) await openProactiveCenterModal(ctx);
-      ctx.toast?.('Đã đánh dấu hoàn thành nhắc lịch.');
-    }
+    await patchReminderAction(
+      node.dataset.id,
+      {done: true},
+      'Đã đánh dấu hoàn thành nhắc lịch.',
+      ctx,
+    );
     return true;
   }
   if (action === 'proactive-snooze-reminder') {
-    const rid = node.dataset.id;
     const hours = Number(node.dataset.hours || 4);
-    if (rid) {
-      await fetch(`/api/reminders/${encodeURIComponent(rid)}`, {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json', ...(ctx.workspaceHeaders?.() || {})},
-        body: JSON.stringify({snoozeHours: hours}),
-      }).catch(() => {});
-      await refreshProactiveUI(ctx);
-      if (document.getElementById('dialog')?.open) await openProactiveCenterModal(ctx);
-      ctx.toast?.(`Đã hoãn nhắc lịch thêm ${hours} giờ.`);
-    }
+    await patchReminderAction(
+      node.dataset.id,
+      {snoozeHours: hours},
+      `Đã hoãn nhắc lịch thêm ${hours} giờ.`,
+      ctx,
+    );
     return true;
   }
   return false;
@@ -873,14 +925,16 @@ export async function handleHomeSubmit(form, ctx) {
     if (!title) throw Error('Nhập nội dung nhắc lịch.');
     const remindStr = String(fd.get('remindAtLocal') || '').trim();
     const remindAt = remindStr ? new Date(remindStr).getTime() : Date.now() + 24 * 3600 * 1000;
+    const targetId = String(fd.get('targetId') || '').trim();
+    const targetType = targetId ? String(fd.get('targetType') || 'exam').trim() || 'exam' : '';
     const res = await fetch('/api/reminders', {
       method: 'POST',
       headers: {'Content-Type': 'application/json', ...(ctx.workspaceHeaders?.() || {})},
       body: JSON.stringify({
         title,
         kind: String(fd.get('kind') || 'general'),
-        targetType: String(fd.get('targetType') || ''),
-        targetId: String(fd.get('targetId') || ''),
+        targetType,
+        targetId,
         remindAt: Number.isFinite(remindAt) ? remindAt : null,
       }),
     });

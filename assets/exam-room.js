@@ -33,11 +33,13 @@ const appState = {
   serverOffsetMs: 0,
   saveState: 'idle', // 'idle' | 'saving' | 'saved' | 'error'
   saveLabel: 'Đã đồng bộ',
+  hadNetworkError: false,
+  localAnsweredCount: null,
   error: '',
   warningBanner: '',
   submitting: false,
   result: null,
-  audioState: {}, // { [fileId]: { blobUrl, playsUsed, playsRemaining, maxPlays, loading, error } }
+  audioState: {}, // { [fileId]: { blobUrl, playsUsed, playsRemaining, maxPlays, loading, activePlayback, error } }
   resumeOffer: null, // { attemptId, attemptToken, studentName }
 };
 
@@ -355,6 +357,7 @@ function initAudioEntries() {
       playsRemaining: rem,
       maxPlays: maxP,
       loading: false,
+      activePlayback: false,
       error: '',
     };
   };
@@ -368,6 +371,7 @@ function initAudioEntries() {
 }
 
 function lockExhaustedAudio(audioEl, st) {
+  if (st) st.activePlayback = false;
   if (!audioEl) return;
   audioEl.pause();
   audioEl.currentTime = 0;
@@ -384,7 +388,7 @@ function lockExhaustedAudio(audioEl, st) {
   }
 }
 
-function renderAudioCardHTML(aud) {
+export function renderAudioCardHTML(aud) {
   if (!aud || !aud.fileId) return '';
   const st = appState.audioState[String(aud.fileId)] || {
     fileId: String(aud.fileId),
@@ -395,35 +399,83 @@ function renderAudioCardHTML(aud) {
     playsRemaining: Number(aud.playsRemaining ?? aud.maxPlays ?? 2),
     maxPlays: Number(aud.maxPlays || 2),
     loading: false,
+    activePlayback: false,
     error: '',
   };
   const exhausted = st.playsRemaining <= 0;
+  const keepAudioTag = Boolean(st.blobUrl && (st.activePlayback || !exhausted));
+  const btnText = st.loading
+    ? 'Đang tải audio…'
+    : st.activePlayback
+      ? 'Đang phát lượt hiện tại…'
+      : st.blobUrl
+        ? 'Tải & phát lượt tiếp theo'
+        : 'Nghe đoạn audio';
   return `
     <div class="sr-audio-card" data-audio-box="${esc(st.fileId)}">
       <div class="sr-audio-top">
         <div>
           <strong>Nghe audio:</strong> ${esc(st.filename)}
         </div>
-        <span class="sr-q-pts" style="background:${exhausted ? '#fee2e2' : '#d1fae5'};color:${exhausted ? '#991b1b' : '#065f46'};">
+        <span class="sr-q-pts" style="background:${exhausted && !st.activePlayback ? '#fee2e2' : '#d1fae5'};color:${exhausted && !st.activePlayback ? '#991b1b' : '#065f46'};">
           Còn ${esc(st.playsRemaining)} / ${esc(st.maxPlays)} lượt tải phát
         </span>
       </div>
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
         <button type="button" class="sr-btn sr-btn-soft sr-btn-sm" data-sr-action="play-audio" data-file-id="${esc(st.fileId)}" ${exhausted || st.loading ? 'disabled' : ''}>
-          ${st.loading ? 'Đang tải audio…' : st.blobUrl ? 'Tải & phát lượt tiếp theo' : 'Nghe đoạn audio'}
+          ${btnText}
         </button>
         ${st.error ? `<span style="font-size:12.5px;color:#991b1b;">${esc(st.error)}</span>` : ''}
       </div>
-      ${!exhausted && st.blobUrl ? `<audio class="sr-audio-el" controls autoplay src="${esc(st.blobUrl)}"></audio>` : ''}
+      ${keepAudioTag ? `<audio class="sr-audio-el" controls autoplay src="${esc(st.blobUrl)}"></audio>` : ''}
     </div>
   `;
 }
 
+function getQuestionChoiceGroup(q) {
+  return String(q?.choiceGroup || q?.track || '').trim();
+}
+
+export function formatChoiceGroupLabel(grp) {
+  const clean = String(grp || '').trim();
+  if (!clean) return 'Phần chung';
+  if (/^(?:tự\s*chọn|nhánh|hướng|phần)\b/i.test(clean)) return clean;
+  return `Tự chọn ${clean}`;
+}
+
+function getExamChoiceGroups(questions) {
+  const groups = [];
+  const seen = new Set();
+  for (const q of questions || []) {
+    const grp = getQuestionChoiceGroup(q);
+    if (grp && !seen.has(grp)) {
+      seen.add(grp);
+      groups.push(grp);
+    }
+  }
+  return groups;
+}
+
+function isAnswerValueNonEmpty(val, qtype = '') {
+  if (val === null || val === undefined) return false;
+  if (qtype === 'mcq' || typeof val === 'number') return Number.isInteger(val);
+  if (qtype === 'truefalse' || Array.isArray(val)) {
+    return Array.isArray(val) && val.some((x) => x === true || x === false);
+  }
+  if (typeof val === 'string') return val.trim().length > 0;
+  return true;
+}
+
 function isQuestionAnswered(q) {
-  const val = appState.answers[q.id];
-  if (q.type === 'mcq') return Number.isInteger(val);
-  if (q.type === 'truefalse') return Array.isArray(val) && val.some((x) => x === true || x === false);
-  return typeof val === 'string' && val.trim().length > 0;
+  return isAnswerValueNonEmpty(appState.answers[q.id], q.type);
+}
+
+function countLocalAnswered() {
+  const qs = appState.exam?.questions;
+  if (Array.isArray(qs) && qs.length) {
+    return qs.filter(isQuestionAnswered).length;
+  }
+  return Object.values(appState.answers || {}).filter((v) => isAnswerValueNonEmpty(v)).length;
 }
 
 function renderQuestionMediaHTML(q, passageMap) {
@@ -596,14 +648,19 @@ function renderQuestionInputHTML(q) {
   `;
 }
 
-function renderQuestionCardHTML(q, index, total, passageMap) {
+function renderQuestionCardHTML(q, index, total, passageMap, hasChoiceGroups = false) {
   const isFlagged = appState.flagged.has(q.id);
   const ptsTxt = q.points ? `${String(q.points).replace('.', ',')} điểm` : '';
+  const grp = getQuestionChoiceGroup(q);
+  const trackBadgeHTML = hasChoiceGroups
+    ? `<span class="sr-q-pts" data-track-badge="${esc(grp || 'common')}" style="background:${grp ? '#fef3c7' : '#e8f2fc'};color:${grp ? '#92400e' : '#0b3a63'};font-weight:700;">${esc(formatChoiceGroupLabel(grp))}</span>`
+    : '';
   return `
     <article class="sr-q-card" data-q-card="${esc(q.id)}">
       <div class="sr-q-head">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span class="sr-q-badge">Câu ${index + 1} / ${total}</span>
+          ${trackBadgeHTML}
           <span class="sr-q-pts">${esc(TYPE_LABELS[q.type] || q.type)}${ptsTxt ? ` · ${esc(ptsTxt)}` : ''}</span>
         </div>
         <button type="button" class="sr-flag-btn ${isFlagged ? 'is-flagged' : ''}" data-sr-action="toggle-flag" data-qid="${esc(q.id)}" aria-pressed="${isFlagged}">
@@ -639,11 +696,12 @@ function renderLookupScreenHTML() {
   `;
 }
 
-function renderJoinScreenHTML() {
+export function renderJoinScreenHTML() {
   const m = appState.roomMeta;
   const openToJoin = m?.status === 'open';
   const modeText = m?.mode === 'homework' ? 'Bài tập về nhà' : 'Kiểm tra trực tuyến';
   const durText = m?.durationMinutes > 0 ? `${m.durationMinutes} phút` : 'Không giới hạn phiên';
+  const choiceGroups = Array.isArray(m?.choiceGroups) ? m.choiceGroups : [];
 
   return `
     <div class="sr-center-wrap">
@@ -662,6 +720,13 @@ function renderJoinScreenHTML() {
           ${m.opensAt ? `<span>· Mở từ: ${esc(formatDateTimeVi(m.opensAt))}</span>` : ''}
       ${m.deadlineAt ? `<span>· Hạn đóng: ${esc(formatDateTimeVi(m.deadlineAt))}</span>` : ''}
         </div>
+        ${
+          choiceGroups.length
+            ? `<div class="sr-alert sr-alert-info" style="margin:10px 0 0;">
+                 Đề có ${esc(choiceGroups.length)} hướng tự chọn (${choiceGroups.map((g) => esc(formatChoiceGroupLabel(g))).join(' / ')}): chỉ cần làm <strong>Phần chung + 1 trong các hướng tự chọn</strong>.
+               </div>`
+            : ''
+        }
       </div>
 
       ${appState.error ? `<div class="sr-alert sr-alert-danger">${esc(appState.error)}</div>` : ''}
@@ -736,31 +801,65 @@ function formatCountdown(msRemaining) {
 }
 
 function renderNavGridHTML(questions) {
-  return `
-    <div class="sr-nav-grid">
-      ${questions
-        .map((q, idx) => {
-          const answered = isQuestionAnswered(q);
-          const flagged = appState.flagged.has(q.id);
-          const current = appState.viewMode === 'single' && appState.currentIndex === idx;
-          return `
-            <button type="button" class="sr-qnum-btn ${answered ? 'is-answered' : ''} ${flagged ? 'is-flagged' : ''} ${current ? 'is-current' : ''}" data-sr-action="jump-q" data-idx="${idx}" aria-label="Câu ${idx + 1}">
-              ${idx + 1}
-            </button>
-          `;
-        })
-        .join('')}
-    </div>
-  `;
+  const groups = getExamChoiceGroups(questions);
+  if (!groups.length) {
+    return `
+      <div class="sr-nav-grid">
+        ${questions
+          .map((q, idx) => {
+            const answered = isQuestionAnswered(q);
+            const flagged = appState.flagged.has(q.id);
+            const current = appState.viewMode === 'single' && appState.currentIndex === idx;
+            return `
+              <button type="button" class="sr-qnum-btn ${answered ? 'is-answered' : ''} ${flagged ? 'is-flagged' : ''} ${current ? 'is-current' : ''}" data-sr-action="jump-q" data-idx="${idx}" aria-label="Câu ${idx + 1}">
+                ${idx + 1}
+              </button>
+            `;
+          })
+          .join('')}
+      </div>
+    `;
+  }
+  const buckets = new Map();
+  questions.forEach((q, idx) => {
+    const key = getQuestionChoiceGroup(q);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push({ q, idx });
+  });
+  return Array.from(buckets.entries())
+    .map(
+      ([grp, items]) => `
+        <div style="margin-top:6px;">
+          <div style="font-size:11.5px;font-weight:700;color:var(--sr-muted);margin-bottom:4px;">${esc(formatChoiceGroupLabel(grp))}</div>
+          <div class="sr-nav-grid">
+            ${items
+              .map(({ q, idx }) => {
+                const answered = isQuestionAnswered(q);
+                const flagged = appState.flagged.has(q.id);
+                const current = appState.viewMode === 'single' && appState.currentIndex === idx;
+                return `
+                  <button type="button" class="sr-qnum-btn ${answered ? 'is-answered' : ''} ${flagged ? 'is-flagged' : ''} ${current ? 'is-current' : ''}" data-sr-action="jump-q" data-idx="${idx}" aria-label="Câu ${idx + 1}">
+                    ${idx + 1}
+                  </button>
+                `;
+              })
+              .join('')}
+          </div>
+        </div>
+      `,
+    )
+    .join('');
 }
 
-function renderExamScreenHTML() {
+export function renderExamScreenHTML() {
   const questions = appState.exam?.questions || [];
   const total = questions.length;
   const answeredCount = questions.filter(isQuestionAnswered).length;
   const passageMap = getPassagesMap();
   const room = appState.roomMeta || {};
   const att = appState.attempt || {};
+  const choiceGroups = getExamChoiceGroups(questions);
+  const hasChoiceGroups = choiceGroups.length > 0;
 
   const remMs = att.expiresAt
     ? Math.max(0, Number(att.expiresAt) - (Date.now() + appState.serverOffsetMs))
@@ -778,12 +877,31 @@ function renderExamScreenHTML() {
     ? appState.exam?.quote?.text
     : '';
 
-  const shownQuestions =
-    appState.viewMode === 'all'
-      ? questions.map((q, idx) => renderQuestionCardHTML(q, idx, total, passageMap)).join('')
-      : questions[appState.currentIndex]
-        ? renderQuestionCardHTML(questions[appState.currentIndex], appState.currentIndex, total, passageMap)
-        : '<div class="sr-card">Đề thi chưa có câu hỏi.</div>';
+  let shownQuestions;
+  if (appState.viewMode === 'all') {
+    let lastGroup = null;
+    shownQuestions = questions
+      .map((q, idx) => {
+        const curGroup = getQuestionChoiceGroup(q);
+        const sectionHeading =
+          hasChoiceGroups && curGroup !== lastGroup
+            ? `<div class="sr-passage-box" data-track-section="${esc(curGroup || 'common')}" style="margin-top:8px;margin-bottom:4px;font-weight:700;color:var(--sr-brand-dark, #0b3a63);">${esc(formatChoiceGroupLabel(curGroup))}${curGroup ? ' (Nhánh tự chọn)' : ' (Bắt buộc)'}</div>`
+            : '';
+        lastGroup = curGroup;
+        return sectionHeading + renderQuestionCardHTML(q, idx, total, passageMap, hasChoiceGroups);
+      })
+      .join('');
+  } else {
+    shownQuestions = questions[appState.currentIndex]
+      ? renderQuestionCardHTML(
+          questions[appState.currentIndex],
+          appState.currentIndex,
+          total,
+          passageMap,
+          hasChoiceGroups,
+        )
+      : '<div class="sr-card">Đề thi chưa có câu hỏi.</div>';
+  }
 
   return `
     <header class="sr-exam-header">
@@ -800,7 +918,7 @@ function renderExamScreenHTML() {
           <span id="sr-save-pill" class="sr-save-pill ${saveCls}">${esc(appState.saveLabel)}</span>
           <div id="sr-timer" class="sr-timer ${timerCls}">${esc(formatCountdown(remMs))}</div>
           ${
-            room.requireFullscreen && !document.fullscreenElement
+            room.requireFullscreen && (typeof document === 'undefined' || !document.fullscreenElement)
               ? `<button type="button" class="sr-btn sr-btn-soft sr-btn-sm" data-sr-action="enter-fullscreen">Toàn màn hình</button>`
               : ''
           }
@@ -816,11 +934,19 @@ function renderExamScreenHTML() {
         ${appState.warningBanner ? `<div class="sr-alert sr-alert-warn">${esc(appState.warningBanner)}</div>` : ''}
         ${appState.error ? `<div class="sr-alert sr-alert-danger">${esc(appState.error)}</div>` : ''}
         ${
+          hasChoiceGroups
+            ? `<div class="sr-alert sr-alert-info" data-choice-guide="1">
+                 <strong>Hướng dẫn làm bài có phần tự chọn:</strong>
+                 Chỉ cần làm <strong>Phần chung</strong> + <strong>1 trong các hướng tự chọn</strong> (${choiceGroups.map((g) => `<strong>${esc(formatChoiceGroupLabel(g))}</strong>`).join(', ')}). Nếu làm nhiều hơn 1 hướng, hệ thống tự động tính điểm theo hướng có điểm cao hơn.
+               </div>`
+            : ''
+        }
+        ${
           appState.confirmSubmitOpen
             ? `<div class="sr-card" style="border-color:var(--sr-brand, #0f4c81);background:#e8f2fc;">
                  <strong>Xác nhận nộp bài?</strong>
                  <p class="sr-muted" style="margin:6px 0 12px;">
-                   Bạn đã trả lời <strong>${answeredCount}/${total}</strong> câu${appState.flagged.size ? ` · Có ${appState.flagged.size} câu đánh dấu xem lại` : ''}. Sau khi nộp, bài làm sẽ được ghi nhận ngay.
+                   Bạn đã trả lời <strong>${answeredCount}/${total}</strong> câu${hasChoiceGroups ? ' (đề có phần tự chọn: chỉ cần làm Phần chung + 1 hướng)' : ''}${appState.flagged.size ? ` · Có ${appState.flagged.size} câu đánh dấu xem lại` : ''}. Sau khi nộp, bài làm sẽ được ghi nhận ngay.
                  </p>
                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
                    <button type="button" class="sr-btn sr-btn-primary" data-sr-action="confirm-submit" ${appState.submitting ? 'disabled' : ''}>Xác nhận nộp bài</button>
@@ -967,7 +1093,7 @@ export function renderResultReviewSectionHTML(r) {
       return `
         <div class="sr-rev-item ${stateCls}">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-            <strong>Câu ${esc(q.order)} (${esc(TYPE_LABELS[q.type] || q.type)})</strong>
+            <strong>Câu ${esc(q.order)} (${esc(TYPE_LABELS[q.type] || q.type)})${q.choiceGroup ? ` · ${esc(formatChoiceGroupLabel(q.choiceGroup))}` : ''}</strong>
             <span class="sr-q-pts">
               ${earned === null || earned === undefined ? 'Chờ chấm tay' : `${formatPointsVi(earned)} / ${formatPointsVi(maxP)} điểm`}
             </span>
@@ -1001,17 +1127,62 @@ export function renderResultReviewSectionHTML(r) {
     .join('');
 }
 
-function renderResultScreenHTML() {
+export function renderResultScreenHTML() {
   const r = appState.result;
   if (!r) return '';
 
   const synced = Number.isInteger(r.syncedAnswerCount)
     ? r.syncedAnswerCount
-    : Object.keys(appState.answers || {}).length;
+    : countLocalAnswered();
   const total = Number.isInteger(r.totalQuestions)
     ? r.totalQuestions
     : (appState.exam?.questions || []).length;
-  const isLoss = synced < total;
+  const localAnswered = Number.isInteger(appState.localAnsweredCount)
+    ? appState.localAnsweredCount
+    : countLocalAnswered();
+  const isLoss = Boolean(r.networkInterrupted) || synced < localAnswered;
+
+  const ungradedEssays = Number.isInteger(r.ungradedEssayCount)
+    ? r.ungradedEssayCount
+    : Array.isArray(r.questions)
+      ? r.questions.filter(
+          (q) => q.type === 'essay' && (q.earnedPointsP100 === null || q.earnedPointsP100 === undefined),
+        ).length
+      : 0;
+  const isProvisional = Boolean(
+    r.isProvisionalScore || r.gradingStatus === 'needs_manual' || ungradedEssays > 0,
+  );
+  const scoreHeading = isProvisional ? 'ĐIỂM TẠM (CHỜ CHẤM TỰ LUẬN)' : 'TỔNG ĐIỂM';
+
+  const trackEntries = r.trackScores && typeof r.trackScores === 'object' ? Object.entries(r.trackScores) : [];
+  const trackSummaryHTML =
+    r.resultsAvailable && (r.chosenTrack || trackEntries.length)
+      ? `<div class="sr-card" data-track-summary="1" style="margin:12px 0;padding:12px 16px;background:#f8fbff;border:1px solid #bfdbfe;border-radius:8px;">
+           <div style="font-size:13.5px;font-weight:700;color:#0b3a63;">
+             ${r.chosenTrack ? `Hướng tự chọn được tính điểm: ${esc(formatChoiceGroupLabel(r.chosenTrack))}` : 'Điểm các hướng tự chọn'}
+           </div>
+           ${
+             trackEntries.length
+               ? `<div class="sr-muted" style="margin-top:4px;font-size:13px;">
+                    ${trackEntries
+                      .map(([grp, info]) => {
+                        const sP100 = typeof info === 'object' && info !== null ? info.scoreP100 : info;
+                        const maxP100 = typeof info === 'object' && info !== null ? info.maxPointsP100 : null;
+                        const scoreStr = maxP100 != null ? `${formatPointsVi(sP100)} / ${formatPointsVi(maxP100)}` : formatPointsVi(sP100);
+                        return `${esc(formatChoiceGroupLabel(grp))}: <strong>${esc(scoreStr)} điểm</strong>`;
+                      })
+                      .join(' · ')}
+                  </div>`
+               : ''
+           }
+         </div>`
+      : '';
+
+  const syncSummaryText = isLoss
+    ? `Đã đồng bộ ${synced}/${localAnswered || total} câu lên máy chủ`
+    : synced < total
+      ? `Đã đồng bộ đầy đủ ${synced} câu đã trả lời (trên tổng ${total} câu trong đề) lên máy chủ`
+      : `Đã đồng bộ đầy đủ ${synced}/${total} câu lên máy chủ`;
 
   return `
     <div class="sr-result-wrap">
@@ -1030,19 +1201,22 @@ function renderResultScreenHTML() {
         ${
           r.resultsAvailable
             ? `<div style="text-align:right;">
-                 <div style="font-size:12.5px;opacity:0.9;">TỔNG ĐIỂM</div>
+                 <div style="font-size:12.5px;opacity:0.9;font-weight:700;">${esc(scoreHeading)}</div>
                  <div class="sr-score-big">${esc(formatPointsVi(r.totalScoreP100))} / ${esc(formatPointsVi(r.totalPointsP100))}</div>
-                 ${r.manualScoreP100 > 0 || r.gradingStatus === 'needs_manual' ? `<div style="font-size:12px;opacity:0.9;">Trắc nghiệm: ${esc(formatPointsVi(r.autoScoreP100))} · Tự luận: ${esc(formatPointsVi(r.manualScoreP100))}</div>` : ''}
+                 ${r.manualScoreP100 > 0 || isProvisional ? `<div style="font-size:12px;opacity:0.9;">Trắc nghiệm: ${esc(formatPointsVi(r.autoScoreP100))} · Tự luận: ${esc(formatPointsVi(r.manualScoreP100))}</div>` : ''}
+                 ${isProvisional ? `<div style="font-size:12px;opacity:0.95;margin-top:2px;">Còn ${esc(ungradedEssays > 0 ? ungradedEssays : 1)} câu tự luận chưa chấm</div>` : ''}
                </div>`
             : `<span class="sr-room-code-pill" style="color:#0b3a63;">Đã nộp bài an toàn</span>`
         }
       </div>
 
-      <div class="sr-card" style="margin:12px 0;padding:12px 16px;background:${isLoss ? '#fffbeb' : '#f0fdf4'};border:1px solid ${isLoss ? '#fde68a' : '#bbf7d0'};border-radius:8px;">
+      ${trackSummaryHTML}
+
+      <div class="sr-card" data-sync-status="${isLoss ? 'loss' : 'ok'}" style="margin:12px 0;padding:12px 16px;background:${isLoss ? '#fffbeb' : '#f0fdf4'};border:1px solid ${isLoss ? '#fde68a' : '#bbf7d0'};border-radius:8px;">
         <div style="font-size:14px;font-weight:600;color:${isLoss ? '#92400e' : '#166534'};">
-          Đã đồng bộ ${esc(synced)}/${esc(total)} câu lên máy chủ
+          ${esc(syncSummaryText)}
         </div>
-        ${isLoss ? `<div class="sr-alert sr-alert-warn" style="margin-top:8px;">Cảnh báo: Chỉ có ${esc(synced)}/${esc(total)} câu được ghi nhận trên máy chủ do mất mạng hoặc gián đoạn kết nối trước khi nộp bài.</div>` : ''}
+        ${isLoss ? `<div class="sr-alert sr-alert-warn" style="margin-top:8px;">Cảnh báo: Chỉ có ${esc(synced)}/${esc(localAnswered || total)} câu được ghi nhận trên máy chủ do mất mạng hoặc gián đoạn kết nối trước khi nộp bài.</div>` : ''}
       </div>
 
       ${appState.warningBanner ? `<div class="sr-alert sr-alert-warn">${esc(appState.warningBanner)}</div>` : ''}
@@ -1075,7 +1249,7 @@ function renderKaTeX(root) {
 }
 
 function renderApp() {
-  const root = document.getElementById(ROOT_ID);
+  const root = typeof document !== 'undefined' ? document.getElementById(ROOT_ID) : null;
   if (!root) return;
   if (appState.screen === 'lookup') root.innerHTML = renderLookupScreenHTML();
   else if (appState.screen === 'join') root.innerHTML = renderJoinScreenHTML();
@@ -1105,13 +1279,13 @@ function stopExamTimers() {
 function updateSaveBadge(state, label) {
   appState.saveState = state;
   appState.saveLabel = label;
-  const pill = document.getElementById('sr-save-pill');
+  const pill = typeof document !== 'undefined' ? document.getElementById('sr-save-pill') : null;
   if (!pill) return;
   pill.className = `sr-save-pill ${state === 'error' ? 'is-err is-offline' : state === 'saved' ? 'is-ok' : ''}`;
   pill.textContent = label;
 }
 
-async function flushAnswers() {
+export async function flushAnswers() {
   if (appState.screen !== 'exam' || !appState.attempt?.attemptId || !appState.attemptToken) return;
   updateSaveBadge('saving', 'Đang lưu…');
   try {
@@ -1123,12 +1297,14 @@ async function flushAnswers() {
         body: { answers: appState.answers },
       },
     );
+    appState.hadNetworkError = false;
     updateSaveBadge('saved', 'Đã đồng bộ');
   } catch (err) {
     if (err.status === 409) {
       await handleLockedOrSubmitted('Bài làm đã được khóa hoặc kết thúc trên máy chủ.');
       return;
     }
+    appState.hadNetworkError = true;
     updateSaveBadge('error', 'Mất mạng · đang lưu tạm trên máy');
   }
 }
@@ -1146,6 +1322,9 @@ function scheduleAnswerSave() {
 
 async function handleLockedOrSubmitted(bannerMsg = '') {
   stopExamTimers();
+  if (!Number.isInteger(appState.localAnsweredCount)) {
+    appState.localAnsweredCount = countLocalAnswered();
+  }
   if (bannerMsg) appState.warningBanner = bannerMsg;
   await loadResultScreen();
 }
@@ -1202,10 +1381,11 @@ function startExamTimers() {
   }, 25000);
 }
 
-async function submitAttempt({ autoSubmit = false } = {}) {
+export async function submitAttempt({ autoSubmit = false } = {}) {
   if (appState.submitting || !appState.attempt?.attemptId) return;
   appState.submitting = true;
   appState.confirmSubmitOpen = false;
+  appState.localAnsweredCount = countLocalAnswered();
   clearTimeout(autoSaveTimer);
   renderApp();
   try {
@@ -1217,8 +1397,10 @@ async function submitAttempt({ autoSubmit = false } = {}) {
         body: { answers: appState.answers, autoSubmit },
       },
     );
+    appState.hadNetworkError = false;
+    updateSaveBadge('saved', 'Đã đồng bộ');
     stopExamTimers();
-    if (document.fullscreenElement && document.exitFullscreen) {
+    if (typeof document !== 'undefined' && document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen().catch(() => {});
     }
     await loadResultScreen();
@@ -1228,6 +1410,8 @@ async function submitAttempt({ autoSubmit = false } = {}) {
       await loadResultScreen();
       return;
     }
+    appState.hadNetworkError = true;
+    updateSaveBadge('error', 'Mất mạng · đang lưu tạm trên máy');
     appState.submitting = false;
     renderApp();
   }
@@ -1286,8 +1470,11 @@ async function resumeAttemptByToken(attemptId, attemptToken) {
   }
   appState.screen = 'exam';
   appState.currentIndex = 0;
+  appState.hadNetworkError = false;
+  appState.localAnsweredCount = null;
   appState.error = '';
   appState.warningBanner = '';
+  updateSaveBadge('saved', 'Đã đồng bộ');
   renderApp();
   startExamTimers();
   reportSecurityEvent('reconnect', { source: 'resume' });
@@ -1324,7 +1511,7 @@ async function openRoomByCode(code) {
   renderApp();
 }
 
-async function handleAudioPlay(fileId) {
+export async function handleAudioPlay(fileId) {
   const st = appState.audioState[fileId];
   if (!st || st.loading || st.playsRemaining <= 0 || !appState.attempt?.attemptId) return;
   st.loading = true;
@@ -1364,7 +1551,9 @@ async function handleAudioPlay(fileId) {
       }
     }
     st.blobUrl = URL.createObjectURL(blob);
+    st.activePlayback = true;
   } catch (err) {
+    st.activePlayback = false;
     st.error = err.message || 'Không tải được âm thanh.';
   } finally {
     st.loading = false;
@@ -1606,6 +1795,8 @@ function bindGlobalListeners() {
       appState.attempt = null;
       appState.attemptToken = '';
       appState.result = null;
+      appState.hadNetworkError = false;
+      appState.localAnsweredCount = null;
       await openRoomByCode(appState.roomCode);
     }
   });
@@ -1669,7 +1860,10 @@ function bindGlobalListeners() {
         appState.flagged = new Set();
         appState.currentIndex = 0;
         appState.confirmSubmitOpen = false;
+        appState.hadNetworkError = false;
+        appState.localAnsweredCount = null;
         initAudioEntries();
+        updateSaveBadge('saved', 'Đã đồng bộ');
         saveSession(appState.roomCode, {
           attemptId: joined.attemptId,
           attemptToken: joined.attemptToken,
@@ -1728,7 +1922,7 @@ function bindGlobalListeners() {
         const card = audio.closest?.('[data-audio-box]');
         const fid = card?.dataset?.audioBox;
         const st = fid ? appState.audioState[fid] : null;
-        if (st && st.playsRemaining <= 0) {
+        if (st && st.playsRemaining <= 0 && !st.activePlayback) {
           e.preventDefault();
           e.stopPropagation();
           audio.pause();
@@ -1749,7 +1943,7 @@ function bindGlobalListeners() {
         if (audioCard) {
           const fid = audioCard.dataset?.audioBox;
           const st = fid ? appState.audioState[fid] : null;
-          if (st && st.playsRemaining <= 0) {
+          if (st && st.playsRemaining <= 0 && !st.activePlayback) {
             e.preventDefault();
             e.stopPropagation();
             const aud = audioCard.querySelector('audio');
@@ -1773,7 +1967,8 @@ function bindGlobalListeners() {
         const card = audio.closest?.('[data-audio-box]');
         const fid = card?.dataset?.audioBox;
         const st = fid ? appState.audioState[fid] : null;
-        if (st && st.playsRemaining <= 0) {
+        if (st) {
+          st.activePlayback = false;
           audio.pause();
           audio.currentTime = 0;
           lockExhaustedAudio(audio, st);
@@ -1786,6 +1981,7 @@ function bindGlobalListeners() {
 
   window.addEventListener('offline', () => {
     if (appState.screen === 'exam') {
+      appState.hadNetworkError = true;
       updateSaveBadge('error', 'Mất mạng · đang lưu tạm trên máy');
     }
   });
@@ -1812,6 +2008,8 @@ async function bootstrap() {
     renderApp();
   }
 }
+
+export { appState, bindGlobalListeners, lockExhaustedAudio, updateSaveBadge };
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   bootstrap();

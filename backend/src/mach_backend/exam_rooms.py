@@ -23,6 +23,7 @@ from contextlib import AbstractContextManager
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
@@ -354,6 +355,23 @@ def _normalize_audio_entry(audio: Any) -> dict[str, Any] | None:
     return copy_audio
 
 
+def _question_choice_group(question: dict[str, Any]) -> str:
+    return str(question.get("choiceGroup") or question.get("track") or "").strip()
+
+
+def _extract_choice_groups(exam_snapshot: dict[str, Any]) -> list[str]:
+    groups: list[str] = []
+    seen: set[str] = set()
+    for q in exam_snapshot.get("questions") or []:
+        if not isinstance(q, dict):
+            continue
+        grp = _question_choice_group(q)
+        if grp and grp not in seen:
+            seen.add(grp)
+            groups.append(grp)
+    return groups
+
+
 def _snapshot_exam_for_room(exam: dict[str, Any]) -> tuple[dict[str, Any], int]:
     if not isinstance(exam, dict):
         raise HTTPException(422, "Dữ liệu đề thi không hợp lệ.")
@@ -366,7 +384,8 @@ def _snapshot_exam_for_room(exam: dict[str, Any]) -> tuple[dict[str, Any], int]:
         snap.pop(transient, None)
 
     questions: list[dict[str, Any]] = []
-    total_p100 = 0
+    common_p100 = 0
+    track_totals_p100: dict[str, int] = {}
     for idx, raw_q in enumerate(raw_questions, 1):
         if not isinstance(raw_q, dict):
             raise HTTPException(422, f"Câu {idx} không hợp lệ.")
@@ -377,9 +396,15 @@ def _snapshot_exam_for_room(exam: dict[str, Any]) -> tuple[dict[str, Any], int]:
             q["audio"] = _normalize_audio_entry(q["audio"])
         p100 = _question_points_p100(q)
         q["_maxPointsP100"] = p100
-        total_p100 += p100
+        grp = _question_choice_group(q)
+        if grp:
+            q["choiceGroup"] = grp
+            track_totals_p100[grp] = track_totals_p100.get(grp, 0) + p100
+        else:
+            common_p100 += p100
         questions.append(q)
     snap["questions"] = questions
+    total_p100 = common_p100 + (max(track_totals_p100.values()) if track_totals_p100 else 0)
 
     if isinstance(snap.get("audio"), dict):
         snap["audio"] = _normalize_audio_entry(snap["audio"])
@@ -475,7 +500,12 @@ def _build_student_delivery(
         current_sig: tuple[Any, ...] | None = None
         current_ids: list[str] = []
         for q in questions:
-            sig = (_normalize_qtype(q.get("type")), uses_table(q), q.get("sectionId"))
+            sig = (
+                _normalize_qtype(q.get("type")),
+                uses_table(q),
+                q.get("sectionId"),
+                _question_choice_group(q),
+            )
             if sig != current_sig:
                 if len(current_ids) >= 2:
                     sections.append({"questionIds": current_ids, "shuffleOptions": shuffle_options})
@@ -690,21 +720,46 @@ def _parse_truefalse_key(question: dict[str, Any]) -> tuple[bool, bool, bool, bo
     return None
 
 
-def _parse_short_decimal(text: str) -> Decimal | None:
-    compact = text.replace(" ", "").replace(",", ".")
-    if not compact:
-        return None
-    try:
-        dec = Decimal(compact)
-    except (InvalidOperation, ValueError):
-        return None
-    if not dec.is_finite():
-        return None
-    return dec
+_SHORT_DECIMAL_RE = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$")
+_MAX_SHORT_NUMERIC_LEN = 32
 
 
 def _normalize_short_raw(value: str) -> str:
     return unicodedata.normalize("NFC", value).strip().replace("\u2212", "-")
+
+
+def _parse_short_decimal(text: str) -> Fraction | None:
+    normalized = _normalize_short_raw(text)
+    if not normalized or len(normalized) > _MAX_SHORT_NUMERIC_LEN:
+        return None
+    compact = re.sub(r"\s*/\s*", "/", normalized)
+    compact = re.sub(r"^([+-])\s+", r"\1", compact)
+    compact = re.sub(r"/\s*([+-])\s*", r"/\1", compact)
+    compact = compact.replace(",", ".")
+    if not compact or any(ch.isspace() for ch in compact) or len(compact) > _MAX_SHORT_NUMERIC_LEN:
+        return None
+
+    if "/" in compact:
+        parts = compact.split("/")
+        if len(parts) != 2:
+            return None
+        num_str, den_str = parts
+        if not _SHORT_DECIMAL_RE.fullmatch(num_str) or not _SHORT_DECIMAL_RE.fullmatch(den_str):
+            return None
+        try:
+            den = Fraction(den_str)
+            if den == 0:
+                return None
+            return Fraction(num_str) / den
+        except (ValueError, ZeroDivisionError):
+            return None
+
+    if not _SHORT_DECIMAL_RE.fullmatch(compact):
+        return None
+    try:
+        return Fraction(compact)
+    except ValueError:
+        return None
 
 
 def _short_matches(student_raw: Any, key_raw: Any) -> bool:
@@ -730,14 +785,14 @@ def _short_matches(student_raw: Any, key_raw: Any) -> bool:
     if not candidates:
         return False
 
-    s_dec = _parse_short_decimal(s_norm)
+    s_num = _parse_short_decimal(s_norm)
     s_text = " ".join(s_norm.split()).casefold()
 
     for cand in candidates:
         k_norm = _normalize_short_raw(cand)
-        k_dec = _parse_short_decimal(k_norm)
-        if s_dec is not None and k_dec is not None:
-            if s_dec == k_dec:
+        k_num = _parse_short_decimal(k_norm)
+        if s_num is not None and k_num is not None:
+            if s_num == k_num:
                 return True
         elif s_text == " ".join(k_norm.split()).casefold():
             return True
@@ -804,6 +859,203 @@ def grade_question_response(
     return 1, (max_points_p100 if _short_matches(student_response, key_raw) else 0)
 
 
+def _is_student_response_answered(qtype: str, response_val: Any) -> bool:
+    if response_val is None:
+        return False
+    if qtype == "mcq":
+        if isinstance(response_val, dict):
+            response_val = response_val.get("answer", response_val.get("choice"))
+        if isinstance(response_val, bool):
+            return False
+        if isinstance(response_val, int):
+            return response_val >= 0
+        return isinstance(response_val, str) and bool(response_val.strip())
+    if qtype == "truefalse":
+        if isinstance(response_val, dict):
+            response_val = response_val.get("truthValues", response_val.get("answer"))
+        return isinstance(response_val, list) and any(type(item) is bool for item in response_val)
+    if isinstance(response_val, dict):
+        response_val = response_val.get(
+            "answerText", response_val.get("text", response_val.get("answer"))
+        )
+    if isinstance(response_val, (int, float)) and not isinstance(response_val, bool):
+        return True
+    return isinstance(response_val, str) and bool(response_val.strip())
+
+
+def _summarize_attempt_scores(
+    orig_questions: list[dict[str, Any]],
+    answer_data_by_qid: dict[str, tuple[str, int, Any, int, int | None]],
+) -> dict[str, Any]:
+    """Tính điểm hiệu lực và trạng thái chấm bài, hỗ trợ đề có nhánh tự chọn (choiceGroup)."""
+    groups: list[str] = []
+    seen_groups: set[str] = set()
+    for q in orig_questions:
+        if not isinstance(q, dict):
+            continue
+        grp = _question_choice_group(q)
+        if grp and grp not in seen_groups:
+            seen_groups.add(grp)
+            groups.append(grp)
+
+    common_auto = 0
+    common_manual = 0
+    common_essays = 0
+    common_ungraded_essays = 0
+    track_stats: dict[str, dict[str, int]] = {
+        g: {
+            "auto": 0,
+            "manual": 0,
+            "maxP100": 0,
+            "questionCount": 0,
+            "answeredCount": 0,
+            "essays": 0,
+            "ungradedEssays": 0,
+            "answeredUngradedEssays": 0,
+        }
+        for g in groups
+    }
+
+    for q in orig_questions:
+        if not isinstance(q, dict):
+            continue
+        qid = str(q.get("id") or "")
+        qtype = _normalize_qtype(q.get("type"))
+        max_p100 = int(q.get("_maxPointsP100", _question_points_p100(q)))
+        grp = _question_choice_group(q)
+        row_data = answer_data_by_qid.get(qid)
+        if row_data is not None:
+            qtype = row_data[0] or qtype
+            max_p100 = int(row_data[1])
+            response_val = row_data[2]
+            is_auto = int(row_data[3])
+            earned = row_data[4]
+        else:
+            response_val = None
+            is_auto = 0 if qtype == "essay" else 1
+            earned = None
+
+        answered = _is_student_response_answered(qtype, response_val)
+        is_essay = qtype == "essay"
+        earned_val = int(earned or 0)
+
+        if not grp:
+            if is_essay:
+                common_essays += 1
+                if earned is None:
+                    common_ungraded_essays += 1
+                else:
+                    common_manual += earned_val
+            elif is_auto:
+                common_auto += earned_val
+            else:
+                common_manual += earned_val
+        else:
+            st = track_stats[grp]
+            st["questionCount"] += 1
+            st["maxP100"] += max_p100
+            if answered:
+                st["answeredCount"] += 1
+            if is_essay:
+                st["essays"] += 1
+                if earned is None:
+                    st["ungradedEssays"] += 1
+                    if answered:
+                        st["answeredUngradedEssays"] += 1
+                else:
+                    st["manual"] += earned_val
+            elif is_auto:
+                st["auto"] += earned_val
+            else:
+                st["manual"] += earned_val
+
+    if not groups:
+        auto_score = common_auto
+        manual_score = common_manual
+        total_score = auto_score + manual_score
+        ungraded_essay_count = common_ungraded_essays
+        has_any_essay = common_essays > 0
+        chosen_track: str | None = None
+        track_scores: dict[str, dict[str, int]] = {}
+    else:
+        track_scores = {
+            g: {
+                "scoreP100": st["auto"] + st["manual"],
+                "autoScoreP100": st["auto"],
+                "manualScoreP100": st["manual"],
+                "maxPointsP100": st["maxP100"],
+                "answeredCount": st["answeredCount"],
+                "questionCount": st["questionCount"],
+            }
+            for g, st in track_stats.items()
+        }
+        attempted = [g for g in groups if track_stats[g]["answeredCount"] > 0]
+        if len(attempted) == 1:
+            chosen_track = attempted[0]
+        elif len(attempted) > 1:
+            chosen_track = max(
+                attempted,
+                key=lambda g: (
+                    track_stats[g]["auto"] + track_stats[g]["manual"],
+                    track_stats[g]["answeredCount"],
+                    -groups.index(g),
+                ),
+            )
+        else:
+            chosen_track = None
+
+        chosen_st = track_stats.get(chosen_track) if chosen_track else None
+        auto_score = common_auto + (chosen_st["auto"] if chosen_st else 0)
+        manual_score = common_manual + (chosen_st["manual"] if chosen_st else 0)
+        total_score = auto_score + manual_score
+        other_answered_ungraded = sum(
+            track_stats[g]["answeredUngradedEssays"] for g in attempted if g != chosen_track
+        )
+        other_answered_essays = sum(
+            1
+            for q in orig_questions
+            if isinstance(q, dict)
+            and _normalize_qtype(q.get("type")) == "essay"
+            and (g := _question_choice_group(q))
+            and g != chosen_track
+            and g in attempted
+            and (
+                (r_data := answer_data_by_qid.get(str(q.get("id") or ""))) is not None
+                and (_is_student_response_answered("essay", r_data[2]) or r_data[4] is not None)
+            )
+        )
+        ungraded_essay_count = (
+            common_ungraded_essays
+            + (chosen_st["ungradedEssays"] if chosen_st else 0)
+            + other_answered_ungraded
+        )
+        has_any_essay = (
+            common_essays > 0
+            or (chosen_st["essays"] > 0 if chosen_st else False)
+            or other_answered_essays > 0
+        )
+
+    if ungraded_essay_count > 0:
+        grading_status = "needs_manual"
+    elif has_any_essay:
+        grading_status = "graded"
+    else:
+        grading_status = "auto_graded"
+
+    return {
+        "autoScoreP100": auto_score,
+        "manualScoreP100": manual_score,
+        "totalScoreP100": total_score,
+        "gradingStatus": grading_status,
+        "ungradedEssayCount": ungraded_essay_count,
+        "isProvisionalScore": ungraded_essay_count > 0,
+        "chosenTrack": chosen_track,
+        "trackScores": track_scores,
+        "trackStats": track_stats,
+        "groups": groups,
+    }
+
+
 def _grade_attempt_tx(
     db: sqlite3.Connection,
     attempt_id: str,
@@ -812,7 +1064,8 @@ def _grade_attempt_tx(
     now_ms: int,
 ) -> tuple[int, int, int, str]:
     """Chấm toàn bộ phần tự động của một lượt thi trong giao dịch SQLite."""
-    orig_by_id = {str(q["id"]): q for q in exam_snapshot.get("questions") or []}
+    orig_questions = [q for q in (exam_snapshot.get("questions") or []) if isinstance(q, dict)]
+    orig_by_id = {str(q["id"]): q for q in orig_questions}
     option_order_map = delivery_map.get("optionOrder") or {}
 
     existing_rows = db.execute(
@@ -822,10 +1075,7 @@ def _grade_attempt_tx(
     ).fetchall()
     existing_by_qid = {row[0]: row for row in existing_rows}
 
-    auto_score = 0
-    manual_score = 0
-    has_ungraded_essay = False
-    has_any_essay = False
+    answer_data_by_qid: dict[str, tuple[str, int, Any, int, int | None]] = {}
 
     for qid, orig_q in orig_by_id.items():
         qtype = _normalize_qtype(orig_q.get("type"))
@@ -839,11 +1089,6 @@ def _grade_attempt_tx(
             existing_earned = None
 
         if qtype == "essay":
-            has_any_essay = True
-            if existing_earned is None:
-                has_ungraded_essay = True
-            else:
-                manual_score += int(existing_earned)
             if row is None:
                 db.execute(
                     """
@@ -855,12 +1100,13 @@ def _grade_attempt_tx(
                     """,
                     (attempt_id, qid, max_p100, now_ms),
                 )
+            answer_data_by_qid[qid] = (qtype, max_p100, response_val, 0, existing_earned)
             continue
 
         is_auto, earned = grade_question_response(
             orig_q, response_val, max_p100, option_order_map.get(qid)
         )
-        auto_score += int(earned or 0)
+        answer_data_by_qid[qid] = (qtype, max_p100, response_val, is_auto, earned)
         if row is None:
             db.execute(
                 """
@@ -882,15 +1128,13 @@ def _grade_attempt_tx(
                 (is_auto, earned, now_ms, now_ms, attempt_id, qid),
             )
 
-    total_score = auto_score + manual_score
-    if has_ungraded_essay:
-        grading_status = "needs_manual"
-    elif has_any_essay:
-        grading_status = "graded"
-    else:
-        grading_status = "auto_graded"
-
-    return auto_score, manual_score, total_score, grading_status
+    summary = _summarize_attempt_scores(orig_questions, answer_data_by_qid)
+    return (
+        summary["autoScoreP100"],
+        summary["manualScoreP100"],
+        summary["totalScoreP100"],
+        summary["gradingStatus"],
+    )
 
 
 def _validate_student_answer_value(qtype: str, value: Any, option_count: int) -> Any:
@@ -1048,6 +1292,73 @@ def _resolve_audio_payload(
     return None
 
 
+_XML_INVALID_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]")
+
+
+def _sanitize_xlsx_text(value: str) -> str:
+    cleaned = _XML_INVALID_RE.sub("", value)
+    if len(cleaned) > 32767:
+        return cleaned[:32764] + "..."
+    return cleaned
+
+
+def _format_answer_for_xlsx(
+    orig_q: dict[str, Any],
+    response_val: Any,
+    option_order: list[int] | None = None,
+) -> str:
+    qtype = _normalize_qtype(orig_q.get("type"))
+    if response_val is None:
+        return ""
+    if qtype == "mcq":
+        raw = (
+            response_val.get("answer", response_val.get("choice"))
+            if isinstance(response_val, dict)
+            else response_val
+        )
+        idx: int | None = None
+        if isinstance(raw, int) and not isinstance(raw, bool):
+            idx = raw
+        elif isinstance(raw, str):
+            clean = raw.strip().upper()
+            if len(clean) == 1 and "A" <= clean <= "Z":
+                idx = ord(clean) - 65
+        if idx is None or idx < 0:
+            return ""
+        orig_idx = option_order[idx] if (option_order and idx < len(option_order)) else idx
+        orig_opts = orig_q.get("options") or []
+        letter = chr(65 + orig_idx) if 0 <= orig_idx < 26 else str(orig_idx + 1)
+        if 0 <= orig_idx < len(orig_opts) and isinstance(orig_opts[orig_idx], str):
+            opt_text = orig_opts[orig_idx].strip()
+            return f"{letter}. {opt_text}" if opt_text else letter
+        return letter
+    if qtype == "truefalse":
+        raw = (
+            response_val.get("truthValues", response_val.get("answer"))
+            if isinstance(response_val, dict)
+            else response_val
+        )
+        if not isinstance(raw, list) or not any(type(v) is bool for v in raw):
+            return ""
+        parts: list[str] = []
+        for idx in range(min(4, len(raw))):
+            val = raw[idx]
+            label = "Đúng" if val is True else ("Sai" if val is False else "—")
+            parts.append(f"{chr(97 + idx)}) {label}")
+        return "; ".join(parts)
+    if qtype == "short":
+        raw = (
+            response_val.get("answerText", response_val.get("answer"))
+            if isinstance(response_val, dict)
+            else response_val
+        )
+        return "" if raw is None else str(raw).strip()
+    if isinstance(response_val, dict):
+        raw = response_val.get("text", response_val.get("answerText", response_val.get("answer")))
+        return "" if raw is None else str(raw)
+    return str(response_val)
+
+
 def _build_sheet_xml(rows: list[list[Any]]) -> str:
     sheet_rows: list[str] = []
     for r_idx, row in enumerate(rows, 1):
@@ -1059,9 +1370,8 @@ def _build_sheet_xml(rows: list[list[Any]]) -> str:
             elif not isinstance(val, bool) and isinstance(val, (int, float)) and math.isfinite(val):
                 cells.append(f'<c r="{ref}" t="n"><v>{val}</v></c>')
             else:
-                cells.append(
-                    f'<c r="{ref}" t="inlineStr"><is><t>{xml_escape(str(val))}</t></is></c>'
-                )
+                safe_text = xml_escape(_sanitize_xlsx_text(str(val)))
+                cells.append(f'<c r="{ref}" t="inlineStr"><is><t>{safe_text}</t></is></c>')
         sheet_rows.append(f'<row r="{r_idx}">{"".join(cells)}</row>')
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -1071,10 +1381,16 @@ def _build_sheet_xml(rows: list[list[Any]]) -> str:
     )
 
 
-def _build_room_export_xlsx(score_rows: list[list[Any]], question_rows: list[list[Any]]) -> bytes:
-    """Dựng tệp XLSX 2 sheet ('BangDiem' và 'ThongKeCauHoi') thuần Python stdlib."""
+def _build_room_export_xlsx(
+    score_rows: list[list[Any]],
+    question_rows: list[list[Any]],
+    detail_rows: list[list[Any]] | None = None,
+) -> bytes:
+    """Dựng tệp XLSX 3 sheet ('BangDiem', 'ThongKeCauHoi', 'BaiLamChiTiet') thuần Python stdlib."""
     sheet1_xml = _build_sheet_xml(score_rows)
     sheet2_xml = _build_sheet_xml(question_rows)
+    default_detail_rows: list[list[Any]] = [["STT", "HoTen", "MaHS", "Lop", "LanThi", "MaDe"]]
+    sheet3_xml = _build_sheet_xml(detail_rows if detail_rows is not None else default_detail_rows)
 
     workbook_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -1083,6 +1399,7 @@ def _build_room_export_xlsx(score_rows: list[list[Any]], question_rows: list[lis
         "<sheets>"
         '<sheet name="BangDiem" sheetId="1" r:id="rId1"/>'
         '<sheet name="ThongKeCauHoi" sheetId="2" r:id="rId2"/>'
+        '<sheet name="BaiLamChiTiet" sheetId="3" r:id="rId3"/>'
         "</sheets>"
         "</workbook>"
     )
@@ -1095,6 +1412,9 @@ def _build_room_export_xlsx(score_rows: list[list[Any]], question_rows: list[lis
         '<Relationship Id="rId2" '
         'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
         'Target="worksheets/sheet2.xml"/>'
+        '<Relationship Id="rId3" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+        'Target="worksheets/sheet3.xml"/>'
         "</Relationships>"
     )
     root_rels = (
@@ -1117,6 +1437,8 @@ def _build_room_export_xlsx(score_rows: list[list[Any]], question_rows: list[lis
         'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
         '<Override PartName="/xl/worksheets/sheet2.xml" '
         'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        '<Override PartName="/xl/worksheets/sheet3.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
         "</Types>"
     )
 
@@ -1128,6 +1450,7 @@ def _build_room_export_xlsx(score_rows: list[list[Any]], question_rows: list[lis
         zf.writestr("xl/_rels/workbook.xml.rels", workbook_rels)
         zf.writestr("xl/worksheets/sheet1.xml", sheet1_xml)
         zf.writestr("xl/worksheets/sheet2.xml", sheet2_xml)
+        zf.writestr("xl/worksheets/sheet3.xml", sheet3_xml)
     return buf.getvalue()
 
 
@@ -1360,6 +1683,8 @@ def _room_to_dict(
         "requireFullscreen": bool(require_fullscreen),
         "maxTabSwitches": max_tab_switches,
         "totalPointsP100": total_points_p100,
+        "choiceGroups": _extract_choice_groups(snap),
+        "markingGuidance": str(snap.get("markingGuidance") or "").strip(),
         "joinPath": join_path,
         "joinUrl": (clean_base + join_path) if clean_base else join_path,
         "lanUrls": _local_lan_urls(join_path, base_url=clean_base) if allow_lan else [],
@@ -1589,6 +1914,7 @@ def _public_room_metadata(row: tuple[Any, ...]) -> dict[str, Any]:
         "requireFullscreen": bool(require_fullscreen),
         "maxTabSwitches": max_tab_switches,
         "totalPointsP100": total_points_p100,
+        "choiceGroups": _extract_choice_groups(snap),
     }
 
 
@@ -2189,10 +2515,13 @@ def install_exam_rooms(
         includeGraded: bool = Query(default=True),
     ) -> dict[str, Any]:
         owner_id = _require_owner(request)
+        summary_by_aid: dict[str, dict[str, Any]] = {}
         with connect() as db:
             _begin_immediate(db)
             room_row = _load_owned_room(db, room_id, owner_id)
             snap = json.loads(room_row[23])
+            orig_questions = [q for q in (snap.get("questions") or []) if isinstance(q, dict)]
+            has_choice_groups = bool(_extract_choice_groups(snap))
             now_ms = _now_ms(clock)
             raw_attempts = db.execute(
                 f"SELECT {_ATTEMPT_PUBLIC_COLS} FROM room_attempts WHERE room_id = ?",
@@ -2215,11 +2544,50 @@ def install_exam_rooms(
                 (room_id,),
             ).fetchall()
 
-        q_map = {str(q["id"]): (idx, q) for idx, q in enumerate(snap.get("questions") or [], 1)}
+            if has_choice_groups and rows:
+                all_ans_rows = db.execute(
+                    """
+                    SELECT ans.attempt_id, ans.question_id, ans.question_type,
+                           ans.max_points_p100, ans.response_json, ans.is_auto_graded,
+                           ans.earned_points_p100
+                    FROM attempt_answers ans
+                    JOIN room_attempts a ON a.id = ans.attempt_id
+                    WHERE a.room_id = ? AND a.status != 'in_progress'
+                    """,
+                    (room_id,),
+                ).fetchall()
+                by_aid: dict[str, dict[str, tuple[str, int, Any, int, int | None]]] = {}
+                for ar in all_ans_rows:
+                    by_aid.setdefault(ar[0], {})[ar[1]] = (
+                        str(ar[2]),
+                        int(ar[3]),
+                        json.loads(ar[4]),
+                        int(ar[5]),
+                        ar[6],
+                    )
+                for aid, ans_map in by_aid.items():
+                    summary_by_aid[aid] = _summarize_attempt_scores(orig_questions, ans_map)
+
+        q_map = {str(q["id"]): (idx, q) for idx, q in enumerate(orig_questions, 1)}
         items: list[dict[str, Any]] = []
         pending_count = 0
         graded_count = 0
         for r in rows:
+            q_num, q_obj = q_map.get(r[8], (0, {}))
+            if has_choice_groups and q_obj:
+                q_grp = _question_choice_group(q_obj)
+                if q_grp:
+                    att_summary = summary_by_aid.get(r[0])
+                    if att_summary is not None:
+                        answered_in_grp = (
+                            att_summary["trackStats"].get(q_grp, {}).get("answeredCount", 0) > 0
+                        )
+                        if (
+                            q_grp != att_summary["chosenTrack"]
+                            and not answered_in_grp
+                            and r[11] is None
+                        ):
+                            continue
             is_graded = r[11] is not None
             if is_graded:
                 graded_count += 1
@@ -2227,7 +2595,6 @@ def install_exam_rooms(
                 pending_count += 1
             if not includeGraded and is_graded:
                 continue
-            q_num, q_obj = q_map.get(r[8], (0, {}))
             items.append(
                 {
                     "attemptId": r[0],
@@ -2240,6 +2607,7 @@ def install_exam_rooms(
                     "attemptTotalScoreP100": r[7],
                     "questionId": r[8],
                     "questionNumber": q_num,
+                    "choiceGroup": _question_choice_group(q_obj) or None,
                     "stem": str(q_obj.get("stem") or ""),
                     "richDoc": q_obj.get("richDoc"),
                     "rubric": q_obj.get("rubric") or [],
@@ -2253,6 +2621,7 @@ def install_exam_rooms(
             )
         return {
             "roomId": room_id,
+            "markingGuidance": str(snap.get("markingGuidance") or "").strip(),
             "pendingCount": pending_count,
             "gradedCount": graded_count,
             "items": items,
@@ -2350,32 +2719,21 @@ def install_exam_rooms(
                     (p100, clean_note, owner_id, now_ms, now_ms, attempt_id, question_id),
                 )
 
-            agg = db.execute(
-                """
-                SELECT
-                    COALESCE(SUM(CASE WHEN is_auto_graded = 1 THEN COALESCE(earned_points_p100, 0)
-                                      ELSE 0 END), 0),
-                    COALESCE(SUM(CASE WHEN is_auto_graded = 0 THEN COALESCE(earned_points_p100, 0)
-                                      ELSE 0 END), 0),
-                    SUM(CASE WHEN question_type = 'essay' AND earned_points_p100 IS NULL
-                             THEN 1 ELSE 0 END),
-                    SUM(CASE WHEN question_type = 'essay' THEN 1 ELSE 0 END)
-                FROM attempt_answers
-                WHERE attempt_id = ?
-                """,
+            all_ans = db.execute(
+                "SELECT question_id, question_type, max_points_p100, response_json, "
+                "is_auto_graded, earned_points_p100 FROM attempt_answers WHERE attempt_id = ?",
                 (attempt_id,),
-            ).fetchone()
-            assert agg is not None
-            auto_score = int(agg[0] or 0)
-            manual_score = int(agg[1] or 0)
-            ungraded_essays = int(agg[2] or 0)
-            total_essays = int(agg[3] or 0)
-            total_score = auto_score + manual_score
-            grading_status = (
-                "needs_manual"
-                if ungraded_essays > 0
-                else ("graded" if total_essays > 0 else "auto_graded")
-            )
+            ).fetchall()
+            ans_data_map = {
+                ar[0]: (str(ar[1]), int(ar[2]), json.loads(ar[3]), int(ar[4]), ar[5])
+                for ar in all_ans
+            }
+            orig_questions = [q for q in (snap.get("questions") or []) if isinstance(q, dict)]
+            summary = _summarize_attempt_scores(orig_questions, ans_data_map)
+            auto_score = summary["autoScoreP100"]
+            manual_score = summary["manualScoreP100"]
+            total_score = summary["totalScoreP100"]
+            grading_status = summary["gradingStatus"]
 
             db.execute(
                 """
@@ -2398,6 +2756,10 @@ def install_exam_rooms(
             "totalScoreP100": total_score,
             "totalPointsP100": int(room_row[24]),
             "gradingStatus": grading_status,
+            "ungradedEssayCount": summary["ungradedEssayCount"],
+            "isProvisionalScore": summary["isProvisionalScore"],
+            "chosenTrack": summary["chosenTrack"],
+            "trackScores": summary["trackScores"],
         }
 
     @app.post("/api/rooms/{room_id}/attempts/{attempt_id}/lock")
@@ -2475,6 +2837,34 @@ def install_exam_rooms(
         with connect() as db:
             room_row = _load_owned_room(db, room_id, owner_id)
             data = _room_analytics_data(db, room_row)
+            dmap_rows = db.execute(
+                "SELECT id, delivery_map_json FROM room_attempts WHERE room_id = ?",
+                (room_id,),
+            ).fetchall()
+            detail_ans_rows = db.execute(
+                """
+                SELECT ans.attempt_id, ans.question_id, ans.question_type,
+                       ans.max_points_p100, ans.response_json, ans.is_auto_graded,
+                       ans.earned_points_p100
+                FROM attempt_answers ans
+                WHERE ans.attempt_id IN (SELECT id FROM room_attempts WHERE room_id = ?)
+                """,
+                (room_id,),
+            ).fetchall()
+
+        snap = json.loads(room_row[23])
+        orig_questions = [q for q in (snap.get("questions") or []) if isinstance(q, dict)]
+        has_choice_groups = bool(_extract_choice_groups(snap))
+        dmap_by_aid = {r[0]: json.loads(r[1] or "{}") for r in dmap_rows}
+        ans_by_aid: dict[str, dict[str, tuple[str, int, Any, int, int | None]]] = {}
+        for ar in detail_ans_rows:
+            ans_by_aid.setdefault(ar[0], {})[ar[1]] = (
+                str(ar[2]),
+                int(ar[3]),
+                json.loads(ar[4]),
+                int(ar[5]),
+                ar[6],
+            )
 
         room_code = str(room_row[4])
         total_pts_p100 = int(room_row[24])
@@ -2500,9 +2890,16 @@ def install_exam_rooms(
                 "NopBai",
             ]
         ]
+        detail_header: list[Any] = ["STT", "HoTen", "MaHS", "Lop", "LanThi", "MaDe"]
+        if has_choice_groups:
+            detail_header.append("HuongTuChon")
+        for q_idx in range(1, len(orig_questions) + 1):
+            detail_header.append(f"Cau {q_idx}")
+        detail_rows: list[list[Any]] = [detail_header]
+
         for idx, att in enumerate(data["attempts"], 1):
             (
-                _aid,
+                aid,
                 s_name,
                 s_code,
                 s_class,
@@ -2538,6 +2935,25 @@ def install_exam_rooms(
                     submitted_at if submitted_at is not None else "",
                 ]
             )
+            att_ans_map = ans_by_aid.get(aid, {})
+            dmap = dmap_by_aid.get(aid, {})
+            opt_order_map = dmap.get("optionOrder") or {}
+            detail_row: list[Any] = [
+                idx,
+                s_name,
+                s_code,
+                s_class,
+                int(att_no),
+                str(v_code),
+            ]
+            if has_choice_groups:
+                att_sum = _summarize_attempt_scores(orig_questions, att_ans_map)
+                detail_row.append(att_sum["chosenTrack"] or "")
+            for q in orig_questions:
+                qid = str(q["id"])
+                resp_val = att_ans_map[qid][2] if qid in att_ans_map else None
+                detail_row.append(_format_answer_for_xlsx(q, resp_val, opt_order_map.get(qid)))
+            detail_rows.append(detail_row)
 
         question_rows: list[list[Any]] = [
             [
@@ -2565,7 +2981,7 @@ def install_exam_rooms(
                 ]
             )
 
-        xlsx_bytes = _build_room_export_xlsx(score_rows, question_rows)
+        xlsx_bytes = _build_room_export_xlsx(score_rows, question_rows, detail_rows)
         return Response(
             content=xlsx_bytes,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -3171,26 +3587,28 @@ def install_exam_rooms(
                     headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
                 )
 
-            if result_policy == "score_only":
-                ans_rows = []
-            else:
-                ans_rows = db.execute(
-                    "SELECT question_id, question_type, max_points_p100, response_json, "
-                    "is_auto_graded, earned_points_p100, grader_note "
-                    "FROM attempt_answers WHERE attempt_id = ?",
-                    (attempt_id,),
-                ).fetchall()
+            ans_rows = db.execute(
+                "SELECT question_id, question_type, max_points_p100, response_json, "
+                "is_auto_graded, earned_points_p100, grader_note "
+                "FROM attempt_answers WHERE attempt_id = ?",
+                (attempt_id,),
+            ).fetchall()
+
+        orig_questions = [q for q in (snap.get("questions") or []) if isinstance(q, dict)]
+        ans_data_map = {
+            r[0]: (str(r[1]), int(r[2]), json.loads(r[3]), int(r[4]), r[5]) for r in ans_rows
+        }
+        summary = _summarize_attempt_scores(orig_questions, ans_data_map)
+        ungraded_essay_count = int(summary["ungradedEssayCount"])
+        is_provisional = bool(attempt_row[17] == "needs_manual" or ungraded_essay_count > 0)
 
         question_results: list[dict[str, Any]] = []
         if result_policy != "score_only":
             ans_by_qid = {r[0]: r for r in ans_rows}
-            snap = json.loads(room_row[23])
             dmap = json.loads(attempt_row[9])
-            q_order = dmap.get("questionOrder") or [
-                str(q["id"]) for q in snap.get("questions") or []
-            ]
+            q_order = dmap.get("questionOrder") or [str(q["id"]) for q in orig_questions]
             option_order_map = dmap.get("optionOrder") or {}
-            orig_by_id = {str(q["id"]): q for q in snap.get("questions") or []}
+            orig_by_id = {str(q["id"]): q for q in orig_questions}
 
             for idx, qid in enumerate(q_order, 1):
                 orig_q = orig_by_id.get(qid)
@@ -3215,6 +3633,9 @@ def install_exam_rooms(
                     "earnedPointsP100": earned_p100,
                     "studentResponse": student_resp,
                 }
+                q_grp = _question_choice_group(orig_q)
+                if q_grp:
+                    item["choiceGroup"] = q_grp
 
                 if result_policy in ("score_and_answers", "full_explanation"):
                     item["stem"] = str(orig_q.get("stem") or "")
@@ -3262,6 +3683,10 @@ def install_exam_rooms(
                 "submittedAt": attempt_row[13],
                 "serverNow": now_ms,
                 "gradingStatus": attempt_row[17],
+                "ungradedEssayCount": ungraded_essay_count,
+                "isProvisionalScore": is_provisional,
+                "chosenTrack": summary["chosenTrack"],
+                "trackScores": summary["trackScores"],
                 "resultPolicy": result_policy,
                 "releaseResultsAfterClose": release_after_close,
                 "resultsAvailable": True,

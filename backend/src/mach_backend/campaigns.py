@@ -204,7 +204,10 @@ def _serialize_campaign(
     }
 
 
-def _serialize_reminder(row: sqlite3.Row | tuple[Any, ...]) -> dict[str, Any]:
+def _serialize_reminder(
+    row: sqlite3.Row | tuple[Any, ...],
+    exams_by_id: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     (
         rid,
         owner_id,
@@ -217,13 +220,22 @@ def _serialize_reminder(row: sqlite3.Row | tuple[Any, ...]) -> dict[str, Any]:
         done_at,
         created_at,
     ) = row
+    t_type = target_type or ""
+    t_id = target_id or ""
+    target_title = ""
+    if exams_by_id and t_id and t_type in ("exam", ""):
+        ex = exams_by_id.get(t_id)
+        if ex is not None:
+            target_title = str(ex.get("title") or "Đề chưa đặt tên")
     return {
         "id": rid,
         "ownerId": owner_id,
         "title": title,
         "kind": kind or "general",
-        "targetType": target_type or "",
-        "targetId": target_id or "",
+        "targetType": t_type,
+        "targetId": t_id,
+        "targetTitle": target_title,
+        "examTitle": target_title,
         "remindAt": remind_at,
         "snoozedUntil": snoozed_until,
         "doneAt": done_at,
@@ -805,6 +817,8 @@ def install_campaign_routes(
         includeDone: bool = Query(default=True),
     ):
         owner_id = resolve_owner(request)
+        state = _load_state_safe(state_loader, request)
+        exams_by_id, _ = _active_exams_map(state)
         with connect_fn() as db:
             ensure_campaign_tables(db)
             if includeDone:
@@ -830,11 +844,13 @@ def install_campaign_routes(
                     """,
                     (owner_id,),
                 ).fetchall()
-        return {"reminders": [_serialize_reminder(row) for row in rows]}
+        return {"reminders": [_serialize_reminder(row, exams_by_id) for row in rows]}
 
     @app.post("/api/reminders", status_code=201)
     def create_reminder(payload: ReminderCreate, request: Request):
         owner_id = resolve_owner(request)
+        state = _load_state_safe(state_loader, request)
+        exams_by_id, _ = _active_exams_map(state)
         now = _now_ms()
         rid = str(uuid4())
         kind = payload.kind.strip() if payload.kind.strip() in ALLOWED_REMINDER_KINDS else "general"
@@ -867,11 +883,13 @@ def install_campaign_routes(
                 """,
                 (rid, owner_id),
             ).fetchone()
-        return {"reminder": _serialize_reminder(row)}
+        return {"reminder": _serialize_reminder(row, exams_by_id)}
 
     @app.patch("/api/reminders/{reminder_id}")
     def patch_reminder(reminder_id: str, payload: ReminderPatch, request: Request):
         owner_id = resolve_owner(request)
+        state = _load_state_safe(state_loader, request)
+        exams_by_id, _ = _active_exams_map(state)
         now = _now_ms()
         with connect_fn() as db:
             ensure_campaign_tables(db)
@@ -944,7 +962,7 @@ def install_campaign_routes(
                 """,
                 (reminder_id, owner_id),
             ).fetchone()
-        return {"reminder": _serialize_reminder(row)}
+        return {"reminder": _serialize_reminder(row, exams_by_id)}
 
     @app.delete("/api/reminders/{reminder_id}")
     def delete_reminder(reminder_id: str, request: Request):
@@ -1095,7 +1113,7 @@ def install_campaign_routes(
 
         # 3) Nhắc lịch giáo viên sắp đến hạn trong 48h hoặc quá hạn (chưa done & chưa snooze)
         for row in reminder_rows:
-            rem = _serialize_reminder(row)
+            rem = _serialize_reminder(row, exams_by_id)
             snoozed_until = rem["snoozedUntil"]
             if isinstance(snoozed_until, int) and snoozed_until > now:
                 continue
@@ -1114,6 +1132,8 @@ def install_campaign_routes(
                     "kind": rem["kind"],
                     "targetType": rem["targetType"],
                     "targetId": rem["targetId"],
+                    "targetTitle": rem["targetTitle"],
+                    "examTitle": rem["examTitle"],
                     "dueAt": remind_at,
                     "overdue": overdue,
                     "hoursRemaining": hours_rem,

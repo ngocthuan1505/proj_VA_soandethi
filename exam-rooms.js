@@ -1073,15 +1073,19 @@ function formatEssayStudentResponse(resp) {
   return String(resp);
 }
 
-function buildGradingTabHTML() {
-  const queue = state.gradingQueue;
+export function buildGradingTabHTML(
+  queue = state.gradingQueue,
+  room = selectedRoom(),
+  onlyPending = state.onlyPendingGrading,
+) {
   if (!queue) {
     return `<div class="er-empty">Đang tải danh sách chấm tự luận…</div>`;
   }
   const allItems = queue.items || [];
-  const items = state.onlyPendingGrading
+  const items = onlyPending
     ? allItems.filter((it) => it.earnedPointsP100 === null || it.earnedPointsP100 === undefined)
     : allItems;
+  const markingGuidance = String(queue.markingGuidance || room?.markingGuidance || '').trim();
 
   return `
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -1092,12 +1096,21 @@ function buildGradingTabHTML() {
         </div>
         <div class="er-btn-row">
           <label class="er-check" style="font-size:12.5px;">
-            <input type="checkbox" id="er-pending-only-chk" ${state.onlyPendingGrading ? 'checked' : ''}>
+            <input type="checkbox" id="er-pending-only-chk" ${onlyPending ? 'checked' : ''}>
             Chỉ hiển thị bài chưa chấm
           </label>
           <button type="button" class="er-btn er-btn-sm" data-er-action="refresh-grading">Làm mới</button>
         </div>
       </div>
+
+      ${
+        markingGuidance
+          ? `<div class="er-hint-box" data-marking-guidance="1">
+               <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:4px;">Hướng dẫn chấm chung của đề</div>
+               <div>${renderRichField(markingGuidance, null)}</div>
+             </div>`
+          : ''
+      }
 
       ${
         items.length
