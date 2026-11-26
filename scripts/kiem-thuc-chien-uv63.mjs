@@ -610,6 +610,8 @@ async function main() {
       const btn = document.querySelector('[data-sr-action="play-audio"]');
       return btn && btn.disabled && document.body.innerText.includes('0 / 1');
     });
+    // Theo đặc tả UV64, <audio controls> được giữ hết lượt phát hiện tại rồi tự khóa sau khi ended
+    await studentPage.waitForFunction(() => !document.querySelector('audio.sr-audio-el'), {timeout: 5000});
     await studentPage.locator('[data-sr-action="ask-submit"]').first().click();
     await studentPage.locator('[data-sr-action="jump-first-unanswered"]').first().waitFor();
     await studentPage.waitForTimeout(150);
