@@ -127,11 +127,22 @@ test('UV64 Responsive Mobile 390x844, bàn phím ảo 390x560 và ngưỡng !imp
   assert.ok(importantCount < 30, `Số lượng !important vượt ngưỡng 30: ${importantCount}`);
 
   assert.match(layoutCss, /\.matrix-table-scroll\s*\{[^}]*max-width:\s*100%;[^}]*overflow-x:\s*auto;[^}]*-webkit-overflow-scrolling:\s*touch;/);
-  assert.match(layoutCss, /\.editor-toolbar\s+\[data-action="menu"\]\s*\{[^}]*position:\s*sticky;[^}]*right:\s*0;/);
+  assert.doesNotMatch(layoutCss, /\.editor-toolbar\s+\[data-action="menu"\]\s*\{[^}]*position:\s*sticky;/);
+  assert.match(layoutCss, /\.editor-toolbar\s*\{[^}]*flex-wrap:\s*wrap;[^}]*height:\s*auto;[^}]*overflow-x:\s*visible;/);
+  assert.match(layoutCss, /\.editor-toolbar\s+\[data-action="menu"\]\s*\{[^}]*margin-left:\s*auto;/);
   assert.match(layoutCss, /\.document-bar\s+\.ruler\s*\{\s*display:\s*none;\s*\}/);
   assert.match(layoutCss, /\.sgk-tree-pane\s*\{\s*min-height:\s*96px;/);
   assert.match(
     layoutCss,
     /@media \(max-width:\s*760px\) and \(max-height:\s*680px\)[\s\S]*height:\s*100dvh;[\s\S]*max-height:\s*100dvh;[\s\S]*\.assistant-body\s*\{[^}]*min-height:\s*120px;/,
   );
+});
+
+test('UV64 onAutoCreateExam không gán sẵn cur.aiConsent=true hoặc bật saveWorkspaceConsent ngoài luồng Hoàn tác', () => {
+  const appJs = readText('app.js');
+  const match = appJs.match(/onAutoCreateExam:\([^)]*\)=>\{[\s\S]*?\},\s*setTab:/);
+  assert.ok(match, 'Phải tìm thấy onAutoCreateExam trong app.js');
+  const body = match[0];
+  assert.doesNotMatch(body, /\.aiConsent\s*=\s*true/);
+  assert.match(body, /saveWorkspaceConsent:\s*saveWorkspaceConsent===true/);
 });
