@@ -22,6 +22,7 @@ export function refreshDesign(){
 }
 
 const commands=[
+ ['design-home','Trang chủ Cá Voi Xanh','Tạo đề nhanh, chiến dịch nhiều đề và đề gần đây','⌂'],
  ['question-bank','Ngân hàng câu hỏi','Tìm không dấu, lọc, lưu và chèn lại câu hỏi','★'],
  ['exam-analytics','Phân tích chất lượng đề','Điểm sẵn sàng, mức độ nhận thức, trùng lặp','◔'],
  ['exam-rooms','Phòng thi trực tuyến','Giao bài theo mã phòng/QR, chấm tự luận, xuất điểm','▤'],
@@ -67,7 +68,11 @@ export function handleDesignAction(action,node){
   ctx.setTab('templates');ctx.render();
   $('.sidebar')?.classList.add('open');
   $('.workspace')?.classList.remove('outline-collapsed');
+ }else if(action==='design-home'){
+  setActiveWorkspaceNav('design-home');
+  ctx.setViewMode?.('home');
  }else if(action==='design-workspace'){
+  if(ctx.getViewMode?.()==='home')ctx.setViewMode?.('workspace');
   $('.workspace')?.classList.remove('focus-mode','outline-collapsed','mobile-ai-view');
   $('aside.assistant')?.classList.remove('open');
   setActiveWorkspaceNav('design-workspace');

@@ -17,6 +17,12 @@ from PIL import Image
 from pydantic import ValidationError
 
 from mach_backend.ai_contract import AIError
+from mach_backend.campaigns import (
+    list_owner_campaigns,
+    list_owner_reminders,
+    validate_and_restore_campaigns,
+    validate_and_restore_reminders,
+)
 from mach_backend.curriculum_sources import (
     CITABLE_LICENSE_STATUSES,
     CurriculumSourceCreate,
@@ -404,6 +410,32 @@ def apply_question_bank_records(db, owner, backup, *, dry_run=False):
         invalid("Ngân hàng câu hỏi trong bản sao không hợp lệ.")
 
 
+def apply_campaign_records(db, owner, backup, *, dry_run=False):
+    raw = backup.get("examCampaigns", [])
+    if raw is None or raw == []:
+        return 0
+    try:
+        return validate_and_restore_campaigns(db, owner, raw, dry_run=dry_run)
+    except (ValidationError, ValueError, TypeError) as exc:
+        message = str(exc)
+        if "trong bản sao" in message or "kho đích" in message or "bản sao" in message:
+            invalid(message)
+        invalid("Chiến dịch soạn đề trong bản sao không hợp lệ.")
+
+
+def apply_reminder_records(db, owner, backup, *, dry_run=False):
+    raw = backup.get("teacherReminders", [])
+    if raw is None or raw == []:
+        return 0
+    try:
+        return validate_and_restore_reminders(db, owner, raw, dry_run=dry_run)
+    except (ValidationError, ValueError, TypeError) as exc:
+        message = str(exc)
+        if "trong bản sao" in message or "kho đích" in message or "bản sao" in message:
+            invalid(message)
+        invalid("Nhắc lịch giáo viên trong bản sao không hợp lệ.")
+
+
 def _list_owner_curriculum_sources(db, owner_id: str) -> list[dict]:
     exists = db.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'curriculum_sources'"
@@ -461,6 +493,8 @@ def export_workspace_backup(store):
         matrix_templates = list_owner_matrix_templates(db, store.owner)
         question_bank = list_owner_question_bank(db, store.owner)
         curriculum_sources = _list_owner_curriculum_sources(db, store.owner)
+        exam_campaigns = list_owner_campaigns(db, store.owner)
+        teacher_reminders = list_owner_reminders(db, store.owner)
     return {
         "format": "tro-ly-soan-de",
         "version": 1,
@@ -469,6 +503,8 @@ def export_workspace_backup(store):
         "matrixTemplates": matrix_templates,
         "questionBank": question_bank,
         "curriculumSources": curriculum_sources,
+        "examCampaigns": exam_campaigns,
+        "teacherReminders": teacher_reminders,
     }
 
 
@@ -533,6 +569,8 @@ def restore(store, backup, base_revision):
             insert_curriculum_records(db, store.owner, records)
             apply_matrix_template_records(db, store.owner, backup, dry_run=False)
             apply_question_bank_records(db, store.owner, backup, dry_run=False)
+            apply_campaign_records(db, store.owner, backup, dry_run=False)
+            apply_reminder_records(db, store.owner, backup, dry_run=False)
         return {
             "revision": revision,
             "restored": True,
@@ -548,6 +586,8 @@ def restore(store, backup, base_revision):
         insert_curriculum_records(db, store.owner, records)
         apply_matrix_template_records(db, store.owner, backup, dry_run=False)
         apply_question_bank_records(db, store.owner, backup, dry_run=False)
+        apply_campaign_records(db, store.owner, backup, dry_run=False)
+        apply_reminder_records(db, store.owner, backup, dry_run=False)
         for key, value in files.items():
             store.put("file:" + key, value, db=db)
         # Snapshot phục hồi không được nhận kết quả AI đang chờ của kho trước.
@@ -589,6 +629,8 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
             insert_curriculum_records(db, store.owner, records, dry_run=True)
             template_count = apply_matrix_template_records(db, store.owner, backup, dry_run=True)
             bank_count = apply_question_bank_records(db, store.owner, backup, dry_run=True)
+            campaign_count = apply_campaign_records(db, store.owner, backup, dry_run=True)
+            reminder_count = apply_reminder_records(db, store.owner, backup, dry_run=True)
             current_entry = store.get("state", db)
             revision = current_entry["revision"]
             current_state = current_entry["value"]
@@ -617,12 +659,16 @@ def install_backup(app, store, runner, chat_lock, connection_lock):
                 **({"curriculumSources": len(records)} if records else {}),
                 **({"matrixTemplates": template_count} if template_count else {}),
                 **({"questionBank": bank_count} if bank_count else {}),
+                **({"examCampaigns": campaign_count} if campaign_count else {}),
+                **({"teacherReminders": reminder_count} if reminder_count else {}),
             }
         return {
             "revision": revision,
             **({"curriculumSources": len(records)} if records else {}),
             **({"matrixTemplates": template_count} if template_count else {}),
             **({"questionBank": bank_count} if bank_count else {}),
+            **({"examCampaigns": campaign_count} if campaign_count else {}),
+            **({"teacherReminders": reminder_count} if reminder_count else {}),
             "exams": len(state["exams"]),
             "files": len(files),
             "prefs": len(state["prefs"]),
