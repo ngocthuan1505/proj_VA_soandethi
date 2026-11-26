@@ -213,9 +213,13 @@ def install_poc_connections(app: FastAPI, provider: AgentGeneration):
                     saved["gemini"][field] = GEMINI_MODEL
             saved_fr = saved.get("fixedRouter")
             if isinstance(saved_fr, dict):
-                if is_blocked_agy_model(saved_fr.get("agyModel")):
+                if not str(saved_fr.get("agyModel") or "").strip() or is_blocked_agy_model(
+                    saved_fr.get("agyModel")
+                ):
                     saved_fr["agyModel"] = DEFAULT_AGY_ORCHESTRATOR_MODEL
-                if is_blocked_agy_model(saved_fr.get("agyFastModel")):
+                if not str(saved_fr.get("agyFastModel") or "").strip() or is_blocked_agy_model(
+                    saved_fr.get("agyFastModel")
+                ):
                     saved_fr["agyFastModel"] = DEFAULT_AGY_FAST_MODEL
             apply_config(provider, saved, store, persist=False)
     except (OSError, ValueError, HTTPException, AIError):

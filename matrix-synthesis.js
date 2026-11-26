@@ -50,28 +50,63 @@ export function parseAutoCreateSse(chunkBuffer){
  return {records,rest:buffer};
 }
 
-export function renderAutoCreateCardHTML(state){
- const phases=state?.phases||{};
- const stepsHTML=AUTO_CREATE_STEPS.map((step,idx)=>{
-  const st=phases[step.phase]||'pending';
-  const cls=st==='done'?'is-done':st==='running'?'is-active':st==='error'?'is-error':'';
-  return `<li class="auto-create-step ${cls}" data-phase="${step.phase}"><span class="auto-create-step-num">${st==='done'?'✓':idx+1}</span><span>${esc(step.label)}</span></li>`;
- }).join('');
- const batchMeta=state?.totalBatches
-  ?`<p class="auto-create-batch-meta">Tiến độ lô: ${state.completedBatches||0}/${state.totalBatches} lô · ${state.completedCount||0}/${state.totalSlots||0} câu${state.lastModel?` · Mô hình: <code>${esc(state.lastModel)}</code>`:''}</p>`
-  :'';
- const summaryHTML=state?.complete
-  ?`<p class="auto-create-summary">${esc(state.complete.message||`Đã áp ${state.complete.totalQuestions||0} câu lên trang A4.`)}</p>`
-  :'';
- const consentHTML=state?.needsConsent
-  ?`<div class="auto-create-consent"><p role="alert">${esc(state.error||'Cần xác nhận cho phép gửi nội dung tới AI trước khi tự động soạn đề.')}</p><label class="consent"><input type="checkbox" data-auto-save-consent> Ghi nhớ cho toàn không gian làm việc</label><div class="auto-create-actions"><button type="button" class="primary" data-action="auto-create-consent-retry">✓ Cho phép &amp; Tự động soạn ngay</button></div></div>`
-  :'';
- const errHTML=!state?.needsConsent&&state?.error
-  ?`<p class="auto-create-error" role="alert">${esc(state.error)}</p>`
-  :'';
- const controlsHTML=`<div class="auto-create-actions">${state?.running?'<button type="button" data-action="auto-create-cancel">Dừng</button>':''}<button type="button" class="ghost" data-action="open-manual-matrix">Mở bảng ma trận chi tiết</button></div>`;
- return `<div class="auto-create-card" data-status="${esc(state?.status||'running')}" role="region" aria-label="Tự động soạn đề"><div class="auto-create-head"><b>Tự động soạn đề (Plan → Swarm → Goal)</b><span class="auto-create-status">${esc(state?.statusText||'Đang khởi chạy…')}</span></div><ol class="auto-create-steps" aria-live="polite">${stepsHTML}</ol>${batchMeta}${summaryHTML}${consentHTML}${errHTML}${controlsHTML}</div>`;
-}
+ export function describeActiveEngine(status){
+  const cfg=status?.config||{};
+  const fr=cfg.fixedRouter||{};
+  const hasDs=Boolean(cfg.deepseek?.hasKey||cfg.deepseek?.configured);
+  const hasGem=Boolean((cfg.gemini?.hasKey&&cfg.gemini?.freeTierConfirmed)||cfg.gemini?.configured);
+  const fallbackProvider=status?.aiProvider||'ollama';
+  const fallbackModel=status?.model||'';
+  if(!status?.fixture&&fr.enabled!==false&&(fr.agyAvailable||hasDs||hasGem)){
+   if(fr.agyAvailable){
+    const genModel=fr.agyModel||'gemini-pro-orchestrator-neon';
+    const revModel=hasDs?(cfg.deepseek?.reasonerModel||cfg.deepseek?.model||genModel):(fr.agyFastModel||genModel);
+    const dest=hasDs?'AGY CLI và DeepSeek API':(hasGem?'AGY CLI và Gemini API':'AGY CLI');
+    return {destination:dest,genModel,revModel};
+   }
+   if(hasDs){
+    return {destination:'DeepSeek API',genModel:cfg.deepseek?.model||'deepseek-chat',revModel:cfg.deepseek?.reasonerModel||cfg.deepseek?.model||'deepseek-reasoner'};
+   }
+   if(hasGem){
+    return {destination:'Gemini API của Google',genModel:cfg.gemini?.model||fallbackModel,revModel:cfg.gemini?.checkModel||cfg.gemini?.model||fallbackModel};
+   }
+  }
+  const mapLabel=p=>{
+   const k=String(p||'').toLowerCase();
+   if(k.startsWith('agy'))return 'AGY CLI';
+   if(k.startsWith('deepseek'))return 'DeepSeek API';
+   if(k==='gemini'||k.startsWith('gemini'))return 'Gemini API của Google';
+   return 'Ollama trên máy';
+  };
+  const destinations=[fallbackProvider,status?.reviewer?.provider||fallbackProvider];
+  return {destination:[...new Set(destinations)].map(mapLabel).join(' và '),genModel:fallbackModel,revModel:status?.reviewer?.model||fallbackModel};
+ }
+
+ export function renderAutoCreateCardHTML(state){
+  const phases=state?.phases||{};
+  const stepsHTML=AUTO_CREATE_STEPS.map((step,idx)=>{
+   const st=phases[step.phase]||'pending';
+   const cls=st==='done'?'is-done':st==='running'?'is-active':st==='error'?'is-error':'';
+   return `<li class="auto-create-step ${cls}" data-phase="${step.phase}"><span class="auto-create-step-num">${st==='done'?'✓':idx+1}</span><span>${esc(step.label)}</span></li>`;
+  }).join('');
+  const batchMeta=state?.totalBatches
+   ?`<p class="auto-create-batch-meta">Tiến độ lô: ${state.completedBatches||0}/${state.totalBatches} lô · ${state.completedCount||0}/${state.totalSlots||0} câu${state.lastModel?` · Mô hình: <code>${esc(state.lastModel)}</code>`:''}</p>`
+   :'';
+  const doneCount=state?.complete?.questions?.length??state?.complete?.totalQuestions??state?.totalSlots??0;
+  const donePts=state?.complete?.totalPoints??10;
+  const summaryHTML=state?.complete
+   ?`<p class="auto-create-summary">Đã áp ${doneCount} câu (${donePts} điểm) lên trang A4.</p>`
+   :'';
+  const consentHTML=state?.needsConsent
+   ?`<div class="auto-create-consent"><p role="alert">${esc(state.error||'Cần xác nhận cho phép gửi nội dung tới AI trước khi tự động soạn đề.')}</p><label class="consent"><input type="checkbox" data-auto-save-consent> Ghi nhớ cho toàn không gian làm việc</label><div class="auto-create-actions"><button type="button" class="primary" data-action="auto-create-consent-retry">✓ Cho phép &amp; Tự động soạn ngay</button></div></div>`
+   :'';
+  const errHTML=!state?.needsConsent&&state?.error
+   ?`<p class="auto-create-error" role="alert">${esc(state.error)}</p>`
+   :'';
+  const closeBtn=!state?.running?'<button type="button" class="auto-create-dismiss" data-action="auto-create-dismiss" title="Đóng thẻ tiến độ" aria-label="Đóng thẻ tiến độ">✕</button>':'';
+  const controlsHTML=`<div class="auto-create-actions">${state?.running?'<button type="button" data-action="auto-create-cancel">Dừng</button>':''}<button type="button" class="ghost" data-action="open-manual-matrix">Mở bảng ma trận chi tiết</button></div>`;
+  return `<div class="auto-create-card" data-status="${esc(state?.status||'running')}" role="region" aria-label="Tự động soạn đề"><div class="auto-create-head"><b>Tự động soạn đề</b><div class="auto-create-head-right"><span class="auto-create-status">${esc(state?.statusText||'Đang khởi chạy…')}</span>${closeBtn}</div></div><ol class="auto-create-steps" aria-live="polite">${stepsHTML}</ol>${batchMeta}${summaryHTML}${consentHTML}${errHTML}${controlsHTML}</div>`;
+ }
 
 export async function streamAutoCreateExam(examId,payload,{fetchImpl=fetch,signal,headers={},onEvent}={}){
  const response=await fetchImpl(`/api/exams/${encodeURIComponent(examId)}/agent/auto-create`,{
@@ -139,6 +174,10 @@ export async function runAutoCreateExam(ctx,promptText,opts={}){
  const host=opts.host||doc?.querySelector('.assistant-body')||null;
  let container=null;
  if(host&&doc){
+  host.querySelectorAll('.auto-create-session').forEach(node=>{
+   const st=node.querySelector('.auto-create-card')?.dataset.status;
+   if(st&&st!=='running')node.remove();
+  });
   container=doc.createElement('section');
   container.className='auto-create-session';
   host.append(container);
@@ -181,6 +220,8 @@ export async function runAutoCreateExam(ctx,promptText,opts={}){
    container.remove();
    void runAutoCreateExam(ctx,prompt,{...opts,consentGiven:true,saveWorkspaceConsent:saveWs});
   };
+  const dismissBtn=container.querySelector('[data-action="auto-create-dismiss"]');
+  if(dismissBtn)dismissBtn.onclick=()=>{container.remove();};
   const activeHost=liveHost||host;
   if(activeHost&&typeof activeHost.scrollTop==='number')activeHost.scrollTop=activeHost.scrollHeight;
  };
@@ -343,8 +384,8 @@ export async function openMatrixSynthesis(c, options={}){
  const inline=!!options.host;
  const examId=options.examId||c.exam().id;
  const status=await api('/api/status');
- const destinations=[status.aiProvider,status.reviewer?.provider||status.aiProvider];
- const destination=[...new Set(destinations)].map(p=>p==='gemini'?'Gemini API của Google':'Ollama trên máy').join(' và ');
+ const engine=describeActiveEngine(status);
+ const destination=engine.destination;
  const checkNames={validate_schema:'Cấu trúc',check_matrix_and_scoring:'Ma trận và điểm',retrieve_evidence:'Đoạn nguồn',check_evidence:'Căn cứ nguồn',solve_blind:'Giải lại',verify_options:'Bốn phương án',review_level:'Mức nhận thức',check_duplicates:'Trùng ý',check_explanation:'Lời giải',aggregate_checks:'Tổng hợp'};
  const budget=status.runBudget||{maxModelCalls:24,timeoutSeconds:900};
  if(!status.matrixPython){c.toast('Mở bản Python cục bộ để dùng luồng sinh theo ma trận.');return;}
@@ -365,9 +406,9 @@ export async function openMatrixSynthesis(c, options={}){
  const attachedPreview=attachedPages.map(({doc,page})=>doc.name+' · '+sourcePageLabel(doc,page.number)+'\n'+page.text).join('\n\n');
  let source=attachedPreview;
  let job=null,lastCandidate=null,approval=null,closed=false,reviews={},polling=false,deciding=false;
- const errorNames={incomplete_response:'AI bị ngắt trước khi trả đủ bộ câu; bản đề giữ nguyên. Có thể giảm số câu hoặc thử lại; tải log để xem chi tiết',duplicate_question:'Câu hỏi bị trùng',invalid_options:'Phương án chưa hợp lệ',answer_disagreement:'Đáp án chưa khớp lượt giải lại',level_disagreement:'Mức thực tế chưa khớp ma trận',explanation_disagreement:'Lời giải chưa khớp',uncertain_answer:'Lượt giải chưa đủ chắc chắn',unsupported_answer:'Chưa đủ căn cứ',topic_disagreement:'Chưa đúng chủ đề',invalid_review:'Lượt rà trả dữ liệu chưa hợp lệ',attempt_limit:'Đã hết giới hạn của lượt thử cũ',call_budget:'Đã hết ngân sách gọi AI',timeout:'Đã hết thời gian tự xử lý',provider_http_error:'Dịch vụ AI đang trả lỗi',provider_quota:'Đã hết hạn mức dịch vụ AI',provider_auth:'Khóa Gemini chưa hợp lệ; mở Kết nối để thay khóa',provider_timeout:'Dịch vụ AI quá thời gian chờ; bản đề giữ nguyên',check_not_completed:'Một số phép kiểm chưa hoàn tất',option_verdicts_failed:'Có nhiều đáp án đúng hoặc phương án chưa rõ',semantic_duplicate:'Câu hỏi trùng ý',uncertain_duplicate:'Chưa kết luận được trùng ý',interrupted:'App đã khởi động lại khi tác vụ chưa hoàn tất',stale_snapshot:'Đề hoặc nguồn đã thay đổi',provider_unavailable:'Chưa kết nối được AI đã chọn'};
+ const errorNames={incomplete_response:'AI bị ngắt trước khi trả đủ bộ câu; bản đề giữ nguyên. Có thể giảm số câu hoặc thử lại; tải log để xem chi tiết',duplicate_question:'Câu hỏi bị trùng',invalid_options:'Phương án chưa hợp lệ',answer_disagreement:'Đáp án chưa khớp lượt giải lại',level_disagreement:'Mức thực tế chưa khớp ma trận',explanation_disagreement:'Lời giải chưa khớp',uncertain_answer:'Lượt giải chưa đủ chắc chắn',unsupported_answer:'Chưa đủ căn cứ',topic_disagreement:'Chưa đúng chủ đề',invalid_review:'Lượt rà trả dữ liệu chưa hợp lệ',attempt_limit:'Đã hết giới hạn của lượt thử cũ',call_budget:'Đã hết ngân sách gọi AI',timeout:'Hết thời gian xử lý — thử giảm số câu, đổi chế độ thời gian dài hơn hoặc bấm Thử lại',provider_http_error:'Dịch vụ AI đang trả lỗi',provider_quota:'Đã hết hạn mức dịch vụ AI',provider_auth:'Khóa Gemini chưa hợp lệ; mở Kết nối để thay khóa',provider_timeout:'Dịch vụ AI quá thời gian chờ; bản đề giữ nguyên',check_not_completed:'Một số phép kiểm chưa hoàn tất',option_verdicts_failed:'Có nhiều đáp án đúng hoặc phương án chưa rõ',semantic_duplicate:'Câu hỏi trùng ý',uncertain_duplicate:'Chưa kết luận được trùng ý',interrupted:'App đã khởi động lại khi tác vụ chưa hoàn tất',stale_snapshot:'Đề hoặc nguồn đã thay đổi',provider_unavailable:'Chưa kết nối được AI đã chọn'};
  const errorText=e=>(e.ordinal!==undefined?'Câu '+(e.ordinal+1)+': ':'')+(errorNames[e.code]||e.code)+(e.reason?' — '+e.reason:'')+(e.details?.length?' · '+e.details.map(d=>d.message).join('; '):'');
- const markup=`${inline?'<p>Trợ lý soạn, tự kiểm và sửa bộ câu. Xem lại trên trang đề rồi chọn chấp nhận hoặc bỏ.</p><details><summary>Kết nối và giới hạn</summary>':''}<p>Sinh bằng <b>${esc(status.model)}</b> · kiểm bằng <b>${esc(status.reviewer?.model||status.model)}</b>. Nguồn được gửi tới ${esc(destination)}. ${status.matrixAgent?`Trợ lý tự soạn, gọi công cụ kiểm và sửa theo lỗi trong ngân sách ${budget.maxModelCalls} lần gọi AI, tối đa ${budget.timeoutSeconds} giây. Thầy cô không cần xử lý từng vòng.`:'Bản thử cũ sinh từng ô, mỗi ô có giới hạn lượt riêng.'} Chỉ trả bản cuối đã qua bộ kiểm; thầy cô xem lại trước khi xác nhận lưu.</p>${inline?'</details>':''}
+ const markup=`${inline?'<p>Trợ lý soạn, tự kiểm và sửa bộ câu. Xem lại trên trang đề rồi chọn chấp nhận hoặc bỏ.</p><details><summary>Kết nối và giới hạn</summary>':''}<p>Sinh bằng <b>${esc(engine.genModel)}</b> · kiểm bằng <b>${esc(engine.revModel)}</b>. Nguồn được gửi tới ${esc(destination)}. ${status.matrixAgent?`Trợ lý tự soạn, gọi công cụ kiểm và sửa theo lỗi trong ngân sách ${budget.maxModelCalls} lần gọi AI, tối đa ${budget.timeoutSeconds} giây. Thầy cô không cần xử lý từng vòng.`:'Bản thử cũ sinh từng ô, mỗi ô có giới hạn lượt riêng.'} Chỉ trả bản cuối đã qua bộ kiểm; thầy cô xem lại trước khi xác nhận lưu.</p>${inline?'</details>':''}
  <details class="matrix-chat-summary"><summary>Ma trận đã xác nhận · ${count} câu</summary><table class="matrix-full"><thead><tr><th>Chủ đề / loại câu</th>${LEVELS.map(x=>'<th>'+x+'</th>').join('')}</tr></thead><tbody>${rows.map(r=>'<tr><td>'+esc(r.topic)+' · '+esc(QUESTION_TYPES[r.type||'mcq'])+'</td>'+r.targets.map(n=>'<td>'+n+'</td>').join('')+'</tr>').join('')}</tbody></table></details>
  ${inline?'<button type="button" id="matrix-edit-plan">Chỉnh / tải file ma trận</button>':''}<p>${count} / tối đa 30 câu, bốn dạng · tổng 10 điểm. Chia điểm theo bước 0,25; phần dư phân theo thứ tự ô.</p>
  <label>Cách soạn<select id="matrix-source-mode">${sourceRefs.length?'<option value="attached" selected>Theo trang đã chọn trong kho</option>':''}<option value="provided">Theo ngữ liệu dán</option><option value="general" ${source?'':'selected'}>Theo kiến thức môn/lớp · không có tài liệu đối chiếu</option></select></label><p class="hint" id="matrix-general-note">Soạn không nguồn vẫn giải lại và rà lời giải, nhưng chưa xác minh với SGK/tài liệu. Giáo viên cần kiểm tra kiến thức và phạm vi.</p><details id="matrix-inputs" ${source?'open':''}><summary>Thêm tài liệu nguồn (tùy chọn)</summary><label>Tên nguồn<input id="matrix-source-name" maxlength="200" value="${esc(currentDocs.map(d=>d.name).join('; ').slice(0,200))}" placeholder="Ghi đúng tên hoặc ghi ngữ liệu tự viết"></label>
@@ -382,25 +423,30 @@ export async function openMatrixSynthesis(c, options={}){
  <p id="matrix-review-summary" role="status"></p><label ${inline?'hidden':''}><input type="checkbox" id="matrix-final-check" style="width:auto"> Tôi đã xem lại kết quả cuối và đồng ý thay bộ câu trong đề.</label>
  ${inline?'<button type="button" id="matrix-view-proposal" hidden>Xem đề xuất trên trang</button><div class="matrix-decisions">':''}<button type="button" id="matrix-confirm-save" class="primary" disabled>${inline?"✓ Chấp nhận":"Xác nhận thay bộ câu trong đề"}</button>${inline?'<button type="button" id="matrix-discard" class="matrix-discard">✕ Bỏ đề xuất</button></div>':''}
  <p class="hint">Nhãn trong ma trận là yêu cầu. Đọc từng câu, đáp án và đoạn trích trước khi ghi mức thực tế. Qua kiểm cấu trúc không có nghĩa đã đúng kiến thức hoặc đúng mức.</p>`;
- if(inline)options.host.innerHTML='<h3>Soạn theo ma trận</h3>'+markup;else c.modal('Sinh bộ câu theo ma trận',markup);
+ if(inline)options.host.innerHTML='<div class="matrix-session-head"><h3>Soạn theo ma trận</h3><button type="button" class="matrix-close-x" title="Đóng thẻ ma trận" aria-label="Đóng thẻ soạn theo ma trận">✕</button></div>'+markup;else c.modal('Sinh bộ câu theo ma trận',markup);
  const dialog=options.host||document.querySelector('#dialog'),$=id=>dialog.querySelector('#'+id)||options.find?.(id);
  if(inline){
-  const heading=dialog.querySelector('h3'),intro=heading.nextElementSibling,connection=intro.nextElementSibling;
+  const headWrap=dialog.querySelector('.matrix-session-head'),intro=headWrap.nextElementSibling,connection=intro.nextElementSibling;
   intro.remove();
   const request=document.createElement('details');request.id='matrix-request-settings';request.open=true;
   request.innerHTML='<summary>Yêu cầu soạn đề · '+count+' câu</summary>';
   const matrix=dialog.querySelector('.matrix-chat-summary'),edit=$('matrix-edit-plan'),score=edit.nextElementSibling;
-  request.append(matrix,edit,score,$('matrix-source-mode').closest('label'),$('matrix-general-note'),$('matrix-inputs'),$('matrix-consent').closest('label'));heading.after(request);
+  request.append(matrix,edit,score,$('matrix-source-mode').closest('label'),$('matrix-general-note'),$('matrix-inputs'),$('matrix-consent').closest('label'));headWrap.after(request);
   const startActions=document.createElement('div');startActions.className='matrix-start-actions';
   startActions.append($('matrix-start'));request.append(startActions);
   const later=document.createElement('button');later.type='button';later.textContent='Để sau';later.id='matrix-dismiss';startActions.append(later);
-  const details=document.createElement('details');details.id='matrix-result-details';details.innerHTML='<summary>Chi tiết lượt xử lý</summary>';
-  const retry=document.createElement('button');retry.type='button';retry.id='matrix-retry';retry.textContent='Xem yêu cầu và thử lại';retry.hidden=true;
+  headWrap.querySelector('.matrix-close-x').onclick=()=>later.click();
+  const details=document.createElement('details');details.id='matrix-result-details';details.innerHTML='<summary>Chi tiết kỹ thuật</summary>';
+  const retry=document.createElement('button');retry.type='button';retry.id='matrix-retry';retry.className='primary';retry.textContent='Thử lại';retry.hidden=true;
+  const errClose=document.createElement('button');errClose.type='button';errClose.className='matrix-error-close';errClose.textContent='Đóng';errClose.hidden=true;
+  const errActions=document.createElement('div');errActions.className='matrix-error-actions';errActions.hidden=true;
+  errActions.append(retry,errClose);
   retry.onclick=()=>{$('matrix-request-settings').open=true;$('matrix-inputs').open=true;$('matrix-start').focus();};
-  $('matrix-status').after(retry);
+  errClose.onclick=()=>later.click();
+  $('matrix-status').after(errActions);
   const utilities=document.createElement('div');utilities.className='matrix-utilities';utilities.append($('matrix-download'),$('matrix-review-pack'));
   details.append(connection,$('matrix-metrics'),$('matrix-reviewer-field'),$('matrix-progress'),$('matrix-audit'),$('matrix-checks'),utilities,dialog.querySelector(':scope>p.hint:last-child'));
-  $('matrix-status').after(details);
+  errActions.after(details);
   const decisions=dialog.querySelector('.matrix-decisions');decisions.setAttribute('aria-label','Duyệt đề xuất');
   const label=document.createElement('b');label.className='matrix-decision-title';label.textContent=count+' câu chờ duyệt';
   decisions.prepend(label,$('matrix-view-proposal'));decisions.append($('matrix-review-summary'));
@@ -433,7 +479,12 @@ export async function openMatrixSynthesis(c, options={}){
   const changed=dialog.dataset.phase!==phase;dialog.dataset.phase=phase;
   if(changed){$('matrix-request-settings').open=phase==='setup';$('matrix-result-details').open=false;$('matrix-progress').open=false;}
   $('matrix-result-details').hidden=phase==='setup';$('matrix-status').hidden=phase==='setup'&&!$('matrix-status').dataset.error;
-  $('matrix-retry').hidden=phase!=='error'||!$('matrix-poll-retry').hidden;
+  const showRetry=phase==='error'&&$('matrix-poll-retry').hidden;
+  const errActions=dialog.querySelector('.matrix-error-actions'),errClose=dialog.querySelector('.matrix-error-close'),closeX=dialog.querySelector('.matrix-close-x');
+  if(errActions)errActions.hidden=!showRetry;
+  if(errClose)errClose.hidden=!showRetry;
+  $('matrix-retry').hidden=!showRetry;
+  if(closeX)closeX.hidden=phase==='running';
   renderLiveSteps();
   options.phase?.({phase,cancellable:!$('matrix-stop').disabled,decisions:dialog.querySelector('.matrix-decisions')||options.find?.('matrix-confirm-save')?.parentElement,stop:()=>{$('matrix-stop').click();}});
  }

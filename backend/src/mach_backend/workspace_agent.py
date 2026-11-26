@@ -1213,7 +1213,6 @@ class AgentGeneration:
                     call_agy_fast = _make_agy_caller(fast_model, "fast")
                     router_providers["agy_orchestrator"] = call_agy_orch
                     router_providers["agy_fast"] = call_agy_fast
-                    router_providers["agy"] = call_agy_orch
                 if api_key and free_tier and key_pool is not None:
 
                     def _make_router_gemini(target_model: str):

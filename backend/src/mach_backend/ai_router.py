@@ -152,13 +152,29 @@ def structured_tool_response(
     raw_content = message.get("content", "") if isinstance(message, dict) else message
     action = _parse_json_action_payload(str(raw_content or ""))
     allowed = frozenset(allowed_tools) if allowed_tools is not None else _DEFAULT_ALLOWED_TOOLS
-    if (
-        not isinstance(action, dict)
-        or set(action) != {"action", "arguments"}
-        or action["action"] not in allowed
-    ):
+    action_name: str | None = None
+    arguments: Any = None
+    if isinstance(action, dict):
+        if "action" in action and "arguments" in action:
+            raw_act = action["action"]
+            if isinstance(raw_act, str) and raw_act in allowed:
+                action_name = raw_act
+                arguments = action["arguments"]
+        elif "name" in action and "arguments" in action:
+            raw_name = action["name"]
+            if isinstance(raw_name, str) and raw_name in allowed:
+                action_name = raw_name
+                arguments = action["arguments"]
+        elif (
+            "action" not in action
+            and "check_exam" in allowed
+            and isinstance(action.get("questions"), list)
+            and action["questions"]
+        ):
+            action_name = "check_exam"
+            arguments = {"questions": action["questions"]}
+    if action_name is None:
         raise AIError(raise_code, "Model trả yêu cầu công cụ không hợp lệ.")
-    arguments = action["arguments"]
     if isinstance(arguments, str):
         try:
             arguments = json.loads(sanitize_json_latex_escapes(arguments))
@@ -166,7 +182,7 @@ def structured_tool_response(
             arguments = None
     if not isinstance(arguments, dict):
         raise AIError(raise_code, "Model trả yêu cầu công cụ không hợp lệ.")
-    tool_call: dict[str, Any] = {"function": {"name": action["action"], "arguments": arguments}}
+    tool_call: dict[str, Any] = {"function": {"name": action_name, "arguments": arguments}}
     if include_call_id:
         tool_call["id"] = f"call_{uuid4().hex[:12]}"
         tool_call["type"] = "function"
@@ -538,7 +554,6 @@ class FixedTaskRouter:
                 base = [
                     "agy_orchestrator",
                     "agy_fast",
-                    "agy",
                     "gemini_hydrogen",
                     "gemini_flash",
                     "gemini_pro",
@@ -554,7 +569,6 @@ class FixedTaskRouter:
                     "gateway_cross",
                     "agy_orchestrator",
                     "agy_fast",
-                    "agy",
                     "gemini_hydrogen",
                     "gemini_pro",
                     "gemini_flash",
@@ -568,7 +582,6 @@ class FixedTaskRouter:
                     "gemini_pro",
                     "gateway_cross",
                     "agy_fast",
-                    "agy",
                     "deepseek_chat",
                     "gemini_flash",
                     "ollama",
@@ -579,7 +592,6 @@ class FixedTaskRouter:
                     "agy_fast",
                     "deepseek_chat",
                     "gemini_flash",
-                    "agy",
                     "agy_orchestrator",
                     "ollama",
                     "gemini_pro",
@@ -593,7 +605,6 @@ class FixedTaskRouter:
                     "agy_fast",
                     "deepseek_chat",
                     "agy_orchestrator",
-                    "agy",
                     "gemini_flash",
                     "deepseek_reasoner",
                     "gemini_pro",
@@ -605,7 +616,6 @@ class FixedTaskRouter:
             else:
                 base = [
                     "agy_orchestrator",
-                    "agy",
                     "deepseek_reasoner",
                     "gemini_pro",
                     "gemini_hydrogen",
@@ -626,7 +636,6 @@ class FixedTaskRouter:
         }:
             base = [
                 "agy_orchestrator",
-                "agy",
                 "gemini_hydrogen",
                 "gemini_pro",
                 "deepseek_reasoner",
@@ -641,7 +650,6 @@ class FixedTaskRouter:
                 "deepseek_chat",
                 "gemini_flash",
                 "agy_orchestrator",
-                "agy",
                 "gemini_pro",
                 "gemini_hydrogen",
                 "deepseek_reasoner",
@@ -654,7 +662,6 @@ class FixedTaskRouter:
                 "gemini_flash",
                 "deepseek_chat",
                 "agy_orchestrator",
-                "agy",
                 "gemini_pro",
                 "gemini_hydrogen",
                 "deepseek_reasoner",
@@ -662,7 +669,7 @@ class FixedTaskRouter:
             ]
 
         for extra in self.providers:
-            if extra not in base:
+            if extra not in base and not (has_tiered_agy and extra == "agy"):
                 base.append(extra)
         return base
 

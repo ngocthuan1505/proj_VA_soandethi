@@ -21,7 +21,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
-from mach_backend.agy_cli_model import AgyCliModel
+from mach_backend.agy_cli_model import (
+    DEFAULT_AGY_FAST_MODEL,
+    DEFAULT_AGY_ORCHESTRATOR_MODEL,
+    AgyCliModel,
+)
 from mach_backend.ai_contract import AIError, Locator, SourceFragment
 from mach_backend.ai_questions import (
     MAX_MATRIX_QUESTIONS,
@@ -818,6 +822,18 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
     install_backup(app, store, runner, chat_lock, connection_lock)
     app.state.ai_busy = lambda: bool(runner.active or chat_lock.locked())
 
+    def _resolve_chat_agy_model(active_provider: AgentGeneration, time_preset: str) -> str:
+        preset_key = str(time_preset or "standard").strip().casefold()
+        if preset_key in {"deep", "extended"}:
+            return (
+                str(getattr(active_provider, "agy_model", "") or "").strip()
+                or DEFAULT_AGY_ORCHESTRATOR_MODEL
+            )
+        return (
+            str(getattr(active_provider, "agy_fast_model", "") or "").strip()
+            or DEFAULT_AGY_FAST_MODEL
+        )
+
     def _build_fixed_router_call(
         client: httpx.AsyncClient,
         log: RunLog,
@@ -837,14 +853,14 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             and not any(is_vertex_express_key(k) for k in active_provider.all_gemini_keys)
         )
         if active_provider.agy_available:
+            selected_agy_model = _resolve_chat_agy_model(active_provider, time_preset)
 
             async def _call_agy(p: str, b: dict[str, Any]) -> dict[str, Any]:
                 agy_kwargs: dict[str, Any] = {"custom_path": active_provider.agy_custom_path}
                 if _accepts_kwarg(AgyCliModel, "budget"):
                     agy_kwargs["budget"] = budget
-                agy_model = getattr(active_provider, "agy_model", "") or ""
-                if agy_model and _accepts_kwarg(AgyCliModel, "model"):
-                    agy_kwargs["model"] = agy_model
+                if selected_agy_model and _accepts_kwarg(AgyCliModel, "model"):
+                    agy_kwargs["model"] = selected_agy_model
                 if agy_effort is not None and _accepts_kwarg(AgyCliModel, "effort"):
                     agy_kwargs["effort"] = agy_effort
                 return await AgyCliModel(log, **agy_kwargs)(p, b)
@@ -1983,12 +1999,12 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                                 }
                                 if _accepts_kwarg(AgyCliModel, "budget"):
                                     agy_kwargs["budget"] = budget
-                                agy_model = getattr(provider, "agy_model", "") or ""
+                                agy_model = _resolve_chat_agy_model(provider, effective_preset)
                                 if agy_model and _accepts_kwarg(AgyCliModel, "model"):
                                     agy_kwargs["model"] = agy_model
                                 if _accepts_kwarg(AgyCliModel, "effort"):
                                     agy_kwargs["effort"] = agy_effort
-                                used_model = agy_model or "agy-cli"
+                                used_model = agy_model
                                 yield _sse_frame(
                                     "meta",
                                     {
