@@ -3092,6 +3092,16 @@ def install_exam_rooms(
                 submitted_at = attempt_row[13]
                 grading_status = str(attempt_row[17])
 
+            synced_answer_count = int(
+                db.execute(
+                    "SELECT COUNT(DISTINCT question_id) FROM attempt_answers "
+                    "WHERE attempt_id = ? AND response_json IS NOT NULL "
+                    "AND response_json != 'null'",
+                    (attempt_id,),
+                ).fetchone()[0]
+            )
+            total_questions = len(snap.get("questions") or [])
+
         result_policy = str(room_row[19])
         release_after_close = bool(room_row[20])
         room_status = str(room_row[10])
@@ -3107,6 +3117,8 @@ def install_exam_rooms(
                 "resultPolicy": result_policy,
                 "releaseResultsAfterClose": release_after_close,
                 "resultsAvailable": results_available,
+                "syncedAnswerCount": synced_answer_count,
+                "totalQuestions": total_questions,
             },
             headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
         )
@@ -3120,6 +3132,17 @@ def install_exam_rooms(
             status = str(attempt_row[10])
             if status == "in_progress":
                 raise HTTPException(409, "Bài làm chưa được nộp; hãy nộp bài để xem kết quả.")
+
+            snap = json.loads(room_row[23])
+            total_questions = len(snap.get("questions") or [])
+            synced_answer_count = int(
+                db.execute(
+                    "SELECT COUNT(DISTINCT question_id) FROM attempt_answers "
+                    "WHERE attempt_id = ? AND response_json IS NOT NULL "
+                    "AND response_json != 'null'",
+                    (attempt_id,),
+                ).fetchone()[0]
+            )
 
             result_policy = str(room_row[19])
             release_after_close = bool(room_row[20])
@@ -3142,6 +3165,8 @@ def install_exam_rooms(
                         "releaseResultsAfterClose": release_after_close,
                         "resultsAvailable": False,
                         "message": msg,
+                        "syncedAnswerCount": synced_answer_count,
+                        "totalQuestions": total_questions,
                     },
                     headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
                 )
@@ -3244,6 +3269,8 @@ def install_exam_rooms(
                 "manualScoreP100": int(attempt_row[15]),
                 "totalScoreP100": int(attempt_row[16]),
                 "totalPointsP100": int(room_row[24]),
+                "syncedAnswerCount": synced_answer_count,
+                "totalQuestions": total_questions,
                 "questions": question_results,
             },
             headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},

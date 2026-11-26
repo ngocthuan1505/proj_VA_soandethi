@@ -367,6 +367,23 @@ function initAudioEntries() {
   }
 }
 
+function lockExhaustedAudio(audioEl, st) {
+  if (!audioEl) return;
+  audioEl.pause();
+  audioEl.currentTime = 0;
+  audioEl.removeAttribute('controls');
+  audioEl.src = '';
+  audioEl.removeAttribute('src');
+  if (st && st.blobUrl) {
+    try {
+      URL.revokeObjectURL(st.blobUrl);
+    } catch {
+      // Ignore
+    }
+    st.blobUrl = '';
+  }
+}
+
 function renderAudioCardHTML(aud) {
   if (!aud || !aud.fileId) return '';
   const st = appState.audioState[String(aud.fileId)] || {
@@ -397,7 +414,7 @@ function renderAudioCardHTML(aud) {
         </button>
         ${st.error ? `<span style="font-size:12.5px;color:#991b1b;">${esc(st.error)}</span>` : ''}
       </div>
-      ${st.blobUrl ? `<audio class="sr-audio-el" controls autoplay src="${esc(st.blobUrl)}"></audio>` : ''}
+      ${!exhausted && st.blobUrl ? `<audio class="sr-audio-el" controls autoplay src="${esc(st.blobUrl)}"></audio>` : ''}
     </div>
   `;
 }
@@ -751,7 +768,11 @@ function renderExamScreenHTML() {
   const timerCls =
     remMs === null ? '' : remMs <= 60000 ? 'is-urgent' : remMs <= 300000 ? 'is-warn' : '';
   const saveCls =
-    appState.saveState === 'error' ? 'is-err' : appState.saveState === 'saved' ? 'is-ok' : '';
+    appState.saveState === 'error'
+      ? 'is-err is-offline'
+      : appState.saveState === 'saved'
+        ? 'is-ok'
+        : '';
 
   const quoteText = appState.exam?.quote?.chosen || appState.exam?.subject === 'Ngữ văn'
     ? appState.exam?.quote?.text
@@ -803,6 +824,7 @@ function renderExamScreenHTML() {
                  </p>
                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
                    <button type="button" class="sr-btn sr-btn-primary" data-sr-action="confirm-submit" ${appState.submitting ? 'disabled' : ''}>Xác nhận nộp bài</button>
+                    ${answeredCount < total ? `<button type="button" class="sr-btn sr-btn-soft" data-sr-action="jump-first-unanswered">Chuyển tới câu chưa làm</button>` : ''}
                    <button type="button" class="sr-btn" data-sr-action="cancel-submit">Tiếp tục làm bài</button>
                  </div>
                </div>`
@@ -847,6 +869,7 @@ function renderExamScreenHTML() {
         <div class="sr-muted" style="font-size:12px;">
           Màu xanh: đã trả lời · Chấm cam: đánh dấu xem lại
         </div>
+        ${answeredCount < total ? `<button type="button" class="sr-btn sr-btn-soft sr-btn-sm" data-sr-action="jump-first-unanswered" style="width:100%;margin-bottom:8px;">Chuyển tới câu chưa làm</button>` : ''}
         <button type="button" class="sr-btn sr-btn-primary" data-sr-action="ask-submit" ${appState.submitting ? 'disabled' : ''}>
           Nộp bài ngay
         </button>
@@ -868,6 +891,7 @@ function renderExamScreenHTML() {
                  <button type="button" class="sr-btn sr-btn-sm" data-sr-action="close-mobile-nav-btn">Đóng</button>
                </div>
                ${renderNavGridHTML(questions)}
+               ${answeredCount < total ? `<button type="button" class="sr-btn sr-btn-soft sr-btn-sm" data-sr-action="jump-first-unanswered" style="width:100%;margin-bottom:8px;">Chuyển tới câu chưa làm</button>` : ''}
                <button type="button" class="sr-btn sr-btn-primary" data-sr-action="ask-submit">Nộp bài (${answeredCount}/${total})</button>
              </div>
            </div>`
@@ -981,6 +1005,14 @@ function renderResultScreenHTML() {
   const r = appState.result;
   if (!r) return '';
 
+  const synced = Number.isInteger(r.syncedAnswerCount)
+    ? r.syncedAnswerCount
+    : Object.keys(appState.answers || {}).length;
+  const total = Number.isInteger(r.totalQuestions)
+    ? r.totalQuestions
+    : (appState.exam?.questions || []).length;
+  const isLoss = synced < total;
+
   return `
     <div class="sr-result-wrap">
       <div class="sr-score-banner">
@@ -1004,6 +1036,13 @@ function renderResultScreenHTML() {
                </div>`
             : `<span class="sr-room-code-pill" style="color:#0b3a63;">Đã nộp bài an toàn</span>`
         }
+      </div>
+
+      <div class="sr-card" style="margin:12px 0;padding:12px 16px;background:${isLoss ? '#fffbeb' : '#f0fdf4'};border:1px solid ${isLoss ? '#fde68a' : '#bbf7d0'};border-radius:8px;">
+        <div style="font-size:14px;font-weight:600;color:${isLoss ? '#92400e' : '#166534'};">
+          Đã đồng bộ ${esc(synced)}/${esc(total)} câu lên máy chủ
+        </div>
+        ${isLoss ? `<div class="sr-alert sr-alert-warn" style="margin-top:8px;">Cảnh báo: Chỉ có ${esc(synced)}/${esc(total)} câu được ghi nhận trên máy chủ do mất mạng hoặc gián đoạn kết nối trước khi nộp bài.</div>` : ''}
       </div>
 
       ${appState.warningBanner ? `<div class="sr-alert sr-alert-warn">${esc(appState.warningBanner)}</div>` : ''}
@@ -1068,7 +1107,7 @@ function updateSaveBadge(state, label) {
   appState.saveLabel = label;
   const pill = document.getElementById('sr-save-pill');
   if (!pill) return;
-  pill.className = `sr-save-pill ${state === 'error' ? 'is-err' : state === 'saved' ? 'is-ok' : ''}`;
+  pill.className = `sr-save-pill ${state === 'error' ? 'is-err is-offline' : state === 'saved' ? 'is-ok' : ''}`;
   pill.textContent = label;
 }
 
@@ -1084,13 +1123,13 @@ async function flushAnswers() {
         body: { answers: appState.answers },
       },
     );
-    updateSaveBadge('saved', 'Đã lưu');
+    updateSaveBadge('saved', 'Đã đồng bộ');
   } catch (err) {
     if (err.status === 409) {
       await handleLockedOrSubmitted('Bài làm đã được khóa hoặc kết thúc trên máy chủ.');
       return;
     }
-    updateSaveBadge('error', 'Lưu tạm trên máy');
+    updateSaveBadge('error', 'Mất mạng · đang lưu tạm trên máy');
   }
 }
 
@@ -1530,6 +1569,22 @@ function bindGlobalListeners() {
       return;
     }
 
+    if (action === 'jump-first-unanswered') {
+      const questions = appState.exam?.questions || [];
+      const idx = questions.findIndex((q) => !isQuestionAnswered(q));
+      if (idx >= 0) {
+        appState.currentIndex = idx;
+        appState.confirmSubmitOpen = false;
+        appState.mobileNavOpen = false;
+        renderApp();
+        if (appState.viewMode === 'all') {
+          const card = document.querySelector(`[data-q-card="${esc(questions[idx].id)}"]`);
+          if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+      return;
+    }
+
     if (action === 'confirm-submit') {
       await submitAttempt({ autoSubmit: false });
       return;
@@ -1663,6 +1718,82 @@ function bindGlobalListeners() {
     if (now - lastCopyEventAt < 4000) return;
     lastCopyEventAt = now;
     reportSecurityEvent('copy_attempt', { at: now });
+  });
+
+  document.addEventListener(
+    'play',
+    (e) => {
+      const audio = e.target;
+      if (audio && (audio.matches?.('audio, .sr-audio-el') || audio.tagName === 'AUDIO')) {
+        const card = audio.closest?.('[data-audio-box]');
+        const fid = card?.dataset?.audioBox;
+        const st = fid ? appState.audioState[fid] : null;
+        if (st && st.playsRemaining <= 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          audio.pause();
+          audio.currentTime = 0;
+          lockExhaustedAudio(audio, st);
+        }
+      }
+    },
+    true,
+  );
+
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === ' ' || e.code === 'Space' || e.key === 'Enter') {
+        const target = e.target;
+        const audioCard = target?.closest?.('[data-audio-box]');
+        if (audioCard) {
+          const fid = audioCard.dataset?.audioBox;
+          const st = fid ? appState.audioState[fid] : null;
+          if (st && st.playsRemaining <= 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            const aud = audioCard.querySelector('audio');
+            if (aud) {
+              aud.pause();
+              aud.currentTime = 0;
+              lockExhaustedAudio(aud, st);
+            }
+          }
+        }
+      }
+    },
+    true,
+  );
+
+  document.addEventListener(
+    'ended',
+    (e) => {
+      const audio = e.target;
+      if (audio && (audio.matches?.('audio, .sr-audio-el') || audio.tagName === 'AUDIO')) {
+        const card = audio.closest?.('[data-audio-box]');
+        const fid = card?.dataset?.audioBox;
+        const st = fid ? appState.audioState[fid] : null;
+        if (st && st.playsRemaining <= 0) {
+          audio.pause();
+          audio.currentTime = 0;
+          lockExhaustedAudio(audio, st);
+          renderApp();
+        }
+      }
+    },
+    true,
+  );
+
+  window.addEventListener('offline', () => {
+    if (appState.screen === 'exam') {
+      updateSaveBadge('error', 'Mất mạng · đang lưu tạm trên máy');
+    }
+  });
+
+  window.addEventListener('online', () => {
+    if (appState.screen === 'exam') {
+      flushAnswers();
+    }
   });
 
   window.addEventListener('load', () => {

@@ -369,10 +369,13 @@ async function previewVariant(node){
  try{
   const result=await api('/api/preview-variant',{exam,variant:{...exportVariantSettings(),offset:Number(code)}});
   if(!pending.isConnected||!$('#dialog').open||current().id!==exam.id||current().revision!==exam.revision)return;
-  view.innerHTML=`<section class="small-card variant-preview"><h3>${esc(result.title)}</h3><p>Đối chiếu đề gốc theo số ghi cạnh mỗi câu.</p><ol tabindex="0" aria-label="Thứ tự câu hỏi và phương án">${result.questions.map(q=>`<li><p>${katexFragment(String(q.stem||''))} <small>· Câu gốc ${q.originalNumber}</small></p>${Array.isArray(q.options)&&q.options.length?`<ol type="A">${q.options.map(o=>`<li>${katexFragment(String(o))}</li>`).join('')}</ol>`:''}</li>`).join('')}</ol></section>`;
+  view.innerHTML=`<section class="small-card variant-preview"><h3>${esc(result.title)}</h3><p>Đối chiếu đề gốc theo số ghi cạnh mỗi câu.</p><ol tabindex="0" aria-label="Thứ tự câu hỏi và phương án">${result.questions.map(q=>`<li>${(q.passageTitle||q.passageText)?`<div class="passage-box" style="margin-bottom:6px;background:#f8fafc;padding:6px 10px;border-left:3px solid var(--primary,#10b981);border-radius:4px;"><b>${esc(q.passageTitle||'')}</b><p style="margin:2px 0 0;">${esc(q.passageText||'')}</p></div>`:''}<p>${katexFragment(String(q.stem||''))} <small>· Câu gốc ${q.originalNumber}</small></p>${Array.isArray(q.options)&&q.options.length?`<ol type="A">${q.options.map(o=>`<li>${katexFragment(String(o))}</li>`).join('')}</ol>`:''}</li>`).join('')}</ol></section>`;
   view.scrollIntoView({block:'nearest'});
  }catch(error){
-  if(pending.isConnected)pending.textContent=error.message;
+  if(pending.isConnected){
+   pending.textContent=error.message;
+   pending.scrollIntoView({block:'nearest'});
+  }
  }
 }
 async function exportExtended(node){

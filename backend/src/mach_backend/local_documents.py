@@ -512,9 +512,39 @@ def exam_html(
     mcq_two_cols = layout.get("mcqColumns") == 2
     if presenting and has_reference:
         body += "</div>"
+    passages_catalog: dict[str, dict[str, Any]] = {}
+    if isinstance(exam.get("passages"), list):
+        for p in exam["passages"]:
+            if isinstance(p, dict) and p.get("id"):
+                passages_catalog[str(p["id"])] = p
+
+    rendered_passages: set[str] = set()
     for i, q in enumerate(exam["questions"]):
         if q.get("figure") and not figures:
             raise AIError("unsupported_export", "Chưa có bản dựng hình để xuất; không bỏ hình.")
+        p_title = q.get("passageTitle")
+        p_text = q.get("passageText")
+        passage_id = q.get("passageId")
+        if (
+            passage_id
+            and str(passage_id) in passages_catalog
+            and str(passage_id) not in rendered_passages
+        ):
+            p_cat = passages_catalog[str(passage_id)]
+            if not p_title:
+                p_title = p_cat.get("title")
+            if not p_text:
+                p_text = p_cat.get("text")
+
+        if (p_title or p_text) and (passage_id is None or str(passage_id) not in rendered_passages):
+            if passage_id:
+                rendered_passages.add(str(passage_id))
+            body += '<div class="passage">'
+            if p_title:
+                body += f"<b>{inline_html(p_title)}</b>"
+            if p_text:
+                body += f"<p>{inline_html(p_text)}</p>"
+            body += "</div>"
         score = " (" + plain(points(q["points"])) + ")" if "points" in q else ""
         page_class = ' class="page-break"' if q.get("pageBreak") else ""
         slide_attr = " data-exam-question" if presenting else ""
@@ -876,6 +906,27 @@ def _block_identity(question):
     if passage_id is None and group_id is None:
         return None
     return (passage_id, group_id)
+
+
+def _update_range_in_text(text: str, start: int, end: int) -> str:
+    if not isinstance(text, str) or not text.strip():
+        return text
+
+    def _repl(m: re.Match[str]) -> str:
+        prefix = m.group(1) or ""
+        sep = m.group(2)
+        has_second_cau = bool(m.group(3))
+        is_upper = m.group(0).lstrip().startswith("C") or (
+            bool(prefix.strip()) and prefix.strip()[0].isupper()
+        )
+        cau_word = "Câu" if is_upper and not prefix.strip() else "câu"
+        if start == end:
+            return f"{prefix}{cau_word} {start}"
+        second_cau = (f"{cau_word} " if is_upper else "câu ") if has_second_cau else ""
+        return f"{prefix}{cau_word} {start}{sep}{second_cau}{end}"
+
+    pattern = re.compile(r"(?i)\b(từ\s+)?câu\s+\d+(\s*(?:đến|–|-)\s*)(câu\s+)?\d+\b")
+    return pattern.sub(_repl, text)
 
 
 def _block_display_label(block_key, title=None):
@@ -1413,12 +1464,53 @@ def exam_variant(exam, variant):
                         )
                         reordered[dest_idx] = {**candidate, "pageBreak": page_break}
 
+    block_map: dict[tuple[Any, Any], list[int]] = {}
+    for idx, q in enumerate(reordered):
+        key = _block_identity(q)
+        if key is not None:
+            block_map.setdefault(key, []).append(idx)
+
+    for _key, indices in block_map.items():
+        if not indices:
+            continue
+        first_idx = indices[0]
+        start_num = first_idx + 1
+        end_num = indices[-1] + 1
+        q_first = reordered[first_idx]
+        updates = {}
+        for header_field in ("passageTitle", "passageText", "passageLead", "lead", "groupLead"):
+            val = q_first.get(header_field)
+            if isinstance(val, str) and val.strip():
+                new_val = _update_range_in_text(val, start_num, end_num)
+                if new_val != val:
+                    updates[header_field] = new_val
+        if updates:
+            reordered[first_idx] = {**q_first, **updates}
+
     code = str(101 + offset)
-    return {
+    res_exam = {
         **exam,
         "title": f"{exam.get('title') or 'Đề thi'} · Mã đề {code}",
         "questions": reordered,
     }
+    if isinstance(exam.get("passages"), list):
+        updated_passages = []
+        for p in exam["passages"]:
+            p_copy = dict(p)
+            pid = p_copy.get("id")
+            if pid is not None:
+                p_indices = [
+                    idx for idx, q in enumerate(reordered) if str(q.get("passageId")) == str(pid)
+                ]
+                if p_indices:
+                    p_start = p_indices[0] + 1
+                    p_end = p_indices[-1] + 1
+                    for k in ("title", "text", "lead", "description"):
+                        if isinstance(p_copy.get(k), str):
+                            p_copy[k] = _update_range_in_text(p_copy[k], p_start, p_end)
+            updated_passages.append(p_copy)
+        res_exam["passages"] = updated_passages
+    return res_exam
 
 
 def preview_exam_variant(payload):
@@ -1426,16 +1518,8 @@ def preview_exam_variant(payload):
     if not isinstance(exam, dict) or not isinstance(exam.get("questions"), list):
         raise AIError("invalid_exam", "Đề cần danh sách câu để xem trước.")
     variant = exam_variant(exam, payload.get("variant"))
-    raw_variant = payload.get("variant")
-    selected_ids = set(
-        raw_variant["questionIds"]
-        if isinstance(raw_variant, dict) and isinstance(raw_variant.get("questionIds"), list)
-        else []
-    )
     original_by_id = {
-        q["id"]: (i + 1, q)
-        for i, q in enumerate(exam["questions"])
-        if isinstance(q.get("id"), str) and q["id"] in selected_ids
+        q["id"]: (i + 1, q) for i, q in enumerate(exam["questions"]) if isinstance(q.get("id"), str)
     }
     questions_out = []
     question_mappings = []
@@ -1446,13 +1530,15 @@ def preview_exam_variant(payload):
         else:
             orig_num, orig_q = i + 1, exam["questions"][i]
         mapping = describe_variant_option_mapping(orig_q, q)
-        questions_out.append(
-            {
-                "originalNumber": orig_num,
-                "stem": q.get("stem", ""),
-                "options": q.get("options", []),
-            }
-        )
+        q_item = {
+            "originalNumber": orig_num,
+            "stem": q.get("stem", ""),
+            "options": q.get("options", []),
+        }
+        for field in ("passageTitle", "passageText", "passageId", "groupId"):
+            if field in q:
+                q_item[field] = q[field]
+        questions_out.append(q_item)
         question_mappings.append(
             {
                 "questionNumber": i + 1,
@@ -1530,11 +1616,10 @@ def export_variant_pack(payload, directory, origin):
         *[exam_variant(exam, {**settings, "offset": offset}) for offset in range(1, variant_count)],
     ]
     headings = "".join(f"<th scope='col'>Mã {101 + i}</th>" for i in range(len(variants)))
-    selected_ids = set(ids)
     original_by_id = {
         question["id"]: (i + 1, question)
         for i, question in enumerate(exam["questions"])
-        if isinstance(question.get("id"), str) and question["id"] in selected_ids
+        if isinstance(question.get("id"), str)
     }
     block_titles = {}
     for q in exam["questions"]:

@@ -17,7 +17,10 @@ from mach_backend.ai_contract import (
     SourceFragment,
     validate_locator,
 )
-from mach_backend.curriculum_sources import read_usable_curriculum_source
+from mach_backend.curriculum_sources import (
+    CITABLE_LICENSE_STATUSES,
+    read_usable_curriculum_source,
+)
 from mach_backend.hybrid_retrieval import (
     extract_vi_content_tokens,
     normalize_vi_search,
@@ -257,12 +260,43 @@ def workspace_page_sources(
         license_status = str(
             doc.get("licenseStatus") or doc.get("license_status") or "allowed"
         ).strip()
-        if license_status in {"restricted", "pending_review"}:
+        if (
+            license_status in {"restricted", "pending_review"}
+            or license_status not in CITABLE_LICENSE_STATUSES
+        ):
             raise AIError(
                 "source_license_restricted",
                 "Nguồn chưa có quyền dùng cho AI hoặc đang bị hạn chế.",
                 http_status=403,
             )
+        candidate_source_ids = [
+            doc.get("id"),
+            doc.get("curriculumSourceId"),
+            doc.get("originSourceId"),
+            doc.get("curriculumId"),
+        ]
+        if db is not None:
+            for cand_id in candidate_source_ids:
+                if not cand_id:
+                    continue
+                try:
+                    row = db.execute(
+                        "SELECT license_status FROM curriculum_sources WHERE id = ?",
+                        (str(cand_id),),
+                    ).fetchone()
+                    if row is not None:
+                        ref_status = str(
+                            row[0] if not isinstance(row, dict) else row["license_status"]
+                        ).strip()
+                        if ref_status not in CITABLE_LICENSE_STATUSES:
+                            raise AIError(
+                                "source_license_restricted",
+                                "Nguồn chưa có quyền dùng cho AI hoặc đang bị hạn chế.",
+                                http_status=403,
+                            )
+                except Exception as exc:
+                    if isinstance(exc, AIError):
+                        raise
         collection = catalog.get(doc_id)
         saved_pages = doc.get("pages") or []
         doc_version = doc.get("version", 1)
