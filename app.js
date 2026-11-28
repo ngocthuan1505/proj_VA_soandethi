@@ -528,7 +528,7 @@ async function handleAction(a,n){
  case 'create-sample':createExam(n.dataset.subject,true);break;
  case 'create-blank':{const s=$('#new-subject').value.trim();if(!s)return toast('Nhập môn học.');createExam(s,false);break;}
  case 'library':showLibrary();break;
- case 'open-exam':state.current=n.dataset.id;selected=null;selection=null;viewMode='workspace';activeRailNav='design-workspace';syncHomeUrl('workspace');dialog.close();persist();render();break;
+ case 'open-exam':state.current=n.dataset.id;selected=null;selection=null;viewMode='workspace';activeRailNav='design-workspace';syncHomeUrl('workspace');dialog.close();persist().catch(()=>{});render();break;
  case 'delete-exam':{const target=state.exams.find(x=>x.id===n.dataset.id);modal('Chuyển đề vào thùng rác?',`<p>${esc(target.title)}</p><p class="hint">Đề sẽ nằm trong Thùng rác để khôi phục nếu cần. Thầy cô cũng có thể tải bản sao JSON trước.</p>${foot(button('backup','Tải bản sao')+button('confirm-delete-exam','Chuyển vào thùng rác','danger',`data-id="${target.id}"`))}`);break;}
  case 'confirm-delete-exam':{const victim=state.exams.find(x=>x.id===n.dataset.id);if(victim){state.trash=Array.isArray(state.trash)?state.trash:[];state.trash.unshift({...clone(victim),deletedAt:Date.now()});}state.exams=state.exams.filter(x=>x.id!==n.dataset.id);if(!state.exams.length)state.exams.push(blank('Lịch sử',state.prefs,state.teacherProfile));if(!state.exams.some(x=>x.id===state.current))state.current=state.exams[0].id;persist();render();await handleAction('library',n);break;}
  case 'tab':tab=['outline','templates'].includes(n.dataset.tab)?n.dataset.tab:'outline';render();break;

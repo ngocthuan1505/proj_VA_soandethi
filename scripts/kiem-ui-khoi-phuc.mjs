@@ -88,39 +88,36 @@ async function verifyBatchAudio(template){
   const confirm=tab.locator('[data-action="confirm-backup"]');
   await confirm.waitFor();
   // Vỏ ứng dụng vẫn tải được, mọi lần đọc dữ liệu phải dùng IndexedDB.
-  let blockedReads=0;
+  const blockedReads=new Set();
   await tab.route(url=>url.pathname==='/api/kv',async route=>{
    const request=route.request();
-   if(request.method()==='GET')blockedReads++;
+   if(request.method()==='GET')blockedReads.add(new URL(request.url()).searchParams.get('key'));
    await route.abort('internetdisconnected');
   });
   const applied=tab.waitForResponse(r=>r.url()===base+'/api/workspace/restore'&&r.request().method()==='POST');
   await Promise.all([tab.waitForEvent('load'),confirm.click()]);
   assert.equal((await applied).status(),200);
   const merged=(await state(tab)).value;
-  const imported=merged.exams.find(exam=>exam.id===incoming.id);
-  const importedId=imported?.audio?.fileId;
+  const importedId=merged.exams.find(exam=>exam.id===incoming.id)?.audio?.fileId;
   assert(importedId&&importedId!==fileId);
   await checkAudio(fileId,originalWav);
-  const cachedAudio=await tab.evaluate(async examId=>{
+  assert.equal(await tab.locator('.header-title').inputValue(),original.title);
+  await openLibrary();
+  await tab.locator(`[data-action="open-exam"][data-id="${incoming.id}"]`).click();
+  await checkAudio(importedId,incomingWav);
+  assert.equal(await tab.locator('.header-title').inputValue(),incoming.title);
+  await tab.locator('[data-save-warning]').waitFor({state:'visible'});
+  const imported=await tab.evaluate(async examId=>{
    const {get}=await import('/storage.js');
    const {exams}=await get('state');
-   const exam=exams.find(item=>item.id===examId);
-   const data=await get('file:'+exam.audio.fileId);
-   if(!data)return null;
-   const audio=new Audio(data);
-   await new Promise((resolve,reject)=>{
-    audio.addEventListener('loadedmetadata',resolve,{once:true});
-    audio.addEventListener('error',()=>reject(Error('Chrome chưa đọc được audio khôi phục.')),{once:true});
-   });
-   return {data,duration:audio.duration};
+   return exams.find(item=>item.id===examId);
   },incoming.id);
-  assert.equal(cachedAudio?.data,incomingWav);
-  assert(cachedAudio.duration>0);
   assert.equal(imported.questions[0].audio.fileId,importedId);
   assert.equal(imported.questions[0].stem,incoming.questions[0].stem);
   assert.deepEqual(imported.questions[0].richDoc,batch.exams[0].questions[0].richDoc);
-  assert(blockedReads>=4,'Reload và cả hai lượt đọc audio phải thiếu kết nối KV.');
+  for(const key of ['state','file:'+fileId,'file:'+importedId]){
+   assert(blockedReads.has(key),'Phải đọc từ IndexedDB khi API KV bị chặn cho '+key);
+  }
  }finally{await tab.close();}
 }
 

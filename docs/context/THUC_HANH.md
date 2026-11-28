@@ -12,6 +12,8 @@ Trong [Trang chủ](../../home.js), nút **Mở chiến dịch** của nhắc h�
 
 ### 28/11/2026 · t5, audio trong bản JSON bộ đề
 
+- Kiểm lại từ `15e2c41`. [IT-11](../../scripts/kiem-ui-khoi-phuc.mjs) chặn API KV từ lúc ghép JSON qua lần tải lại. Chrome mở đề có sẵn rồi chuyển sang đề nhập bằng nút **Mở** trong Kho đề. Hai trình phát nhận đúng từng WAV dù trùng `fileId` đầu vào. Ca kiểm đối chiếu ba khóa đọc ngoại tuyến (trạng thái và hai WAV), UUID, công thức và `richDoc`.
+- Khi chuyển đề lúc mất kết nối, `open-exam` trong [app.js](../../app.js) từng để lỗi từ `persist()` thoát ra ngoài. Đã xử lý tại thao tác mở đề của Kho đề và kiểm cảnh báo chờ đồng bộ vẫn hiện. IT-11 đạt 9/9, không có `pageerror`, tại `outputs/qa-t5-audio/it11-cycle2-ui-3/IT-11/result.json`. Bên thuyết trình có thể dùng ca này để minh họa đọc audio từ IndexedDB. Vỏ ứng dụng vẫn tải từ FastAPI cục bộ.
 - Nút **Tải JSON bộ đã chọn** trong hộp thoại Kho đề đi qua `mvp.js` và `sharing.js`. Bản tải gồm cả lựa chọn bị bộ lọc ẩn và tệp tham chiếu từ đề, câu hỏi, lịch sử hoàn tác. Thiếu tệp thì báo lỗi trước khi tải.
 - Khi ghép lô, FastAPI trả trạng thái đã ghép, revision, ánh xạ ID và MIME đã chuẩn hóa. `storage.js` lưu trạng thái cùng tệp vào một giao dịch IndexedDB. Hai đề có cùng ID tệp đầu vào nhưng khác âm thanh giữ đúng nội dung riêng.
 - Chạy IT-11 trên Chrome với FastAPI fixture, bản `workbench.js` từ trước t5. Cả 9 ca đạt, gồm cả chặn toàn bộ API KV qua lần reload, đối chiếu hai WAV, UUID, công thức và richDoc. Bộ JS đạt 259/259 và `check:team` đạt. T4 đã có cả mã phòng thi và test tại `cf23844`. T10 phụ trách đóng ZIP từ cây commit đã kiểm.
