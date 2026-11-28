@@ -1,4 +1,4 @@
-"""Chạy 11 ca trình duyệt trên một commit FastAPI với kho thử riêng từng ca."""
+"""Chạy 11 ca trình duyệt FastAPI với kho thử riêng từng ca."""
 
 import argparse
 import json
@@ -149,6 +149,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--case", action="append", choices=[number for number, _, _ in CASES])
+    parser.add_argument(
+        "--working-tree", action="store_true", help="Kiểm định cả thay đổi chưa commit"
+    )
     parser.add_argument("--serve", choices=("team", "restore", "source", "repair", "unsupported"))
     args = parser.parse_args()
     output = args.output.resolve()
@@ -159,8 +162,9 @@ def main():
     git = ["git", "-c", f"safe.directory={ROOT.as_posix()}"]
     commit = subprocess.check_output([*git, "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = subprocess.check_output([*git, "status", "--porcelain"], cwd=ROOT, text=True)
-    if dirty:
+    if dirty and not args.working_tree:
         parser.error("Dùng worktree sạch để kết quả truy vết đúng commit.")
+    source = {"base_commit": commit, "working_tree": True} if dirty else {"commit": commit}
     cases = []
     for number, script, mode in CASES:
         if args.case and number not in args.case:
@@ -181,9 +185,7 @@ def main():
         cases.append({"case": target.name, "passed": passed, "detail": detail})
         print(f"{target.name} {'đạt' if passed else 'lỗi'} · {target}", flush=True)
         (output / "result.json").write_text(
-            json.dumps(
-                {"commit": commit, "fixture": True, "cases": cases}, ensure_ascii=False, indent=2
-            ),
+            json.dumps({**source, "fixture": True, "cases": cases}, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
     sys.exit(0 if all(row["passed"] for row in cases) else 1)

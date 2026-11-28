@@ -233,7 +233,14 @@ def create_team_app(directory: Path, *, agent_call=None, clock=None):
         except (HTTPException, AIError, KeyError, OSError):
             return None
 
-    install_shares(app, accounts.connect, share_owner, share_exam, clock=accounts.clock)
+    install_shares(
+        app,
+        accounts.connect,
+        share_owner,
+        share_exam,
+        read_file=lambda request, fid: _team_read_file_bytes(share_owner(request), fid),
+        clock=accounts.clock,
+    )
     install_exam_rooms(
         app,
         accounts.connect,

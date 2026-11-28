@@ -162,10 +162,11 @@ def file_references(value):
 def check_file(key, value, referenced_types):
     if not isinstance(key, str) or not FILE_ID.fullmatch(key) or not isinstance(value, str):
         invalid("Tệp đính kèm trong bản sao không hợp lệ.")
-    match = re.fullmatch(r"data:([^;,]*);base64,([A-Za-z0-9+/=]+)", value)
+    match = re.fullmatch(r"data:([^;,]*)(?:;[^,]*)?;base64,([A-Za-z0-9+/=\s]+)", value)
     if match is None or len(value) > MAX_FILE * 4 // 3 + 200:
         invalid("Tệp đính kèm hỏng hoặc vượt 15 MB.")
     mime, encoded = match.groups()
+    encoded = re.sub(r"\s+", "", encoded)
     generic = mime in {"", "application/octet-stream"}
     if generic:
         if len(referenced_types) != 1:
@@ -325,7 +326,9 @@ def _validate_exam_entry(exam: Any, ids: set[str], *, require_full_fields: bool)
         )
         if not options_ok or type(q.get("level")) is not int or q["level"] not in range(4):
             invalid("Loại câu hoặc mức độ trong bản sao không hợp lệ.")
-        answer_unknown = q.get("answerKnown") is False
+        answer_unknown = q.get("answerKnown") is False or (
+            answer is None and q.get("answerKnown") is not True
+        )
         mcq_answer_ok = kind == "mcq" and (
             (answer_unknown and answer is None)
             or (type(answer) is int and 0 <= answer < len(options))
@@ -351,11 +354,16 @@ def _validate_exam_entry(exam: Any, ids: set[str], *, require_full_fields: bool)
             and not (kind == "essay" and answer in (None, ""))
         ):
             invalid("Đáp án trong bản sao không đúng dạng câu.")
-        if "answerText" in q and not isinstance(q["answerText"], str):
+        if (
+            "answerText" in q
+            and q["answerText"] is not None
+            and not isinstance(q["answerText"], str)
+        ):
             invalid("Đáp án trả lời ngắn cần là văn bản.")
         if (
             kind == "truefalse"
             and "truthValues" in q
+            and not (answer_unknown and q["truthValues"] in (None, []))
             and (
                 not isinstance(q["truthValues"], list)
                 or len(q["truthValues"]) != 4

@@ -122,3 +122,96 @@ def test_kntt_api_payload_includes_standard_metadata(tmp_path: Path):
         assert col["series"] == "Kết nối tri thức với cuộc sống"
         assert col["edition"] == "GDPT 2018"
         assert col["contentType"] == "summary_outline"
+        assert isinstance(col["bookTitle"], str) and col["bookTitle"].strip()
+        assert isinstance(col["officialTitle"], str) and col["officialTitle"].strip()
+        assert isinstance(col["sourceUrl"], str) and col["sourceUrl"].startswith("https://")
+
+
+def test_kntt_toan_5_bai_6_phan_so_and_bai_64_bieu_do_quat_tron():
+    for query in ("Bài 6", "cộng trừ hai phân số", "phân số khác mẫu số"):
+        hits = search_lesson_catalog(query, subject="Toán", grade=5, book=KNTT_SERIES)
+        titles = [lesson["title"] for col in hits for lesson in col["lessons"]]
+        assert "Bài 6: Cộng, trừ hai phân số khác mẫu số" in titles
+
+    chart_hits = search_lesson_catalog(
+        "biểu đồ hình quạt tròn", subject="Toán", grade=5, book=KNTT_SERIES
+    )
+    chart_titles = [lesson["title"] for col in chart_hits for lesson in col["lessons"]]
+    assert "Bài 64: Biểu đồ hình quạt tròn" in chart_titles
+
+
+def test_kntt_ngu_van_12_bai_4_5_9_chuyen_de_3_and_aligned_writing_6_8():
+    hits = search_lesson_catalog(subject="Ngữ văn", grade=12, book=KNTT_SERIES)
+    by_vol = {col["volume"]: col for col in hits}
+    assert set(by_vol) == {"Tập một", "Tập hai", "Chuyên đề học tập"}
+
+    t1_joined = " | ".join(
+        f"{lesson['chapter']} {lesson['title']}" for lesson in by_vol["Tập một"]["lessons"]
+    )
+    assert "Bài 4: Yếu tố kì ảo trong truyện kể" in t1_joined
+    assert "Bài 5: Tiếng cười của hài kịch" in t1_joined
+
+    t2_joined = " | ".join(
+        f"{lesson['chapter']} {lesson['title']}" for lesson in by_vol["Tập hai"]["lessons"]
+    )
+    assert "Bài 9: Văn học và cuộc đời" in t2_joined
+
+    cd_joined = " | ".join(
+        f"{lesson['chapter']} {lesson['title']}"
+        for lesson in by_vol["Chuyên đề học tập"]["lessons"]
+    )
+    assert "Chuyên đề 3:" in cd_joined
+    assert "trường phái văn học" in cd_joined.lower()
+
+    # Khớp đúng kỹ năng viết từng bài 6-8 theo mục lục NXB
+    bai6_hits = search_lesson_catalog(
+        "báo cáo dự án", subject="Ngữ văn", grade=12, book=KNTT_SERIES
+    )
+    assert any("Bài 6:" in lesson["chapter"] for col in bai6_hits for lesson in col["lessons"])
+    bai7_hits = search_lesson_catalog(
+        "ứng xử của tuổi trẻ", subject="Ngữ văn", grade=12, book=KNTT_SERIES
+    )
+    assert any("Bài 7:" in lesson["chapter"] for col in bai7_hits for lesson in col["lessons"])
+    bai8_hits = search_lesson_catalog("viết thư", subject="Ngữ văn", grade=12, book=KNTT_SERIES)
+    assert any("Bài 8:" in lesson["chapter"] for col in bai8_hits for lesson in col["lessons"])
+
+
+def test_kntt_toan_10_t2_splits_lessons_15_to_27_and_tieng_anh_8_12_units_khtn_8():
+    t2_hits = search_lesson_catalog(subject="Toán", grade=10, book=KNTT_SERIES, volume="Tập hai")
+    assert len(t2_hits) == 1
+    t2_lessons = t2_hits[0]["lessons"]
+    assert len(t2_lessons) == 13
+    for num in range(15, 28):
+        assert any(lesson["title"].startswith(f"Bài {num}:") for lesson in t2_lessons), (
+            f"Thiếu Bài {num}"
+        )
+
+    newton_hits = search_lesson_catalog(
+        "nhị thức newton", subject="Toán", grade=10, book=KNTT_SERIES, volume="Tập hai"
+    )
+    assert [lesson["title"] for col in newton_hits for lesson in col["lessons"]] == [
+        "Bài 25: Nhị thức Newton"
+    ]
+
+    ta8_hits = search_lesson_catalog(subject="Tiếng Anh", grade=8, book=KNTT_SERIES)
+    assert len(ta8_hits) == 1
+    ta8 = ta8_hits[0]
+    assert ta8["volume"] == "Cả năm"
+    assert ta8["totalPages"] == 128
+    assert "Global Success" in ta8["bookTitle"]
+    assert "heid.vn" in ta8["sourceUrl"]
+    assert len(ta8["lessons"]) == 12
+    for u in range(1, 13):
+        assert any(lesson["title"].startswith(f"Unit {u}:") for lesson in ta8["lessons"]), (
+            f"Thiếu Unit {u}"
+        )
+
+    for kw, expected in (
+        ("sinh quyển", "Bài 45: Sinh quyển"),
+        ("bảo vệ môi trường", "Bài 47: Bảo vệ môi trường"),
+    ):
+        khtn_hits = search_lesson_catalog(
+            kw, subject="Khoa học tự nhiên", grade=8, book=KNTT_SERIES
+        )
+        titles = [lesson["title"] for col in khtn_hits for lesson in col["lessons"]]
+        assert expected in titles

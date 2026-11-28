@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -647,3 +648,127 @@ def test_uc9_stale_evidence_detects_doc_change_manual_version_and_quote():
     rep_quote = audit_export_preflight(quote_changed_exam)
     warns_quote = [w for w in rep_quote["warnings"] if w["code"] == "stale_quote_evidence"]
     assert len(warns_quote) == 1
+
+
+def test_uc9_removed_or_updated_source_reported_independently_of_approval(tmp_path: Path):
+    import io
+    import zipfile
+    from xml.etree import ElementTree
+
+    from mach_backend.local_workspace import create_app
+
+    base_exam = _make_clean_exam()
+    base_exam["docs"][0].update(version=1, pages=[{"number": 1, "text": "Hàm số bậc nhất"}])
+    # Hai câu cùng dạng để trộn mã, dùng văn bản thuần để ca UC9 chạy độc lập với bộ dựng công thức.
+    base_exam["questions"] = [
+        {
+            "id": "q-1",
+            "v": 1,
+            "type": "mcq",
+            "points": 5,
+            "stem": "Bậc của hàm số y = 2x + 1 là bao nhiêu?",
+            "options": ["0", "1", "2", "3"],
+            "answer": 1,
+            "explanation": "Số mũ cao nhất của x là 1.",
+            "approval": {"version": 1, "status": "approved"},
+            "source": {"docId": "doc-clean", "page": 1, "version": 1},
+            "evidence": [
+                {
+                    "sourceId": "doc-clean",
+                    "sourceVersion": 1,
+                    "locator": {"kind": "page", "index": 1},
+                    "quote": "Hàm số bậc nhất",
+                }
+            ],
+        },
+        {
+            "id": "q-1b",
+            "v": 1,
+            "type": "mcq",
+            "points": 5,
+            "stem": "Giá trị của 2x + 1 tại x = 2 là bao nhiêu?",
+            "options": ["3", "4", "5", "6"],
+            "answer": 2,
+            "explanation": "Thay x = 2 ta được 5.",
+            "approval": {"version": 1, "status": "approved"},
+        },
+    ]
+
+    clean_rep = audit_export_preflight(base_exam)
+    assert clean_rep["ready"]
+    assert not [w for w in clean_rep["warnings"] if w["code"] == "stale_quote_evidence"]
+
+    # 1. Gỡ tài liệu nguồn khỏi exam.docs, dù câu đã được duyệt lại (approved=True) -> vẫn báo UC9.
+    removed_doc_exam = deepcopy(base_exam)
+    removed_doc_exam["docs"] = []
+    removed_doc_exam["questions"][0]["v"] = 2
+    removed_doc_exam["questions"][0]["approved"] = True
+    removed_doc_exam["questions"][0]["approval"] = {"version": 2, "status": "approved"}
+
+    rep_removed = audit_export_preflight(removed_doc_exam)
+    warns_removed = [w for w in rep_removed["warnings"] if w["code"] == "stale_quote_evidence"]
+    assert len(warns_removed) == 1
+    assert warns_removed[0]["questionId"] == "q-1"
+    assert warns_removed[0]["requiresReverification"] is True
+    assert rep_removed["summary"]["unapprovedCount"] == 0
+
+    # 2. Đổi phiên bản nguồn trong exam.docs (v1 -> v2) trong khi trích dẫn vẫn ở v1 -> vẫn báo UC9.
+    bumped_doc_exam = deepcopy(base_exam)
+    bumped_doc_exam["docs"][0]["version"] = 2
+    bumped_doc_exam["questions"][0]["approved"] = True
+    rep_bumped = audit_export_preflight(bumped_doc_exam)
+    warns_bumped = [w for w in rep_bumped["warnings"] if w["code"] == "stale_quote_evidence"]
+    assert len(warns_bumped) == 1
+    assert "v1" in warns_bumped[0]["message"] and "v2" in warns_bumped[0]["message"]
+
+    legacy_exam = deepcopy(bumped_doc_exam)
+    legacy_exam["questions"][0]["evidence"][0].pop("sourceVersion")
+
+    # 3. Xem trước trộn mã và xuất variant-pack -> báo preflightWarnings độc lập với duyệt.
+    variant_cfg = {"questionIds": ["q-1", "q-1b"], "offset": 1, "shuffleOptions": False}
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        for exam in (removed_doc_exam, bumped_doc_exam, legacy_exam):
+            preview = client.post(
+                "/api/preview-variant", json={"exam": exam, "variant": variant_cfg}
+            )
+            assert preview.status_code == 200, preview.text
+            assert any(
+                w["code"] == "stale_quote_evidence" for w in preview.json()["preflightWarnings"]
+            )
+            export = client.post(
+                "/api/save-export",
+                json={"type": "exam", "format": "html", "exam": exam, "teacher": True},
+            )
+            assert export.status_code == 200, export.text
+            exported = export.json()
+            assert exported["isDraft"] is True
+            assert any(w["code"] == "stale_quote_evidence" for w in exported["preflightWarnings"])
+            teacher_html = client.get(exported["url"]).raise_for_status().text
+            assert "trích dẫn nguồn cần rà lại" in teacher_html
+
+        pack_res = client.post(
+            "/api/save-export",
+            json={
+                "type": "variant-pack",
+                "format": "docx",
+                "exam": removed_doc_exam,
+                "questionIds": ["q-1", "q-1b"],
+                "teacher": True,
+            },
+        )
+        assert pack_res.status_code == 200, pack_res.text
+        pack_body = pack_res.json()
+        assert pack_body["isDraft"] is True
+        assert any(
+            w["code"] == "stale_quote_evidence" for w in pack_body.get("preflightWarnings", [])
+        )
+        zip_bytes = client.get(pack_body["url"]).raise_for_status().content
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            teacher_key = zf.read("GIAO_VIEN/Doi_chieu_dap_an.html").decode("utf-8")
+            with zipfile.ZipFile(io.BytesIO(zf.read("HOC_SINH/Ma_101.docx"))) as student_docx:
+                student_xml = ElementTree.fromstring(student_docx.read("word/document.xml"))
+            student_text = "".join(student_xml.itertext())
+            assert "BẢN NHÁP" in teacher_key
+            assert "trích dẫn nguồn cần rà lại" in teacher_key
+            assert "BẢN NHÁP" not in student_text
+            assert "trích dẫn nguồn cần rà lại" not in student_text

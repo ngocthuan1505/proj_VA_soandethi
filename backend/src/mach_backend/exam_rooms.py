@@ -18,7 +18,7 @@ import sqlite3
 import time
 import unicodedata
 import zipfile
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
 from copy import deepcopy
 from datetime import datetime
@@ -132,6 +132,8 @@ CREATE TABLE IF NOT EXISTS room_attempts (
     submitted_at INTEGER,
     auto_score_p100 INTEGER NOT NULL DEFAULT 0,
     manual_score_p100 INTEGER NOT NULL DEFAULT 0,
+    score_adjustment_p100 INTEGER NOT NULL DEFAULT 0,
+    adjustment_note TEXT NOT NULL DEFAULT '',
     total_score_p100 INTEGER NOT NULL DEFAULT 0,
     grading_status TEXT NOT NULL DEFAULT 'auto_graded'
         CHECK (grading_status IN ('auto_graded', 'needs_manual', 'graded')),
@@ -183,6 +185,8 @@ CREATE TABLE IF NOT EXISTS attempt_audio_plays (
     play_count INTEGER NOT NULL DEFAULT 0,
     max_plays INTEGER NOT NULL DEFAULT 2,
     last_played_at INTEGER NOT NULL,
+    active_lease_id TEXT NOT NULL DEFAULT '',
+    active_lease_at INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (attempt_id, file_id)
 );
 """
@@ -212,6 +216,26 @@ def is_public_room_path(path: str) -> bool:
 
 def _ensure_schema(db: sqlite3.Connection) -> None:
     db.executescript(_SCHEMA_SQL)
+    attempt_cols = {
+        str(row[1]) for row in db.execute("PRAGMA table_info(room_attempts)").fetchall()
+    }
+    if "score_adjustment_p100" not in attempt_cols:
+        db.execute(
+            "ALTER TABLE room_attempts ADD COLUMN score_adjustment_p100 INTEGER NOT NULL DEFAULT 0"
+        )
+    if "adjustment_note" not in attempt_cols:
+        db.execute("ALTER TABLE room_attempts ADD COLUMN adjustment_note TEXT NOT NULL DEFAULT ''")
+    audio_cols = {
+        str(row[1]) for row in db.execute("PRAGMA table_info(attempt_audio_plays)").fetchall()
+    }
+    if "active_lease_id" not in audio_cols:
+        db.execute(
+            "ALTER TABLE attempt_audio_plays ADD COLUMN active_lease_id TEXT NOT NULL DEFAULT ''"
+        )
+    if "active_lease_at" not in audio_cols:
+        db.execute(
+            "ALTER TABLE attempt_audio_plays ADD COLUMN active_lease_at INTEGER NOT NULL DEFAULT 0"
+        )
 
 
 def _begin_immediate(db: sqlite3.Connection) -> None:
@@ -290,6 +314,35 @@ def _to_p100(value: Any) -> int | None:
     if not dec.is_finite() or dec < Decimal("0"):
         return None
     return int((dec * Decimal("100")).to_integral_value())
+
+
+def _to_signed_p100(value: Any) -> int | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    try:
+        clean = (
+            unicodedata.normalize("NFC", str(value))
+            .strip()
+            .replace("\u2212", "-")
+            .replace(",", ".")
+        )
+        dec = Decimal(clean)
+    except (InvalidOperation, ValueError):
+        return None
+    if not dec.is_finite():
+        return None
+    return int((dec * Decimal("100")).to_integral_value())
+
+
+def _apply_score_adjustment(
+    base_total_p100: int, adjustment_p100: int, total_points_p100: int
+) -> int:
+    raw = int(base_total_p100) + int(adjustment_p100)
+    if total_points_p100 > 0:
+        return max(0, min(int(total_points_p100), raw))
+    return max(0, raw)
 
 
 def _question_points_p100(question: dict[str, Any]) -> int:
@@ -648,9 +701,11 @@ def _scrub_student_exam(exam: dict[str, Any]) -> None:
 
 
 def _attach_audio_play_counts(
-    exam: dict[str, Any], play_map: dict[str, tuple[int, int]], attempt_id: str
-) -> dict[str, dict[str, int]]:
-    audio_summary: dict[str, dict[str, int]] = {}
+    exam: dict[str, Any],
+    play_map: Mapping[str, tuple[int, int] | tuple[int, int, str]],
+    attempt_id: str,
+) -> dict[str, dict[str, Any]]:
+    audio_summary: dict[str, dict[str, Any]] = {}
 
     def enrich(aud: Any) -> None:
         if not isinstance(aud, dict):
@@ -659,13 +714,25 @@ def _attach_audio_play_counts(
         if not fid:
             return
         default_max = int(aud.get("maxPlays") or 2)
-        used, max_p = play_map.get(fid, (0, default_max))
+        entry = play_map.get(fid)
+        if entry is None:
+            used, max_p, lease_id = 0, default_max, ""
+        elif len(entry) >= 3:
+            used, max_p, lease_id = int(entry[0]), int(entry[1]), str(entry[2] or "")
+        else:
+            used, max_p, lease_id = int(entry[0]), int(entry[1]), ""
         rem = max(0, max_p - used)
         aud["playsUsed"] = used
         aud["playsRemaining"] = rem
         aud["maxPlays"] = max_p
+        aud["pendingLeaseId"] = lease_id
         aud["url"] = f"/api/rooms/public/attempts/{attempt_id}/audio/{fid}"
-        audio_summary[fid] = {"playsUsed": used, "playsRemaining": rem, "maxPlays": max_p}
+        audio_summary[fid] = {
+            "playsUsed": used,
+            "playsRemaining": rem,
+            "maxPlays": max_p,
+            "pendingLeaseId": lease_id,
+        }
 
     for q in exam.get("questions") or []:
         if isinstance(q, dict):
@@ -1582,6 +1649,36 @@ class SubmitAttemptRequest(BaseModel):
     autoSubmit: bool = False
 
 
+class AdjustAttemptScoreRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    adjustmentPointsP100: int | None = Field(default=None, ge=-10000, le=10000)
+    adjustmentPoints: float | None = Field(default=None, ge=-100, le=100)
+    adjustmentNote: str = Field(default="", max_length=500)
+
+
+class AckAudioPlayRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    leaseId: str = Field(min_length=1, max_length=120)
+
+
+class RegradeQuestionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    questionId: str = Field(min_length=1, max_length=120)
+    answer: int | str | None = None
+    truthValues: list[bool] | None = None
+    answerText: str | None = None
+    points: float | None = Field(default=None, ge=0, le=100)
+
+
+class RegradeRoomRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    questions: list[RegradeQuestionUpdate] = Field(min_length=1, max_length=300)
+
+
 _ROOM_SELECT_COLS = (
     "id, owner_id, exam_id, exam_revision, room_code, pin_hash, pin_salt, "
     "mode, title, class_label, status, allow_lan, duration_minutes, "
@@ -1939,7 +2036,9 @@ def _attempt_summary_dict(row: tuple[Any, ...], total_points_p100: int) -> dict[
         tab_switch_count,
         fullscreen_exit_count,
         last_heartbeat_at,
-    ) = row
+    ) = row[:19]
+    score_adjustment_p100 = int(row[19]) if len(row) > 19 and row[19] is not None else 0
+    adjustment_note = str(row[20] or "") if len(row) > 20 else ""
     return {
         "id": attempt_id,
         "roomId": room_id,
@@ -1955,9 +2054,12 @@ def _attempt_summary_dict(row: tuple[Any, ...], total_points_p100: int) -> dict[
         "submittedAt": submitted_at,
         "autoScoreP100": auto_score_p100,
         "manualScoreP100": manual_score_p100,
+        "scoreAdjustmentP100": score_adjustment_p100,
+        "adjustmentNote": adjustment_note,
         "totalScoreP100": total_score_p100,
         "totalPointsP100": total_points_p100,
         "gradingStatus": grading_status,
+        "isProvisionalScore": grading_status == "needs_manual",
         "tabSwitchCount": tab_switch_count,
         "fullscreenExitCount": fullscreen_exit_count,
         "lastHeartbeatAt": last_heartbeat_at,
@@ -1968,7 +2070,8 @@ _ATTEMPT_PUBLIC_COLS = (
     "id, room_id, token_hash, student_name, student_code, student_class, "
     "attempt_no, variant_offset, variant_code, delivery_map_json, status, "
     "started_at, expires_at, submitted_at, auto_score_p100, manual_score_p100, "
-    "total_score_p100, grading_status, tab_switch_count, fullscreen_exit_count, last_heartbeat_at"
+    "total_score_p100, grading_status, tab_switch_count, fullscreen_exit_count, "
+    "last_heartbeat_at, score_adjustment_p100, adjustment_note"
 )
 
 
@@ -2038,6 +2141,10 @@ def install_exam_rooms(
             auto_s, manual_s, total_s, g_status = _grade_attempt_tx(
                 db, attempt_row[0], snap, dmap, expires_at
             )
+            adj_p100 = (
+                int(attempt_row[21]) if len(attempt_row) > 21 and attempt_row[21] is not None else 0
+            )
+            total_s = _apply_score_adjustment(total_s, adj_p100, int(room_row[24]))
             db.execute(
                 """
                 UPDATE room_attempts
@@ -2103,7 +2210,8 @@ def install_exam_rooms(
             SELECT id, student_name, student_code, student_class, status,
                    auto_score_p100, manual_score_p100, total_score_p100,
                    grading_status, tab_switch_count, fullscreen_exit_count,
-                   started_at, submitted_at, variant_code, attempt_no
+                   started_at, submitted_at, variant_code, attempt_no,
+                   score_adjustment_p100, adjustment_note
             FROM room_attempts
             WHERE room_id = ?
             ORDER BY started_at ASC
@@ -2112,11 +2220,14 @@ def install_exam_rooms(
         ).fetchall()
 
         finalized = [a for a in attempts if a[4] != "in_progress"]
-        scores = [int(a[7]) for a in finalized]
+        # Chỉ đưa bài đã chấm đủ vào thống kê chính thức
+        # (bài chờ chấm tự luận không làm lệch phổ điểm).
+        official = [a for a in finalized if a[8] in ("auto_graded", "graded")]
+        scores = [int(a[7]) for a in official]
         in_progress_count = sum(1 for a in attempts if a[4] == "in_progress")
         locked_count = sum(1 for a in attempts if a[4] == "locked")
         needs_manual_count = sum(1 for a in finalized if a[8] == "needs_manual")
-        graded_count = sum(1 for a in finalized if a[8] in ("auto_graded", "graded"))
+        graded_count = len(official)
 
         avg_p100 = round(sum(scores) / len(scores)) if scores else 0
         min_p100 = min(scores) if scores else 0
@@ -2210,6 +2321,7 @@ def install_exam_rooms(
             "inProgressCount": in_progress_count,
             "lockedCount": locked_count,
             "gradedCount": graded_count,
+            "provisionalCount": needs_manual_count,
             "needsManualCount": needs_manual_count,
             "totalPointsP100": total_points_p100,
             "avgScoreP100": avg_p100,
@@ -2412,8 +2524,41 @@ def install_exam_rooms(
                     a_row[18],
                     a_row[19],
                     a_row[20],
+                    a_row[21] if len(a_row) > 21 else 0,
+                    a_row[22] if len(a_row) > 22 else "",
                 )
                 attempts_out.append(_attempt_summary_dict(summary_tuple, int(room_row[24])))
+
+        snap = json.loads(room_row[23])
+        answer_keys: list[dict[str, Any]] = []
+        for q_idx, q in enumerate(snap.get("questions") or [], 1):
+            if not isinstance(q, dict):
+                continue
+            qtype = _normalize_qtype(q.get("type"))
+            key_item: dict[str, Any] = {
+                "order": q_idx,
+                "questionId": str(q.get("id") or f"q-{q_idx}"),
+                "type": qtype,
+                "stem": _safe_math_truncate(str(q.get("stem") or ""), 200),
+                "points": round(int(q.get("_maxPointsP100", _question_points_p100(q))) / 100.0, 2),
+            }
+            if qtype == "mcq":
+                key_item["options"] = list(q.get("options") or [])
+                key_item["answer"] = _parse_mcq_answer(q)
+            elif qtype == "truefalse":
+                key_item["options"] = list(q.get("options") or [])
+                tf = _parse_truefalse_key(q)
+                key_item["truthValues"] = (
+                    list(tf) if tf is not None else [False, False, False, False]
+                )
+            elif qtype == "short":
+                key_val = q.get("answerText")
+                if key_val is None or (isinstance(key_val, str) and not key_val.strip()):
+                    key_val = q.get("answer")
+                if key_val is None:
+                    key_val = saved_answer(q)
+                key_item["answerText"] = "" if key_val is None else str(key_val)
+            answer_keys.append(key_item)
 
         room_dict = _room_to_dict(
             room_row,
@@ -2421,7 +2566,12 @@ def install_exam_rooms(
             attempt_count=len(attempts_out),
             needs_manual_count=needs_manual,
         )
-        return {"room": room_dict, "attempts": attempts_out, "serverNow": now_ms}
+        return {
+            "room": room_dict,
+            "attempts": attempts_out,
+            "answerKeys": answer_keys,
+            "serverNow": now_ms,
+        }
 
     @app.patch("/api/rooms/{room_id}")
     def update_room(room_id: str, body: UpdateRoomRequest, request: Request) -> dict[str, Any]:
@@ -2524,11 +2674,15 @@ def install_exam_rooms(
             has_choice_groups = bool(_extract_choice_groups(snap))
             now_ms = _now_ms(clock)
             raw_attempts = db.execute(
-                f"SELECT {_ATTEMPT_PUBLIC_COLS} FROM room_attempts WHERE room_id = ?",
+                f"SELECT {_ATTEMPT_PUBLIC_COLS} FROM room_attempts WHERE room_id = ? "
+                "ORDER BY submitted_at ASC, started_at ASC",
                 (room_id,),
             ).fetchall()
+            finalized_attempts: list[tuple[Any, ...]] = []
             for raw_a in raw_attempts:
-                _expire_attempt_if_needed(db, raw_a, room_row, now_ms)
+                checked_a = _expire_attempt_if_needed(db, raw_a, room_row, now_ms)
+                if checked_a[10] != "in_progress":
+                    finalized_attempts.append(checked_a)
 
             rows = db.execute(
                 """
@@ -2619,11 +2773,33 @@ def install_exam_rooms(
                     "gradedAt": r[13],
                 }
             )
+        total_pts_p100 = int(room_row[24])
+        attempt_summaries = [
+            {
+                "attemptId": a[0],
+                "studentName": a[3],
+                "studentCode": a[4],
+                "studentClass": a[5],
+                "attemptNo": int(a[6]),
+                "status": a[10],
+                "gradingStatus": a[17],
+                "isProvisionalScore": a[17] == "needs_manual",
+                "autoScoreP100": int(a[14]),
+                "manualScoreP100": int(a[15]),
+                "scoreAdjustmentP100": int(a[21]) if len(a) > 21 and a[21] is not None else 0,
+                "adjustmentNote": str(a[22] or "") if len(a) > 22 else "",
+                "totalScoreP100": int(a[16]),
+                "totalPointsP100": total_pts_p100,
+            }
+            for a in finalized_attempts
+        ]
         return {
             "roomId": room_id,
             "markingGuidance": str(snap.get("markingGuidance") or "").strip(),
             "pendingCount": pending_count,
             "gradedCount": graded_count,
+            "totalAttempts": len(raw_attempts),
+            "attempts": attempt_summaries,
             "items": items,
         }
 
@@ -2732,7 +2908,14 @@ def install_exam_rooms(
             summary = _summarize_attempt_scores(orig_questions, ans_data_map)
             auto_score = summary["autoScoreP100"]
             manual_score = summary["manualScoreP100"]
-            total_score = summary["totalScoreP100"]
+            adj_p100 = (
+                int(attempt_row[21]) if len(attempt_row) > 21 and attempt_row[21] is not None else 0
+            )
+            adj_note = str(attempt_row[22] or "") if len(attempt_row) > 22 else ""
+            total_points_p100 = int(room_row[24])
+            total_score = _apply_score_adjustment(
+                summary["totalScoreP100"], adj_p100, total_points_p100
+            )
             grading_status = summary["gradingStatus"]
 
             db.execute(
@@ -2753,13 +2936,214 @@ def install_exam_rooms(
             "graderNote": clean_note,
             "autoScoreP100": auto_score,
             "manualScoreP100": manual_score,
+            "scoreAdjustmentP100": adj_p100,
+            "adjustmentNote": adj_note,
             "totalScoreP100": total_score,
-            "totalPointsP100": int(room_row[24]),
+            "totalPointsP100": total_points_p100,
             "gradingStatus": grading_status,
             "ungradedEssayCount": summary["ungradedEssayCount"],
             "isProvisionalScore": summary["isProvisionalScore"],
             "chosenTrack": summary["chosenTrack"],
             "trackScores": summary["trackScores"],
+        }
+
+    @app.put("/api/rooms/{room_id}/attempts/{attempt_id}/adjustment")
+    def adjust_attempt_score(
+        room_id: str,
+        attempt_id: str,
+        body: AdjustAttemptScoreRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Điều chỉnh tổng điểm cấp bài (vd -0,25 lỗi đơn vị), giữ nguyên điểm từng câu."""
+        owner_id = _require_owner(request)
+        if body.adjustmentPointsP100 is not None:
+            adj_p100 = int(body.adjustmentPointsP100)
+        elif body.adjustmentPoints is not None:
+            parsed = _to_signed_p100(body.adjustmentPoints)
+            if parsed is None:
+                raise HTTPException(422, "Giá trị điều chỉnh tổng bài không hợp lệ.")
+            adj_p100 = parsed
+        else:
+            raise HTTPException(422, "Cần nhập giá trị điều chỉnh tổng điểm bài làm.")
+
+        clean_note = unicodedata.normalize("NFC", body.adjustmentNote).strip()[:500]
+        now_ms = _now_ms(clock)
+        with connect() as db:
+            _begin_immediate(db)
+            room_row = _load_owned_room(db, room_id, owner_id)
+            attempt_row = db.execute(
+                f"SELECT {_ATTEMPT_PUBLIC_COLS} FROM room_attempts WHERE id = ? AND room_id = ?",
+                (attempt_id, room_id),
+            ).fetchone()
+            if not attempt_row:
+                raise HTTPException(404, "Không tìm thấy lượt làm bài trong phòng này.")
+            attempt_row = _expire_attempt_if_needed(db, attempt_row, room_row, now_ms)
+            if attempt_row[10] == "in_progress":
+                raise HTTPException(
+                    409, "Thí sinh đang làm bài; thu bài hoặc khóa trước khi điều chỉnh tổng điểm."
+                )
+
+            snap = json.loads(room_row[23])
+            all_ans = db.execute(
+                "SELECT question_id, question_type, max_points_p100, response_json, "
+                "is_auto_graded, earned_points_p100 FROM attempt_answers WHERE attempt_id = ?",
+                (attempt_id,),
+            ).fetchall()
+            ans_data_map = {
+                ar[0]: (str(ar[1]), int(ar[2]), json.loads(ar[3]), int(ar[4]), ar[5])
+                for ar in all_ans
+            }
+            orig_questions = [q for q in (snap.get("questions") or []) if isinstance(q, dict)]
+            summary = _summarize_attempt_scores(orig_questions, ans_data_map)
+            total_points_p100 = int(room_row[24])
+            total_score = _apply_score_adjustment(
+                summary["totalScoreP100"], adj_p100, total_points_p100
+            )
+            db.execute(
+                """
+                UPDATE room_attempts
+                SET score_adjustment_p100 = ?, adjustment_note = ?,
+                    auto_score_p100 = ?, manual_score_p100 = ?,
+                    total_score_p100 = ?, grading_status = ?
+                WHERE id = ?
+                """,
+                (
+                    adj_p100,
+                    clean_note,
+                    summary["autoScoreP100"],
+                    summary["manualScoreP100"],
+                    total_score,
+                    summary["gradingStatus"],
+                    attempt_id,
+                ),
+            )
+
+        return {
+            "attemptId": attempt_id,
+            "autoScoreP100": summary["autoScoreP100"],
+            "manualScoreP100": summary["manualScoreP100"],
+            "scoreAdjustmentP100": adj_p100,
+            "adjustmentNote": clean_note,
+            "totalScoreP100": total_score,
+            "totalPointsP100": total_points_p100,
+            "gradingStatus": summary["gradingStatus"],
+            "ungradedEssayCount": summary["ungradedEssayCount"],
+            "isProvisionalScore": summary["isProvisionalScore"],
+            "chosenTrack": summary["chosenTrack"],
+            "trackScores": summary["trackScores"],
+        }
+
+    @app.post("/api/rooms/{room_id}/regrade")
+    def regrade_room(
+        room_id: str,
+        body: RegradeRoomRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Cập nhật khóa đáp án/điểm câu trong phòng và chấm lại mọi bài đã nộp."""
+        owner_id = _require_owner(request)
+        now_ms = _now_ms(clock)
+        updates_by_qid = {item.questionId: item for item in body.questions}
+        with connect() as db:
+            _begin_immediate(db)
+            room_row = _load_owned_room(db, room_id, owner_id)
+            snap = json.loads(room_row[23])
+            orig_questions = [q for q in (snap.get("questions") or []) if isinstance(q, dict)]
+            q_by_id = {str(q.get("id")): q for q in orig_questions}
+            for qid, upd in updates_by_qid.items():
+                target_q = q_by_id.get(qid)
+                if target_q is None:
+                    raise HTTPException(404, f"Không tìm thấy câu hỏi '{qid}' trong phòng thi.")
+                qtype = _normalize_qtype(target_q.get("type"))
+                if upd.points is not None:
+                    p100 = _to_p100(upd.points)
+                    if p100 is None:
+                        raise HTTPException(422, f"Điểm câu '{qid}' không hợp lệ.")
+                    target_q["points"] = upd.points
+                    target_q["_maxPointsP100"] = p100
+                if qtype == "mcq" and upd.answer is not None:
+                    opts_len = len(target_q.get("options") or [])
+                    idx_val: int | None = None
+                    if isinstance(upd.answer, int) and not isinstance(upd.answer, bool):
+                        idx_val = upd.answer
+                    elif isinstance(upd.answer, str):
+                        clean = upd.answer.strip().upper()
+                        if len(clean) == 1 and "A" <= clean <= "Z":
+                            idx_val = ord(clean) - 65
+                    if idx_val is None or not 0 <= idx_val < max(4, opts_len):
+                        raise HTTPException(422, f"Đáp án câu '{qid}' không hợp lệ.")
+                    target_q["answer"] = idx_val
+                    target_q["answerKnown"] = True
+                elif qtype == "truefalse" and upd.truthValues is not None:
+                    if len(upd.truthValues) != 4:
+                        raise HTTPException(422, f"Đáp án Đúng/Sai câu '{qid}' phải đủ 4 ý.")
+                    target_q["truthValues"] = [bool(v) for v in upd.truthValues]
+                    target_q["answerKnown"] = True
+                elif qtype == "short" and upd.answerText is not None:
+                    clean_txt = unicodedata.normalize("NFC", upd.answerText).strip()
+                    if not clean_txt:
+                        raise HTTPException(
+                            422, f"Đáp án câu trả lời ngắn '{qid}' không được trống."
+                        )
+                    target_q["answerText"] = clean_txt
+                    target_q["answerKnown"] = True
+
+            new_snap, new_total_points_p100 = _snapshot_exam_for_room(snap)
+            new_snap_json = json.dumps(new_snap, ensure_ascii=False, allow_nan=False)
+            db.execute(
+                """
+                UPDATE exam_rooms
+                SET teacher_snapshot_json = ?, total_points_p100 = ?, updated_at = ?
+                WHERE id = ? AND owner_id = ?
+                """,
+                (new_snap_json, new_total_points_p100, now_ms, room_id, owner_id),
+            )
+
+            all_attempts = db.execute(
+                f"SELECT {_ATTEMPT_PUBLIC_COLS} FROM room_attempts WHERE room_id = ?",
+                (room_id,),
+            ).fetchall()
+            regraded_count = 0
+            for att_row in all_attempts:
+                aid = str(att_row[0])
+                for q in new_snap.get("questions") or []:
+                    qid = str(q["id"])
+                    new_max_p100 = int(q.get("_maxPointsP100", _question_points_p100(q)))
+                    db.execute(
+                        "UPDATE attempt_answers SET max_points_p100 = ? "
+                        "WHERE attempt_id = ? AND question_id = ?",
+                        (new_max_p100, aid, qid),
+                    )
+                if att_row[10] != "in_progress":
+                    dmap = json.loads(att_row[9])
+                    auto_s, manual_s, total_s, g_status = _grade_attempt_tx(
+                        db, aid, new_snap, dmap, now_ms
+                    )
+                    adj_p100 = (
+                        int(att_row[21]) if len(att_row) > 21 and att_row[21] is not None else 0
+                    )
+                    final_total = _apply_score_adjustment(total_s, adj_p100, new_total_points_p100)
+                    db.execute(
+                        """
+                        UPDATE room_attempts
+                        SET auto_score_p100 = ?, manual_score_p100 = ?,
+                            total_score_p100 = ?, grading_status = ?
+                        WHERE id = ?
+                        """,
+                        (auto_s, manual_s, final_total, g_status, aid),
+                    )
+                    regraded_count += 1
+
+            refreshed_room = _load_owned_room(db, room_id, owner_id)
+            attempt_count, needs_manual_count = _room_attempt_counts(db, room_id)
+
+        return {
+            "room": _room_to_dict(
+                refreshed_room,
+                base_url=str(request.base_url),
+                attempt_count=attempt_count,
+                needs_manual_count=needs_manual_count,
+            ),
+            "regradedCount": regraded_count,
         }
 
     @app.post("/api/rooms/{room_id}/attempts/{attempt_id}/lock")
@@ -2787,6 +3171,12 @@ def install_exam_rooms(
                 auto_s, manual_s, total_s, g_status = _grade_attempt_tx(
                     db, attempt_id, snap, dmap, now_ms
                 )
+                adj_p100 = (
+                    int(attempt_row[21])
+                    if len(attempt_row) > 21 and attempt_row[21] is not None
+                    else 0
+                )
+                total_s = _apply_score_adjustment(total_s, adj_p100, int(room_row[24]))
                 db.execute(
                     """
                     UPDATE room_attempts
@@ -2815,7 +3205,8 @@ def install_exam_rooms(
                 "SELECT id, room_id, student_name, student_code, student_class, attempt_no, "
                 "variant_offset, variant_code, status, started_at, expires_at, submitted_at, "
                 "auto_score_p100, manual_score_p100, total_score_p100, grading_status, "
-                "tab_switch_count, fullscreen_exit_count, last_heartbeat_at "
+                "tab_switch_count, fullscreen_exit_count, last_heartbeat_at, "
+                "score_adjustment_p100, adjustment_note "
                 "FROM room_attempts WHERE id = ?",
                 (attempt_id,),
             ).fetchone()
@@ -2881,6 +3272,9 @@ def install_exam_rooms(
                 "TrangThai",
                 "DiemTuDong",
                 "DiemTuLuan",
+                "DieuChinhTong",
+                "GhiChuDieuChinh",
+                "DiemTam",
                 "TongDiem",
                 "ThangDiem",
                 "TrangThaiCham",
@@ -2914,7 +3308,16 @@ def install_exam_rooms(
                 submitted_at,
                 v_code,
                 att_no,
+                adj_p100,
+                adj_note,
             ) = att
+            is_provisional_row = a_status == "in_progress" or g_status == "needs_manual"
+            provisional_cell: Any = (
+                round(int(total_p100) / 100.0, 2)
+                if a_status != "in_progress" and is_provisional_row
+                else ""
+            )
+            official_cell: Any = "" if is_provisional_row else round(int(total_p100) / 100.0, 2)
             score_rows.append(
                 [
                     idx,
@@ -2926,7 +3329,10 @@ def install_exam_rooms(
                     a_status,
                     round(int(auto_p100) / 100.0, 2),
                     round(int(manual_p100) / 100.0, 2),
-                    round(int(total_p100) / 100.0, 2),
+                    round(int(adj_p100 or 0) / 100.0, 2),
+                    str(adj_note or ""),
+                    provisional_cell,
+                    official_cell,
                     max_pts_num,
                     g_status,
                     int(tab_cnt),
@@ -3216,13 +3622,13 @@ def install_exam_rooms(
                 (attempt_id,),
             ).fetchall()
             play_rows = db.execute(
-                "SELECT file_id, play_count, max_plays FROM attempt_audio_plays "
-                "WHERE attempt_id = ?",
+                "SELECT file_id, play_count, max_plays, active_lease_id "
+                "FROM attempt_audio_plays WHERE attempt_id = ?",
                 (attempt_id,),
             ).fetchall()
 
         answers = {r[0]: val for r in ans_rows if (val := json.loads(r[1])) is not None}
-        play_map = {r[0]: (int(r[1]), int(r[2])) for r in play_rows}
+        play_map = {r[0]: (int(r[1]), int(r[2]), str(r[3] or "")) for r in play_rows}
 
         snap = json.loads(room_row[23])
         redacted_exam, _, variant_code = _build_student_delivery(
@@ -3349,6 +3755,12 @@ def install_exam_rooms(
                     auto_s, manual_s, total_s, g_status = _grade_attempt_tx(
                         db, attempt_id, snap, dmap, now_ms
                     )
+                    adj_p100 = (
+                        int(attempt_row[21])
+                        if len(attempt_row) > 21 and attempt_row[21] is not None
+                        else 0
+                    )
+                    total_s = _apply_score_adjustment(total_s, adj_p100, int(room_row[24]))
                     db.execute(
                         """
                         UPDATE room_attempts
@@ -3473,6 +3885,12 @@ def install_exam_rooms(
                 auto_s, manual_s, total_s, g_status = _grade_attempt_tx(
                     db, attempt_id, snap, dmap, now_ms
                 )
+                adj_p100 = (
+                    int(attempt_row[21])
+                    if len(attempt_row) > 21 and attempt_row[21] is not None
+                    else 0
+                )
+                total_s = _apply_score_adjustment(total_s, adj_p100, int(room_row[24]))
                 db.execute(
                     """
                     UPDATE room_attempts
@@ -3670,6 +4088,10 @@ def install_exam_rooms(
 
                 question_results.append(item)
 
+        adj_p100 = (
+            int(attempt_row[21]) if len(attempt_row) > 21 and attempt_row[21] is not None else 0
+        )
+        adj_note = str(attempt_row[22] or "") if len(attempt_row) > 22 else ""
         return JSONResponse(
             {
                 "attemptId": attempt_id,
@@ -3692,6 +4114,8 @@ def install_exam_rooms(
                 "resultsAvailable": True,
                 "autoScoreP100": int(attempt_row[14]),
                 "manualScoreP100": int(attempt_row[15]),
+                "scoreAdjustmentP100": adj_p100,
+                "adjustmentNote": adj_note,
                 "totalScoreP100": int(attempt_row[16]),
                 "totalPointsP100": int(room_row[24]),
                 "syncedAnswerCount": synced_answer_count,
@@ -3702,8 +4126,15 @@ def install_exam_rooms(
         )
 
     @app.get("/api/rooms/public/attempts/{attempt_id}/audio/{file_id}")
-    def stream_attempt_audio(attempt_id: str, file_id: str, request: Request) -> Response:
+    def stream_attempt_audio(
+        attempt_id: str,
+        file_id: str,
+        request: Request,
+        lease: bool = Query(default=False),
+        leaseId: str | None = Query(default=None),
+    ) -> Response:
         now_ms = _now_ms(clock)
+        use_lease = bool(lease or (leaseId is not None and leaseId.strip()))
         with connect() as db:
             _begin_immediate(db)
             attempt_row, room_row = _require_attempt(db, attempt_id, request)
@@ -3717,10 +4148,12 @@ def install_exam_rooms(
 
             max_plays = max(1, int(audio_meta.get("maxPlays") or 2))
             play_row = db.execute(
-                "SELECT play_count FROM attempt_audio_plays WHERE attempt_id = ? AND file_id = ?",
+                "SELECT play_count, active_lease_id FROM attempt_audio_plays "
+                "WHERE attempt_id = ? AND file_id = ?",
                 (attempt_id, file_id),
             ).fetchone()
             current_plays = int(play_row[0]) if play_row is not None else 0
+            existing_lease = str(play_row[1] or "") if play_row is not None else ""
             if current_plays >= max_plays:
                 raise HTTPException(
                     403, f"Bạn đã nghe tối đa {max_plays} lượt cho tệp âm thanh này."
@@ -3737,40 +4170,122 @@ def install_exam_rooms(
                 raise HTTPException(404, "Không tìm thấy dữ liệu âm thanh trên máy chủ.")
             audio_bytes, mime_type = resolved
 
+            active_lease_id = ""
+            if use_lease:
+                active_lease_id = existing_lease or secrets.token_hex(12)
+                if play_row is None:
+                    db.execute(
+                        """
+                        INSERT INTO attempt_audio_plays (
+                            attempt_id, file_id, play_count, max_plays,
+                            last_played_at, active_lease_id, active_lease_at
+                        ) VALUES (?, ?, 0, ?, ?, ?, ?)
+                        """,
+                        (attempt_id, file_id, max_plays, now_ms, active_lease_id, now_ms),
+                    )
+                else:
+                    db.execute(
+                        """
+                        UPDATE attempt_audio_plays
+                        SET active_lease_id = ?, active_lease_at = ?
+                        WHERE attempt_id = ? AND file_id = ?
+                        """,
+                        (active_lease_id, now_ms, attempt_id, file_id),
+                    )
+                reported_used = current_plays + 1
+                reported_remaining = max(0, max_plays - reported_used)
+            else:
+                if play_row is None:
+                    db.execute(
+                        """
+                        INSERT INTO attempt_audio_plays (
+                            attempt_id, file_id, play_count, max_plays,
+                            last_played_at, active_lease_id, active_lease_at
+                        ) VALUES (?, ?, 1, ?, ?, '', 0)
+                        """,
+                        (attempt_id, file_id, max_plays, now_ms),
+                    )
+                    reported_used = 1
+                else:
+                    updated = db.execute(
+                        """
+                        UPDATE attempt_audio_plays
+                        SET play_count = play_count + 1, last_played_at = ?,
+                            active_lease_id = '', active_lease_at = 0
+                        WHERE attempt_id = ? AND file_id = ? AND play_count < max_plays
+                        """,
+                        (now_ms, attempt_id, file_id),
+                    )
+                    if updated.rowcount == 0:
+                        raise HTTPException(
+                            403, f"Bạn đã nghe tối đa {max_plays} lượt cho tệp âm thanh này."
+                        )
+                    reported_used = current_plays + 1
+                reported_remaining = max(0, max_plays - reported_used)
+
+        headers = {
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "X-Audio-Plays-Used": str(reported_used),
+            "X-Audio-Plays-Remaining": str(reported_remaining),
+            "X-Audio-Max-Plays": str(max_plays),
+        }
+        if active_lease_id:
+            headers["X-Audio-Lease-Id"] = active_lease_id
+        return Response(content=audio_bytes, media_type=mime_type, headers=headers)
+
+    @app.post("/api/rooms/public/attempts/{attempt_id}/audio/{file_id}/ack")
+    def ack_attempt_audio(
+        attempt_id: str,
+        file_id: str,
+        body: AckAudioPlayRequest,
+        request: Request,
+    ) -> JSONResponse:
+        """Xác nhận học sinh đã nhận đủ tệp và bắt đầu phát thật để trừ 1 lượt nghe."""
+        now_ms = _now_ms(clock)
+        with connect() as db:
+            _begin_immediate(db)
+            _attempt_row, room_row = _require_attempt(db, attempt_id, request, auto_expire=False)
+            snap = json.loads(room_row[23])
+            audio_map = _collect_audio_entries(snap)
+            audio_meta = audio_map.get(file_id)
+            if audio_meta is None:
+                raise HTTPException(404, "Tệp âm thanh không thuộc phòng thi này.")
+            max_plays = max(1, int(audio_meta.get("maxPlays") or 2))
+            play_row = db.execute(
+                "SELECT play_count, max_plays, active_lease_id FROM attempt_audio_plays "
+                "WHERE attempt_id = ? AND file_id = ?",
+                (attempt_id, file_id),
+            ).fetchone()
             if play_row is None:
+                raise HTTPException(404, "Chưa cấp lượt phát nào cho tệp âm thanh này.")
+            current_plays = int(play_row[0])
+            row_max = max(1, int(play_row[1] or max_plays))
+            active_lease = str(play_row[2] or "")
+            if active_lease and hmac.compare_digest(active_lease, body.leaseId.strip()):
+                new_count = min(row_max, current_plays + 1)
                 db.execute(
                     """
-                    INSERT INTO attempt_audio_plays (
-                        attempt_id, file_id, play_count, max_plays, last_played_at
-                    ) VALUES (?, ?, 1, ?, ?)
-                    """,
-                    (attempt_id, file_id, max_plays, now_ms),
-                )
-                new_count = 1
-            else:
-                updated = db.execute(
-                    """
                     UPDATE attempt_audio_plays
-                    SET play_count = play_count + 1, last_played_at = ?
-                    WHERE attempt_id = ? AND file_id = ? AND play_count < max_plays
+                    SET play_count = ?, last_played_at = ?,
+                        active_lease_id = '', active_lease_at = 0
+                    WHERE attempt_id = ? AND file_id = ?
                     """,
-                    (now_ms, attempt_id, file_id),
+                    (new_count, now_ms, attempt_id, file_id),
                 )
-                if updated.rowcount == 0:
-                    raise HTTPException(
-                        403, f"Bạn đã nghe tối đa {max_plays} lượt cho tệp âm thanh này."
-                    )
-                new_count = current_plays + 1
+            elif not active_lease:
+                new_count = current_plays
+            else:
+                raise HTTPException(409, "Mã lượt phát không khớp với phiên đang chờ xác nhận.")
 
-        remaining = max(0, max_plays - new_count)
-        return Response(
-            content=audio_bytes,
-            media_type=mime_type,
-            headers={
-                "Cache-Control": "no-store",
-                "X-Content-Type-Options": "nosniff",
-                "X-Audio-Plays-Used": str(new_count),
-                "X-Audio-Plays-Remaining": str(remaining),
-                "X-Audio-Max-Plays": str(max_plays),
+        remaining = max(0, row_max - new_count)
+        return JSONResponse(
+            {
+                "fileId": file_id,
+                "playsUsed": new_count,
+                "playsRemaining": remaining,
+                "maxPlays": row_max,
+                "acknowledged": True,
             },
+            headers={"Cache-Control": "no-store"},
         )

@@ -173,7 +173,7 @@ async def read_source(
     numbers = [p["number"] for p in pages]
     if (
         numbers != list(range(1, count + 1))
-        or not any(p["text"].strip() for p in pages)
+        or (target_pages is None and not any(p["text"].strip() for p in pages))
         or sum(len(p["text"]) for p in pages) > 200000
     ):
         raise AIError(
@@ -203,10 +203,11 @@ async def read_source(
     out_pages = []
     for page in remapped_pages:
         sp = structured_by_num[page["number"]]
+        has_text = bool(str(sp.get("text") or "").strip())
         out_pages.append(
             {
                 **sp,
-                "needsOCR": False,
+                "needsOCR": not has_text,
                 "needsReview": True,
                 "method": "gemini_document_ocr",
             }

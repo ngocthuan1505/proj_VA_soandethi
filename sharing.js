@@ -1,5 +1,6 @@
 import {esc,uid} from './core.js';
 import {mergeAssistantSourceDraft} from './reference.js';
+import {put as putStorage} from './storage.js';
 
 function linkRow(item){
  return '<article class="shared-link-row"><div><b>Bản '+item.revision+' · '+(item.answers?'Có đáp án':'Bản học sinh')+(item.community?' · Kho cộng đồng':'')+'</b><small>'+esc(new Date(item.created).toLocaleString('vi-VN'))+'</small></div>'+
@@ -107,6 +108,11 @@ export async function cloneCommunityExam(c,api,button){
  const result=await api('/api/community-exams/'+encodeURIComponent(token)+'/clone',{});
  const cloned=result?.clonedExam;
  if(!cloned?.id)throw Error('Không tạo được bản sao độc lập.');
+ if(result?.files&&typeof result.files==='object'){
+  for(const [fid,dataUri] of Object.entries(result.files)){
+   if(typeof dataUri==='string'&&dataUri)await putStorage('file:'+fid,dataUri);
+  }
+ }
  c.getState().exams.push(cloned);
  c.getState().current=cloned.id;
  document.querySelector('#dialog-layer2')?.close();

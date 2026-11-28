@@ -1,6 +1,8 @@
 """Bản chia sẻ cố định, đọc theo token và chỉ chủ sở hữu được thu hồi."""
 
 import asyncio
+import base64
+import binascii
 import html
 import json
 import re
@@ -14,7 +16,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from mach_backend.ai_contract import AIError
@@ -22,7 +24,48 @@ from mach_backend.local_documents import export_file
 from mach_backend.share_snapshot import snapshot
 
 TOKEN = re.compile(r"[A-Za-z0-9_-]{43}")
+FILE_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,128}")
 PAGE_SIZE = 20
+
+
+def _collect_audio_ids(exam: dict) -> list[str]:
+    seen: list[str] = []
+
+    def _add(raw):
+        items = raw if isinstance(raw, list) else [raw]
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            fid = item.get("fileId")
+            if isinstance(fid, str) and FILE_ID_RE.fullmatch(fid) and fid not in seen:
+                seen.append(fid)
+
+    _add(exam.get("audio"))
+    for p in exam.get("passages") or []:
+        if isinstance(p, dict):
+            _add(p.get("audio"))
+    for q in exam.get("questions") or []:
+        if isinstance(q, dict):
+            _add(q.get("audio"))
+    return seen
+
+
+def _decode_audio_data_url(value: str) -> tuple[str, bytes] | None:
+    if not isinstance(value, str):
+        return None
+    m = re.fullmatch(r"data:([^;,]*)(?:;[^,]*)?;base64,([A-Za-z0-9+/=\s]+)", value.strip())
+    if not m:
+        return None
+    mime = m.group(1).strip().lower()
+    if not (mime.startswith("audio/") or mime == "application/ogg"):
+        return None
+    try:
+        raw = base64.b64decode(re.sub(r"\s+", "", m.group(2)), validate=True)
+    except (binascii.Error, ValueError):
+        return None
+    if not raw:
+        return None
+    return mime, raw
 
 
 def search_text(value: str) -> str:
@@ -60,7 +103,7 @@ class RevokeRequest(BaseModel):
     token: str = Field(pattern=r"^[A-Za-z0-9_-]{43}$")
 
 
-def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
+def install_shares(app: FastAPI, connect, owner, read_exam, *, read_file=None, clock=time.time):
     rendering = asyncio.Semaphore(1)
     if AIError not in app.exception_handlers:
 
@@ -77,6 +120,9 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
             revision INTEGER NOT NULL, created INTEGER NOT NULL, revoked INTEGER NOT NULL,
             answers INTEGER NOT NULL, allow_copy INTEGER NOT NULL,
             snapshot TEXT NOT NULL, html TEXT NOT NULL)""")
+        db.execute("""CREATE TABLE IF NOT EXISTS shared_snapshot_files(
+            token TEXT NOT NULL, file_id TEXT NOT NULL, data TEXT NOT NULL,
+            PRIMARY KEY (token, file_id))""")
         db.execute("CREATE INDEX IF NOT EXISTS shares_owner ON shared_snapshots(owner,exam_id)")
         db.execute("""CREATE TABLE IF NOT EXISTS community_listings(
             token TEXT PRIMARY KEY, title TEXT NOT NULL, subject TEXT NOT NULL,
@@ -132,10 +178,24 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
         if exam.get("revision") != body.baseRevision:
             raise AIError("stale_snapshot", "Đề đã thay đổi. Mở lại Chia sẻ để chọn bản mới.")
         selected = snapshot(exam, body.answers)
+        token = secrets.token_urlsafe(32)
+        audio_files: dict[str, str] = {}
+        if read_file is not None:
+            for fid in _collect_audio_ids(selected):
+                raw_data = read_file(request, fid)
+                if isinstance(raw_data, str) and _decode_audio_data_url(raw_data) is not None:
+                    audio_files[fid] = raw_data
+        audio_urls = {fid: f"/api/share/audio/{token}/{fid}" for fid in audio_files}
         # Chỉ lưu sau khi dựng thành công toàn bộ ảnh/công thức; không giữ liên kết dở.
         with tempfile.TemporaryDirectory(prefix="exam-share-") as temp:
             output = export_file(
-                {"type": "exam", "format": "html", "teacher": body.answers, "exam": selected},
+                {
+                    "type": "exam",
+                    "format": "html",
+                    "teacher": body.answers,
+                    "exam": selected,
+                    **({"audioUrls": audio_urls} if audio_urls else {}),
+                },
                 Path(temp),
                 "",
             )
@@ -146,7 +206,7 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
             or snapshot(latest, body.answers) != selected
         ):
             raise AIError("stale_snapshot", "Đề vừa thay đổi trong khi tạo bản chia sẻ. Thử lại.")
-        token, created = secrets.token_urlsafe(32), int(clock() * 1000)
+        created = int(clock() * 1000)
         with connect() as db:
             db.execute(
                 "INSERT INTO shared_snapshots VALUES(?,?,?,?,?,0,?,?,?,?)",
@@ -162,6 +222,11 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
                     content,
                 ),
             )
+            for fid, data_uri in audio_files.items():
+                db.execute(
+                    "INSERT INTO shared_snapshot_files(token,file_id,data) VALUES(?,?,?)",
+                    (token, fid, data_uri),
+                )
             if body.community:
                 title = str(selected.get("title") or "Đề thi")[:240]
                 subject = str(selected.get("subject") or "")[:80]
@@ -413,6 +478,11 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
                         question["blockIds"] = [str(uuid4()) for _ in question["blockIds"]]
             clone_id = str(uuid4())
             cloned_at = int(clock() * 1000)
+            file_rows = db.execute(
+                "SELECT file_id,data FROM shared_snapshot_files WHERE token=?",
+                (token,),
+            ).fetchall()
+            files_map = {r[0]: r[1] for r in file_rows}
             db.execute(
                 "INSERT INTO community_clone_audit VALUES(?,?,?,?,?,?,?,?,?)",
                 (
@@ -429,6 +499,7 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
             )
         return {
             "clonedExam": cloned_exam,
+            **({"files": files_map} if files_map else {}),
             "cloneRecord": {
                 "clone_id": clone_id,
                 "token": token,
@@ -453,16 +524,53 @@ def install_shares(app: FastAPI, connect, owner, read_exam, *, clock=time.time):
             raise HTTPException(404, "Không tìm thấy liên kết của bạn.")
         return {"ok": True}
 
+    def _read_shared_files(token: str) -> dict[str, str]:
+        with connect() as db:
+            rows = db.execute(
+                "SELECT file_id,data FROM shared_snapshot_files WHERE token=?",
+                (token,),
+            ).fetchall()
+        return {r[0]: r[1] for r in rows}
+
     @app.get("/api/share/read/{token}")
     def shared_data(token: str):
         row = read(token)
+        files_map = _read_shared_files(token) if row[3] else {}
         return JSONResponse(
             {
                 "allowCopy": bool(row[3]),
                 "revision": row[4],
                 **({"exam": json.loads(row[0])} if row[3] else {}),
+                **({"files": files_map} if row[3] and files_map else {}),
             },
             headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
+        )
+
+    @app.get("/api/share/audio/{token}/{file_id}")
+    def shared_audio(token: str, file_id: str):
+        if not TOKEN.fullmatch(token) or not FILE_ID_RE.fullmatch(file_id):
+            raise HTTPException(404, "Tệp nghe không tồn tại hoặc đã thu hồi.")
+        with connect() as db:
+            row = db.execute(
+                "SELECT f.data FROM shared_snapshot_files f "
+                "JOIN shared_snapshots s ON s.token=f.token "
+                "WHERE f.token=? AND f.file_id=? AND s.revoked=0",
+                (token, file_id),
+            ).fetchone()
+        if not row:
+            raise HTTPException(404, "Tệp nghe không tồn tại hoặc đã thu hồi.")
+        decoded = _decode_audio_data_url(row[0])
+        if decoded is None:
+            raise HTTPException(404, "Tệp nghe không hợp lệ.")
+        mime, raw = decoded
+        return Response(
+            raw,
+            media_type=mime,
+            headers={
+                "Cache-Control": "no-store",
+                "Accept-Ranges": "bytes",
+                "X-Content-Type-Options": "nosniff",
+            },
         )
 
     @app.get("/s/{token}")

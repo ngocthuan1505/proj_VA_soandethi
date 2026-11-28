@@ -12,6 +12,7 @@ import {
   renderResultScreenHTML,
   renderAudioCardHTML,
   handleAudioPlay,
+  acknowledgeAudioPlay,
   flushAnswers,
   submitAttempt,
   formatChoiceGroupLabel,
@@ -322,6 +323,110 @@ test('UV64 Audio 1 lượt: khi playsRemaining về 0 sau tải vẫn giữ <aud
   }
 });
 
+test('Gói 1 Phòng thi: Đứt mạng body WAV rỗng, pendingLeaseId sau tải lại và retry /ack', async () => {
+  resetExamRoomState();
+  const aud = {
+    fileId: 'aud-empty',
+    filename: 'nghe_empty.wav',
+    maxPlays: 1,
+    playsUsed: 0,
+    playsRemaining: 1,
+    pendingLeaseId: 'lease-pending-1',
+  };
+  const pendingHtml = renderAudioCardHTML(aud);
+  assert.ok(pendingHtml.includes('Tải lại lượt nghe (chưa trừ lượt)'));
+
+  appState.audioState['aud-empty'] = {
+    fileId: 'aud-empty',
+    filename: 'nghe_empty.wav',
+    url: '/api/rooms/public/attempts/att-2/audio/aud-empty',
+    blobUrl: '',
+    playsUsed: 0,
+    playsRemaining: 1,
+    maxPlays: 1,
+    activeLeaseId: 'lease-pending-1',
+    leaseAcked: false,
+    loading: false,
+    activePlayback: false,
+    error: '',
+  };
+
+  const origFetch = globalThis.fetch;
+  const origCreate = URL.createObjectURL;
+  const origRevoke = URL.revokeObjectURL;
+  URL.createObjectURL = () => 'blob:mock-empty-ok';
+  URL.revokeObjectURL = () => {};
+
+  let step = 0;
+  globalThis.fetch = async (url) => {
+    step += 1;
+    if (step === 1) {
+      assert.ok(String(url).includes('leaseId=lease-pending-1'));
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'X-Audio-Plays-Used': '1',
+          'X-Audio-Plays-Remaining': '0',
+          'X-Audio-Max-Plays': '1',
+          'X-Audio-Lease-Id': 'lease-pending-1',
+        }),
+        blob: async () => new Blob([], { type: 'audio/wav' }),
+      };
+    }
+    if (step === 2) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'X-Audio-Plays-Used': '1',
+          'X-Audio-Plays-Remaining': '0',
+          'X-Audio-Max-Plays': '1',
+          'X-Audio-Lease-Id': 'lease-pending-1',
+        }),
+        blob: async () => new Blob(['RIFFWAV'], { type: 'audio/wav' }),
+      };
+    }
+    if (step === 3) {
+      throw new TypeError('Failed to fetch');
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ playsUsed: 1, playsRemaining: 0, maxPlays: 1, acknowledged: true }),
+    };
+  };
+
+  try {
+    // Lần 1: body rỗng do rớt mạng -> giữ nguyên playsRemaining = 1
+    await handleAudioPlay('aud-empty');
+    const st = appState.audioState['aud-empty'];
+    assert.equal(st.playsRemaining, 1);
+    assert.equal(st.activePlayback, false);
+    assert.ok(st.error.includes('Lượt nghe chưa bị trừ'));
+
+    // Lần 2: tải lại thành công
+    await handleAudioPlay('aud-empty');
+    assert.equal(st.blobUrl, 'blob:mock-empty-ok');
+    assert.equal(st.activePlayback, true);
+
+    // Lần 3: /ack rớt mạng -> reset leaseAcked = false để thử lại được
+    await acknowledgeAudioPlay('aud-empty');
+    assert.equal(st.leaseAcked, false);
+
+    // Lần 4: /ack thành công -> xóa activeLeaseId và cập nhật 0 lượt còn lại
+    await acknowledgeAudioPlay('aud-empty');
+    assert.equal(st.leaseAcked, true);
+    assert.equal(st.activeLeaseId, '');
+    assert.equal(st.playsUsed, 1);
+    assert.equal(st.playsRemaining, 0);
+  } finally {
+    globalThis.fetch = origFetch;
+    URL.createObjectURL = origCreate;
+    URL.revokeObjectURL = origRevoke;
+  }
+});
+
 test('UV64 Nhắc lịch PATCH 503 báo lỗi trung thực, chọn đề và nút Mở đề trên thẻ nhắc lịch', async () => {
   const cardsHtml = renderProactiveCardsHTML(
     {
@@ -404,6 +509,191 @@ test('UV64 Nhắc lịch PATCH 503 báo lỗi trung thực, chọn đề và nú
     // Mở đề gắn kèm
     await handleHomeAction('home-open-exam', { dataset: { id: 'ex-9' } }, ctx);
     assert.equal(openedExamId, 'ex-9');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('Gói 1 Phòng thi: Audio lease retry khi đứt mạng giữa đường, điều chỉnh tổng bài và UI nộp bài/kết quả', async () => {
+  resetExamRoomState();
+  const aud = { fileId: 'aud-drop', filename: 'nghe_drop.wav', maxPlays: 1, playsUsed: 0, playsRemaining: 1 };
+  appState.audioState['aud-drop'] = {
+    fileId: 'aud-drop',
+    filename: 'nghe_drop.wav',
+    url: '/api/rooms/public/attempts/att-1/audio/aud-drop',
+    blobUrl: '',
+    playsUsed: 0,
+    playsRemaining: 1,
+    maxPlays: 1,
+    activeLeaseId: '',
+    leaseAcked: false,
+    loading: false,
+    activePlayback: false,
+    error: '',
+  };
+
+  const origFetch = globalThis.fetch;
+  const origCreate = URL.createObjectURL;
+  const origRevoke = URL.revokeObjectURL;
+  URL.createObjectURL = () => 'blob:mock-drop-ok';
+  URL.revokeObjectURL = () => {};
+
+  let callNo = 0;
+  globalThis.fetch = async (url) => {
+    callNo += 1;
+    if (callNo === 1) {
+      assert.ok(String(url).includes('lease=1'));
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'X-Audio-Plays-Used': '1',
+          'X-Audio-Plays-Remaining': '0',
+          'X-Audio-Max-Plays': '1',
+          'X-Audio-Lease-Id': 'lease-xyz',
+        }),
+        blob: async () => {
+          throw new TypeError('Failed to fetch');
+        },
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      headers: new Headers({
+        'X-Audio-Plays-Used': '1',
+        'X-Audio-Plays-Remaining': '0',
+        'X-Audio-Max-Plays': '1',
+        'X-Audio-Lease-Id': 'lease-xyz',
+      }),
+      blob: async () => new Blob(['WAV'], { type: 'audio/wav' }),
+    };
+  };
+
+  try {
+    // Lần 1: đứt mạng khi đọc body -> playsRemaining vẫn là 1, không hiện Failed to fetch thô
+    await handleAudioPlay('aud-drop');
+    const st = appState.audioState['aud-drop'];
+    assert.equal(st.playsRemaining, 1);
+    assert.equal(st.playsUsed, 0);
+    assert.equal(st.activePlayback, false);
+    assert.ok(!st.error.includes('Failed to fetch'));
+    assert.ok(st.error.includes('Lượt nghe chưa bị trừ'));
+
+    // Lần 2: tải lại thành công và giữ được audio tag
+    await handleAudioPlay('aud-drop');
+    assert.equal(st.blobUrl, 'blob:mock-drop-ok');
+    assert.equal(st.activeLeaseId, 'lease-xyz');
+    assert.equal(st.activePlayback, true);
+
+    // Hiển thị điều chỉnh tổng bài trên màn kết quả HS (5 + 5 - 0,25 = 9,75)
+    appState.result = {
+      studentName: 'Lê Minh',
+      gradingStatus: 'graded',
+      resultsAvailable: true,
+      autoScoreP100: 0,
+      manualScoreP100: 1000,
+      scoreAdjustmentP100: -25,
+      adjustmentNote: 'Thiếu đơn vị toàn bài',
+      totalScoreP100: 975,
+      totalPointsP100: 1000,
+      syncedAnswerCount: 2,
+      totalQuestions: 2,
+      questions: [],
+    };
+    const resHtml = renderResultScreenHTML();
+    assert.ok(resHtml.includes('9,75 / 10'));
+    assert.ok(resHtml.includes('Điều chỉnh toàn bài: -0,25 điểm'));
+    assert.ok(resHtml.includes('Thiếu đơn vị toàn bài'));
+
+    // Pill nhảy tới câu bỏ trống trong xác nhận nộp bài
+    appState.confirmSubmitOpen = true;
+    appState.answers = {};
+    const confirmHtml = renderExamScreenHTML();
+    assert.ok(confirmHtml.includes('data-unanswered-pills="1"'));
+    assert.ok(confirmHtml.includes('Em còn 3 câu chưa làm'));
+
+    // Form điều chỉnh tổng điểm trong tab Chấm tự luận GV
+    const gradingHtml = buildGradingTabHTML(
+      {
+        markingGuidance: '',
+        pendingCount: 0,
+        gradedCount: 2,
+        attempts: [
+          {
+            attemptId: 'att-1',
+            studentName: 'Lê Minh',
+            studentClass: '11A1',
+            scoreAdjustmentP100: -25,
+            adjustmentNote: 'Thiếu đơn vị',
+            totalScoreP100: 975,
+            totalPointsP100: 1000,
+            isProvisionalScore: false,
+          },
+        ],
+        items: [],
+      },
+      null,
+      true,
+    );
+    assert.ok(gradingHtml.includes('class="er-adjust-form"'));
+    assert.ok(gradingHtml.includes('9,75 / 10'));
+  } finally {
+    globalThis.fetch = origFetch;
+    URL.createObjectURL = origCreate;
+    URL.revokeObjectURL = origRevoke;
+  }
+});
+
+test('t5 Trang chủ & Trợ lý Chủ động: hoàn thành/lưu trữ chiến dịch gọi PATCH /api/campaigns/{id} và không dùng !important trong home.js', async () => {
+  const homeSrc = fs.readFileSync(
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../home.js'),
+    'utf8',
+  );
+  assert.ok(!homeSrc.includes('!important'), 'home.js không được chứa !important');
+
+  const campHtml = renderProactiveCardsHTML({
+    activeCampaigns: [
+      {
+        id: 'camp-1',
+        title: 'Bộ 5 đề Toán 10',
+        subject: 'Toán',
+        grade: '10',
+        completedCount: 5,
+        targetCount: 5,
+        nextOrdinal: 6,
+      },
+    ],
+    nextDayReviewNudges: [],
+    urgentDeadlines: [],
+    pendingRoomGrading: {count: 0, rooms: []},
+  });
+  assert.ok(campHtml.includes('data-action="proactive-complete-campaign"'));
+  assert.ok(campHtml.includes('data-action="proactive-archive-campaign"'));
+  assert.ok(campHtml.includes('Toán · Lớp 10'));
+
+  const origFetch = globalThis.fetch;
+  const calls = [];
+  const toasts = [];
+  const ctx = {
+    workspaceHeaders: () => ({}),
+    toast: (msg) => toasts.push(msg),
+    getState: () => ({exams: []}),
+  };
+  try {
+    globalThis.fetch = async (url, init) => {
+      calls.push({url: String(url), method: init?.method, body: init?.body});
+      return {ok: true, status: 200, json: async () => ({badgeCount: 0, activeCampaigns: [], nextDayReviewNudges: [], urgentDeadlines: [], pendingRoomGrading: {count: 0, rooms: []}})};
+    };
+    await handleHomeAction('proactive-complete-campaign', {dataset: {id: 'camp-1'}}, ctx);
+    assert.equal(calls[0].url, '/api/campaigns/camp-1');
+    assert.equal(calls[0].method, 'PATCH');
+    assert.deepEqual(JSON.parse(calls[0].body), {status: 'completed'});
+    assert.ok(toasts.at(-1).includes('hoàn thành'));
+
+    await handleHomeAction('proactive-archive-campaign', {dataset: {id: 'camp-1'}}, ctx);
+    assert.deepEqual(JSON.parse(calls[2].body), {status: 'archived'});
+    assert.ok(toasts.at(-1).includes('lưu trữ'));
   } finally {
     globalThis.fetch = origFetch;
   }

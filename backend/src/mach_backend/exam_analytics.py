@@ -354,6 +354,8 @@ def analyze_exam(exam: dict[str, Any]) -> dict[str, Any]:
     mcq_letter_sequence: list[tuple[int, str]] = []
 
     total_points = 0.0
+    common_points = 0.0
+    track_points: dict[str, float] = {}
     estimated_minutes = 0.0
     approved_count = 0
     issues: list[dict[str, Any]] = []
@@ -365,6 +367,12 @@ def analyze_exam(exam: dict[str, Any]) -> dict[str, Any]:
         pts = _parse_points(q)
 
         total_points += pts
+        grp = str(q.get("choiceGroup") or "").strip()
+        if not grp:
+            common_points += pts
+        else:
+            grp_key = grp.casefold()
+            track_points[grp_key] = track_points.get(grp_key, 0.0) + pts
         level_counts[level] += 1
         level_points[level] += pts
         type_counts[qtype] += 1
@@ -461,7 +469,10 @@ def analyze_exam(exam: dict[str, Any]) -> dict[str, Any]:
 
         token_sets.append(_normalize_vietnamese_tokens(_stem_text(q)))
 
-    total_points_rounded = round(total_points, 4)
+    effective_total_points = (
+        common_points + max(track_points.values()) if track_points else total_points
+    )
+    total_points_rounded = round(effective_total_points, 4)
     points_delta = round(total_points_rounded - target_points, 4)
     estimated_minutes_rounded = round(estimated_minutes, 1)
 

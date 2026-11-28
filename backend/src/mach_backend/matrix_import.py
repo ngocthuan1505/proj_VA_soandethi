@@ -11,11 +11,11 @@ import unicodedata
 import zipfile
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from xml.etree import ElementTree as ET
 
 from PIL import Image
-from pydantic import Field, ValidationError
+from pydantic import Field, ValidationError, field_validator, model_validator
 
 from mach_backend.ai_contract import AIError, ContractModel
 from mach_backend.ai_questions import MAX_MATRIX_QUESTIONS, ExamSlot, QuestionType
@@ -53,11 +53,57 @@ class MatrixRow(ContractModel):
         | None
     ) = None
     choiceGroup: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    subLevels: tuple[int, int, int, int] | tuple[tuple[int, int, int, int], ...] | None = None
+    statementLevels: tuple[int, int, int, int] | tuple[tuple[int, int, int, int], ...] | None = None
+    scoringMode: Literal["cv7991_graduated", "uniform"] | None = None
     topic: Annotated[str, Field(min_length=1, max_length=160)]
     targets: Annotated[
         tuple[Annotated[int, Field(ge=0, le=MAX_MATRIX_QUESTIONS)], ...],
         Field(min_length=3, max_length=4),
     ]
+
+    @field_validator("subLevels", "statementLevels", mode="before")
+    @classmethod
+    def _coerce_sub_levels(cls, value: Any) -> Any:
+        if isinstance(value, list):
+            if value and isinstance(value[0], list):
+                return tuple(tuple(item) for item in value)
+            return tuple(value)
+        return value
+
+    @field_validator("subLevels", "statementLevels")
+    @classmethod
+    def _validate_sub_levels_range(cls, value: Any) -> Any:
+        if value is None:
+            return None
+        if isinstance(value, tuple) and len(value) == 4 and all(type(x) is int for x in value):
+            if any(not 0 <= x <= 4 for x in value):
+                raise ValueError("Mỗi phần tử trong subLevels phải từ 0 đến 4.")
+            return value
+        if isinstance(value, tuple) and value:
+            for item in value:
+                if (
+                    not isinstance(item, tuple)
+                    or len(item) != 4
+                    or any(type(x) is not int or not 0 <= x <= 4 for x in item)
+                ):
+                    raise ValueError("Mỗi bộ subLevels phải gồm đúng 4 số nguyên từ 0 đến 4.")
+            return value
+        raise ValueError("subLevels phải gồm 4 mức nguyên (0..4) cho mỗi câu Đúng-Sai.")
+
+    @model_validator(mode="after")
+    def _validate_sub_levels_match_targets(self):
+        effective = self.subLevels if self.subLevels is not None else self.statementLevels
+        if effective is not None:
+            if self.type != "truefalse":
+                raise ValueError("subLevels chỉ áp dụng cho câu Đúng-Sai.")
+            total_q = sum(self.targets)
+            if isinstance(effective[0], int):
+                if total_q != 1:
+                    raise ValueError("Số bộ subLevels phải khớp số câu Đúng-Sai trong dòng.")
+            elif len(effective) != total_q:
+                raise ValueError("Số bộ subLevels phải khớp số câu Đúng-Sai trong dòng.")
+        return self
 
 
 class ImportedMatrix(ContractModel):
@@ -190,6 +236,10 @@ def checked_matrix(value):
             raise AIError("invalid_matrix", str(error)) from None
     for row, topic in zip(data["matrix"], topics, strict=True):
         row["topic"] = topic
+        if "statementLevels" in row:
+            alias = row.pop("statementLevels")
+            if row.get("subLevels") is None and alias is not None:
+                row["subLevels"] = alias
     return {**data, "count": total, "requiresConfirmation": True}
 
 
@@ -298,6 +348,14 @@ def matrix_slots(rows):
     for row in matrix:
         grp_raw = row.choiceGroup.strip() if row.choiceGroup and row.choiceGroup.strip() else None
         grp_key = grp_raw.casefold() if grp_raw else ""
+        effective_sub = row.subLevels if row.subLevels is not None else row.statementLevels
+        row_sub_levels: list[tuple[int, int, int, int]] = []
+        if effective_sub is not None:
+            if isinstance(effective_sub[0], int):
+                row_sub_levels = [effective_sub]  # type: ignore[list-item]
+            else:
+                row_sub_levels = list(effective_sub)  # type: ignore[arg-type]
+        sub_cursor = 0
         for level, number in enumerate(row.targets):
             for _ in range(number):
                 p100 = _row_cell_p100(row, level)
@@ -315,6 +373,11 @@ def matrix_slots(rows):
                 }
                 if grp_raw is not None:
                     kwargs["choiceGroup"] = grp_raw
+                if row_sub_levels:
+                    kwargs["subLevels"] = row_sub_levels[sub_cursor]
+                    sub_cursor += 1
+                if row.scoringMode is not None:
+                    kwargs["scoringMode"] = row.scoringMode
                 slots.append(ExamSlot(**kwargs))
     return tuple(slots)
 
@@ -654,7 +717,20 @@ def _body_merges_unsafe(
         if merge["colspan"] > 1:
             row_cells = rows[r0] if r0 < len(rows) else []
             topic_txt = " ".join(row_cells[tc].strip() for tc in topic_cols if tc < len(row_cells))
-            is_total_row = normalized(topic_txt) in {"tong", "tong cong", "tong so", "total"}
+            norm_topic_txt = normalized(topic_txt)
+            is_total_row = norm_topic_txt in {
+                "tong",
+                "tong cong",
+                "tong so",
+                "total",
+                "tong so cau",
+                "tong cau",
+                "tong so diem",
+                "tong diem",
+                "so diem",
+                "ti le",
+                "ty le",
+            } or norm_topic_txt.startswith(("tong so ", "ti le", "ty le"))
             if is_total_row:
                 if m_cols & target_cols:
                     return True
@@ -776,6 +852,427 @@ def _parse_single_table(
     )
 
 
+_GROUPED_LEVEL_HEADERS: dict[str, int] = {**_LEVEL_HEADERS, "b": 0, "h": 1}
+_GROUPED_KIND_ALIASES: dict[str, QuestionType] = {
+    **_QUESTION_KIND_ALIASES,
+    "dung sai y": "truefalse",
+    "trac nghiem dung sai y": "truefalse",
+    "tnkq dung sai y": "truefalse",
+    "tnkq ds y": "truefalse",
+}
+_TOTAL_GROUP_ALIASES = {"tong", "tong cong", "tong so", "total"}
+_PERCENT_COL_ALIASES = {"ti le", "ti le diem", "ty le", "ty le diem"}
+
+
+def _is_sub_items_group_label(raw_text: str) -> bool:
+    norm = normalized(raw_text)
+    return bool(re.search(r"(?:\(\s*y\s*\)|\by\b|nhan dinh|menh de|lenh\b)", norm))
+
+
+def _resolve_grouped_type_header(
+    rows: list[list[str]], start: int
+) -> tuple[int, dict[str, Any]] | None:
+    """Nhận diện header ma trận CV 7991 gộp cột mức B/H/VD lặp theo từng dạng câu hỏi."""
+    if start + 1 >= len(rows):
+        return None
+    max_depth = min(3, len(rows) - start)
+    for depth in (2, 3):
+        if depth > max_depth:
+            continue
+        slice_rows = rows[start : start + depth]
+        num_cols = max((len(r) for r in slice_rows), default=0)
+        if num_cols < 5:
+            continue
+
+        topic_cols: list[int] = []
+        unit_cols: list[int] = []
+        choice_col: int | None = None
+        groups: list[dict[str, Any]] = []
+        current_group: dict[str, Any] | None = None
+        bad = False
+
+        for col in range(num_cols):
+            stack = [r[col] if col < len(r) else "" for r in slice_rows]
+            bot_tok = _norm_header_token(stack[-1])
+            if bot_tok in _GROUPED_LEVEL_HEADERS:
+                lvl = _GROUPED_LEVEL_HEADERS[bot_tok]
+                raw_group = ""
+                group_kind: str | None = None
+                for cell in reversed(stack[:-1]):
+                    ktok = _norm_kind_token(cell)
+                    if not ktok or ktok in _WRAPPER_HEADERS and ktok not in _TOTAL_GROUP_ALIASES:
+                        continue
+                    if ktok in _GROUPED_KIND_ALIASES:
+                        raw_group = cell
+                        group_kind = _GROUPED_KIND_ALIASES[ktok]
+                        break
+                    if ktok in _TOTAL_GROUP_ALIASES:
+                        raw_group = cell
+                        group_kind = "_total"
+                        break
+                if group_kind is None:
+                    bad = True
+                    break
+                if (
+                    current_group is not None
+                    and current_group["kind"] == group_kind
+                    and normalized(current_group["rawLabel"]) == normalized(raw_group)
+                    and lvl not in current_group["positions"]
+                ):
+                    current_group["positions"][lvl] = col
+                else:
+                    current_group = {
+                        "kind": group_kind,
+                        "rawLabel": raw_group,
+                        "isSubItems": group_kind == "truefalse"
+                        and _is_sub_items_group_label(raw_group),
+                        "positions": {lvl: col},
+                    }
+                    groups.append(current_group)
+                continue
+
+            current_group = None
+            role, _, _ = _classify_col_stack(stack)
+            if role == "topic":
+                topic_cols.append(col)
+            elif role == "unit":
+                unit_cols.append(col)
+            elif role == "choice" and choice_col is None:
+                choice_col = col
+
+        if bad:
+            continue
+        type_groups = [g for g in groups if g["kind"] != "_total"]
+        if not type_groups or (not topic_cols and not unit_cols):
+            continue
+        if len(topic_cols) > 1 or len(unit_cols) > 1:
+            continue
+        valid_groups = True
+        all_positions: dict[int, int] = {}
+        pos_idx = 0
+        for grp in groups:
+            g_pos = grp["positions"]
+            if not {0, 1, 2} <= set(g_pos):
+                valid_groups = False
+                break
+            if len(g_pos) == 4 and 3 not in g_pos:
+                valid_groups = False
+                break
+            for col in g_pos.values():
+                all_positions[pos_idx] = col
+                pos_idx += 1
+        if not valid_groups:
+            continue
+
+        spec = {
+            "groups": groups,
+            "positions": all_positions,
+            "topic_cols": topic_cols,
+            "unit_cols": unit_cols,
+            "type_col": None,
+            "points_col": None,
+            "choice_col": choice_col,
+        }
+        return depth, spec
+    return None
+
+
+def _extract_docx_table_metadata(
+    rows: list[list[str]], tables: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    texts: list[str] = []
+    if tables:
+        for tbl in tables:
+            if _is_secondary_spec_table(tbl):
+                continue
+            for r in tbl.get("rows") or []:
+                texts.extend(c for c in r if c.strip())
+    else:
+        for r in rows:
+            texts.extend(c for c in r if c.strip())
+    joined = normalized(" ".join(texts))
+    metadata: dict[str, Any] = {}
+    minutes_match = re.search(r"thoi gian[^0-9]{0,24}(\d+)\s*phut", joined)
+    if minutes_match:
+        mins = int(minutes_match[1])
+        if 5 <= mins <= 300:
+            metadata["minutes"] = mins
+    return metadata
+
+
+def _parse_grouped_type_table(
+    rows: list[list[str]],
+    merges: list[dict[str, Any]] | None = None,
+    *,
+    metadata_rows: list[list[str]] | None = None,
+    metadata_tables: list[dict[str, Any]] | None = None,
+) -> dict[str, Any] | None:
+    headers_found: list[tuple[int, int, dict[str, Any]]] = []
+    idx = 0
+    while idx < len(rows):
+        resolved = _resolve_grouped_type_header(rows, idx)
+        if resolved is not None:
+            depth, spec = resolved
+            headers_found.append((idx, depth, spec))
+            idx += depth
+        else:
+            idx += 1
+
+    if len(headers_found) > 1:
+        raise AIError(
+            "ambiguous_matrix",
+            "Tệp có nhiều bảng ma trận; tách riêng bảng cần sinh, không tự chọn bảng đầu.",
+        )
+    if not headers_found:
+        return None
+
+    at, depth, spec = headers_found[0]
+    groups: list[dict[str, Any]] = spec["groups"]
+    type_groups = [g for g in groups if g["kind"] != "_total"]
+    total_groups = [g for g in groups if g["kind"] == "_total"]
+    topic_cols: list[int] = spec["topic_cols"]
+    unit_cols: list[int] = spec["unit_cols"]
+    choice_col: int | None = spec["choice_col"]
+    header_end = at + depth
+
+    required_cols = [*topic_cols, *unit_cols, *spec["positions"].values()]
+    max_req_col = max(required_cols)
+
+    parsed_rows: list[dict[str, Any]] = []
+    group_level_points: dict[tuple[int, int], Decimal] = {}
+    seen_total_counts = False
+    body_end = header_end - 1
+
+    for row_idx in range(header_end, len(rows)):
+        cells = rows[row_idx]
+        if not any(c.strip() for c in cells):
+            continue
+        if len(cells) <= max_req_col:
+            return None
+
+        t_parts = [cells[c].strip() for c in topic_cols if cells[c].strip()]
+        u_parts = [cells[c].strip() for c in unit_cols if cells[c].strip()]
+        if t_parts and u_parts and normalized(t_parts[0]) != normalized(u_parts[0]):
+            topic = f"{t_parts[0]} - {u_parts[0]}"
+        else:
+            topic = (t_parts or u_parts or [""])[0]
+        if not topic:
+            return None
+        norm_topic = normalized(topic)
+
+        if norm_topic in {"tong so cau", "tong cau", "tong", "tong cong", "tong so", "total"}:
+            body_end = row_idx
+            for g_idx, grp in enumerate(type_groups):
+                g_pos = grp["positions"]
+                for lvl, col in sorted(g_pos.items()):
+                    raw_val = cells[col].strip()
+                    if raw_val and not re.fullmatch(r"\d+", raw_val):
+                        raise AIError(
+                            "invalid_matrix",
+                            "Dòng tổng không khớp số câu từng cột. Kiểm lại tệp ma trận.",
+                        )
+                    expected = int(raw_val) if raw_val else 0
+                    actual = sum(pr["groupCounts"][g_idx][lvl] for pr in parsed_rows)
+                    if expected != actual:
+                        raise AIError(
+                            "invalid_matrix",
+                            "Dòng tổng không khớp số câu từng cột. Kiểm lại tệp ma trận.",
+                        )
+            for t_grp in total_groups:
+                for lvl, col in sorted(t_grp["positions"].items()):
+                    raw_val = cells[col].strip()
+                    if not raw_val:
+                        expected = 0
+                    elif re.fullmatch(r"\d+", raw_val):
+                        expected = int(raw_val)
+                    else:
+                        raise AIError(
+                            "invalid_matrix",
+                            "Dòng tổng không khớp số câu từng cột. Kiểm lại tệp ma trận.",
+                        )
+                    actual = sum(
+                        pr["groupCounts"][g_idx].get(lvl, 0)
+                        for pr in parsed_rows
+                        for g_idx in range(len(type_groups))
+                    )
+                    if expected != actual:
+                        raise AIError(
+                            "invalid_matrix",
+                            "Dòng tổng không khớp số câu từng cột. Kiểm lại tệp ma trận.",
+                        )
+            seen_total_counts = True
+            continue
+
+        if norm_topic in {"tong so diem", "tong diem", "so diem", "diem"}:
+            body_end = row_idx
+            for g_idx, grp in enumerate(type_groups):
+                for lvl, col in sorted(grp["positions"].items()):
+                    raw_pts = re.sub(r"\s*(?:điểm|diem)\s*$", "", cells[col].strip(), flags=re.I)
+                    val_str = raw_pts.replace(",", ".")
+                    if not val_str:
+                        continue
+                    if not re.fullmatch(r"\d+(?:\.\d{1,2})?", val_str):
+                        return None
+                    try:
+                        group_level_points[(g_idx, lvl)] = Decimal(val_str)
+                    except InvalidOperation:
+                        return None
+            continue
+
+        if norm_topic.startswith(("ti le", "ty le")):
+            body_end = row_idx
+            continue
+
+        if seen_total_counts:
+            break
+
+        body_end = row_idx
+        row_counts: list[dict[int, int]] = []
+        for grp in type_groups:
+            g_counts: dict[int, int] = {}
+            for lvl, col in sorted(grp["positions"].items()):
+                raw_val = cells[col].strip()
+                if not raw_val:
+                    g_counts[lvl] = 0
+                elif re.fullmatch(r"\d+", raw_val):
+                    g_counts[lvl] = int(raw_val)
+                else:
+                    return None
+            row_counts.append(g_counts)
+
+        for t_grp in total_groups:
+            for lvl, col in sorted(t_grp["positions"].items()):
+                raw_val = cells[col].strip()
+                if raw_val and not re.fullmatch(r"\d+", raw_val):
+                    return None
+                expected_row = int(raw_val) if raw_val else 0
+                actual_row = sum(gc.get(lvl, 0) for gc in row_counts)
+                if raw_val and expected_row != actual_row:
+                    return None
+
+        grp_val = (
+            cells[choice_col].strip() if choice_col is not None and len(cells) > choice_col else ""
+        )
+        parsed_rows.append(
+            {"topic": topic[:160].strip(), "choiceGroup": grp_val, "groupCounts": row_counts}
+        )
+
+    if not parsed_rows:
+        return None
+    if _body_merges_unsafe(rows, header_end, body_end, spec, merges):
+        return None
+
+    # Quy đổi điểm từng đơn vị (theo nhóm loại câu & mức độ) từ dòng Tổng số điểm nếu có
+    unit_p100_map: dict[tuple[int, int], int] = {}
+    for g_idx, grp in enumerate(type_groups):
+        for lvl in sorted(grp["positions"]):
+            total_cnt = sum(pr["groupCounts"][g_idx][lvl] for pr in parsed_rows)
+            if (g_idx, lvl) in group_level_points and total_cnt > 0:
+                total_p100 = round(group_level_points[(g_idx, lvl)] * 100)
+                if total_p100 <= 0 or total_p100 % total_cnt != 0:
+                    return None
+                unit_p100_map[(g_idx, lvl)] = total_p100 // total_cnt
+
+    result: list[dict[str, Any]] = []
+    for pr in parsed_rows:
+        for g_idx, grp in enumerate(type_groups):
+            q_type: QuestionType = grp["kind"]
+            n_levels = len(grp["positions"])
+            counts = [pr["groupCounts"][g_idx][lvl] for lvl in range(n_levels)]
+            if sum(counts) == 0:
+                continue
+
+            is_sub_items = bool(grp["isSubItems"])
+            if not is_sub_items and q_type == "truefalse":
+                total_tf_units = sum(sum(r["groupCounts"][g_idx].values()) for r in parsed_rows)
+                tf_unit_pts = {
+                    unit_p100_map[(g_idx, lvl)]
+                    for lvl in range(n_levels)
+                    if (g_idx, lvl) in unit_p100_map
+                }
+                if total_tf_units % 4 == 0 and tf_unit_pts == {25}:
+                    is_sub_items = True
+
+            entry: dict[str, Any] = {"topic": pr["topic"], "type": q_type}
+            if pr["choiceGroup"]:
+                entry["choiceGroup"] = pr["choiceGroup"]
+
+            if q_type == "truefalse" and is_sub_items:
+                total_items = sum(counts)
+                if total_items % 4 != 0:
+                    return None
+                num_q = total_items // 4
+                expanded = [lvl for lvl, cnt in enumerate(counts) for _ in range(cnt)]
+                if num_q == 1:
+                    sub_tuples = [tuple(expanded)]
+                else:
+                    sub_tuples = [tuple(expanded[i::num_q]) for i in range(num_q)]
+                q_targets = [0] * n_levels
+                for st in sub_tuples:
+                    rep_lvl = max(0, min(n_levels - 1, round(sum(st) / 4)))
+                    q_targets[rep_lvl] += 1
+                entry["targets"] = q_targets
+                entry["subLevels"] = (
+                    list(sub_tuples[0]) if num_q == 1 else [list(s) for s in sub_tuples]
+                )
+                active_item_p100s = {
+                    unit_p100_map[(g_idx, lvl)]
+                    for lvl, cnt in enumerate(counts)
+                    if cnt > 0 and (g_idx, lvl) in unit_p100_map
+                }
+                if len(active_item_p100s) == 1:
+                    q_p100 = 4 * next(iter(active_item_p100s))
+                    entry.update(_p100_to_slot_kwargs(q_p100))
+                elif unit_p100_map and any(
+                    (g_idx, lvl) in unit_p100_map for lvl in range(n_levels)
+                ):
+                    q_p100_list = [
+                        sum(unit_p100_map.get((g_idx, item_lvl), 0) for item_lvl in st)
+                        for st in sub_tuples
+                    ]
+                    if len(set(q_p100_list)) == 1 and q_p100_list[0] > 0:
+                        entry.update(_p100_to_slot_kwargs(q_p100_list[0]))
+            else:
+                entry["targets"] = counts
+                active_p100s = {
+                    lvl: unit_p100_map[(g_idx, lvl)]
+                    for lvl, cnt in enumerate(counts)
+                    if cnt > 0 and (g_idx, lvl) in unit_p100_map
+                }
+                if active_p100s:
+                    distinct_vals = set(active_p100s.values())
+                    if len(distinct_vals) == 1:
+                        entry.update(_p100_to_slot_kwargs(next(iter(distinct_vals))))
+                    else:
+                        if all(v % 25 == 0 for v in distinct_vals):
+                            entry["pointsByLevelQ4"] = [
+                                (active_p100s[lvl] // 25) if lvl in active_p100s else None
+                                for lvl in range(4)
+                            ]
+                        else:
+                            entry["pointsByLevel"] = [
+                                round(active_p100s[lvl] / 100, 2) if lvl in active_p100s else None
+                                for lvl in range(4)
+                            ]
+            result.append(entry)
+
+    if not result:
+        return None
+    metadata = _extract_docx_table_metadata(
+        metadata_rows if metadata_rows is not None else rows, metadata_tables
+    )
+    notes = "Đọc số câu từ bảng tại máy. Hãy đối chiếu tệp gốc trước khi xác nhận."
+    if "minutes" in metadata:
+        notes = (
+            f"Đọc số câu từ bảng tại máy ({metadata['minutes']} phút). "
+            "Hãy đối chiếu tệp gốc trước khi xác nhận."
+        )
+    checked = checked_matrix({"matrix": result, "notes": notes})
+    if metadata:
+        return {**checked, "metadata": metadata}
+    return checked
+
+
 def _is_secondary_spec_table(table: dict[str, Any]) -> bool:
     t_rows = table.get("rows") or []
     sheet_norm = normalized(str(table.get("sheet") or ""))
@@ -799,7 +1296,9 @@ def parse_table(rows):
             if _is_secondary_spec_table(tbl):
                 continue
             has_header = any(
-                _resolve_stacked_header(t_rows, i) is not None for i in range(len(t_rows))
+                _resolve_stacked_header(t_rows, i) is not None
+                or _resolve_grouped_type_header(t_rows, i) is not None
+                for i in range(len(t_rows))
             )
             if has_header:
                 matrix_candidates.append(tbl)
@@ -810,18 +1309,27 @@ def parse_table(rows):
             )
         if len(matrix_candidates) == 1:
             chosen = matrix_candidates[0]
-            return _parse_single_table(chosen["rows"], chosen.get("merges"))
+            parsed = _parse_single_table(chosen["rows"], chosen.get("merges"))
+            if parsed is not None:
+                return parsed
+            return _parse_grouped_type_table(
+                chosen["rows"],
+                chosen.get("merges"),
+                metadata_rows=rows,
+                metadata_tables=rows.tables,
+            )
         return None
 
-    return _parse_single_table(rows, getattr(rows, "merges", None))
+    parsed = _parse_single_table(rows, getattr(rows, "merges", None))
+    if parsed is not None:
+        return parsed
+    return _parse_grouped_type_table(rows, getattr(rows, "merges", None))
 
 
 def _is_spec_only_table(rows: list[list[str]] | None, text: str = "") -> bool:
     """Phát hiện tệp chỉ có bảng đặc tả (chưa có bảng ma trận số câu)."""
     if not rows:
         return False
-    norm_cells = [normalized(c) for row in rows for c in row if c.strip()]
-    joined = normalized(text) + " " + " ".join(norm_cells)
     spec_signals = (
         "yeu cau can dat",
         "bang dac ta",
@@ -830,6 +1338,30 @@ def _is_spec_only_table(rows: list[list[str]] | None, text: str = "") -> bool:
         "pham vi nang luc",
         "dac ta de",
     )
+    if isinstance(rows, ParsedGrid) and rows.tables:
+        has_matrix_table = False
+        has_spec_table = False
+        for tbl in rows.tables:
+            t_rows = tbl.get("rows") or []
+            if _is_secondary_spec_table(tbl):
+                has_spec_table = True
+                continue
+            if any(
+                _resolve_stacked_header(t_rows, i) is not None
+                or _resolve_grouped_type_header(t_rows, i) is not None
+                for i in range(len(t_rows))
+            ):
+                has_matrix_table = True
+                break
+            t_norm = " ".join(normalized(c) for row in t_rows for c in row if c.strip())
+            if any(sig in t_norm for sig in spec_signals):
+                has_spec_table = True
+        if has_matrix_table:
+            return False
+        return has_spec_table
+
+    norm_cells = [normalized(c) for row in rows for c in row if c.strip()]
+    joined = normalized(text) + " " + " ".join(norm_cells)
     return any(sig in joined for sig in spec_signals)
 
 
@@ -1201,7 +1733,7 @@ async def read_matrix(request, call):
         result = parse_table(rows)
     if result:
         return {**result, "method": "python_table", "sentToAI": False}
-    if not result and _is_spec_only_table(rows, text):
+    if not result and request.get("consent") is not True and _is_spec_only_table(rows, text):
         raise AIError(
             "spec_only_matrix",
             "Chỉ phát hiện bảng đặc tả (chưa có bảng ma trận số câu/điểm để dựng đề). "

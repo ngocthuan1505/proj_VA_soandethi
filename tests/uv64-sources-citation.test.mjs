@@ -107,7 +107,41 @@ function withMockBrowserEnv(selectorMap, innerDims, fn) {
   const prevIntersectionObserver = globalThis.IntersectionObserver;
   const prevInnerWidth = globalThis.innerWidth;
   const prevInnerHeight = globalThis.innerHeight;
+  const prevIndexedDB = globalThis.indexedDB;
   const listeners = new Map();
+  const idbData = new Map();
+  globalThis.indexedDB = {
+    open() {
+      const request = {};
+      queueMicrotask(() => {
+        request.result = {
+          transaction() {
+            const tx = {
+              objectStore() {
+                return {
+                  get(key) {
+                    const r = {};
+                    queueMicrotask(() => {
+                      r.result = structuredClone(idbData.get(key));
+                      r.onsuccess?.();
+                    });
+                    return r;
+                  },
+                  put(value, key) {
+                    idbData.set(key, structuredClone(value));
+                    queueMicrotask(() => tx.oncomplete?.());
+                  },
+                };
+              },
+            };
+            return tx;
+          },
+        };
+        request.onsuccess?.();
+      });
+      return request;
+    },
+  };
 
   const mockDoc = {
     body: { classList: makeClassList(), dataset: {}, addEventListener: () => {} },
@@ -168,6 +202,7 @@ function withMockBrowserEnv(selectorMap, innerDims, fn) {
       globalThis.fetch = prevFetch;
       globalThis.innerWidth = prevInnerWidth;
       globalThis.innerHeight = prevInnerHeight;
+      globalThis.indexedDB = prevIndexedDB;
     });
 }
 
@@ -521,4 +556,193 @@ test('UV64 MVP guard: export variants chỉ đọc unit độc lập và action 
   // Kiểm tra thêm: nút export fallback khi đóng modal không lỗi và history luôn mang cảnh báo exam_exports
   const modalBtn = await handleMVPAction('menu', { dataset: { menu: 'file' }, getBoundingClientRect: () => ({ left: 0, bottom: 0 }) }).catch(() => false);
   assert.equal(typeof modalBtn, 'boolean');
+});
+
+test('UV64 OCR chữ-scan-chữ: chỉ OCR trang cần, giữ nguyên trang chữ và trang rỗng hiện Chưa đọc được', async () => {
+  const docId = 'doc-mixed-pdf';
+  const exam = {
+    id: 'exam-ocr-mixed',
+    revision: 1,
+    title: 'Đề OCR hỗn hợp',
+    subject: 'Toán',
+    grade: '9',
+    docs: [
+      {
+        id: docId,
+        fileId: 'file-mixed-1',
+        kind: 'pdf',
+        name: 'mixed.pdf',
+        method: 'pypdf_local_text',
+        version: 1,
+        text: 'LOCAL_PAGE_ONE\n\n\n\nLOCAL_PAGE_THREE',
+        pages: [
+          { number: 1, text: 'LOCAL_PAGE_ONE', needsOCR: false },
+          { number: 2, text: '', needsOCR: true },
+          { number: 3, text: 'LOCAL_PAGE_THREE', needsOCR: false },
+        ],
+      },
+    ],
+    questions: [],
+  };
+  const state = { exams: [exam], current: exam.id, prefs: [] };
+  const dialog = createFakeElement('dialog');
+  const headerTop = createFakeElement('header');
+  headerTop.dataset.unifiedHeader = '1';
+  const consentCheckbox = createFakeElement('input');
+  consentCheckbox.checked = true;
+  const waitingStatus = createFakeElement('p');
+  waitingStatus.isConnected = true;
+
+  const selectorMap = new Map([
+    ['header.top', headerTop],
+    ['#dialog', dialog],
+    ['#dialog [role=status]', waitingStatus],
+    ['#source-ocr-consent', consentCheckbox],
+    ['.chat-compose', createFakeElement('div')],
+    ['.paper', createFakeElement('div')],
+    ['.paper-scroll', createFakeElement('div')],
+    ['.assistant-body', createFakeElement('div')],
+    ['#chat-input', createFakeElement('textarea')],
+    ['.sidebar', createFakeElement('aside')],
+    ['.workspace', createFakeElement('div')],
+  ]);
+
+  const extractRequests = [];
+  let ocrResponsePages = [
+    { number: 1, text: 'MODEL_REPLACEMENT_1', needsOCR: false, needsReview: true, method: 'gemini_document_ocr' },
+    { number: 2, text: '', needsOCR: true, needsReview: true, method: 'gemini_document_ocr' },
+    { number: 3, text: 'MODEL_REPLACEMENT_3', needsOCR: false, needsReview: true, method: 'gemini_document_ocr' },
+  ];
+
+  const ctx = {
+    exam: () => exam,
+    getState: () => state,
+    qget: () => null,
+    getSelected: () => null,
+    setSelected: () => {},
+    currentScope: () => null,
+    isTeacher: () => false,
+    icon: () => '',
+    toast: () => {},
+    render: () => {},
+    modal: (_title, html) => {
+      dialog.open = true;
+      dialog.innerHTML = html;
+    },
+    change: (_label, mutator) => {
+      exam.revision += 1;
+      mutator(exam);
+    },
+    persist: async () => {},
+    act: async () => {},
+    setTab: () => {},
+  };
+
+  await withMockBrowserEnv(selectorMap, { width: 1280, height: 800 }, async () => {
+    globalThis.fetch = async (url, init = {}) => {
+      if (String(url) === '/api/status') {
+        return new Response(JSON.stringify({ localPoC: true, model: 'gemini', config: {} }), { status: 200 });
+      }
+      if (String(url) === '/api/extract') {
+        extractRequests.push(JSON.parse(init.body));
+        return new Response(
+          JSON.stringify({
+            pages: ocrResponsePages,
+            method: 'gemini_document_ocr',
+            sentToAI: true,
+            needsReview: true,
+            notes: 'QA fixture',
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({}), { status: 200 });
+    };
+
+    mountMVP(ctx);
+    const { initMVP } = await import('../mvp.js');
+    await initMVP(ctx);
+
+    // Mở trang 2 (trang rỗng cần OCR) -> nhãn phải là "Chưa đọc được"
+    await handleMVPAction('source', { dataset: { doc: docId, page: '2' } });
+    assert.ok(dialog.innerHTML.includes('Chưa đọc được'), dialog.innerHTML);
+    assert.ok(!dialog.innerHTML.includes('AI đã đọc'));
+
+    // Chạy đọc lại tài liệu -> phải gửi onlyNeedsOcr=true và pageNumbers=[2]
+    await handleMVPAction('source-extract', { dataset: { doc: docId } });
+    await handleMVPSubmit({ id: 'source-ocr-form' });
+
+    assert.equal(extractRequests.length, 1);
+    assert.equal(extractRequests[0].onlyNeedsOcr, true);
+    assert.deepEqual(extractRequests[0].pageNumbers, [2]);
+
+    // Trang 1 & 3 không bị ghi đè dù mock trả về cả 3 trang; trang 2 vẫn rỗng và giữ needsOCR=true + "Chưa đọc được"
+    assert.equal(exam.docs[0].pages[0].text, 'LOCAL_PAGE_ONE');
+    assert.equal(exam.docs[0].pages[0].needsOCR, false);
+    assert.equal(exam.docs[0].pages[1].text, '');
+    assert.equal(exam.docs[0].pages[1].needsOCR, true);
+    assert.equal(exam.docs[0].pages[2].text, 'LOCAL_PAGE_THREE');
+    assert.equal(exam.docs[0].pages[2].needsOCR, false);
+    assert.ok(dialog.innerHTML.includes('Chưa đọc được'));
+    assert.ok(!dialog.innerHTML.includes('AI đã đọc'));
+
+    // Mở lại trang 1: nhãn vẫn là "Nội dung đọc từ tệp", không biến thành "AI đã đọc"
+    await handleMVPAction('source', { dataset: { doc: docId, page: '1' } });
+    assert.ok(dialog.innerHTML.includes('Nội dung đọc từ tệp'));
+    assert.ok(!dialog.innerHTML.includes('AI đã đọc'));
+
+    // Lần 2: OCR trang 2 đọc được chữ -> trang 2 hiện "AI đã đọc", trang 1 & 3 vẫn giữ nguyên chữ gốc
+    ocrResponsePages = [
+      { number: 2, text: 'OCR_PAGE_TWO_OK', needsOCR: false, needsReview: true, method: 'gemini_document_ocr' },
+    ];
+    await handleMVPAction('source', { dataset: { doc: docId, page: '2' } });
+    await handleMVPAction('source-extract', { dataset: { doc: docId } });
+    await handleMVPSubmit({ id: 'source-ocr-form' });
+    assert.equal(exam.docs[0].pages[0].text, 'LOCAL_PAGE_ONE');
+    assert.equal(exam.docs[0].pages[1].text, 'OCR_PAGE_TWO_OK');
+    assert.equal(exam.docs[0].pages[1].needsOCR, false);
+    assert.equal(exam.docs[0].pages[2].text, 'LOCAL_PAGE_THREE');
+    assert.ok(dialog.innerHTML.includes('AI đã đọc'));
+  });
+});
+
+test('UV64 Sharing: cloneCommunityExam lưu tệp WAV đính kèm vào storage', async () => {
+  const wavUri = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+  const dialog = createFakeElement('dialog');
+  const selectorMap = new Map([['#dialog', dialog]]);
+  const state = { exams: [], current: null };
+  const ctx = {
+    getState: () => state,
+    persist: async () => {},
+    render: () => {},
+    toast: () => {},
+  };
+  await withMockBrowserEnv(selectorMap, { width: 1280, height: 800 }, async () => {
+    const kvWrites = [];
+    globalThis.fetch = async (url, init) => {
+      if (String(url) === '/api/kv' && init?.method === 'PUT') {
+        kvWrites.push(JSON.parse(init.body));
+        return new Response(JSON.stringify({ revision: 1 }), { status: 200 });
+      }
+      if (String(url).startsWith('/api/kv?key=')) {
+        return new Response(JSON.stringify({ value: null, revision: 0 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({}), { status: 200 });
+    };
+    const { cloneCommunityExam } = await import('../sharing.js');
+    const storage = await import('../storage.js');
+    const apiMock = async () => ({
+      clonedExam: {
+        id: 'cloned-1',
+        title: 'Đề nghe cộng đồng',
+        audio: { fileId: 'aud_1', filename: 'nghe.wav', mimeType: 'audio/wav', maxPlays: 2 },
+        questions: [],
+      },
+      files: { aud_1: wavUri },
+    });
+    await cloneCommunityExam(ctx, apiMock, { dataset: { token: 'T'.repeat(43) } });
+    assert.equal(state.current, 'cloned-1');
+    assert.ok(kvWrites.some((w) => w.key === 'file:aud_1' && w.value === wavUri));
+    assert.equal(await storage.get('file:aud_1'), wavUri);
+  });
 });

@@ -2877,6 +2877,11 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             store.connect,
             lambda _request: owner_id,
             lambda _request, exam_id: store.exam(exam_id),
+            read_file=lambda _request, fid: (
+                store.get("file:" + str(fid or "").strip())["value"]
+                if re.fullmatch(r"[\w-]+", str(fid or "").strip())
+                else None
+            ),
         )
         install_exam_rooms(
             app,

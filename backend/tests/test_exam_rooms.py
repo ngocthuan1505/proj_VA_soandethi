@@ -967,9 +967,32 @@ def test_analytics_max_score_not_shadowed_and_top_level_exam_audio(tmp_path: Pat
         headers=_student_headers(s2["attemptToken"]),
     )
 
+    # Trước khi chấm q-essay-1, cả 2 bài là needs_manual -> không đưa vào thống kê chính thức
+    pending_analytics = client.get(f"/api/rooms/{room_id}/analytics", headers=_teacher_headers())
+    assert pending_analytics.status_code == 200
+    pdata = pending_analytics.json()
+    assert pdata["submittedCount"] == 2
+    assert pdata["gradedCount"] == 0
+    assert pdata["provisionalCount"] == 2
+    assert pdata["avgScoreP100"] == 0
+    assert pdata["minScoreP100"] == 0
+    assert pdata["maxScoreP100"] == 0
+    assert all(b["count"] == 0 for b in pdata["histogram"])
+
+    # Chấm q-essay-1 = 0 cho cả 2 HS để chốt điểm chính thức
+    for aid in (s1["attemptId"], s2["attemptId"]):
+        gr = client.put(
+            f"/api/rooms/{room_id}/attempts/{aid}/grades/q-essay-1",
+            headers=_teacher_headers(),
+            json={"earnedPointsP100": 0},
+        )
+        assert gr.status_code == 200, gr.text
+
     analytics = client.get(f"/api/rooms/{room_id}/analytics", headers=_teacher_headers())
     assert analytics.status_code == 200
     data = analytics.json()
+    assert data["gradedCount"] == 2
+    assert data["provisionalCount"] == 0
     assert data["maxScoreP100"] == 300
     assert data["minScoreP100"] == 100
     assert data["avgScoreP100"] == 200

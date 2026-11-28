@@ -641,8 +641,19 @@ def _audit_question_evidence_staleness(
 ) -> dict[str, Any] | None:
     """UC9: kiểm tra chứng cứ bị đánh dấu stale hoặc lệch nguồn/trang/phiên bản/ngữ liệu."""
     evidence_list = question.get("evidence")
-    if not isinstance(evidence_list, list) or not evidence_list:
-        return None
+    has_evidence = isinstance(evidence_list, list) and len(evidence_list) > 0
+
+    has_exam_docs_list = isinstance(exam, dict) and isinstance(exam.get("docs"), list)
+    docs_by_id: dict[str, dict[str, Any]] = {}
+    if has_exam_docs_list:
+        assert isinstance(exam, dict)
+        for doc in exam["docs"]:
+            if not isinstance(doc, dict):
+                continue
+            for id_field in ("id", "sourceId"):
+                raw_id = doc.get(id_field)
+                if raw_id is not None and str(raw_id).strip():
+                    docs_by_id[str(raw_id).strip()] = doc
 
     src_obj = question.get("source")
     src_doc_id = (
@@ -650,6 +661,15 @@ def _audit_question_evidence_staleness(
         if isinstance(src_obj, dict)
         and isinstance(src_obj.get("docId"), str)
         and src_obj["docId"].strip()
+        else None
+    )
+    src_obj_ver = (
+        (
+            src_obj.get("version")
+            if src_obj.get("version") is not None
+            else src_obj.get("sourceVersion")
+        )
+        if isinstance(src_obj, dict)
         else None
     )
     src_page: int | None = None
@@ -668,13 +688,47 @@ def _audit_question_evidence_staleness(
     if src_page is None and type(question.get("sourcePage")) is int and question["sourcePage"] >= 1:
         src_page = question["sourcePage"]
 
+    reasons: list[str] = []
+
+    if not has_evidence:
+        if has_exam_docs_list and src_doc_id is not None:
+            if src_doc_id not in docs_by_id:
+                _add_unique(reasons, "tài liệu nguồn không còn trong đề (đã bị gỡ hoặc thay thế)")
+            else:
+                doc = docs_by_id[src_doc_id]
+                doc_ver = (
+                    doc.get("version")
+                    if doc.get("version") is not None
+                    else doc.get("sourceVersion")
+                )
+                if (
+                    doc_ver is not None
+                    and src_obj_ver is not None
+                    and str(doc_ver) != str(src_obj_ver)
+                ):
+                    _add_unique(
+                        reasons,
+                        f"nguồn câu hỏi thuộc phiên bản v{src_obj_ver} "
+                        f"(tài liệu hiện tại v{doc_ver})",
+                    )
+        if not reasons:
+            return None
+        return {
+            "code": "stale_quote_evidence",
+            "severity": "warning",
+            "questionId": q_id,
+            "ordinal": ordinal,
+            "field": "evidence",
+            "requiresReverification": True,
+            "message": f"Câu {ordinal} có trích dẫn nguồn cần rà lại: {'; '.join(reasons)}.",
+        }
+
     q_version = question.get("v")
     is_quote_question = question.get("quote") is True
     exam_quote_obj = exam.get("quote") if isinstance(exam, dict) else None
     raw_exam_quote = exam_quote_obj.get("text") if isinstance(exam_quote_obj, dict) else None
     norm_exam_quote = " ".join(raw_exam_quote.split()) if isinstance(raw_exam_quote, str) else ""
 
-    reasons: list[str] = []
     for ev in evidence_list:
         if not isinstance(ev, dict):
             continue
@@ -715,6 +769,56 @@ def _audit_question_evidence_staleness(
                 reasons,
                 f"trang trích dẫn ({ev_page}) lệch với trang nguồn ({src_page})",
             )
+
+        ev_src_ver = ev.get("sourceVersion")
+        if (
+            src_obj_ver is not None
+            and ev_src_ver is not None
+            and str(src_obj_ver) != str(ev_src_ver)
+        ):
+            _add_unique(
+                reasons,
+                f"trích dẫn thuộc phiên bản nguồn v{ev_src_ver} (nguồn câu hỏi v{src_obj_ver})",
+            )
+
+        citation_doc_id = ev_doc_id or src_doc_id
+        citation_version = ev_src_ver
+        if citation_version is None and citation_doc_id == src_doc_id:
+            citation_version = src_obj_ver
+        if has_exam_docs_list and citation_doc_id is not None:
+            if citation_doc_id not in docs_by_id:
+                _add_unique(reasons, "tài liệu nguồn không còn trong đề (đã bị gỡ hoặc thay thế)")
+            else:
+                doc = docs_by_id[citation_doc_id]
+                doc_ver = (
+                    doc.get("version")
+                    if doc.get("version") is not None
+                    else doc.get("sourceVersion")
+                )
+                if (
+                    doc_ver is not None
+                    and citation_version is not None
+                    and str(doc_ver) != str(citation_version)
+                ):
+                    _add_unique(
+                        reasons,
+                        f"trích dẫn thuộc phiên bản nguồn v{citation_version} "
+                        f"(tài liệu hiện tại v{doc_ver})",
+                    )
+                doc_pages = doc.get("pages")
+                if ev_page is not None and isinstance(doc_pages, list) and doc_pages:
+                    doc_page_nums = {
+                        p.get("number")
+                        if type(p.get("number")) is int
+                        else (p.get("page") if type(p.get("page")) is int else idx)
+                        for idx, p in enumerate(doc_pages, 1)
+                        if isinstance(p, dict)
+                    }
+                    if ev_page not in doc_page_nums:
+                        _add_unique(
+                            reasons,
+                            f"trang trích dẫn ({ev_page}) không còn trong tài liệu nguồn",
+                        )
 
         ev_q_ver = ev.get("questionVersion")
         if ev_q_ver is not None and q_version is not None and ev_q_ver != q_version:

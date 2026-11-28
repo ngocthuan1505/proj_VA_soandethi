@@ -118,6 +118,8 @@ export function computeClientAnalyticsSummary(exam) {
   const examMinutes = Number(exam?.minutes) > 0 ? Number(exam.minutes) : 45;
 
   let totalPointsRaw = 0;
+  let commonPointsRaw = 0;
+  const trackPoints = new Map();
   let estimatedMinutesRaw = 0;
   let approvedCount = 0;
 
@@ -133,6 +135,13 @@ export function computeClientAnalyticsSummary(exam) {
     const qType = q?.type || 'mcq';
     const qPts = questionPoints(q);
     totalPointsRaw += qPts;
+    const grp = String(q?.choiceGroup || '').trim();
+    if (!grp) {
+      commonPointsRaw += qPts;
+    } else {
+      const grpKey = grp.toLocaleLowerCase('vi-VN');
+      trackPoints.set(grpKey, (trackPoints.get(grpKey) || 0) + qPts);
+    }
     estimatedMinutesRaw += ESTIMATED_MINUTES_BY_TYPE[qType] ?? 2;
     if (isApproved(q)) approvedCount += 1;
 
@@ -224,7 +233,9 @@ export function computeClientAnalyticsSummary(exam) {
     }
   });
 
-  const totalPoints = round2(totalPointsRaw);
+  const maxTrackPts = trackPoints.size ? Math.max(...trackPoints.values()) : 0;
+  const effectivePoints = trackPoints.size ? commonPointsRaw + maxTrackPts : totalPointsRaw;
+  const totalPoints = round2(effectivePoints);
   const pointsDelta = round2(totalPoints - targetPoints);
   const estimatedMinutes = Math.round(estimatedMinutesRaw);
 
@@ -643,14 +654,29 @@ export async function saveAllQuestionsToBank(c) {
   return saved + dupCount;
 }
 
+function hasActiveBankFilters() {
+  return Boolean(
+    bankFilters.q.trim() ||
+    bankFilters.subject ||
+    bankFilters.grade ||
+    bankFilters.topic ||
+    bankFilters.qtype ||
+    (bankFilters.level !== '' && bankFilters.level != null),
+  );
+}
+
 function paintQuestionBankList() {
   const listEl = document.querySelector('#qbank-list');
   const countEl = document.querySelector('#qbank-count');
+  const resetBtn = document.querySelector('#qbank-reset');
   const loadMoreBtn = document.querySelector('#qbank-load-more');
   if (!listEl) return;
   const total = Math.max(bankTotal || 0, bankCache.length);
   if (countEl) {
     countEl.textContent = `Hiển thị ${bankCache.length} / ${total} câu hỏi trong kho`;
+  }
+  if (resetBtn) {
+    resetBtn.hidden = !hasActiveBankFilters();
   }
   listEl.innerHTML = renderQuestionBankItemsHTML(bankCache);
   if (loadMoreBtn) {
@@ -775,7 +801,10 @@ export async function openQuestionBank(c) {
           ${LEVELS.map((label, idx) => `<option value="${idx}">${esc(label)}</option>`).join('')}
         </select>
       </div>
-      <div id="qbank-count" class="qbank-count">Đang tải…</div>
+      <div class="qbank-count-row">
+        <div id="qbank-count" class="qbank-count">Đang tải…</div>
+        <button type="button" id="qbank-reset" class="tiny-btn ghost" data-action="reset-bank-filters" hidden>Xóa bộ lọc</button>
+      </div>
       <div id="qbank-list" class="qbank-list"></div>
       <div class="qbank-more-wrap"><button type="button" id="qbank-load-more" data-action="load-more-bank" hidden>Tải thêm</button></div>
     </div>`,
@@ -823,6 +852,9 @@ async function insertFromBank(c, itemId) {
     e.questions.push(cloned);
     check(e, cloned);
   });
+  if (c.getViewMode?.() === 'home') {
+    c.setViewMode?.('workspace');
+  }
   c.setSelected?.(cloned.id);
   c.toast('Đã chèn câu hỏi từ Ngân hàng vào đề (Ctrl+Z để hoàn tác).');
 }
@@ -872,6 +904,9 @@ function jumpToIssueQuestion(c, node) {
   }
   const dialog = document.querySelector('#dialog');
   if (dialog?.open) dialog.close();
+  if (c.getViewMode?.() === 'home') {
+    c.setViewMode?.('workspace');
+  }
   c.setSelected?.(target.id);
   const el = document.getElementById('q-' + target.id);
   if (el) {
@@ -1047,6 +1082,22 @@ export async function handleVipAction(action, node, c) {
       return true;
     case 'load-more-bank':
       await refreshQuestionBankList(c, {append: true});
+      return true;
+    case 'reset-bank-filters':
+      clearTimeout(bankSearchTimer);
+      bankFilters = {q: '', subject: '', grade: '', topic: '', qtype: '', level: ''};
+      for (const [sel, val] of [
+        ['#qbank-search', ''],
+        ['#qbank-subject', ''],
+        ['#qbank-grade', ''],
+        ['#qbank-topic', ''],
+        ['#qbank-qtype', ''],
+        ['#qbank-level', ''],
+      ]) {
+        const el = document.querySelector(sel);
+        if (el) el.value = val;
+      }
+      await refreshQuestionBankList(c);
       return true;
     case 'exam-analytics':
       await openExamAnalytics(c);

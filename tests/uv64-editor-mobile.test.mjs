@@ -95,6 +95,8 @@ test('UV64 SGK KNTT Modal & Citations & Ma trận 2 nhánh choiceGroup', () => {
   assert.match(lessonPickerJs, /NXB Giáo dục Việt Nam/);
   assert.match(lessonPickerJs, /GDPT 2018/);
   assert.match(lessonPickerJs, /Tóm tắt & YCCĐ/);
+  assert.match(lessonPickerJs, /Global Success/);
+  assert.match(lessonPickerJs, /col\.officialTitle\|\|col\.bookTitle/);
   assert.match(lessonPickerJs, /sgk-empty-state/);
 
   assert.match(appJs, /\[name=matrix-level-points\]/);
@@ -132,6 +134,8 @@ test('UV64 Responsive Mobile 390x844, bàn phím ảo 390x560 và ngưỡng !imp
   assert.match(layoutCss, /\.editor-toolbar\s+\[data-action="menu"\]\s*\{[^}]*margin-left:\s*auto;/);
   assert.match(layoutCss, /\.document-bar\s+\.ruler\s*\{\s*display:\s*none;\s*\}/);
   assert.match(layoutCss, /\.sgk-tree-pane\s*\{\s*min-height:\s*96px;/);
+  assert.match(layoutCss, /\.sgk-split\s*>\s*\.sgk-tree-pane\s*\{\s*min-height:\s*220px;/);
+  assert.match(layoutCss, /\.sgk-modal\s+\[data-sgk-panel="catalog"\]:not\(\[hidden\]\)/);
   assert.match(
     layoutCss,
     /@media \(max-width:\s*760px\) and \(max-height:\s*680px\)[\s\S]*height:\s*100dvh;[\s\S]*max-height:\s*100dvh;[\s\S]*\.assistant-body\s*\{[^}]*min-height:\s*120px;/,

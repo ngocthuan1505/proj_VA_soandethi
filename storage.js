@@ -1,3 +1,4 @@
+const TAB_ID=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2);
 const contexts=new Map();
 function contextFor(id){
  if(!contexts.has(id))contexts.set(id,{id,revision:0,stateConflict:false,pending:new Map(),inflight:new WeakMap(),disk:Promise.resolve(),remote:Promise.resolve()});
@@ -5,16 +6,19 @@ function contextFor(id){
 }
 let active=contextFor('local');
 export const setIdentity=id=>{active=contextFor(id||'local');};
-const dbp=typeof indexedDB==='undefined'?Promise.resolve(null):new Promise((resolve,reject)=>{
- const request=indexedDB.open('tro-ly-soan-de-v1',1);
- request.onupgradeneeded=()=>request.result.createObjectStore('kv');
- request.onsuccess=()=>resolve(request.result);
- request.onerror=()=>reject(request.error);
-});
+let cachedIdb=null,dbp=null;
 async function requireDb(){
- const db=await dbp;
- if(!db)throw Error('IndexedDB không khả dụng trong môi trường này.');
- return db;
+ if(typeof indexedDB==='undefined')throw Error('IndexedDB không khả dụng trong môi trường này.');
+ if(!dbp||cachedIdb!==indexedDB){
+  cachedIdb=indexedDB;
+  dbp=new Promise((resolve,reject)=>{
+   const request=indexedDB.open('tro-ly-soan-de-v1',1);
+   request.onupgradeneeded=()=>request.result.createObjectStore('kv');
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error);
+  });
+ }
+ return dbp;
 }
 async function localGet(ctx,key){
  const db=await requireDb();
@@ -54,7 +58,11 @@ function send(ctx,key,record,saved=Promise.resolve()){
   const response=await fetch('/api/kv',{method:'PUT',headers:{...workspaceHeaders(ctx),'Content-Type':'application/json',...(key==='state'?{'If-Match':String(record.base)}:{})},body:JSON.stringify({key,value:record.value})});
   let result;try{result=await response.json();}catch{throw Error('Máy chủ chưa trả kết quả lưu hợp lệ. Bản tạm vẫn được giữ.');}
   if(!response.ok){
-   if(key==='state'&&response.status===409&&result.code==='stale_snapshot')ctx.stateConflict=true;
+   if(key==='state'&&response.status===409&&result.code==='stale_snapshot'){
+    ctx.stateConflict=true;
+    record.conflict=true;
+    await disk(ctx,()=>updatePending(ctx,key,record,{...record,conflict:true}));
+   }
    throw Error(result.error||'Không lưu được dữ liệu trên máy chủ. Bản tạm vẫn được giữ.');
   }
   if(key==='state'){ctx.revision=result.revision;ctx.stateConflict=false;}
@@ -112,10 +120,15 @@ export async function get(key,{requireRemote=false}={}){
  return ctx.pending.get(key)?.value??localGet(ctx,key);
 }
 export function put(key,value){
- const ctx=active,record={id:crypto.randomUUID(),value:structuredClone(value),base:key==='state'?ctx.revision:0};
+ const ctx=active,prevMemId=ctx.pending.get(key)?.id,record={id:crypto.randomUUID(),tabId:TAB_ID,value:structuredClone(value),base:key==='state'?ctx.revision:0};
  if(ctx.restoring)return Promise.reject(Error('Đang khôi phục kho. Chờ hoàn tất trước khi sửa.'));
  ctx.pending.set(key,record);
- const saved=disk(ctx,async()=>{await localPut(ctx,key,record.value);await localPut(ctx,'__pending:'+key,record);});
+ const saved=disk(ctx,async()=>{
+  const existing=await localGet(ctx,'__pending:'+key);
+  if(existing?.value!==undefined&&existing.id!==record.id&&existing.id!==prevMemId&&existing.tabId!==record.tabId)return;
+  await localPut(ctx,key,record.value);
+  await localPut(ctx,'__pending:'+key,record);
+ });
  return send(ctx,key,record,saved);
 }
 export async function allFiles(ids){const ctx=active,files={};for(const id of ids){sameIdentity(ctx);const value=await get('file:'+id);sameIdentity(ctx);if(value)files[id]=value;}return files;}
@@ -200,7 +213,7 @@ export async function restoreBackup(backup,revision){
   }
   sameIdentity(ctx);
   if(!response.ok)throw Error(result.error||'Chưa khôi phục được dữ liệu.');
-  ctx.revision=result.revision;
+  ctx.revision=result.revision;ctx.stateConflict=false;
   try{
    await disk(ctx,async()=>{
     const database=await dbp;

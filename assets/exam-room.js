@@ -94,6 +94,10 @@ function storageSessionKey(code) {
   return `mach_room_session_${String(code || '').toUpperCase()}`;
 }
 
+function storageLastResultKey(code) {
+  return `mach_room_last_result_${String(code || '').toUpperCase()}`;
+}
+
 function storageDraftKey(attemptId) {
   return `mach_room_draft_${attemptId}`;
 }
@@ -104,6 +108,23 @@ function loadSavedSession(code) {
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
+  }
+}
+
+function loadLastResultSession(code) {
+  try {
+    const raw = sessionStorage.getItem(storageLastResultKey(code));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLastResultSession(code, data) {
+  try {
+    sessionStorage.setItem(storageLastResultKey(code), JSON.stringify(data));
+  } catch {
+    // Ignore storage quota errors
   }
 }
 
@@ -162,11 +183,20 @@ async function apiFetch(path, { method = 'GET', body, token } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers['X-Attempt-Token'] = token;
-  const response = await fetch(path, {
-    method,
-    headers,
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      method,
+      headers,
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch {
+    const netErr = new Error(
+      'Không thể kết nối tới máy chủ. Kiểm tra mạng rồi thử lại; bài làm vẫn được lưu tạm trên máy.',
+    );
+    netErr.isNetworkError = true;
+    throw netErr;
+  }
   let data = null;
   try {
     data = await response.json();
@@ -348,6 +378,7 @@ function initAudioEntries() {
     const rem = Number.isFinite(Number(aud.playsRemaining))
       ? Number(aud.playsRemaining)
       : Math.max(0, maxP - used);
+    const pendingLease = String(aud.pendingLeaseId || '');
     appState.audioState[fid] = {
       fileId: fid,
       filename: String(aud.filename || 'Đoạn âm thanh'),
@@ -356,6 +387,8 @@ function initAudioEntries() {
       playsUsed: used,
       playsRemaining: rem,
       maxPlays: maxP,
+      activeLeaseId: pendingLease,
+      leaseAcked: false,
       loading: false,
       activePlayback: false,
       error: '',
@@ -398,6 +431,8 @@ export function renderAudioCardHTML(aud) {
     playsUsed: Number(aud.playsUsed || 0),
     playsRemaining: Number(aud.playsRemaining ?? aud.maxPlays ?? 2),
     maxPlays: Number(aud.maxPlays || 2),
+    activeLeaseId: String(aud.pendingLeaseId || ''),
+    leaseAcked: false,
     loading: false,
     activePlayback: false,
     error: '',
@@ -408,9 +443,11 @@ export function renderAudioCardHTML(aud) {
     ? 'Đang tải audio…'
     : st.activePlayback
       ? 'Đang phát lượt hiện tại…'
-      : st.blobUrl
-        ? 'Tải & phát lượt tiếp theo'
-        : 'Nghe đoạn audio';
+      : !st.blobUrl && st.activeLeaseId && st.playsRemaining > 0
+        ? 'Tải lại lượt nghe (chưa trừ lượt)'
+        : st.blobUrl
+          ? 'Tải & phát lượt tiếp theo'
+          : 'Nghe đoạn audio';
   return `
     <div class="sr-audio-card" data-audio-box="${esc(st.fileId)}">
       <div class="sr-audio-top">
@@ -702,6 +739,7 @@ export function renderJoinScreenHTML() {
   const modeText = m?.mode === 'homework' ? 'Bài tập về nhà' : 'Kiểm tra trực tuyến';
   const durText = m?.durationMinutes > 0 ? `${m.durationMinutes} phút` : 'Không giới hạn phiên';
   const choiceGroups = Array.isArray(m?.choiceGroups) ? m.choiceGroups : [];
+  const lastResult = loadLastResultSession(appState.roomCode);
 
   return `
     <div class="sr-center-wrap">
@@ -741,7 +779,17 @@ export function renderJoinScreenHTML() {
                  <button type="button" class="sr-btn" data-sr-action="discard-saved">Làm với thông tin mới</button>
                </div>
              </div>`
-          : ''
+          : lastResult?.attemptId && lastResult?.attemptToken
+            ? `<div class="sr-card" style="margin-bottom:14px;border-color:#b6d4f0;background:#f8fbff;">
+                 <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;">
+                   <div>
+                     <strong>Kết quả lần nộp gần nhất</strong>
+                     <div class="sr-muted" style="font-size:12.5px;">Thí sinh: ${esc(lastResult.studentName || 'Đã nộp')}</div>
+                   </div>
+                   <button type="button" class="sr-btn sr-btn-soft sr-btn-sm" data-sr-action="view-last-result">Xem lại kết quả</button>
+                 </div>
+               </div>`
+            : ''
       }
 
       ${
@@ -943,17 +991,35 @@ export function renderExamScreenHTML() {
         }
         ${
           appState.confirmSubmitOpen
-            ? `<div class="sr-card" style="border-color:var(--sr-brand, #0f4c81);background:#e8f2fc;">
-                 <strong>Xác nhận nộp bài?</strong>
-                 <p class="sr-muted" style="margin:6px 0 12px;">
+            ? (() => {
+                const unanswered = questions
+                  .map((q, idx) => ({ q, idx }))
+                  .filter(({ q }) => !isQuestionAnswered(q));
+                const pillsHTML = unanswered.length
+                  ? `<div class="sr-unanswered-pills" data-unanswered-pills="1">
+                       ${unanswered
+                         .slice(0, 12)
+                         .map(
+                           ({ idx }) =>
+                             `<button type="button" class="sr-unanswered-pill" data-sr-action="jump-q" data-idx="${idx}">Câu ${idx + 1}</button>`,
+                         )
+                         .join('')}
+                       ${unanswered.length > 12 ? `<span class="sr-muted">+${unanswered.length - 12} câu nữa</span>` : ''}
+                     </div>`
+                  : '';
+                return `<div class="sr-card" style="border-color:var(--sr-brand, #0f4c81);background:#e8f2fc;">
+                 <strong>${unanswered.length ? `Xác nhận nộp bài? Em còn ${unanswered.length} câu chưa làm.` : 'Xác nhận nộp bài?'}</strong>
+                 <p class="sr-muted" style="margin:6px 0 10px;">
                    Bạn đã trả lời <strong>${answeredCount}/${total}</strong> câu${hasChoiceGroups ? ' (đề có phần tự chọn: chỉ cần làm Phần chung + 1 hướng)' : ''}${appState.flagged.size ? ` · Có ${appState.flagged.size} câu đánh dấu xem lại` : ''}. Sau khi nộp, bài làm sẽ được ghi nhận ngay.
                  </p>
+                 ${pillsHTML}
                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
                    <button type="button" class="sr-btn sr-btn-primary" data-sr-action="confirm-submit" ${appState.submitting ? 'disabled' : ''}>Xác nhận nộp bài</button>
                     ${answeredCount < total ? `<button type="button" class="sr-btn sr-btn-soft" data-sr-action="jump-first-unanswered">Chuyển tới câu chưa làm</button>` : ''}
                    <button type="button" class="sr-btn" data-sr-action="cancel-submit">Tiếp tục làm bài</button>
                  </div>
-               </div>`
+               </div>`;
+              })()
             : ''
         }
 
@@ -1200,12 +1266,20 @@ export function renderResultScreenHTML() {
         </div>
         ${
           r.resultsAvailable
-            ? `<div style="text-align:right;">
+            ? (() => {
+                const adjP100 = Number(r.scoreAdjustmentP100 || 0);
+                const adjLine =
+                  adjP100 !== 0
+                    ? `<div style="font-size:12px;opacity:0.95;margin-top:2px;">Điều chỉnh toàn bài: ${adjP100 > 0 ? '+' : ''}${esc(formatPointsVi(adjP100))} điểm${r.adjustmentNote ? ` (${esc(r.adjustmentNote)})` : ''}</div>`
+                    : '';
+                return `<div style="text-align:right;">
                  <div style="font-size:12.5px;opacity:0.9;font-weight:700;">${esc(scoreHeading)}</div>
                  <div class="sr-score-big">${esc(formatPointsVi(r.totalScoreP100))} / ${esc(formatPointsVi(r.totalPointsP100))}</div>
                  ${r.manualScoreP100 > 0 || isProvisional ? `<div style="font-size:12px;opacity:0.9;">Trắc nghiệm: ${esc(formatPointsVi(r.autoScoreP100))} · Tự luận: ${esc(formatPointsVi(r.manualScoreP100))}</div>` : ''}
+                 ${adjLine}
                  ${isProvisional ? `<div style="font-size:12px;opacity:0.95;margin-top:2px;">Còn ${esc(ungradedEssays > 0 ? ungradedEssays : 1)} câu tự luận chưa chấm</div>` : ''}
-               </div>`
+               </div>`;
+              })()
             : `<span class="sr-room-code-pill" style="color:#0b3a63;">Đã nộp bài an toàn</span>`
         }
       </div>
@@ -1511,6 +1585,40 @@ async function openRoomByCode(code) {
   renderApp();
 }
 
+export async function acknowledgeAudioPlay(fileId) {
+  const st = appState.audioState[fileId];
+  if (!st || !st.activeLeaseId || st.leaseAcked || !appState.attempt?.attemptId || !appState.attemptToken) {
+    return;
+  }
+  const leaseId = st.activeLeaseId;
+  st.leaseAcked = true;
+  try {
+    const res = await fetch(
+      `/api/rooms/public/attempts/${encodeURIComponent(appState.attempt.attemptId)}/audio/${encodeURIComponent(fileId)}/ack`,
+      {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Attempt-Token': appState.attemptToken,
+        },
+        body: JSON.stringify({ leaseId }),
+      },
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (Number.isFinite(Number(data?.playsUsed))) st.playsUsed = Number(data.playsUsed);
+      if (Number.isFinite(Number(data?.playsRemaining))) st.playsRemaining = Number(data.playsRemaining);
+      if (Number.isFinite(Number(data?.maxPlays))) st.maxPlays = Number(data.maxPlays);
+      st.activeLeaseId = '';
+    } else if (res.status !== 409) {
+      st.leaseAcked = false;
+    }
+  } catch {
+    st.leaseAcked = false;
+  }
+}
+
 export async function handleAudioPlay(fileId) {
   const st = appState.audioState[fileId];
   if (!st || st.loading || st.playsRemaining <= 0 || !appState.attempt?.attemptId) return;
@@ -1518,13 +1626,15 @@ export async function handleAudioPlay(fileId) {
   st.error = '';
   renderApp();
   try {
-    const res = await fetch(
-      st.url || `/api/rooms/public/attempts/${encodeURIComponent(appState.attempt.attemptId)}/audio/${encodeURIComponent(fileId)}`,
-      {
-        method: 'GET',
-        headers: { 'X-Attempt-Token': appState.attemptToken },
-      },
-    );
+    const baseUrl =
+      st.url ||
+      `/api/rooms/public/attempts/${encodeURIComponent(appState.attempt.attemptId)}/audio/${encodeURIComponent(fileId)}`;
+    const sep = baseUrl.includes('?') ? '&' : '?';
+    const leaseUrl = `${baseUrl}${sep}lease=1${st.activeLeaseId ? `&leaseId=${encodeURIComponent(st.activeLeaseId)}` : ''}`;
+    const res = await fetch(leaseUrl, {
+      method: 'GET',
+      headers: { 'X-Attempt-Token': appState.attemptToken },
+    });
     if (!res.ok) {
       let msg = 'Không thể tải tệp âm thanh.';
       try {
@@ -1536,13 +1646,21 @@ export async function handleAudioPlay(fileId) {
       if (res.status === 403) st.playsRemaining = 0;
       throw new Error(msg);
     }
+    const blob = await res.blob();
+    if (!blob || blob.size === 0) {
+      throw new TypeError('Failed to fetch');
+    }
     const usedH = res.headers.get('X-Audio-Plays-Used');
     const remH = res.headers.get('X-Audio-Plays-Remaining');
     const maxH = res.headers.get('X-Audio-Max-Plays');
+    const leaseH = res.headers.get('X-Audio-Lease-Id');
     if (usedH !== null) st.playsUsed = Number(usedH);
     if (remH !== null) st.playsRemaining = Number(remH);
     if (maxH !== null) st.maxPlays = Number(maxH);
-    const blob = await res.blob();
+    if (leaseH) {
+      st.activeLeaseId = leaseH;
+      st.leaseAcked = false;
+    }
     if (st.blobUrl) {
       try {
         URL.revokeObjectURL(st.blobUrl);
@@ -1554,7 +1672,13 @@ export async function handleAudioPlay(fileId) {
     st.activePlayback = true;
   } catch (err) {
     st.activePlayback = false;
-    st.error = err.message || 'Không tải được âm thanh.';
+    const rawMsg = String(err?.message || '');
+    const isNetDrop =
+      err?.name === 'TypeError' ||
+      /failed to fetch|networkerror|aborted|load failed/i.test(rawMsg);
+    st.error = isNetDrop
+      ? 'Kết nối bị gián đoạn khi tải âm thanh. Lượt nghe chưa bị trừ — bấm thử lại khi có mạng.'
+      : rawMsg || 'Không tải được âm thanh.';
   } finally {
     st.loading = false;
     renderApp();
@@ -1608,6 +1732,14 @@ function bindGlobalListeners() {
 
     if (action === 'resume-saved' && appState.resumeOffer) {
       await resumeAttemptByToken(appState.resumeOffer.attemptId, appState.resumeOffer.attemptToken);
+      return;
+    }
+
+    if (action === 'view-last-result') {
+      const last = loadLastResultSession(appState.roomCode);
+      if (last?.attemptId && last?.attemptToken) {
+        await resumeAttemptByToken(last.attemptId, last.attemptToken);
+      }
       return;
     }
 
@@ -1686,6 +1818,7 @@ function bindGlobalListeners() {
       const total = (appState.exam?.questions || []).length;
       if (!Number.isInteger(idx) || idx < 0 || idx >= total) return;
       appState.currentIndex = idx;
+      appState.confirmSubmitOpen = false;
       appState.mobileNavOpen = false;
       renderApp();
       if (appState.viewMode === 'all') {
@@ -1790,6 +1923,13 @@ function bindGlobalListeners() {
     }
 
     if (action === 'back-to-room') {
+      if (appState.roomCode && appState.attempt?.attemptId && appState.attemptToken) {
+        saveLastResultSession(appState.roomCode, {
+          attemptId: appState.attempt.attemptId,
+          attemptToken: appState.attemptToken,
+          studentName: appState.attempt.studentName || '',
+        });
+      }
       clearSavedSession(appState.roomCode);
       revokeAllAudioBlobs();
       appState.attempt = null;
@@ -1960,6 +2100,21 @@ function bindGlobalListeners() {
   );
 
   document.addEventListener(
+    'playing',
+    (e) => {
+      const audio = e.target;
+      if (audio && (audio.matches?.('audio, .sr-audio-el') || audio.tagName === 'AUDIO')) {
+        const card = audio.closest?.('[data-audio-box]');
+        const fid = card?.dataset?.audioBox;
+        if (fid) {
+          acknowledgeAudioPlay(fid);
+        }
+      }
+    },
+    true,
+  );
+
+  document.addEventListener(
     'ended',
     (e) => {
       const audio = e.target;
@@ -1967,6 +2122,9 @@ function bindGlobalListeners() {
         const card = audio.closest?.('[data-audio-box]');
         const fid = card?.dataset?.audioBox;
         const st = fid ? appState.audioState[fid] : null;
+        if (fid && st && st.activeLeaseId && !st.leaseAcked) {
+          acknowledgeAudioPlay(fid);
+        }
         if (st) {
           st.activePlayback = false;
           audio.pause();

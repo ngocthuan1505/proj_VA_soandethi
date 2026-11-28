@@ -219,3 +219,52 @@ test('allQuestionBank phân trang tới hết total và trả null khi máy ch�
   assert.equal(await h.storage.allQuestionBank(),null);
  }finally{h.restore();}
 });
+
+test('Hai tab cùng IndexedDB: tab B gặp 409 rồi tab A lưu tiếp không làm mất nháp B khi B tải lại',async()=>{
+ const data=new Map(),previous={indexedDB:globalThis.indexedDB,fetch:globalThis.fetch};
+ globalThis.indexedDB={open(){const request={};queueMicrotask(()=>{request.result={transaction(){const tx={objectStore(){return {get(key){const r={};queueMicrotask(()=>{r.result=structuredClone(data.get(key));r.onsuccess?.();});return r;},put(value,key){data.set(key,structuredClone(value));queueMicrotask(()=>tx.oncomplete?.());}};}};return tx;}};request.onsuccess?.();});return request;}};
+ let serverRev=10,serverState={title:'Gốc'};
+ globalThis.fetch=async(url,options)=>{
+  if(!options?.body)return {ok:true,status:200,json:async()=>({value:structuredClone(serverState),revision:serverRev})};
+  const body=JSON.parse(options.body);
+  const ifMatch=Number(options.headers['If-Match']);
+  if(ifMatch!==serverRev){
+   return {ok:false,status:409,json:async()=>({error:'Đề trên máy chủ đã đổi.',code:'stale_snapshot'})};
+  }
+  serverRev+=1;
+  serverState=structuredClone(body.value);
+  return {ok:true,status:200,json:async()=>({revision:serverRev})};
+ };
+ try{
+  const tabA=await import('../storage.js?tabA='+crypto.randomUUID());
+  const tabB=await import('../storage.js?tabB='+crypto.randomUUID());
+  await tabA.get('state');
+  await tabB.get('state');
+
+  // 1. Tab A lưu lần 1 (rev 10 -> 11)
+  await tabA.put('state',{title:'QA TAB A LUU 1'});
+  assert.equal(serverRev,11);
+
+  // 2. Tab B (base=10) lưu -> 409 stale_snapshot, nháp B lưu trong IndexedDB
+  await assert.rejects(tabB.put('state',{title:'QA TAB B NHAP CHUA LUU'}),/đã đổi/);
+  assert.equal(tabB.hasStateConflict(),true);
+  assert.equal(data.get('local:__pending:state').value.title,'QA TAB B NHAP CHUA LUU');
+  assert.equal(data.get('local:__pending:state').conflict,true);
+
+  // 3. Tab A lưu lần 2 (rev 11 -> 12) -> KHÔNG được xóa/ghi đè nháp 409 của tab B
+  await tabA.put('state',{title:'QA TAB A LUU 2'});
+  assert.equal(serverRev,12);
+  assert.equal(data.get('local:__pending:state').value.title,'QA TAB B NHAP CHUA LUU');
+  assert.equal(data.get('local:state').title,'QA TAB B NHAP CHUA LUU');
+
+  // 4. Tab B tải lại (context mới đọc từ IndexedDB) -> vẫn khôi phục nháp B và cờ xung đột 409
+  const tabBReloaded=await import('../storage.js?tabBReload='+crypto.randomUUID());
+  const loaded=await tabBReloaded.get('state');
+  assert.equal(loaded.title,'QA TAB B NHAP CHUA LUU');
+  assert.equal(tabBReloaded.hasStateConflict(),true);
+  assert.equal(tabBReloaded.hasPendingWrites(),true);
+ }finally{
+  globalThis.indexedDB=previous.indexedDB;
+  globalThis.fetch=previous.fetch;
+ }
+});

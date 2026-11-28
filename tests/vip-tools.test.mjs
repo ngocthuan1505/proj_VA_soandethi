@@ -366,3 +366,18 @@ test('UV60: renderQuestionBankItemsHTML giữ điểm thập phân 0.4, ảnh an
   assert.ok(warnHtml.includes('analytics-issue is-warning'));
   assert.ok(warnHtml.includes('>Cảnh báo<'));
 });
+
+test('t5: computeClientAnalyticsSummary tính đúng tổng điểm hiệu lực cho đề 2 hướng choiceGroup', () => {
+  const twoTrackExam = {
+    minutes: 45,
+    questions: [
+      {id: 'c1', v: 1, type: 'mcq', stem: 'Câu chung phần đại số', options: ['A', 'B', 'C', 'D'], answer: 0, answerKnown: true, explanation: 'G', level: 0, points: 5},
+      {id: 'a1', v: 1, type: 'mcq', choiceGroup: 'Tự chọn A', stem: 'Câu nhánh A khoa học máy tính', options: ['A', 'B', 'C', 'D'], answer: 1, answerKnown: true, explanation: 'G', level: 1, points: 5},
+      {id: 'b1', v: 1, type: 'mcq', choiceGroup: 'Tự chọn B', stem: 'Câu nhánh B tin học ứng dụng', options: ['A', 'B', 'C', 'D'], answer: 2, answerKnown: true, explanation: 'G', level: 1, points: 5},
+    ],
+  };
+  const report = computeClientAnalyticsSummary(twoTrackExam);
+  assert.equal(report.totalPoints, 10);
+  assert.equal(report.pointsDelta, 0);
+  assert.equal(report.issues.some((it) => it.code === 'points_mismatch'), false);
+});

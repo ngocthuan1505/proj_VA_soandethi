@@ -476,3 +476,301 @@ def test_reminders_and_proactive_digest_include_attached_exam_title(tmp_path: Pa
     assert dl["targetId"] == "ex-toan-11"
     assert dl["targetTitle"] == "Đề Toán 11 Giữa Kì I"
     assert dl["examTitle"] == "Đề Toán 11 Giữa Kì I"
+
+
+def test_provisional_exclusion_whole_attempt_adjustment_and_regrade(tmp_path: Path) -> None:
+    # Đề 2 câu tự luận 5 + 5 = 10 điểm (M09-05) + 1 câu MCQ để test regrade
+    exam = {
+        "id": "exam-m09-05",
+        "title": "Vật lí 11 Hai câu tự luận",
+        "subject": "Vật lí",
+        "grade": 11,
+        "minutes": 45,
+        "markingGuidance": "Trừ 0,25 điểm toàn bài nếu thiếu hoặc sai đơn vị.",
+        "questions": [
+            {
+                "id": "q-e1",
+                "type": "essay",
+                "stem": "Câu 1 tự luận (5 điểm)",
+                "rubric": [{"text": "Đúng", "points": 5.0}],
+                "points": 5.0,
+            },
+            {
+                "id": "q-e2",
+                "type": "essay",
+                "stem": "Câu 2 tự luận (5 điểm)",
+                "rubric": [{"text": "Đúng", "points": 5.0}],
+                "points": 5.0,
+            },
+        ],
+    }
+    client = _build_rooms_harness(tmp_path, exam_map={"exam-m09-05": exam})
+    room = client.post(
+        "/api/rooms",
+        headers=_teacher_headers(),
+        json={"examId": "exam-m09-05", "resultPolicy": "score_and_answers"},
+    ).json()
+    room_id = room["id"]
+
+    j = client.post(
+        f"/api/rooms/public/{room['roomCode']}/join",
+        json={"studentName": "Lê Minh", "studentCode": "LM01", "studentClass": "11A1"},
+    ).json()
+    aid = j["attemptId"]
+    tok = j["attemptToken"]
+    client.post(
+        f"/api/rooms/public/attempts/{aid}/submit",
+        headers=_student_headers(tok),
+        json={"answers": {"q-e1": "Bài 1", "q-e2": "Bài 2"}},
+    ).raise_for_status()
+
+    # Mốc 1: Chấm câu 1 = 5/5, câu 2 chưa chấm -> điểm tạm 5/10,
+    # KHÔNG lọt vào phổ điểm, Excel TongDiem trống
+    g1 = client.put(
+        f"/api/rooms/{room_id}/attempts/{aid}/grades/q-e1",
+        headers=_teacher_headers(),
+        json={"earnedPointsP100": 500},
+    ).json()
+    assert g1["totalScoreP100"] == 500
+    assert g1["isProvisionalScore"] is True
+
+    an1 = client.get(f"/api/rooms/{room_id}/analytics", headers=_teacher_headers()).json()
+    assert an1["submittedCount"] == 1
+    assert an1["gradedCount"] == 0
+    assert an1["provisionalCount"] == 1
+    assert an1["avgScoreP100"] == 0
+    assert an1["maxScoreP100"] == 0
+    assert all(b["count"] == 0 for b in an1["histogram"])
+
+    xlsx1 = client.get(f"/api/rooms/{room_id}/export.xlsx", headers=_teacher_headers()).content
+    with zipfile.ZipFile(io.BytesIO(xlsx1), "r") as zf:
+        s1_xml = zf.read("xl/worksheets/sheet1.xml").decode("utf-8")
+        assert "DiemTam" in s1_xml
+        assert "DieuChinhTong" in s1_xml
+        assert "TongDiem" in s1_xml
+        # Kiểm tra TongDiem trống ở dòng bài tạm và DiemTam = 5.0
+        root1 = ET.fromstring(s1_xml)
+        ns = {"s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+        rows1 = root1.findall(".//s:row", ns)
+        headers = [
+            c.findtext("s:is/s:t", default="", namespaces=ns) for c in rows1[0].findall("s:c", ns)
+        ]
+        idx_tam = headers.index("DiemTam")
+        idx_tong = headers.index("TongDiem")
+        row_cells = rows1[1].findall("s:c", ns)
+        assert row_cells[idx_tam].findtext("s:v", default="", namespaces=ns) == "5.0"
+        assert row_cells[idx_tong].findtext("s:v", default="", namespaces=ns) == ""
+
+    # Mốc 2: Chấm nốt câu 2 = 5/5 -> 10/10 chính thức, vào phổ điểm
+    g2 = client.put(
+        f"/api/rooms/{room_id}/attempts/{aid}/grades/q-e2",
+        headers=_teacher_headers(),
+        json={"earnedPointsP100": 500},
+    ).json()
+    assert g2["totalScoreP100"] == 1000
+    assert g2["isProvisionalScore"] is False
+
+    # Mốc 3: Trừ -0,25 toàn bài -> 9,75/10 khớp GV, HS, Analytics và Excel;
+    # điểm từng câu vẫn 5 và 5 (100%)
+    adj = client.put(
+        f"/api/rooms/{room_id}/attempts/{aid}/adjustment",
+        headers=_teacher_headers(),
+        json={"adjustmentPoints": -0.25, "adjustmentNote": "Thiếu đơn vị toàn bài"},
+    )
+    assert adj.status_code == 200, adj.text
+    adj_data = adj.json()
+    assert adj_data["totalScoreP100"] == 975
+    assert adj_data["scoreAdjustmentP100"] == -25
+
+    res_hs = client.get(
+        f"/api/rooms/public/attempts/{aid}/result",
+        headers=_student_headers(tok),
+    ).json()
+    assert res_hs["totalScoreP100"] == 975
+    assert res_hs["scoreAdjustmentP100"] == -25
+    assert res_hs["adjustmentNote"] == "Thiếu đơn vị toàn bài"
+    assert res_hs["questions"][0]["earnedPointsP100"] == 500
+    assert res_hs["questions"][1]["earnedPointsP100"] == 500
+
+    an3 = client.get(f"/api/rooms/{room_id}/analytics", headers=_teacher_headers()).json()
+    assert an3["gradedCount"] == 1
+    assert an3["provisionalCount"] == 0
+    assert an3["avgScoreP100"] == 975
+    assert an3["questionStats"][0]["avgEarnedP100"] == 500
+    assert an3["questionStats"][1]["avgEarnedP100"] == 500
+    assert an3["questionStats"][0]["correctRate"] == 100.0
+    assert an3["questionStats"][1]["correctRate"] == 100.0
+
+    xlsx3 = client.get(f"/api/rooms/{room_id}/export.xlsx", headers=_teacher_headers()).content
+    with zipfile.ZipFile(io.BytesIO(xlsx3), "r") as zf:
+        root3 = ET.fromstring(zf.read("xl/worksheets/sheet1.xml").decode("utf-8"))
+        ns = {"s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+        rows3 = root3.findall(".//s:row", ns)
+        headers3 = [
+            c.findtext("s:is/s:t", default="", namespaces=ns) for c in rows3[0].findall("s:c", ns)
+        ]
+        row3_cells = rows3[1].findall("s:c", ns)
+        assert (
+            row3_cells[headers3.index("DieuChinhTong")].findtext("s:v", default="", namespaces=ns)
+            == "-0.25"
+        )
+        assert (
+            row3_cells[headers3.index("TongDiem")].findtext("s:v", default="", namespaces=ns)
+            == "9.75"
+        )
+        assert (
+            row3_cells[headers3.index("DiemTam")].findtext("s:v", default="", namespaces=ns) == ""
+        )
+
+
+def test_audio_lease_recovery_after_return_path_drop_and_room_regrade(tmp_path: Path) -> None:
+    import base64
+
+    wav_b64 = base64.b64encode(b"RIFF\x24\x00\x00\x00WAVEfmt TESTWAVDATA").decode("ascii")
+    exam = {
+        "id": "exam-audio-regrade",
+        "title": "Đề Nghe & Sửa khóa",
+        "subject": "Tiếng Anh",
+        "grade": 10,
+        "minutes": 30,
+        "audio": {
+            "fileId": "aud-1turn",
+            "filename": "track1.wav",
+            "maxPlays": 1,
+            "dataUri": f"data:audio/wav;base64,{wav_b64}",
+        },
+        "questions": [
+            {
+                "id": "q-mcq",
+                "type": "mcq",
+                "stem": "Chọn đáp án đúng",
+                "options": ["A1", "B1", "C1", "D1"],
+                "answer": 0,
+                "answerKnown": True,
+                "points": 10.0,
+            }
+        ],
+    }
+    client = _build_rooms_harness(tmp_path, exam_map={"exam-audio-regrade": exam})
+    room = client.post(
+        "/api/rooms",
+        headers=_teacher_headers(),
+        json={"examId": "exam-audio-regrade", "resultPolicy": "score_and_answers"},
+    ).json()
+    room_id = room["id"]
+
+    joined = client.post(
+        f"/api/rooms/public/{room['roomCode']}/join",
+        json={"studentName": "Phạm Lan"},
+    ).json()
+    aid = joined["attemptId"]
+    tok = joined["attemptToken"]
+
+    # Lần 1: Server trả WAV với lease=1 nhưng giả lập rớt đường về (không gọi /ack)
+    r1 = client.get(
+        f"/api/rooms/public/attempts/{aid}/audio/aud-1turn?lease=1",
+        headers=_student_headers(tok),
+    )
+    assert r1.status_code == 200
+    assert r1.content.startswith(b"RIFF")
+    lease_id = r1.headers.get("X-Audio-Lease-Id")
+    assert lease_id
+
+    # Học sinh tải lại trang -> playsRemaining VẪN LÀ 1 và giữ pendingLeaseId
+    state_after_drop = client.get(
+        f"/api/rooms/public/attempts/{aid}",
+        headers=_student_headers(tok),
+    ).json()
+    assert state_after_drop["exam"]["audio"]["playsRemaining"] == 1
+    assert state_after_drop["exam"]["audio"]["playsUsed"] == 0
+    assert state_after_drop["exam"]["audio"]["pendingLeaseId"] == lease_id
+
+    # Tải lại khi đang giữ pending lease (cả có và không kèm leaseId) -> 200 cùng lease, chưa trừ
+    r2_no_id = client.get(
+        f"/api/rooms/public/attempts/{aid}/audio/aud-1turn?lease=1",
+        headers=_student_headers(tok),
+    )
+    assert r2_no_id.status_code == 200
+    assert r2_no_id.headers.get("X-Audio-Lease-Id") == lease_id
+
+    r2 = client.get(
+        f"/api/rooms/public/attempts/{aid}/audio/aud-1turn?lease=1&leaseId={lease_id}",
+        headers=_student_headers(tok),
+    )
+    assert r2.status_code == 200
+    assert r2.headers.get("X-Audio-Lease-Id") == lease_id
+
+    # Sai leaseId -> 409 và chưa trừ lượt
+    bad_ack = client.post(
+        f"/api/rooms/public/attempts/{aid}/audio/aud-1turn/ack",
+        headers=_student_headers(tok),
+        json={"leaseId": "wrong-lease-id"},
+    )
+    assert bad_ack.status_code == 409
+
+    # Khi audio phát thật -> client gọi /ack -> trừ lượt về 0
+    ack = client.post(
+        f"/api/rooms/public/attempts/{aid}/audio/aud-1turn/ack",
+        headers=_student_headers(tok),
+        json={"leaseId": lease_id},
+    )
+    assert ack.status_code == 200
+    assert ack.json()["playsUsed"] == 1
+    assert ack.json()["playsRemaining"] == 0
+
+    # Cố tải thêm sau khi đã ack -> bị chặn 403
+    r3 = client.get(
+        f"/api/rooms/public/attempts/{aid}/audio/aud-1turn?lease=1",
+        headers=_student_headers(tok),
+    )
+    assert r3.status_code == 403
+
+    # Nộp đáp án A (0) -> 10 điểm
+    client.post(
+        f"/api/rooms/public/attempts/{aid}/submit",
+        headers=_student_headers(tok),
+        json={"answers": {"q-mcq": 0}},
+    ).raise_for_status()
+    assert (
+        client.get(
+            f"/api/rooms/public/attempts/{aid}/result",
+            headers=_student_headers(tok),
+        ).json()["totalScoreP100"]
+        == 1000
+    )
+
+    # Trừ -0,25 toàn bài trước khi sửa khóa -> còn 9,75 điểm
+    client.put(
+        f"/api/rooms/{room_id}/attempts/{aid}/adjustment",
+        headers=_teacher_headers(),
+        json={"adjustmentPoints": -0.25, "adjustmentNote": "Trừ quy định"},
+    ).raise_for_status()
+
+    # Giáo viên đổi khóa từ A (0) sang B (1) và chấm lại -> giữ điều chỉnh -0,25 (chặn min=0)
+    regrade = client.post(
+        f"/api/rooms/{room_id}/regrade",
+        headers=_teacher_headers(),
+        json={"questions": [{"questionId": "q-mcq", "answer": 1, "points": 10.0}]},
+    )
+    assert regrade.status_code == 200, regrade.text
+    assert regrade.json()["regradedCount"] == 1
+    res_b = client.get(
+        f"/api/rooms/public/attempts/{aid}/result",
+        headers=_student_headers(tok),
+    ).json()
+    assert res_b["totalScoreP100"] == 0
+    assert res_b["scoreAdjustmentP100"] == -25
+
+    # Đổi lại khóa về A (0) -> 10 - 0,25 = 9,75 điểm (vẫn bảo toàn điều chỉnh toàn bài)
+    regrade_a = client.post(
+        f"/api/rooms/{room_id}/regrade",
+        headers=_teacher_headers(),
+        json={"questions": [{"questionId": "q-mcq", "answer": 0, "points": 10.0}]},
+    )
+    assert regrade_a.status_code == 200, regrade_a.text
+    res_a = client.get(
+        f"/api/rooms/public/attempts/{aid}/result",
+        headers=_student_headers(tok),
+    ).json()
+    assert res_a["totalScoreP100"] == 975
+    assert res_a["scoreAdjustmentP100"] == -25

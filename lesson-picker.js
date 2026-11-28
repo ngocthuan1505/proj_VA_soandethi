@@ -354,10 +354,12 @@ export async function openLessonPicker(context) {
   const sourceMetaParts=col.record
    ?[]
    :[
+    col.officialTitle||col.bookTitle||'',
     col.publisher||(col.series===KNTT_SERIES?'NXB Giáo dục Việt Nam':''),
     col.edition||col.curriculumStandard||(col.series===KNTT_SERIES?'GDPT 2018':''),
     col.contentType==='summary_outline'||col.series===KNTT_SERIES?'Tóm tắt & YCCĐ':'',
    ].filter(Boolean);
+  const safeSourceUrl=typeof col.sourceUrl==='string'&&/^https?:\/\//i.test(col.sourceUrl)?col.sourceUrl:'';
   const summaryText=lesson.summary||lesson.text||'';
   const rawText=edited?.pages?.find(page=>page.number===lesson.number)?.text??lesson.text??'';
   const detailsBlock=col.record
@@ -365,14 +367,14 @@ export async function openLessonPicker(context) {
    :`<details class="sgk-detail-raw"><summary>Xem học liệu</summary><p><b>Mục tiêu</b> · ${richTextHTML(lesson.outcome||'')}</p><p class="sgk-detail-raw-text">${richTextHTML(rawText)}</p></details>`;
   const detailHeading=col.record
    ?`Học liệu · ${lesson.title}`
-   :(/^Bài\s+\d+\b/i.test(lesson.title)?lesson.title:`Bài ${lesson.number} · ${lesson.title}`);
+   :(/^(?:Bài|Unit|Chuyên đề)\s+\d+\b/i.test(lesson.title)?lesson.title:`Bài ${lesson.number} · ${lesson.title}`);
   detailPane.innerHTML=`
    <div class="sgk-detail-card">
     <div class="sgk-detail-head">
      <span class="pill source-channel-badge" data-channel="${esc(badgeKind)}">${esc(badgeText)}</span>
      <span class="sgk-detail-meta">${esc(metaParts.join(' · '))}</span>
     </div>
-    ${sourceMetaParts.length?`<p class="sgk-detail-source-meta">${esc(sourceMetaParts.join(' · '))}</p>`:''}
+    ${sourceMetaParts.length?`<p class="sgk-detail-source-meta">${esc(sourceMetaParts.join(' · '))}${safeSourceUrl?` · <a href="${esc(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">Nguồn NXB</a>`:''}</p>`:''}
     <h4 class="sgk-detail-title">${richTextHTML(detailHeading)}</h4>
     <p class="sgk-detail-chapter">Thuộc: ${richTextHTML(lesson.chapter)}</p>
     <p class="sgk-detail-summary">${richTextHTML(summaryText)}</p>
@@ -466,13 +468,25 @@ export async function openLessonPicker(context) {
   updateFilter(volume,books.map(c=>c.volume));
   renderVolumePills(books,volume.value);
   if(seriesBadge){
-   seriesBadge.textContent=book.value?`Bộ ${book.value}`:`Bộ ${KNTT_SERIES}`;
+   const hasGlobalSuccess=books.some(c=>c.subject==='Tiếng Anh'&&c.series===KNTT_SERIES);
+   seriesBadge.textContent=book.value?`Bộ ${book.value}${hasGlobalSuccess?' · Global Success':''}`:`Bộ ${KNTT_SERIES}${hasGlobalSuccess?' · Global Success':''}`;
   }
   const rawQuery=query.value.trim();
   const hasSearch=Boolean(normalizeLessonSearch(rawQuery));
+  const queryNorm=hasSearch?foldVietnameseOrthography(normalizeLessonSearch(rawQuery)):'';
+  const matchScore=l=>{
+   if(!queryNorm)return 0;
+   const titleNorm=foldVietnameseOrthography(normalizeLessonSearch(l.title));
+   const chapterNorm=foldVietnameseOrthography(normalizeLessonSearch(l.chapter));
+   if(titleNorm===queryNorm||titleNorm.startsWith(queryNorm+':')||titleNorm.startsWith(queryNorm+' '))return 3;
+   if(titleNorm.includes(queryNorm))return 2;
+   if(chapterNorm.includes(queryNorm))return 1;
+   return 0;
+  };
   const visibleItems=[];
   list.innerHTML=books.filter(c=>!volume.value||volume.value===c.volume).map(c=>{
-   const lessons=c.lessons.filter(l=>lessonMatchesSearch(c,l,rawQuery));
+   const matched=c.lessons.filter(l=>lessonMatchesSearch(c,l,rawQuery));
+   const lessons=hasSearch?[...matched].sort((a,b)=>matchScore(b)-matchScore(a)||a.number-b.number):matched;
    if(!lessons.length)return '';
    for(const l of lessons)visibleItems.push({collectionId:c.id,lessonNumber:l.number});
    const chapters=Map.groupBy(lessons,l=>l.chapter);

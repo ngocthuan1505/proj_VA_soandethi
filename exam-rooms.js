@@ -1048,6 +1048,10 @@ function buildMonitorTabHTML(room) {
                          a.status === 'in_progress'
                            ? 'Đang làm'
                            : `${formatPointsVi(a.totalScoreP100)} / ${formatPointsVi(a.totalPointsP100)}`;
+                       const adjP100 = Number(a.scoreAdjustmentP100 || 0);
+                       const adjTxt = adjP100 !== 0
+                         ? `Điều chỉnh: ${adjP100 > 0 ? '+' : ''}${formatPointsVi(adjP100)} đ${a.adjustmentNote ? ` (${a.adjustmentNote})` : ''}`
+                         : '';
                        return `
                          <tr>
                            <td>
@@ -1063,7 +1067,9 @@ function buildMonitorTabHTML(room) {
                            </td>
                            <td>
                              <strong>${esc(scoreTxt)}</strong>
+                             ${a.status !== 'in_progress' && a.gradingStatus === 'needs_manual' ? ' <span class="er-badge er-badge-warn">Điểm tạm</span>' : ''}
                              <div style="font-size:11.5px;color:var(--er-muted);">${esc(GRADING_STATUS_LABELS[a.gradingStatus] || a.gradingStatus)}</div>
+                             ${adjTxt ? `<div style="font-size:11.5px;color:var(--er-warn);">${esc(adjTxt)}</div>` : ''}
                            </td>
                            <td>
                              ${
@@ -1108,6 +1114,7 @@ export function buildGradingTabHTML(
     ? allItems.filter((it) => it.earnedPointsP100 === null || it.earnedPointsP100 === undefined)
     : allItems;
   const markingGuidance = String(queue.markingGuidance || room?.markingGuidance || '').trim();
+  const attemptSummaries = Array.isArray(queue.attempts) ? queue.attempts : [];
 
   return `
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -1130,6 +1137,46 @@ export function buildGradingTabHTML(
           ? `<div class="er-hint-box" data-marking-guidance="1">
                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:4px;">Hướng dẫn chấm chung của đề</div>
                <div>${renderRichField(markingGuidance, null)}</div>
+             </div>`
+          : ''
+      }
+
+      ${
+        attemptSummaries.length
+          ? `<div class="er-card" data-attempt-adjustments="1" style="display:flex;flex-direction:column;gap:10px;">
+               <div>
+                 <strong>Điều chỉnh điểm toàn bài (giữ nguyên điểm từng câu)</strong>
+                 <div style="font-size:12px;color:var(--er-muted);">Áp dụng trừ/cộng ở cấp cả bài làm (ví dụ -0,25 đ lỗi đơn vị toàn bài) mà không làm lệch thống kê từng câu.</div>
+               </div>
+               <div style="display:flex;flex-direction:column;gap:8px;">
+                 ${attemptSummaries
+                   .map((att) => {
+                     const adjVal = (Number(att.scoreAdjustmentP100 || 0) / 100)
+                       .toFixed(2)
+                       .replace(/\.?0+$/, '');
+                     return `
+                       <form class="er-adjust-form" data-attempt-id="${esc(att.attemptId)}" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--er-border);border-radius:8px;background:#fafcff;">
+                         <div style="min-width:190px;flex:1 1 200px;">
+                           <strong>${esc(att.studentName)}</strong>
+                           ${att.studentClass ? `<span style="color:var(--er-muted);"> (${esc(att.studentClass)})</span>` : ''}
+                           <div style="font-size:12px;color:var(--er-muted);">
+                             Tổng hiện tại: <strong>${esc(formatPointsVi(att.totalScoreP100))} / ${esc(formatPointsVi(att.totalPointsP100))}</strong>
+                             ${att.isProvisionalScore ? '<span class="er-badge er-badge-warn" style="margin-left:4px;">Điểm tạm</span>' : ''}
+                           </div>
+                         </div>
+                         <div class="er-btn-row" style="flex-wrap:wrap;">
+                           <button type="button" class="er-btn er-btn-sm" data-er-action="quick-adjust" data-adjust="-0.25">-0,25 đ</button>
+                           <button type="button" class="er-btn er-btn-sm" data-er-action="quick-adjust" data-adjust="-0.5">-0,5 đ</button>
+                           <button type="button" class="er-btn er-btn-sm" data-er-action="quick-adjust" data-adjust="0">0 đ</button>
+                           <input class="er-adjust-input" name="adjustmentPoints" type="number" step="0.01" min="-100" max="100" value="${esc(adjVal)}" style="width:92px;padding:5px 8px;border:1px solid var(--er-border);border-radius:6px;" aria-label="Điểm điều chỉnh toàn bài">
+                           <input name="adjustmentNote" type="text" maxlength="500" value="${esc(att.adjustmentNote || '')}" placeholder="Lý do điều chỉnh toàn bài…" style="width:190px;padding:5px 8px;border:1px solid var(--er-border);border-radius:6px;">
+                           <button type="submit" class="er-btn er-btn-soft er-btn-sm">Lưu điều chỉnh</button>
+                         </div>
+                       </form>
+                     `;
+                   })
+                   .join('')}
+               </div>
              </div>`
           : ''
       }
@@ -1245,13 +1292,15 @@ function buildAnalyticsTabHTML(room) {
   const maxHist = Math.max(1, ...hist.map((b) => Number(b.count || 0)));
   const totalPts = Number(an.totalPointsP100 || room.totalPointsP100 || 0);
   const qStats = Array.isArray(an.questionStats) ? an.questionStats : [];
+  const gradedCnt = Number(an.gradedCount ?? an.submittedCount ?? 0);
+  const provCnt = Number(an.provisionalCount ?? an.needsManualCount ?? 0);
 
   return `
     <div style="display:flex;flex-direction:column;gap:14px;">
       <div class="er-card" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;">
         <div>
           <strong>Báo cáo kết quả & Phổ điểm</strong>
-          <div style="font-size:12.5px;color:var(--er-muted);">Tính trên ${esc(an.submittedCount)} bài đã nộp/khóa (thang ${esc(formatPointsVi(totalPts))} điểm).</div>
+          <div style="font-size:12.5px;color:var(--er-muted);">Tính trên ${esc(gradedCnt)} bài đã chấm đủ (trên tổng ${esc(an.submittedCount)} bài đã nộp/khóa${provCnt > 0 ? ` · ${esc(provCnt)} bài chờ chấm tự luận chưa vào phổ điểm` : ''}; thang ${esc(formatPointsVi(totalPts))} điểm).</div>
         </div>
         <div class="er-btn-row">
           <button type="button" class="er-btn er-btn-sm" data-er-action="refresh-analytics">Cập nhật số liệu</button>
@@ -1260,11 +1309,11 @@ function buildAnalyticsTabHTML(room) {
       </div>
 
       <div class="er-kpis">
-        <div class="er-kpi"><div class="er-kpi-label">Đã nộp / Khóa</div><div class="er-kpi-value">${esc(an.submittedCount)}</div></div>
-        <div class="er-kpi"><div class="er-kpi-label">Điểm trung bình</div><div class="er-kpi-value">${esc(formatPointsVi(an.avgScoreP100))}</div></div>
-        <div class="er-kpi"><div class="er-kpi-label">Điểm trung vị</div><div class="er-kpi-value">${esc(formatPointsVi(an.medianScoreP100))}</div></div>
-        <div class="er-kpi"><div class="er-kpi-label">Cao nhất / Thấp nhất</div><div class="er-kpi-value">${esc(formatPointsVi(an.maxScoreP100))} / ${esc(formatPointsVi(an.minScoreP100))}</div></div>
-        <div class="er-kpi"><div class="er-kpi-label">Đạt từ 50% trở lên</div><div class="er-kpi-value">${esc(an.passRate)}%</div></div>
+        <div class="er-kpi"><div class="er-kpi-label">Đã chấm đủ / Đã nộp</div><div class="er-kpi-value">${esc(gradedCnt)} / ${esc(an.submittedCount)}</div></div>
+        <div class="er-kpi"><div class="er-kpi-label">Điểm trung bình</div><div class="er-kpi-value">${gradedCnt > 0 ? esc(formatPointsVi(an.avgScoreP100)) : '—'}</div></div>
+        <div class="er-kpi"><div class="er-kpi-label">Điểm trung vị</div><div class="er-kpi-value">${gradedCnt > 0 ? esc(formatPointsVi(an.medianScoreP100)) : '—'}</div></div>
+        <div class="er-kpi"><div class="er-kpi-label">Cao nhất / Thấp nhất</div><div class="er-kpi-value">${gradedCnt > 0 ? `${esc(formatPointsVi(an.maxScoreP100))} / ${esc(formatPointsVi(an.minScoreP100))}` : '—'}</div></div>
+        <div class="er-kpi"><div class="er-kpi-label">Đạt từ 50% trở lên</div><div class="er-kpi-value">${gradedCnt > 0 ? `${esc(an.passRate)}%` : '—'}</div></div>
       </div>
 
       <div class="er-card">
@@ -1323,6 +1372,85 @@ function buildAnalyticsTabHTML(room) {
         </table>
       </div>
     </div>
+  `;
+}
+
+function buildAnswerKeysTabHTML(room) {
+  const keys = Array.isArray(state.roomDetail?.answerKeys) ? state.roomDetail.answerKeys : [];
+  if (!state.roomDetail) {
+    return `<div class="er-empty">Đang tải khóa đáp án phòng thi…</div>`;
+  }
+  if (!keys.length) {
+    return `<div class="er-empty">Phòng thi chưa có câu hỏi để cập nhật khóa đáp án.</div>`;
+  }
+  return `
+    <form id="er-regrade-form" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="er-card" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;">
+        <div>
+          <strong>Sửa khóa đáp án &amp; Chấm lại bài đã nộp (${esc(room.roomCode)})</strong>
+          <div style="font-size:12.5px;color:var(--er-muted);">Chỉnh đáp án hoặc điểm từng câu trong phòng đã phát và tự động chấm lại toàn bộ bài đã nộp (vẫn giữ điểm tự luận và điều chỉnh toàn bài).</div>
+        </div>
+        <button type="submit" class="er-btn er-btn-primary">Lưu khóa &amp; Chấm lại toàn phòng</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${keys
+          .map((k) => {
+            let inputHTML = '';
+            if (k.type === 'mcq') {
+              const opts = Array.isArray(k.options) ? k.options : [];
+              inputHTML = `
+                <select name="key_mcq_${esc(k.questionId)}" data-regrade-qid="${esc(k.questionId)}" data-regrade-type="mcq" style="padding:6px 10px;border:1px solid var(--er-border);border-radius:6px;">
+                  ${opts
+                    .map((opt, idx) => {
+                      const letter = String.fromCharCode(65 + idx);
+                      const cleanOpt = String(opt || '').slice(0, 60);
+                      return `<option value="${idx}" ${Number(k.answer) === idx ? 'selected' : ''}>${esc(letter)}${cleanOpt ? ` — ${esc(cleanOpt)}` : ''}</option>`;
+                    })
+                    .join('')}
+                </select>
+              `;
+            } else if (k.type === 'truefalse') {
+              const tv = Array.isArray(k.truthValues) ? k.truthValues : [false, false, false, false];
+              inputHTML = `
+                <div style="display:flex;flex-wrap:wrap;gap:10px;" data-regrade-qid="${esc(k.questionId)}" data-regrade-type="truefalse">
+                  ${[0, 1, 2, 3]
+                    .map(
+                      (i) => `
+                        <label class="er-check" style="font-size:12.5px;">
+                          <input type="checkbox" name="key_tf_${esc(k.questionId)}_${i}" ${tv[i] ? 'checked' : ''}>
+                          Ý ${String.fromCharCode(97 + i)} đúng
+                        </label>
+                      `,
+                    )
+                    .join('')}
+                </div>
+              `;
+            } else if (k.type === 'short') {
+              inputHTML = `
+                <input type="text" name="key_short_${esc(k.questionId)}" data-regrade-qid="${esc(k.questionId)}" data-regrade-type="short" value="${esc(k.answerText || '')}" style="width:100%;max-width:260px;padding:6px 10px;border:1px solid var(--er-border);border-radius:6px;" placeholder="Nhập đáp án đúng…">
+              `;
+            } else {
+              inputHTML = `<span style="font-size:12.5px;color:var(--er-muted);">Câu tự luận (chấm ở tab Chấm tự luận)</span>`;
+            }
+            return `
+              <div class="er-card" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;">
+                <div style="flex:1 1 260px;min-width:0;">
+                  <div style="font-size:12.5px;font-weight:700;color:var(--er-teal-dark);">Câu ${esc(k.order)} · ${esc(QUESTION_TYPES[k.type] || k.type)}</div>
+                  <div style="font-size:13px;color:var(--er-ink);margin-top:2px;">${k.stem ? renderRichField(k.stem, null) : '—'}</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+                  <div>${inputHTML}</div>
+                  <label style="font-size:12px;color:var(--er-muted);display:flex;align-items:center;gap:4px;">
+                    Điểm:
+                    <input type="number" step="0.01" min="0" max="100" name="key_pts_${esc(k.questionId)}" value="${esc(k.points)}" style="width:74px;padding:5px 8px;border:1px solid var(--er-border);border-radius:6px;">
+                  </label>
+                </div>
+              </div>
+            `;
+          })
+          .join('')}
+      </div>
+    </form>
   `;
 }
 
@@ -1399,6 +1527,7 @@ function buildShellHTML(c) {
                  <button type="button" class="er-tab ${state.activeTab === 'monitor' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="monitor">Giám sát trực tiếp (${active.attemptCount ?? state.roomDetail?.attempts?.length ?? 0})</button>
                  <button type="button" class="er-tab ${state.activeTab === 'grading' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="grading">Chấm tự luận ${active.needsManualCount > 0 ? `(${active.needsManualCount})` : ''}</button>
                  <button type="button" class="er-tab ${state.activeTab === 'analytics' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="analytics">Thống kê & Excel</button>
+                 <button type="button" class="er-tab ${state.activeTab === 'keys' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="keys">Đáp án & Chấm lại</button>
                </div>
                ${
                  state.activeTab === 'share'
@@ -1407,7 +1536,9 @@ function buildShellHTML(c) {
                      ? buildMonitorTabHTML(active)
                      : state.activeTab === 'grading'
                        ? buildGradingTabHTML()
-                       : buildAnalyticsTabHTML(active)
+                       : state.activeTab === 'keys'
+                         ? buildAnswerKeysTabHTML(active)
+                         : buildAnalyticsTabHTML(active)
                }
              </div>`
           : ''
@@ -1475,7 +1606,7 @@ async function loadActiveTabData(c) {
   if (!room) return;
   if (state.activeTab === 'share') {
     await refreshQrImage(c);
-  } else if (state.activeTab === 'monitor') {
+  } else if (state.activeTab === 'monitor' || state.activeTab === 'keys') {
     state.roomDetail = await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}`);
     if (state.roomDetail?.room) {
       const idx = state.rooms.findIndex((r) => r.id === room.id);
@@ -1760,6 +1891,16 @@ function bindShellEvents(c) {
         if (input) input.value = btn.dataset.score || '0';
         return;
       }
+      if (action === 'quick-adjust') {
+        const form = btn.closest('form');
+        const input = form?.querySelector('.er-adjust-input');
+        const noteInput = form?.querySelector('input[name="adjustmentNote"]');
+        if (input) input.value = btn.dataset.adjust || '0';
+        if (noteInput && !noteInput.value.trim() && Number(btn.dataset.adjust || 0) < 0) {
+          noteInput.value = 'Trừ lỗi toàn bài';
+        }
+        return;
+      }
       if (action === 'export-xlsx') {
         const room = selectedRoom();
         if (!room) return;
@@ -1894,6 +2035,70 @@ function bindShellEvents(c) {
         await loadActiveTabData(c);
         renderShell(c);
         notify(c, 'Đã lưu điểm câu tự luận.');
+        return;
+      }
+
+      if (form.classList.contains('er-adjust-form')) {
+        const room = selectedRoom();
+        if (!room) return;
+        const attemptId = form.dataset.attemptId;
+        const fd = new FormData(form);
+        const rawNum = Number(String(fd.get('adjustmentPoints') || '0').replace(',', '.'));
+        if (!Number.isFinite(rawNum) || rawNum < -100 || rawNum > 100) {
+          throw new Error('Giá trị điều chỉnh toàn bài không hợp lệ.');
+        }
+        const adjustmentPointsP100 = Math.round(rawNum * 100);
+        const adjustmentNote = String(fd.get('adjustmentNote') || '').trim();
+        await roomApi(
+          c,
+          `/api/rooms/${encodeURIComponent(room.id)}/attempts/${encodeURIComponent(attemptId)}/adjustment`,
+          {
+            method: 'PUT',
+            body: { adjustmentPointsP100, adjustmentNote },
+          },
+        );
+        await loadRooms(c, { preferredRoomId: room.id });
+        await loadActiveTabData(c);
+        renderShell(c);
+        notify(c, 'Đã lưu điều chỉnh tổng điểm toàn bài.');
+        return;
+      }
+
+      if (form.id === 'er-regrade-form') {
+        const room = selectedRoom();
+        if (!room) return;
+        const keys = Array.isArray(state.roomDetail?.answerKeys) ? state.roomDetail.answerKeys : [];
+        const updates = [];
+        for (const k of keys) {
+          const ptsInput = form.querySelector(`[name="key_pts_${CSS?.escape ? CSS.escape(k.questionId) : k.questionId}"]`);
+          const ptsNum = ptsInput ? Number(String(ptsInput.value || '').replace(',', '.')) : k.points;
+          if (!Number.isFinite(ptsNum) || ptsNum < 0) {
+            throw new Error(`Điểm câu ${k.order} không hợp lệ.`);
+          }
+          const item = { questionId: k.questionId, points: ptsNum };
+          if (k.type === 'mcq') {
+            const sel = form.querySelector(`[name="key_mcq_${CSS?.escape ? CSS.escape(k.questionId) : k.questionId}"]`);
+            if (sel) item.answer = Number(sel.value);
+          } else if (k.type === 'truefalse') {
+            const tv = [0, 1, 2, 3].map((i) => {
+              const chk = form.querySelector(`[name="key_tf_${CSS?.escape ? CSS.escape(k.questionId) : k.questionId}_${i}"]`);
+              return Boolean(chk?.checked);
+            });
+            item.truthValues = tv;
+          } else if (k.type === 'short') {
+            const inp = form.querySelector(`[name="key_short_${CSS?.escape ? CSS.escape(k.questionId) : k.questionId}"]`);
+            if (inp) item.answerText = String(inp.value || '').trim();
+          }
+          updates.push(item);
+        }
+        const res = await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}/regrade`, {
+          method: 'POST',
+          body: { questions: updates },
+        });
+        await loadRooms(c, { preferredRoomId: room.id });
+        await loadActiveTabData(c);
+        renderShell(c);
+        notify(c, `Đã cập nhật khóa đáp án và chấm lại ${res?.regradedCount ?? 0} bài.`);
       }
     } catch (err) {
       state.error = err.message || 'Không thể lưu thay đổi.';

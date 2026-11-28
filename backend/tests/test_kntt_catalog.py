@@ -131,7 +131,7 @@ def test_every_kntt_collection_and_lesson_schema_and_12k_payload_limit():
         assert col["version"] == 1
         assert col["book"] == KNTT_SERIES
         assert col["series"] == KNTT_SERIES
-        assert col["volume"] in {"Tập một", "Tập hai", "Chuyên đề học tập"}
+        assert col["volume"] in {"Cả năm", "Tập một", "Tập hai", "Chuyên đề học tập"}
         assert col["volume"] in col["volumesAvailable"]
         assert isinstance(col["totalPages"], int) and col["totalPages"] > 0
         assert col["sourceTitle"] == (

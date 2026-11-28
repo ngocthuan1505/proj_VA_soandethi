@@ -118,6 +118,30 @@ def figure_copy(spec):
     return result
 
 
+FILE_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,128}")
+
+
+def _audio_item_copy(item):
+    if not isinstance(item, dict):
+        raise AIError("invalid_document", "Thông tin tệp âm thanh chưa hợp lệ.")
+    out = fields(item, "fileId filename mimeType sizeBytes maxPlays title")
+    fid = out.get("fileId")
+    if not isinstance(fid, str) or not FILE_ID_RE.fullmatch(fid):
+        raise AIError("invalid_document", "Mã tệp âm thanh chưa hợp lệ.")
+    if "maxPlays" in out and out["maxPlays"] is not None:
+        raw_plays = out["maxPlays"]
+        if isinstance(raw_plays, bool) or not isinstance(raw_plays, (int, float)):
+            raise AIError("invalid_document", "Số lượt nghe chưa hợp lệ.")
+        out["maxPlays"] = max(1, min(20, int(raw_plays)))
+    return out
+
+
+def audio_copy(value):
+    if isinstance(value, list):
+        return [_audio_item_copy(item) for item in value]
+    return _audio_item_copy(value)
+
+
 def snapshot(exam, answers):
     try:
         result = fields(exam, "id revision title school subject grade minutes instructions updated")
@@ -137,6 +161,19 @@ def snapshot(exam, answers):
             matrix=[],
             matrixConfirmed=False,
         )
+        if exam.get("audio"):
+            result["audio"] = audio_copy(exam["audio"])
+        if isinstance(exam.get("passages"), list) and exam["passages"]:
+            copied_passages = []
+            for p in exam["passages"]:
+                if not isinstance(p, dict):
+                    continue
+                entry = fields(p, "id title lead text")
+                if p.get("audio"):
+                    entry["audio"] = audio_copy(p["audio"])
+                copied_passages.append(entry)
+            if copied_passages:
+                result["passages"] = copied_passages
         if len(exam["questions"]) > 300:
             raise AIError("export_limit", "Đề vượt giới hạn 300 câu.")
         for original in exam["questions"]:
@@ -174,11 +211,17 @@ def snapshot(exam, answers):
                 )
             if original.get("figure"):
                 q["figure"] = figure_copy(original["figure"])
+            if original.get("audio"):
+                q["audio"] = audio_copy(original["audio"])
             if answers:
                 answer = saved_answer(original)
                 q.update(fields(original, "answerKnown explanation"))
                 q["answerKnown"] = answer is not None
-                q["answer"] = answer if q.get("type", "mcq") == "mcq" else 0
+                q["answer"] = (
+                    answer
+                    if q.get("type", "mcq") == "mcq"
+                    else (None if q.get("type") == "essay" else 0)
+                )
                 if q.get("type") == "short":
                     q["answerText"] = answer or ""
                 elif q.get("type") == "truefalse":

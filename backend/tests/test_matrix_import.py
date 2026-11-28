@@ -286,3 +286,265 @@ def test_spec_only_table_raises_before_ai_and_020_choice_group_parses_locally():
     assert len(res["matrix"]) == 7
     assert any(r.get("points") == 0.2 for r in res["matrix"])
     assert any(r.get("choiceGroup") == "KHMT" for r in res["matrix"])
+
+
+def _docx_cell(text: str, *, colspan: int = 1, vmerge: str | None = None) -> str:
+    tc_pr_parts = []
+    if colspan > 1:
+        tc_pr_parts.append(f'<w:gridSpan w:val="{colspan}"/>')
+    if vmerge == "restart":
+        tc_pr_parts.append('<w:vMerge w:val="restart"/>')
+    elif vmerge == "continue":
+        tc_pr_parts.append("<w:vMerge/>")
+    tc_pr = f"<w:tcPr>{''.join(tc_pr_parts)}</w:tcPr>" if tc_pr_parts else ""
+    p = f"<w:p><w:r><w:t>{escape(text)}</w:t></w:r></w:p>" if text else "<w:p/>"
+    return f"<w:tc>{tc_pr}{p}</w:tc>"
+
+
+def test_cv7991_grouped_docx_with_spec_table_parses_locally_with_eight_sublevels(tmp_path):
+    from uuid import uuid4
+
+    from mach_backend.ai_questions import GenerateJob, validate_generation_plan
+    from mach_backend.matrix_import import checked_matrix, matrix_slots
+
+    banner_tbl = (
+        "<w:tbl><w:tr>"
+        + _docx_cell("TRƯỜNG MẪU")
+        + _docx_cell("KIỂM TRA GIỮA KÌ I - TOÁN 10 Thời gian làm bài: 90 phút")
+        + "</w:tr></w:tbl>"
+    )
+    matrix_tbl = (
+        "<w:tbl>"
+        + "<w:tr>"
+        + _docx_cell("TT", vmerge="restart")
+        + _docx_cell("Chương / Chủ đề", vmerge="restart")
+        + _docx_cell("Nội dung / Đơn vị kiến thức", vmerge="restart")
+        + _docx_cell("Nhiều lựa chọn", colspan=3)
+        + _docx_cell("Đúng - Sai (ý)", colspan=3)
+        + _docx_cell("Trả lời ngắn", colspan=3)
+        + _docx_cell("Tự luận", colspan=3)
+        + _docx_cell("Tổng", colspan=3)
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("", vmerge="continue")
+        + _docx_cell("", vmerge="continue")
+        + _docx_cell("", vmerge="continue")
+        + "".join(_docx_cell(lbl) for _ in range(5) for lbl in ("B", "H", "VD"))
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("1", vmerge="restart")
+        + _docx_cell("Chương I", vmerge="restart")
+        + _docx_cell("Bài 1. Mệnh đề")
+        + "".join(
+            _docx_cell(v)
+            for v in ["1", "", "1", "1", "2", "1", "1", "", "", "", "", "", "3", "2", "2"]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("", vmerge="continue")
+        + _docx_cell("", vmerge="continue")
+        + _docx_cell("Bài 2. Tập hợp")
+        + "".join(
+            _docx_cell(v)
+            for v in ["1", "", "", "", "", "", "", "1", "", "", "", "1", "1", "1", "1"]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("2")
+        + _docx_cell("Chương II")
+        + _docx_cell("Bài 3. Bất phương trình")
+        + "".join(
+            _docx_cell(v) for v in ["", "", "", "", "", "", "", "", "", "", "1", "", "", "1", ""]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("3")
+        + _docx_cell("Chương II")
+        + _docx_cell("Bài 4. Hệ BPT")
+        + "".join(
+            _docx_cell(v) for v in ["1", "", "1", "", "", "", "", "", "", "", "", "1", "1", "", "2"]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("4")
+        + _docx_cell("Chương III")
+        + _docx_cell("Bài 5. Lượng giác")
+        + "".join(
+            _docx_cell(v) for v in ["1", "1", "", "", "", "", "1", "", "", "", "", "", "2", "1", ""]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("5")
+        + _docx_cell("Chương III")
+        + _docx_cell("Bài 6. Hệ thức lượng")
+        + "".join(
+            _docx_cell(v)
+            for v in ["2", "1", "", "1", "2", "1", "", "", "", "", "", "", "3", "3", "1"]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("6")
+        + _docx_cell("Chương IV")
+        + _docx_cell("Bài 7. Vectơ")
+        + "".join(
+            _docx_cell(v) for v in ["2", "", "", "", "", "", "1", "", "", "", "", "", "3", "", ""]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("Tổng số câu", colspan=3)
+        + "".join(
+            _docx_cell(v)
+            for v in ["8", "2", "2", "2", "4", "2", "3", "1", "", "", "1", "2", "13", "8", "6"]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("Tổng số điểm", colspan=3)
+        + "".join(
+            _docx_cell(v)
+            for v in [
+                "2",
+                "0,5",
+                "0,5",
+                "0,5",
+                "1",
+                "0,5",
+                "1,5",
+                "0,5",
+                "",
+                "",
+                "1",
+                "2",
+                "4",
+                "3",
+                "3",
+            ]
+        )
+        + "</w:tr>"
+        + "<w:tr>"
+        + _docx_cell("Tỉ lệ %", colspan=3)
+        + "".join(
+            _docx_cell(v)
+            for v in [
+                "20",
+                "5",
+                "5",
+                "5",
+                "10",
+                "5",
+                "15",
+                "5",
+                "",
+                "",
+                "10",
+                "20",
+                "40",
+                "30",
+                "30",
+            ]
+        )
+        + "</w:tr>"
+        + "</w:tbl>"
+    )
+    spec_tbl = (
+        "<w:tbl><w:tr>"
+        + _docx_cell("Chủ đề")
+        + _docx_cell("Yêu cầu cần đạt")
+        + _docx_cell("Mức độ")
+        + "</w:tr><w:tr>"
+        + _docx_cell("Chương I")
+        + _docx_cell("Nhận biết mệnh đề")
+        + _docx_cell("Biết")
+        + "</w:tr></w:tbl>"
+    )
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr(
+            "word/document.xml",
+            '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            f"<w:body>{banner_tbl}{matrix_tbl}{spec_tbl}</w:body></w:document>",
+        )
+
+    async def forbidden(*_):
+        pytest.fail("Không được gọi AI hoặc trả 409 với ma trận CV 7991 đọc được tại máy")
+
+    app = create_app(tmp_path, agent_call=forbidden)
+    with TestClient(app, headers={"Origin": "http://testserver"}) as client:
+        resp = client.post(
+            "/api/ai/matrix",
+            json={"name": "toan-10-cv7991.docx", "data": encoded(buf.getvalue()), "consent": False},
+        )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["count"] == 21
+    assert body["sentToAI"] is False
+    assert body["method"] == "python_table"
+    assert body["metadata"]["minutes"] == 90
+
+    slots = matrix_slots(body["matrix"])
+    assert len(slots) == 21
+    tf_slots = [s for s in slots if s.type == "truefalse"]
+    assert len(tf_slots) == 2
+    assert [s.subLevels for s in tf_slots] == [(0, 1, 1, 2), (0, 1, 1, 2)]
+    assert sum(len(s.subLevels or ()) for s in tf_slots) == 8
+
+    job = GenerateJob(
+        jobId=uuid4(),
+        examId=uuid4(),
+        baseRevision=1,
+        ownerId="local",
+        subject="Toán",
+        grade="10",
+        slots=slots,
+    )
+    validate_generation_plan(job)
+
+    # statementLevels và subLevels cho 1 dòng có 2 câu Đúng-Sai đều truyền đủ 8 ý vào ExamSlot.
+    alias_preview = checked_matrix(
+        {
+            "matrix": [
+                {
+                    "topic": "Mệnh đề và tập hợp",
+                    "type": "truefalse",
+                    "pointsQ4": 4,
+                    "targets": [0, 2, 0, 0],
+                    "statementLevels": [[0, 1, 1, 2], [0, 1, 2, 3]],
+                    "scoringMode": "cv7991_graduated",
+                },
+                {"topic": "Vectơ", "type": "essay", "pointsQ4": 32, "targets": [0, 0, 1, 0]},
+            ],
+            "notes": "",
+        }
+    )
+    assert alias_preview["matrix"][0]["subLevels"] == [[0, 1, 1, 2], [0, 1, 2, 3]]
+    alias_slots = matrix_slots(alias_preview["matrix"])
+    assert alias_slots[0].subLevels == (0, 1, 1, 2)
+    assert alias_slots[1].subLevels == (0, 1, 2, 3)
+    assert alias_slots[0].scoringMode == "cv7991_graduated"
+
+
+def test_consent_true_not_blocked_by_spec_only_409():
+    calls = []
+
+    async def model(purpose, body):
+        calls.append(purpose)
+        return {
+            "content": json.dumps(
+                {
+                    "matrix": [{"topic": "Hàm số", "targets": [2, 1, 1]}],
+                    "notes": "Đọc khi có đồng ý.",
+                }
+            )
+        }
+
+    spec_csv = (
+        "Chủ đề;Yêu cầu cần đạt;Nhận biết;Thông hiểu;Vận dụng\n"
+        "Hàm số;Nêu được khái niệm;Nêu định nghĩa;Vẽ được đồ thị;Giải bài tập\n"
+    )
+    res = asyncio.run(
+        read_matrix(
+            {"name": "dac-ta.csv", "data": encoded(spec_csv.encode()), "consent": True}, model
+        )
+    )
+    assert res["sentToAI"] is True
+    assert res["count"] == 4
+    assert calls == ["matrix_import"]

@@ -378,10 +378,17 @@ function ensureHomeStyles() {
       font-size: 12px;
       color: var(--ink-muted, #4b6075);
     }
-    .proactive-bell-btn {
+    .header-actions .proactive-bell-btn {
       position: relative;
-      padding: 4px 8px !important;
+      padding: 4px 8px;
       min-width: 34px;
+    }
+    .proactive-center-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
     }
     .proactive-bell-badge {
       position: absolute;
@@ -407,6 +414,8 @@ function ensureHomeStyles() {
     @media (max-width: 640px) {
       .home-view { padding: 14px 12px 32px; }
       .home-recent-grid { grid-template-columns: 1fr; }
+      .home-cta-row button, .home-tools-strip button, .home-prompt-bar button, .home-section-head button, .proactive-card .buttons button { min-height: 40px; }
+      .home-prompt-chip { min-height: 36px; }
     }
   `;
   document.head.appendChild(style);
@@ -431,16 +440,24 @@ export function renderProactiveCardsHTML(digest, state = null) {
 
   for (const camp of digest.activeCampaigns || []) {
     const pct = Math.min(100, Math.round((camp.completedCount / Math.max(1, camp.targetCount)) * 100));
+    const metaParts = [
+      camp.subject ? String(camp.subject) : '',
+      camp.grade ? `Lớp ${camp.grade}` : '',
+      camp.dueAt ? `Hạn: ${formatDateShort(camp.dueAt)}` : '',
+    ].filter(Boolean);
     cards.push(`
       <article class="proactive-card" data-campaign-id="${esc(camp.id)}">
         <div class="proactive-card-head">
           <h3 class="proactive-card-title">${esc(camp.title)}</h3>
           <span class="pill">${camp.completedCount}/${camp.targetCount} đề</span>
         </div>
+        ${metaParts.length ? `<p class="proactive-card-msg">${esc(metaParts.join(' · '))}</p>` : ''}
         <div class="proactive-progress" aria-label="Tiến độ ${pct}%"><span style="width:${pct}%"></span></div>
         <p class="proactive-card-msg">${esc(camp.message || `Đã xong ${camp.completedCount}/${camp.targetCount} đề — Bấm soạn tiếp đề ${camp.nextOrdinal}`)}</p>
         <div class="buttons">
           <button type="button" class="primary tiny-btn" data-action="home-continue-campaign" data-id="${esc(camp.id)}" data-title="${esc(camp.title)}" data-subject="${esc(camp.subject || '')}" data-grade="${esc(camp.grade || '')}" data-ordinal="${camp.nextOrdinal}">Soạn tiếp đề ${camp.nextOrdinal}</button>
+          ${camp.completedCount >= camp.targetCount ? `<button type="button" class="tiny-btn" data-action="proactive-complete-campaign" data-id="${esc(camp.id)}">Hoàn thành</button>` : ''}
+          <button type="button" class="tiny-btn ghost" data-action="proactive-archive-campaign" data-id="${esc(camp.id)}">Lưu trữ</button>
         </div>
       </article>
     `);
@@ -643,6 +660,7 @@ export function mountHomeView(ctx) {
 
 export async function refreshProactiveUI(ctx) {
   const digest = await fetchProactiveDigest(ctx?.workspaceHeaders?.() || {});
+  if (typeof document === 'undefined') return digest;
   const body = document.getElementById('home-proactive-body');
   if (body) body.innerHTML = renderProactiveCardsHTML(digest, ctx?.getState?.());
   const bell = document.querySelector('[data-action="open-proactive-center"]');
@@ -669,7 +687,7 @@ export async function openProactiveCenterModal(ctx) {
   ctx.modal(
     'Trợ lý Chủ động · Lịch & Tiến độ',
     `<div style="display:flex;flex-direction:column;gap:12px">
-      <div class="row space">
+      <div class="proactive-center-head">
         <p class="hint" style="margin:0">${esc(digest.greeting)} · ${digest.badgeCount} mục cần chú ý</p>
         <div class="buttons">
           <button type="button" class="tiny-btn" data-action="open-new-campaign">+ Chiến dịch mới</button>
@@ -724,6 +742,39 @@ export function openNewReminderModal(ctx) {
       <div class="modal-foot"><button type="button" data-action="close">Hủy</button><button type="submit" class="primary">Lưu nhắc lịch</button></div>
     </form>`,
   );
+}
+
+async function patchCampaignAction(cid, payload, successMessage, ctx) {
+  if (!cid) return;
+  let res;
+  try {
+    res = await fetch(`/api/campaigns/${encodeURIComponent(cid)}`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json', ...(ctx?.workspaceHeaders?.() || {})},
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    ctx?.toast?.('Không thể kết nối máy chủ để cập nhật chiến dịch. Thầy cô vui lòng thử lại.');
+    return;
+  }
+  if (!res || !res.ok) {
+    let detailMsg = '';
+    try {
+      const errData = await res.json();
+      detailMsg = errData?.detail || errData?.error || '';
+    } catch {}
+    ctx?.toast?.(
+      detailMsg
+        ? `Không thể cập nhật chiến dịch (${res.status}): ${detailMsg}`
+        : `Không thể cập nhật chiến dịch (lỗi ${res?.status || 'mạng'}). Vui lòng thử lại.`,
+    );
+    return;
+  }
+  await refreshProactiveUI(ctx);
+  if (typeof document !== 'undefined' && document.getElementById('dialog')?.open) {
+    await openProactiveCenterModal(ctx);
+  }
+  ctx?.toast?.(successMessage);
 }
 
 async function patchReminderAction(rid, payload, successMessage, ctx) {
@@ -829,6 +880,24 @@ export async function handleHomeAction(action, node, ctx) {
     const detail = {prompt, examId: createdExam?.id || null, campaignId: cid || null, subject, grade, consentGiven: true};
     ctx.onAutoCreateExam?.(detail);
     void refreshProactiveUI(ctx);
+    return true;
+  }
+  if (action === 'proactive-complete-campaign') {
+    await patchCampaignAction(
+      node.dataset.id,
+      {status: 'completed'},
+      'Đã đánh dấu hoàn thành chiến dịch.',
+      ctx,
+    );
+    return true;
+  }
+  if (action === 'proactive-archive-campaign') {
+    await patchCampaignAction(
+      node.dataset.id,
+      {status: 'archived'},
+      'Đã lưu trữ chiến dịch.',
+      ctx,
+    );
     return true;
   }
   if (action === 'proactive-done-reminder') {

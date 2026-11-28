@@ -741,6 +741,29 @@ body {
 .sr-rev-item.is-partial { border-left: 5px solid #d97706; }
 .sr-rev-item.is-wrong { border-left: 5px solid #dc2626; }
 
+.sr-unanswered-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.sr-unanswered-pill {
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #93c5fd;
+  background: #ffffff;
+  color: var(--sr-teal-dark);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sr-unanswered-pill:hover {
+  background: #dbeafe;
+}
+
 @media (max-width: 899px) {
   .sr-workspace {
     grid-template-columns: minmax(0, 1fr);

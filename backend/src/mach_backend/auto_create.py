@@ -1545,6 +1545,16 @@ def register_auto_create_routes(
                                         "level": slot.level,
                                         "levelName": _LEVEL_LABELS[slot.level],
                                         "points": _slot_points_float(slot),
+                                        **(
+                                            {"subLevels": list(slot.subLevels)}
+                                            if slot.subLevels is not None
+                                            else {}
+                                        ),
+                                        **(
+                                            {"scoringMode": slot.scoringMode}
+                                            if slot.scoringMode is not None
+                                            else {}
+                                        ),
                                     }
                                     for orig_idx, slot in batch_items
                                 ]

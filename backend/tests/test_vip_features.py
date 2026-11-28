@@ -769,3 +769,48 @@ def test_omr_sheet_html_zero_leakage_teacher_shading_and_pdf_export(tmp_path, mo
         assert linux_pdf.status_code == 200, linux_pdf.text
         assert len(retry_calls) == 2
         assert "--no-sandbox" in retry_calls[1]
+
+
+def test_exam_analytics_two_track_choice_group_effective_points():
+    two_track = {
+        "title": "Đề Tin học 12 hai hướng",
+        "minutes": 45,
+        "questions": [
+            {
+                "id": "c1",
+                "type": "mcq",
+                "level": 0,
+                "points": 5.0,
+                "stem": "Câu chung phần mạng máy tính?",
+                "options": ["A1", "B1", "C1", "D1"],
+                "answer": 0,
+                "explanation": "Giải thích chung",
+            },
+            {
+                "id": "a1",
+                "type": "mcq",
+                "choiceGroup": "Tự chọn A",
+                "level": 1,
+                "points": 5.0,
+                "stem": "Câu nhánh A khoa học máy tính?",
+                "options": ["A2", "B2", "C2", "D2"],
+                "answer": 1,
+                "explanation": "Giải thích A",
+            },
+            {
+                "id": "b1",
+                "type": "mcq",
+                "choiceGroup": "Tự chọn B",
+                "level": 1,
+                "points": 5.0,
+                "stem": "Câu nhánh B tin học ứng dụng?",
+                "options": ["A3", "B3", "C3", "D3"],
+                "answer": 2,
+                "explanation": "Giải thích B",
+            },
+        ],
+    }
+    report = analyze_exam(two_track)
+    assert report["totalPoints"] == 10.0
+    assert report["pointsDelta"] == 0.0
+    assert not any(issue["code"] == "points_mismatch" for issue in report["issues"])

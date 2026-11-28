@@ -936,3 +936,171 @@ def test_agy_cli_and_ai_router_redacted_invalid_response_diagnostics(tmp_path):
         assert err_json["code"] == "invalid_response"
         assert err_json["detail"]["subcode"] == "schema_mismatch"
         assert err_json["detail"]["top_keys"] == ["wrong"]
+
+
+def test_selective_ocr_empty_page_keeps_needs_ocr_and_preserves_text_pages(tmp_path):
+    """PDF chữ–scan–chữ khi only_needs_ocr=True chỉ gửi trang scan và giữ needsOCR=True."""
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+
+    from mach_backend.source_ocr import read_source
+
+    writer = PdfWriter()
+    for text in ("Trang 1 chu sach", None, "Trang 3 chu sach"):
+        page = writer.add_blank_page(width=400, height=600)
+        if text:
+            font = DictionaryObject(
+                {
+                    NameObject("/Type"): NameObject("/Font"),
+                    NameObject("/Subtype"): NameObject("/Type1"),
+                    NameObject("/BaseFont"): NameObject("/Helvetica"),
+                }
+            )
+            page[NameObject("/Resources")] = DictionaryObject(
+                {NameObject("/Font"): DictionaryObject({NameObject("/F1"): font})}
+            )
+            stream = DecodedStreamObject()
+            stream.set_data(f"BT /F1 12 Tf 40 500 Td ({text}) Tj ET".encode())
+            page[NameObject("/Contents")] = writer._add_object(stream)
+    buf = io.BytesIO()
+    writer.write(buf)
+    pdf_uri = _data_url("application/pdf", buf.getvalue())
+
+    sent_counts: list[int] = []
+
+    async def empty_scan_model(purpose, body):
+        assert purpose == "source_ocr"
+        raw_sub = base64.b64decode(body["document"]["data"])
+        sent_counts.append(len(PdfReader(io.BytesIO(raw_sub)).pages))
+        return {
+            "content": json.dumps(
+                {
+                    "pages": [{"number": 1, "text": "", "uncertain": True}],
+                    "notes": "Trang 2 trắng không có chữ.",
+                },
+                ensure_ascii=False,
+            )
+        }
+
+    res = asyncio.run(
+        read_source(
+            {"name": "mixed-empty.pdf", "consent": True, "onlyNeedsOcr": True},
+            pdf_uri,
+            empty_scan_model,
+        )
+    )
+    assert sent_counts == [1]
+    assert len(res["pages"]) == 1
+    assert res["pages"][0]["number"] == 2
+    assert res["pages"][0]["text"] == ""
+    assert res["pages"][0]["needsOCR"] is True
+
+
+def test_share_clone_and_restore_preserves_wav_and_null_answers(tmp_path):
+    """Chia sẻ, sao chép và sao lưu/khôi phục giữ WAV phát được và nhận đáp án null."""
+    valid_wav = b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x44\xac\x00\x00"
+    wav_uri = _data_url("audio/wav", valid_wav)
+    exam_audio_id = "aud_exam_1"
+    q_audio_id = "aud_q_1"
+
+    exam_src = _make_exam()
+    exam_src["audio"] = {
+        "fileId": exam_audio_id,
+        "filename": "de-nghe.wav",
+        "mimeType": "audio/wav",
+        "sizeBytes": len(valid_wav),
+        "maxPlays": 2,
+        "title": "Listening Part 1",
+    }
+    exam_src["questions"][0]["audio"] = {
+        "fileId": q_audio_id,
+        "filename": "cau-1.wav",
+        "mimeType": "audio/wav",
+        "sizeBytes": len(valid_wav),
+        "maxPlays": 1,
+        "title": "Question 1 Audio",
+    }
+
+    with TestClient(create_app(tmp_path / "src"), headers=ORIGIN) as src_client:
+        src_client.put(
+            "/api/kv",
+            json={
+                "key": "state",
+                "value": {"exams": [exam_src], "prefs": [], "current": exam_src["id"]},
+            },
+        ).raise_for_status()
+        src_client.put(
+            "/api/kv", json={"key": f"file:{exam_audio_id}", "value": wav_uri}
+        ).raise_for_status()
+        src_client.put(
+            "/api/kv", json={"key": f"file:{q_audio_id}", "value": wav_uri}
+        ).raise_for_status()
+
+        share_res = src_client.post(
+            "/api/share",
+            json={
+                "examId": exam_src["id"],
+                "baseRevision": exam_src["revision"],
+                "answers": False,
+                "allowCopy": True,
+            },
+        )
+        assert share_res.status_code == 200, share_res.text
+        token = share_res.json()["token"]
+
+        # HTML chia sẻ phải có 2 trình phát audio và phát đúng WAV
+        html_res = src_client.get(f"/s/{token}")
+        assert html_res.status_code == 200
+        assert html_res.text.count("<audio controls") == 2
+        assert f"/api/share/audio/{token}/{exam_audio_id}" in html_res.text
+        assert f"/api/share/audio/{token}/{q_audio_id}" in html_res.text
+
+        aud_res = src_client.get(f"/api/share/audio/{token}/{exam_audio_id}")
+        assert aud_res.status_code == 200
+        assert aud_res.headers["content-type"].startswith("audio/wav")
+        assert aud_res.content == valid_wav
+
+        # /api/share/read/{token} giữ audio metadata + files để sao chép
+        read_res = src_client.get(f"/api/share/read/{token}")
+        assert read_res.status_code == 200
+        read_json = read_res.json()
+        assert read_json["exam"]["audio"]["fileId"] == exam_audio_id
+        assert read_json["exam"]["questions"][0]["audio"]["fileId"] == q_audio_id
+        assert read_json["files"][exam_audio_id] == wav_uri
+        assert read_json["files"][q_audio_id] == wav_uri
+
+        # Đề sao chép có đáp án null (kể cả khi thiếu answerKnown) vẫn khôi phục 200 sang kho sạch
+        copied_exam = read_json["exam"]
+        copied_exam["questions"][0].pop("answerKnown", None)
+        copied_exam["questions"][0]["answer"] = None
+        copied_exam["questions"].append(
+            {
+                "id": str(uuid4()),
+                "type": "truefalse",
+                "level": 1,
+                "stem": "Câu đúng sai ẩn đáp án từ bản chia sẻ",
+                "options": ["a", "b", "c", "d"],
+                "answer": None,
+                "truthValues": None,
+                "points": 1.0,
+            }
+        )
+
+    with TestClient(create_app(tmp_path / "dst"), headers=ORIGIN) as dst_client:
+        rev = dst_client.get("/api/kv", params={"key": "state"}).json()["revision"]
+        backup_payload = {
+            "format": "tro-ly-soan-de",
+            "version": 1,
+            "state": {"exams": [copied_exam], "prefs": [], "current": copied_exam["id"]},
+            "files": read_json["files"],
+        }
+        prev = dst_client.post("/api/workspace/restore/preview", json=backup_payload)
+        assert prev.status_code == 200, prev.text
+        restored = dst_client.post(
+            "/api/workspace/restore",
+            json=backup_payload,
+            headers={"If-Match": str(rev)},
+        )
+        assert restored.status_code == 200, restored.text
+        assert dst_client.get(f"/api/kv?key=file:{exam_audio_id}").json()["value"] == wav_uri
+        assert dst_client.get(f"/api/kv?key=file:{q_audio_id}").json()["value"] == wav_uri

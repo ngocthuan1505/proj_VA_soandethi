@@ -63,7 +63,8 @@ async function startIsolatedServer(port, dataDir) {
       env: {
         ...process.env,
         MACH_DATA_DIR: dataDir,
-        PYTHONPATH: path.join(ROOT, 'backend', 'src'),
+        PYTHONPATH: [path.join(ROOT, 'backend', 'src'), process.env.PYTHONPATH]
+          .filter(Boolean).join(path.delimiter),
         NO_PROXY: '127.0.0.1,localhost',
         PYTHONIOENCODING: 'utf-8',
       },

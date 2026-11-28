@@ -431,6 +431,40 @@ def field(text, document=None, runs=None):
     return rich(field_document(text, document, runs))
 
 
+def _audio_html(
+    audio: Any, *, scope: str, label: str, audio_urls: dict[str, str] | None = None
+) -> str:
+    items = audio if isinstance(audio, list) else [audio]
+    parts: list[str] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        fid = str(item.get("fileId") or "").strip()
+        src = (audio_urls or {}).get(fid, "") if fid else ""
+        if not src:
+            raw_url = str(item.get("url") or "").strip()
+            if raw_url.startswith("/api/"):
+                src = raw_url
+        if not src:
+            continue
+        title = str(item.get("title") or item.get("filename") or "Bài nghe")
+        max_plays = item.get("maxPlays")
+        plays_note = (
+            f" · Tối đa {int(max_plays)} lượt nghe"
+            if isinstance(max_plays, (int, float)) and not isinstance(max_plays, bool)
+            else ""
+        )
+        cls = "exam-audio-bar" if scope == "exam" else "question-audio-card"
+        parts.append(
+            f'<div class="{cls}" data-audio-scope="{html.escape(scope, quote=True)}">'
+            f"<div><b>🔊 {plain(label)}: {plain(title)}</b>"
+            f"<span>{plain(plays_note)}</span></div>"
+            f'<audio controls preload="metadata" src="{html.escape(src, quote=True)}"></audio>'
+            "</div>"
+        )
+    return "".join(parts)
+
+
 def exam_html(
     exam,
     teacher,
@@ -440,6 +474,7 @@ def exam_html(
     rendered_math=None,
     is_draft: bool = False,
     draft_warnings: list[dict[str, Any]] | None = None,
+    audio_urls: dict[str, str] | None = None,
 ):
     figures = list(figures or [])
     if (
@@ -482,6 +517,10 @@ def exam_html(
         f" · {plain(exam.get('minutes'))} phút</p>"
     )
     body += f"<p>{plain(recipient_line(teacher))}</p><p>{inline_html(exam.get('instructions'))}</p>"
+    if exam.get("audio"):
+        body += _audio_html(
+            exam["audio"], scope="exam", label="Audio đề thi", audio_urls=audio_urls
+        )
     presenting = not teacher and rendered_math is not None and bool(exam["questions"])
     has_table = any(uses_table(q) for q in exam["questions"])
     has_passage = bool(exam.get("quote", {}).get("text"))
@@ -579,6 +618,10 @@ def exam_html(
         body += f"<section{page_class}{slide_attr}><b>Câu {i + 1}{score}.</b> " + field(
             q.get("stem"), q.get("richDoc"), q.get("runs")
         )
+        if q.get("audio"):
+            body += _audio_html(
+                q["audio"], scope="question", label=f"Audio câu {i + 1}", audio_urls=audio_urls
+            )
         for formula in q.get("formulas", []):
             body += (
                 '<div class="math" data-display="true">' + plain(formula.get("latex")) + "</div>"
@@ -1729,7 +1772,8 @@ def preview_exam_variant(payload):
                 "variantAnswer": mapping["variantAnswer"],
             }
         )
-    return {
+    draft_warnings = _collect_uc8_uc9_draft_warnings(exam)
+    result = {
         "title": variant["title"],
         "maxVariants": max_variants,
         "questions": questions_out,
@@ -1737,6 +1781,9 @@ def preview_exam_variant(payload):
         "questionMappings": question_mappings,
         "passageGroups": _summarize_passage_groups(exam["questions"], variant["questions"]),
     }
+    if draft_warnings:
+        result["preflightWarnings"] = draft_warnings
+    return result
 
 
 def _ascii_slug(value: Any, *, max_len: int = 24) -> str:
@@ -1882,6 +1929,27 @@ def export_variant_pack(payload, directory, origin):
             "</section>"
         )
 
+    raw_warnings = (
+        payload.get("draftWarnings")
+        if "draftWarnings" in payload
+        else payload.get("draft_warnings")
+    )
+    if raw_warnings is not None:
+        pack_warnings = normalize_draft_warnings(raw_warnings)
+    else:
+        pack_warnings = _collect_uc8_uc9_draft_warnings(exam)
+    draft_banner_html = ""
+    if pack_warnings:
+        warn_items = "".join(
+            f"<li>{html.escape(str(w.get('message') or ''))}</li>" for w in pack_warnings
+        )
+        draft_banner_html = (
+            '<div class="draft-banner" role="alert" '
+            'style="border:1px solid #b45309;background:#fffbeb;padding:10px 12px;margin:10px 0">'
+            "<strong>BẢN NHÁP — CẦN RÀ SOÁT TRƯỚC KHI PHÁT</strong>"
+            f"<ul>{warn_items}</ul></div>"
+        )
+
     title = html.escape(str(exam.get("title") or "Đề thi"))
     answer_key = (
         '<!doctype html><html lang="vi"><meta charset="utf-8">'
@@ -1889,7 +1957,7 @@ def export_variant_pack(payload, directory, origin):
         "<style>@page{size:A4;margin:18mm}body{font:16px system-ui}"
         "table{border-collapse:collapse}th,td{border:1px solid;padding:8px}"
         ".option-mapping,.passage-tag{color:#444;display:inline-block}</style>"
-        f"<h1>Đối chiếu đáp án · Bản giáo viên</h1><p>{title}</p>"
+        f"<h1>Đối chiếu đáp án · Bản giáo viên</h1><p>{title}</p>{draft_banner_html}"
         "<p>Số trong ngoặc chỉ câu tương ứng trên đề gốc; dùng số này để tra hướng dẫn chấm.</p>"
         f'<table><thead><tr><th scope="col">Câu</th>{headings}</tr></thead>'
         f"<tbody>{''.join(rows)}</tbody></table>{passage_summary_html}</html>"
@@ -1985,6 +2053,9 @@ def export_file(payload, directory, origin):
                 rendered_math=rendered["math"] if format_ == "html" else None,
                 is_draft=is_draft,
                 draft_warnings=draft_warnings,
+                audio_urls=payload.get("audioUrls")
+                if isinstance(payload.get("audioUrls"), dict)
+                else None,
             )
             if format_ != "docx"
             else ""
