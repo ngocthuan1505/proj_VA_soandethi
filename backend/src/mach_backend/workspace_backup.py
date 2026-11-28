@@ -611,6 +611,12 @@ def export_workspace_backup(store):
 
 def restore(store, backup, base_revision):
     state, files, records = validate_backup(backup)
+    raw_files = backup.get("files") or {}
+    normalized_file_types = {
+        key: value.split(";", 1)[0][5:]
+        for key, value in files.items()
+        if value != raw_files.get(key)
+    }
     if backup.get("format") == "tro-ly-soan-de-batch":
         skip_colliding = (
             backup.get("skipDuplicateIds") is True
@@ -685,11 +691,7 @@ def restore(store, backup, base_revision):
             "skippedExams": skipped_exams,
             "importedFiles": imported_files,
             "fileRemap": file_remap,
-            "normalizedFileTypes": {
-                key: value.split(";", 1)[0][5:]
-                for key, value in files.items()
-                if value != backup["files"][key]
-            },
+            "normalizedFileTypes": normalized_file_types,
             "examExportsMigrated": False,
             "examExportsWarning": EXAM_EXPORTS_NOTICE,
         }
@@ -712,6 +714,7 @@ def restore(store, backup, base_revision):
     return {
         "revision": revision,
         "restored": True,
+        "normalizedFileTypes": normalized_file_types,
         "examExportsMigrated": False,
         "examExportsWarning": EXAM_EXPORTS_NOTICE,
     }

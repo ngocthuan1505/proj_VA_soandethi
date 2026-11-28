@@ -121,6 +121,50 @@ async function verifyBatchAudio(template){
  }finally{await tab.close();}
 }
 
+async function verifyFullRestoreGenericWavOffline(template){
+ const tab=await context.newPage();
+ tab.on('pageerror',e=>errors.push(e.message));
+ try{
+  const fileId='qa-audio-toan-kho';
+  const expectedWav=wavData(112);
+  const genericWav=expectedWav.replace('data:audio/wav;','data:application/octet-stream;');
+  const restoredExam={...structuredClone(template),id:randomUUID(),title:'Đề khôi phục toàn kho WAV ngoại tuyến',docs:[],undo:[],redo:[],history:[]};
+  restoredExam.audio={fileId,filename:'nghe.wav',mimeType:'audio/wav',maxPlays:2};
+  const fullBackup={
+   format:'tro-ly-soan-de',
+   version:1,
+   state:{version:1,current:restoredExam.id,exams:[restoredExam],prefs:[]},
+   files:{[fileId]:genericWav},
+  };
+  await tab.goto(base+'/#workspace');await tab.waitForLoadState('networkidle');
+  await tab.getByRole('button',{name:'Mở kho đề',exact:true}).click();
+  await choose(Buffer.from(JSON.stringify(fullBackup)),tab);
+  const confirm=tab.locator('[data-action="confirm-backup"]');
+  await confirm.waitFor();
+  const blockedReads=new Set();
+  await tab.route(url=>url.pathname==='/api/kv',async route=>{
+   const request=route.request();
+   if(request.method()==='GET')blockedReads.add(new URL(request.url()).searchParams.get('key'));
+   await route.abort('internetdisconnected');
+  });
+  const applied=tab.waitForResponse(r=>r.url()===base+'/api/workspace/restore'&&r.request().method()==='POST').then(async r=>({status:r.status(),body:await r.json()}));
+  await Promise.all([tab.waitForEvent('load'),confirm.click()]);
+  const restoreResult=await applied;
+  assert.equal(restoreResult.status,200);
+  assert.deepEqual(restoreResult.body.normalizedFileTypes,{[fileId]:'audio/wav'});
+  const player=tab.locator(`audio[data-audio-file-id="${fileId}"]`).first();
+  await player.waitFor({state:'attached'});
+  await tab.waitForFunction(({id,data})=>{
+   const audio=document.querySelector(`audio[data-audio-file-id="${id}"]`);
+   return audio?.getAttribute('src')===data&&audio.duration>0;
+  },{id:fileId,data:expectedWav});
+  assert.equal(await tab.locator('.header-title').inputValue(),restoredExam.title);
+  for(const key of ['state','file:'+fileId]){
+   assert(blockedReads.has(key),'Phải đọc từ IndexedDB khi API KV bị chặn cho '+key);
+  }
+ }finally{await tab.close();}
+}
+
 try{
  await page.goto(base+'/login');await page.waitForLoadState('networkidle');
  await page.locator('#team-login [name=email]').fill('restore-admin@example.test');
@@ -256,6 +300,8 @@ try{
  results.push({case:'Mất mạng và xung đột: giữ bản máy chủ, nút tải xuất đúng nháp cục bộ',passed:true});
  await verifyBatchAudio(backup.state.exams[0]);
  results.push({case:'Kho đề tải JSON kèm audio và tệp hoàn tác. Ghép tệp trùng ID, reload khi API KV mất kết nối vẫn phát đúng audio của cả hai đề',passed:true});
+ await verifyFullRestoreGenericWavOffline(backup.state.exams[0]);
+ results.push({case:'Khôi phục JSON toàn kho có WAV MIME application/octet-stream: trả normalizedFileTypes, lưu audio/wav vào IndexedDB và phát được sau reload ngoại tuyến',passed:true});
  assert.deepEqual(errors,[]);
  await fs.writeFile(path.join(out,'result.json'),JSON.stringify({results,pageErrors:errors,fixture:true,realAI:false},null,2));
  console.log(JSON.stringify({results,pageErrors:errors}));

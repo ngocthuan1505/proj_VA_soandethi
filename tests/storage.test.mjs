@@ -482,6 +482,38 @@ test('restoreBackup giữ UUID, công thức, richDoc, audio và không ghi đè
  }finally{h.restore();}
 });
 
+test('restoreBackup toàn kho chuẩn hóa MIME WAV từ normalizedFileTypes vào IndexedDB để đọc ngoại tuyến sau reload',async()=>{
+ const h=await harness();try{
+  const examUuid='9b2f7d10-4c21-4f3a-9d55-1234567890cd';
+  const fullState={
+   current:examUuid,
+   exams:[{
+    id:examUuid,
+    title:'Đề khôi phục toàn kho có WAV MIME chung',
+    audio:{fileId:'aud_full',filename:'nghe.wav',mimeType:'audio/wav'},
+    questions:[],
+   }],
+   prefs:[],
+  };
+  const rawGenericWav='data:application/octet-stream;base64,UklG RgE=';
+  globalThis.fetch=async(url)=>{
+   if(String(url)==='/api/workspace/restore'){
+    return {ok:true,status:200,json:async()=>({revision:2,restored:true,normalizedFileTypes:{aud_full:'audio/wav'}})};
+   }
+   return {ok:true,status:200,json:async()=>({value:{current:null,exams:[],prefs:[]},revision:1})};
+  };
+  await h.storage.get('state');
+  const res=await h.storage.restoreBackup({format:'tro-ly-soan-de',version:1,state:fullState,files:{aud_full:rawGenericWav}},1);
+  assert.equal(res.revision,2);
+  assert.equal(res.cacheWarning,undefined);
+  globalThis.fetch=async()=>{throw Error('Mất mạng');};
+  const {storage:reloaded}=await h.open(h.session);
+  const cachedWav=await reloaded.get('file:aud_full');
+  assert.equal(cachedWav,'data:audio/wav;base64,UklGRgE=');
+  assert.ok(cachedWav.startsWith('data:audio/'));
+ }finally{h.restore();}
+});
+
 test('sharing.js ẩn đáp án khi sao cộng đồng, bảo toàn render khi HTTP 409 và chuẩn nút cảm ứng mobile',async()=>{
  const h=await harness();
  const prevDoc=globalThis.document;

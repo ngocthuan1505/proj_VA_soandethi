@@ -150,8 +150,35 @@ def test_restore_legacy_generic_mime_uses_referenced_filename(workspace):  # noq
         "/api/workspace/restore", json=backup, headers={"If-Match": str(preview.json()["revision"])}
     )
     assert restored.status_code == 200, restored.text
+    assert restored.json()["normalizedFileTypes"] == {"image-history": "image/png"}
     assert client.get("/api/kv?key=file:image-history").json()["value"] == png
     assert client.get("/api/kv?key=state").json()["value"] == backup["state"]
+
+
+def test_full_restore_returns_normalized_file_types_for_generic_wav(workspace):  # noqa: F811
+    client, _, _ = workspace
+    backup = backup_fixture()
+    wav_header = bytes.fromhex(
+        "524946462c00000057415645666d74201000000001000100401f0000401f0000010008006461746108000000"
+    )
+    wav_bytes = wav_header + bytes([128] * 8)
+    wav_b64 = base64.b64encode(wav_bytes).decode()
+    exam = backup["state"]["exams"][0]
+    exam["audio"] = {"fileId": "audio-full", "filename": "nghe.wav", "mimeType": "audio/wav"}
+    backup["files"]["audio-full"] = "data:application/octet-stream;base64," + wav_b64
+    preview = client.post("/api/workspace/restore/preview", json=backup)
+    assert preview.status_code == 200, preview.text
+    restored = client.post(
+        "/api/workspace/restore",
+        json=backup,
+        headers={"If-Match": str(preview.json()["revision"])},
+    )
+    assert restored.status_code == 200, restored.text
+    assert restored.json()["normalizedFileTypes"] == {"audio-full": "audio/wav"}
+    assert (
+        client.get("/api/kv?key=file:audio-full").json()["value"]
+        == "data:audio/wav;base64," + wav_b64
+    )
 
 
 @pytest.mark.parametrize("names", [[], ["scan.jpg"], ["scan.png", "scan.pdf"]])
