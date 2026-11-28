@@ -98,11 +98,12 @@ def test_catalog_covers_all_12_grades_and_preserves_original_15_collections():
         assert len(col["sha256"]) == 64
 
         total_formatted = 0
-        for idx, lesson in enumerate(col["lessons"], 1):
-            assert lesson["number"] == idx
+        lessons = col["lessons"]
+        assert sorted(lesson["number"] for lesson in lessons) == list(range(1, len(lessons) + 1))
+        for lesson in lessons:
             for field in ("chapter", "title", "outcome", "text"):
                 validate_ai_text(lesson[field])
-            payload = to_curriculum_source_payload(col, idx)
+            payload = to_curriculum_source_payload(col, lesson["number"])
             CurriculumSourceCreate.model_validate(payload)
             total_formatted += len(payload["content_excerpt"])
         assert total_formatted <= 12_000

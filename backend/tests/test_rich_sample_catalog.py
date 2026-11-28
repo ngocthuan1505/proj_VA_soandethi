@@ -70,7 +70,7 @@ def test_lesson_catalog_preserves_existing_contracts_and_covers_all_required_sub
         UUID(collection["id"])
         assert collection["id"] not in seen_ids
         seen_ids.add(collection["id"])
-        assert collection["version"] == 1
+        assert isinstance(collection["version"], int) and collection["version"] >= 1
         assert collection["licenseStatus"] == "allowed"
         assert collection["licenseNote"].strip()
         assert collection["sourceOrigin"] == "lesson_catalog"
@@ -79,8 +79,9 @@ def test_lesson_catalog_preserves_existing_contracts_and_covers_all_required_sub
         assert 1 <= grade_num <= 12
 
         total_formatted_chars = 0
-        for expected_num, lesson in enumerate(collection["lessons"], 1):
-            assert lesson["number"] == expected_num
+        lessons = collection["lessons"]
+        assert sorted(lesson["number"] for lesson in lessons) == list(range(1, len(lessons) + 1))
+        for lesson in lessons:
             for field in ("chapter", "title", "outcome", "text"):
                 assert isinstance(lesson[field], str) and lesson[field].strip()
                 validate_ai_text(lesson[field])

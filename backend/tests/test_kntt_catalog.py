@@ -128,7 +128,7 @@ def test_every_kntt_collection_and_lesson_schema_and_12k_payload_limit():
         seen_ids.add(col["id"])
 
     for col in kntt_collections:
-        assert col["version"] == 1
+        assert isinstance(col["version"], int) and col["version"] >= 1
         assert col["book"] == KNTT_SERIES
         assert col["series"] == KNTT_SERIES
         assert col["volume"] in {"Cả năm", "Tập một", "Tập hai", "Chuyên đề học tập"}
@@ -139,8 +139,9 @@ def test_every_kntt_collection_and_lesson_schema_and_12k_payload_limit():
         )
 
         total_formatted_chars = 0
-        for idx, lesson in enumerate(col["lessons"], 1):
-            assert lesson["number"] == idx
+        lessons = col["lessons"]
+        assert sorted(lesson["number"] for lesson in lessons) == list(range(1, len(lessons) + 1))
+        for lesson in lessons:
             assert isinstance(lesson["id"], str) and lesson["id"]
             assert isinstance(lesson["pageStart"], int) and lesson["pageStart"] >= 1
             assert isinstance(lesson["pageEnd"], int) and lesson["pageEnd"] >= lesson["pageStart"]
@@ -153,7 +154,7 @@ def test_every_kntt_collection_and_lesson_schema_and_12k_payload_limit():
             for item in lesson["learningOutcomes"]:
                 validate_ai_text(item)
 
-            payload = to_curriculum_source_payload(col, idx)
+            payload = to_curriculum_source_payload(col, lesson["number"])
             CurriculumSourceCreate.model_validate(payload)
             assert len(payload["content_excerpt"]) <= 12_000
             total_formatted_chars += len(payload["content_excerpt"])

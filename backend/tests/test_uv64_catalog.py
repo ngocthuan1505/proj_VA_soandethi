@@ -140,6 +140,53 @@ def test_kntt_toan_5_bai_6_phan_so_and_bai_64_bieu_do_quat_tron():
     assert "Bài 64: Biểu đồ hình quạt tròn" in chart_titles
 
 
+def test_kntt_toan_5_reviewed_lessons_have_own_pages_and_preserve_saved_numbers():
+    expected = {
+        "Tập một": {
+            17: 60,
+            18: 62,
+            30: 120,
+            33: 130,
+            34: 133,
+            35: 135,
+        },
+        "Tập hai": {
+            51: 48,
+            54: 58,
+            55: 60,
+            66: 96,
+            67: 100,
+            69: 107,
+            70: 111,
+            71: 113,
+            72: 119,
+            73: 121,
+            74: 123,
+            75: 128,
+        },
+    }
+    for col in _kntt_by_grade("5"):
+        assert col["version"] == 2
+        lessons = col["lessons"]
+        assert sorted(lesson["number"] for lesson in lessons) == list(range(1, len(lessons) + 1))
+        by_lesson = {
+            int(lesson["title"].split(":")[0].removeprefix("Bài ")): lesson for lesson in lessons
+        }
+        assert list(by_lesson) == sorted(by_lesson)
+        for number, page_start in expected[col["volume"]].items():
+            lesson = by_lesson[number]
+            assert lesson["pageStart"] == page_start
+            assert page_start <= lesson["pageEnd"] <= col["totalPages"]
+            assert to_curriculum_source_payload(col, lesson["number"])["title"] == lesson["title"]
+        if col["volume"] == "Tập một":
+            assert by_lesson[19]["id"] == "kntt-toan-5-t1-b15"
+            assert by_lesson[31]["id"] == "kntt-toan-5-t1-b22"
+        else:
+            assert by_lesson[50]["id"] == "kntt-toan-5-t2-b8"
+            assert by_lesson[51]["id"] == "kntt-toan-5-t2-b9"
+            assert by_lesson[64]["id"] == "kntt-toan-5-t2-b16"
+
+
 def test_kntt_ngu_van_12_bai_4_5_9_chuyen_de_3_and_aligned_writing_6_8():
     hits = search_lesson_catalog(subject="Ngữ văn", grade=12, book=KNTT_SERIES)
     by_vol = {col["volume"]: col for col in hits}
@@ -179,12 +226,24 @@ def test_kntt_ngu_van_12_bai_4_5_9_chuyen_de_3_and_aligned_writing_6_8():
 def test_kntt_toan_10_t2_splits_lessons_15_to_27_and_tieng_anh_8_12_units_khtn_8():
     t2_hits = search_lesson_catalog(subject="Toán", grade=10, book=KNTT_SERIES, volume="Tập hai")
     assert len(t2_hits) == 1
-    t2_lessons = t2_hits[0]["lessons"]
+    t2 = t2_hits[0]
+    assert t2["version"] == 2
+    assert (
+        t2["sourceUrl"]
+        == "https://sachdientu.nxbgd.vn/thu-vien-so/doc-sach/shs-toan-tap-2.4491365365"
+    )
+    t2_lessons = t2["lessons"]
     assert len(t2_lessons) == 13
-    for num in range(15, 28):
-        assert any(lesson["title"].startswith(f"Bài {num}:") for lesson in t2_lessons), (
-            f"Thiếu Bài {num}"
-        )
+    assert [lesson["title"].split(":")[0] for lesson in t2_lessons] == [
+        f"Bài {number}" for number in range(15, 28)
+    ]
+    assert sorted(lesson["number"] for lesson in t2_lessons) == list(range(1, 14))
+    by_id = {lesson["id"]: lesson for lesson in t2_lessons}
+    for number, old_lesson in enumerate((16, 17, 19, 23, 26), start=1):
+        lesson = by_id[f"kntt-toan-10-t2-b{number}"]
+        assert lesson["number"] == number
+        assert lesson["title"].startswith(f"Bài {old_lesson}:")
+    assert to_curriculum_source_payload(t2, 1)["title"] == "Bài 16: Hàm số bậc hai"
 
     newton_hits = search_lesson_catalog(
         "nhị thức newton", subject="Toán", grade=10, book=KNTT_SERIES, volume="Tập hai"

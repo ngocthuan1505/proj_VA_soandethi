@@ -59,6 +59,74 @@ _VOLUME_ORDER = {
     "Tập 2": 4,
 }
 
+# Số nội bộ đã lưu theo đề độc lập với thứ tự bài trong mục lục.
+_KNTT_LESSON_NUMBERS = {
+    "kntt-toan-5-t1": (
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        24,
+        25,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        26,
+        22,
+        23,
+        27,
+        28,
+        29,
+    ),
+    "kntt-toan-5-t2": (
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        19,
+        8,
+        9,
+        10,
+        11,
+        20,
+        21,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        22,
+        23,
+        18,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+    ),
+    "kntt-toan-10-t2": (6, 1, 2, 7, 3, 8, 9, 10, 4, 11, 12, 5, 13),
+}
+
 _KNTT_OFFICIAL_SOURCES: dict[str, tuple[str, str]] = {
     "kntt-toan-5-t1": (
         "Toán 5 – Tập một (Kết nối tri thức với cuộc sống)",
@@ -75,6 +143,10 @@ _KNTT_OFFICIAL_SOURCES: dict[str, tuple[str, str]] = {
     "kntt-toan-10-t1": (
         "Toán 10 – Tập một (Kết nối tri thức với cuộc sống)",
         "https://sachdientu.nxbgd.vn/thu-vien-so/doc-sach/shs-toan-tap-1.4491362330",
+    ),
+    "kntt-toan-10-t2": (
+        "Toán 10 – Tập hai (Kết nối tri thức với cuộc sống)",
+        "https://sachdientu.nxbgd.vn/thu-vien-so/doc-sach/shs-toan-tap-2.4491365365",
     ),
     "kntt-ngu-van-12-t1": (
         "Ngữ văn 12 – Tập một (Kết nối tri thức với cuộc sống)",
@@ -592,7 +664,7 @@ def _kntt_raw_collections() -> list[
             "Toán",
             "5",
             "Tập một",
-            128,
+            140,
             [
                 (
                     "Chủ đề 1: Ôn tập và bổ sung",
@@ -753,9 +825,27 @@ def _kntt_raw_collections() -> list[
                     ("Quy đổi thành thạo các đơn vị đo diện tích.",),
                 ),
                 (
+                    "Chủ đề 3: Một số đơn vị đo diện tích",
+                    "Bài 17: Thực hành và trải nghiệm với một số đơn vị đo đại lượng",
+                    60,
+                    61,
+                    2,
+                    "Đo và ước lượng diện tích sân hoặc phòng rồi ghi kết quả theo đơn vị phù hợp.",
+                    ("Chọn được đơn vị đo diện tích và kiểm tra kết quả ước lượng bằng phép đo.",),
+                ),
+                (
+                    "Chủ đề 3: Một số đơn vị đo diện tích",
+                    "Bài 18: Luyện tập chung",
+                    62,
+                    64,
+                    2,
+                    "Đổi và so sánh số đo diện tích, kể cả héc-ta và ki-lô-mét vuông.",
+                    ("Giải được bài toán thực tế khi các diện tích cho theo đơn vị khác nhau.",),
+                ),
+                (
                     "Chủ đề 4: Các phép tính với số thập phân",
                     "Bài 19: Phép cộng số thập phân",
-                    64,
+                    65,
                     67,
                     2,
                     "Đặt tính và tính phép cộng các số thập phân; tính chất giao hoán, kết hợp.",
@@ -823,9 +913,18 @@ def _kntt_raw_collections() -> list[
                 ),
                 (
                     "Chủ đề 6: Ôn tập học kỳ I",
+                    "Bài 30: Ôn tập số thập phân",
+                    120,
+                    122,
+                    2,
+                    "Ôn đọc, viết, so sánh và làm tròn số thập phân theo hàng được yêu cầu.",
+                    ("Xác định được giá trị chữ số và sắp xếp được các số thập phân.",),
+                ),
+                (
+                    "Chủ đề 6: Ôn tập học kỳ I",
                     "Bài 31: Ôn tập học kỳ I số thập phân và các phép tính",
-                    114,
-                    119,
+                    123,
+                    126,
                     2,
                     "Hệ thống hóa học kỳ I (học kì I): phân số, số thập phân và bốn phép tính.",
                     ("Vận dụng kiến thức số học học kỳ I giải toán.",),
@@ -833,14 +932,41 @@ def _kntt_raw_collections() -> list[
                 (
                     "Chủ đề 6: Ôn tập học kỳ I",
                     "Bài 32: Ôn tập học kỳ I đo diện tích và hình phẳng",
-                    120,
-                    125,
+                    127,
+                    129,
                     2,
                     (
                         "Ôn tập học kỳ I về đơn vị đo diện tích km2, ha, m2 và diện tích hình tam "
                         "giác, hình thang, hình tròn."
                     ),
                     ("Thành thạo quy đổi đơn vị đo và tính diện tích hình phẳng.",),
+                ),
+                (
+                    "Chủ đề 6: Ôn tập học kỳ I",
+                    "Bài 33: Ôn tập diện tích, chu vi một số hình phẳng",
+                    130,
+                    132,
+                    2,
+                    "Ôn chu vi, diện tích hình chữ nhật, hình tam giác, hình thang và hình tròn.",
+                    ("Tách được hình ghép thành các hình quen thuộc để tính diện tích.",),
+                ),
+                (
+                    "Chủ đề 6: Ôn tập học kỳ I",
+                    "Bài 34: Ôn tập đo lường",
+                    133,
+                    134,
+                    2,
+                    "Đổi và so sánh số đo độ dài, khối lượng, diện tích trong thực tế.",
+                    ("Viết được số đo dưới dạng số thập phân với đơn vị thích hợp.",),
+                ),
+                (
+                    "Chủ đề 6: Ôn tập học kỳ I",
+                    "Bài 35: Ôn tập chung",
+                    135,
+                    138,
+                    2,
+                    "Ôn hỗn số, số thập phân và giải bài toán về đo lường, hình học.",
+                    ("Chọn được phép tính và công thức phù hợp trong bài toán ôn học kỳ I.",),
                 ),
             ],
         ),
@@ -849,7 +975,7 @@ def _kntt_raw_collections() -> list[
             "Toán",
             "5",
             "Tập hai",
-            128,
+            136,
             [
                 (
                     "Chủ đề 7: Tỉ số và các bài toán liên quan",
@@ -919,9 +1045,18 @@ def _kntt_raw_collections() -> list[
                 ),
                 (
                     "Chủ đề 9: Diện tích và thể tích của một số hình khối",
-                    "Bài 49: Diện tích xung quanh và diện tích toàn phần của hình hộp chữ nhật",
-                    38,
+                    "Bài 49: Hình khai triển của hình lập phương, hình hộp chữ nhật và hình trụ",
+                    40,
                     43,
+                    2,
+                    "Nhận biết các mặt trên hình khai triển và hình dung cách gấp thành hình khối.",
+                    ("Chọn được hình khai triển phù hợp với mỗi hình khối đã học.",),
+                ),
+                (
+                    "Chủ đề 9: Diện tích và thể tích của một số hình khối",
+                    "Bài 50: Diện tích xung quanh và diện tích toàn phần của hình hộp chữ nhật",
+                    44,
+                    47,
                     2,
                     (
                         "Thiết lập công thức tính diện tích xung quanh và diện tích toàn phần "
@@ -931,9 +1066,9 @@ def _kntt_raw_collections() -> list[
                 ),
                 (
                     "Chủ đề 9: Diện tích và thể tích của một số hình khối",
-                    "Bài 50: Diện tích xung quanh và diện tích toàn phần của hình lập phương",
-                    44,
-                    47,
+                    "Bài 51: Diện tích xung quanh và diện tích toàn phần của hình lập phương",
+                    48,
+                    50,
                     2,
                     "Tính diện tích xung quanh và diện tích toàn phần hình lập phương.",
                     ("Tính được diện tích xung quanh, toàn phần hình lập phương.",),
@@ -941,8 +1076,8 @@ def _kntt_raw_collections() -> list[
                 (
                     "Chủ đề 9: Diện tích và thể tích của một số hình khối",
                     "Bài 52: Thể tích của hình hộp chữ nhật",
-                    48,
                     51,
+                    53,
                     2,
                     (
                         "Thiết lập công thức $V = a \\cdot b \\cdot c$ tính thể tích hình hộp chữ "
@@ -953,11 +1088,29 @@ def _kntt_raw_collections() -> list[
                 (
                     "Chủ đề 9: Diện tích và thể tích của một số hình khối",
                     "Bài 53: Thể tích của hình lập phương",
-                    52,
-                    55,
+                    54,
+                    57,
                     2,
                     "Thiết lập công thức $V = a \\cdot a \\cdot a$ tính thể tích hình lập phương.",
                     ("Tính được thể tích hình lập phương trong bài toán bể nước, thùng hàng.",),
+                ),
+                (
+                    "Chủ đề 9: Diện tích và thể tích của một số hình khối",
+                    "Bài 54: Thực hành tính toán và ước lượng thể tích một số hình khối",
+                    58,
+                    59,
+                    2,
+                    "Ước lượng thể tích đồ vật dạng hộp rồi đo kích thước để kiểm tra.",
+                    ("Tính được thể tích gần đúng và giải thích được cách ước lượng.",),
+                ),
+                (
+                    "Chủ đề 9: Diện tích và thể tích của một số hình khối",
+                    "Bài 55: Luyện tập chung",
+                    60,
+                    63,
+                    2,
+                    "Luyện tập tính diện tích và thể tích hình hộp chữ nhật, hình lập phương.",
+                    ("Phân biệt được bài toán cần tính diện tích bề mặt hay dung tích.",),
                 ),
                 (
                     "Chủ đề 10: Số đo thời gian, vận tốc. Các bài toán chuyển động đều",
@@ -995,8 +1148,8 @@ def _kntt_raw_collections() -> list[
                 (
                     "Chủ đề 11: Một số yếu tố thống kê và xác suất",
                     "Bài 63: Thu thập, phân loại, sắp xếp các số liệu",
-                    90,
-                    93,
+                    87,
+                    89,
                     2,
                     "Thu thập, phân loại và lập bảng số liệu thống kê từ tình huống thực tiễn.",
                     ("Thu thập, phân loại và đọc bảng số liệu thống kê.",),
@@ -1004,8 +1157,8 @@ def _kntt_raw_collections() -> list[
                 (
                     "Chủ đề 11: Một số yếu tố thống kê và xác suất",
                     "Bài 64: Biểu đồ hình quạt tròn",
-                    94,
-                    97,
+                    90,
+                    93,
                     2,
                     "Đọc, mô tả và phân tích số liệu tỉ lệ phần trăm trên biểu đồ hình quạt tròn.",
                     ("Đọc và phân tích được số liệu thống kê từ biểu đồ hình quạt tròn.",),
@@ -1013,23 +1166,107 @@ def _kntt_raw_collections() -> list[
                 (
                     "Chủ đề 11: Một số yếu tố thống kê và xác suất",
                     "Bài 65: Tỉ số của số lần lặp lại một sự kiện so với tổng số lần thực hiện",
-                    98,
-                    103,
+                    94,
+                    95,
                     2,
                     "Kiểm đếm và mô tả xác suất thực nghiệm qua tỉ số lần lặp lại của một sự kiện.",
                     ("Mô tả được xác suất thực nghiệm qua tỉ số lần xuất hiện của một sự kiện.",),
                 ),
                 (
+                    "Chủ đề 11: Một số yếu tố thống kê và xác suất",
+                    (
+                        "Bài 66: Thực hành và trải nghiệm thu thập, phân tích, "
+                        "biểu diễn các số liệu thống kê"
+                    ),
+                    96,
+                    99,
+                    2,
+                    "Thực hiện khảo sát ngắn, lập bảng và biểu diễn số liệu bằng biểu đồ phù hợp.",
+                    ("Đọc được biểu đồ và nêu nhận xét dựa trên số liệu đã thu thập.",),
+                ),
+                (
+                    "Chủ đề 11: Một số yếu tố thống kê và xác suất",
+                    "Bài 67: Luyện tập chung",
+                    100,
+                    102,
+                    2,
+                    "Luyện đọc bảng, biểu đồ và tính tỉ số số lần xuất hiện trên số lần thử.",
+                    ("Giải được bài toán kết hợp phân tích biểu đồ và xác suất thực nghiệm.",),
+                ),
+                (
                     "Chủ đề 12: Ôn tập cuối năm",
                     "Bài 68: Ôn tập cuối năm Toán 5",
+                    103,
                     106,
-                    125,
                     5,
                     (
                         "Ôn tập cuối năm toàn bộ phân số, số thập phân, tỉ số phần trăm, đo "
                         "diện tích, thể tích, chuyển động đều, thống kê và xác suất."
                     ),
                     ("Hệ thống hóa và vận dụng tổng hợp kiến thức Toán 5 giải bài toán thực tế.",),
+                ),
+                (
+                    "Chủ đề 12: Ôn tập cuối năm",
+                    "Bài 69: Ôn tập các phép tính với số tự nhiên, phân số, số thập phân",
+                    107,
+                    110,
+                    2,
+                    "Ôn bốn phép tính với số tự nhiên, phân số, số thập phân và các tính chất.",
+                    ("Tính được giá trị biểu thức và chọn cách tính thuận tiện.",),
+                ),
+                (
+                    "Chủ đề 12: Ôn tập cuối năm",
+                    "Bài 70: Ôn tập tỉ số, tỉ số phần trăm",
+                    111,
+                    112,
+                    2,
+                    "Ôn lập tỉ số, tìm tỉ số phần trăm và tính giá trị phần trăm của một số.",
+                    ("Phân biệt được hai dạng bài toán về tỉ số phần trăm.",),
+                ),
+                (
+                    "Chủ đề 12: Ôn tập cuối năm",
+                    "Bài 71: Ôn tập hình học",
+                    113,
+                    118,
+                    2,
+                    "Ôn chu vi, diện tích hình phẳng và diện tích, thể tích hình khối.",
+                    ("Chọn được công thức theo hình và đại lượng cần tính.",),
+                ),
+                (
+                    "Chủ đề 12: Ôn tập cuối năm",
+                    "Bài 72: Ôn tập đo lường",
+                    119,
+                    120,
+                    2,
+                    "Ôn đổi và so sánh số đo độ dài, khối lượng, diện tích, thể tích, thời gian.",
+                    ("Viết được số đo theo đơn vị yêu cầu và tính với các số đo cùng đơn vị.",),
+                ),
+                (
+                    "Chủ đề 12: Ôn tập cuối năm",
+                    "Bài 73: Ôn tập toán chuyển động đều",
+                    121,
+                    122,
+                    2,
+                    "Ôn quan hệ giữa vận tốc, quãng đường và thời gian trong chuyển động đều.",
+                    ("Đổi đơn vị nhất quán và tính được đại lượng chưa biết.",),
+                ),
+                (
+                    "Chủ đề 12: Ôn tập cuối năm",
+                    "Bài 74: Ôn tập một số yếu tố thống kê và xác suất",
+                    123,
+                    127,
+                    2,
+                    "Ôn phân loại số liệu, đọc bảng và biểu đồ, tính tỉ số số lần lặp một sự kiện.",
+                    ("Rút được nhận xét từ số liệu và tính được tần suất thực nghiệm.",),
+                ),
+                (
+                    "Chủ đề 12: Ôn tập cuối năm",
+                    "Bài 75: Ôn tập chung",
+                    128,
+                    134,
+                    3,
+                    "Ôn số học, tỉ số, đo lường, hình học và thống kê qua bài toán thực tế.",
+                    ("Giải được bài toán nhiều bước và kiểm tra kết quả, đơn vị.",),
                 ),
             ],
         ),
@@ -9681,9 +9918,11 @@ def lesson_catalog() -> list[dict[str, Any]]:
         for key, subject, grade, book, volume, lessons in collections
     ]
     for key, subject, grade, volume, total_pages, kntt_lessons in _kntt_raw_collections():
+        lesson_numbers = _KNTT_LESSON_NUMBERS.get(key, range(1, len(kntt_lessons) + 1))
+        numbered_lessons = list(zip(lesson_numbers, kntt_lessons, strict=True))
         sha_lessons = [
             (chapter, title, "; ".join(outcomes), summary)
-            for chapter, title, _, _, _, summary, outcomes in kntt_lessons
+            for _, (chapter, title, _, _, _, summary, outcomes) in sorted(numbered_lessons)
         ]
         default_title = (
             f"{subject} {grade} Global Success – {volume} ({KNTT_SERIES})"
@@ -9701,7 +9940,7 @@ def lesson_catalog() -> list[dict[str, Any]]:
         built.append(
             {
                 "id": str(uuid5(NAMESPACE_URL, f"soan-de-thi/hoc-lieu/{key}/1")),
-                "version": 1,
+                "version": 2 if key in _KNTT_LESSON_NUMBERS else 1,
                 "subject": subject,
                 "grade": grade,
                 "book": KNTT_SERIES,
@@ -9754,7 +9993,7 @@ def lesson_catalog() -> list[dict[str, Any]]:
                         periods,
                         summary,
                         outcomes,
-                    ) in enumerate(kntt_lessons, 1)
+                    ) in numbered_lessons
                 ],
             }
         )
