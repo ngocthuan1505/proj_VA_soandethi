@@ -4,6 +4,15 @@ Cập nhật: 28/11/2026.
 
 ## Hiện trạng đã kiểm
 
+### 28/11/2026 · Nghiệm thu tích hợp vòng 2 (t9) trên `aeae239` (sau vá `storage.js`, `workspace_backup.py`, `exam-rooms.js`, `lesson-picker.js`)
+
+- **Xác minh các bản sửa reviewer chỉ ra (`74ab2a8`, `d60f041`, `aeae239`) & ranh giới Tú (`ba9da49..aeae239`):** Đối chiếu `git diff --name-status ba9da49..aeae239` xác nhận **0 tệp** trong vùng Soạn đề của Tú (`editor.js`, `studio.js`, `rich-document.js`, `math-content.js`, `workbench.js`, `matrix-chat.js`, `matrix-synthesis.js`, `reference.js`, `assets/usability.js`) bị sửa. Đã xác nhận `d60f041` phân biệt lỗi API Web Locks (`unavailable`) với khóa đang bận (`busy`) trong [`storage.js`](../../storage.js), bổ sung 2 ca reload/nhân bản tab trong [`tests/storage.test.mjs`](../../tests/storage.test.mjs), và kiểm UUID trùng Thùng rác (`trash`) khi ghép lô trong [`workspace_backup.py`](../../backend/src/mach_backend/workspace_backup.py) kèm test [`backend/tests/test_workspace_backup.py`](../../backend/tests/test_workspace_backup.py); đồng thời đã dọn thư mục rác untracked `Microsoft/`.
+- **Kết quả kiểm thử toàn diện trên `aeae239` (log lưu tại `outputs/t9-cycle2-aeae239/`):**
+  - Python (`backend/`): `uv run ruff check .`, `uv run ruff format --check .` (`145` tệp), `uv run ty check src` đều đạt (`exit 0`); `uv run pytest -q -rs` đạt **`1099 passed, 5 skipped, 1 warning, 3 subtests passed`** (`202,38s`). Giải trình 5 ca skip: cả 5 ca (`test_check_routes.py:535`, `test_generation_confirmation.py:287`, `test_generation_submission.py:378`, `test_patch_confirmation.py:955`, `test_patch_confirmation.py:1008`) chỉ chạy khi bật `--smoke-ollama-model`.
+  - JavaScript & nhóm: `node --test "tests/*.test.mjs"` đạt **`262 passed, 0 failed`** (`4,42s`); `check:team` (`node --test tests/team.test.mjs tests/github-bootstrap.test.mjs tests/task-details.test.mjs && node scripts/check-team.mjs`) đạt **`14 passed, 0 failed`** + `Team plan OK`.
+  - Chrome E2E 3 kích thước (`1440×900`, `1280×720`, `390×844`): `node scripts/kiem-ui-redesign.mjs` đạt **`ok: true`**, `0` bugs/failures/consoleErrors/pageErrors/unexpectedHttpErrors; `scripts/kiem-ung-vien.py` đạt **`11/11` (`IT-01..IT-11`)** trong một lượt trên worktree sạch `aeae239e9dd36b3ee1a15e05fbb8956b7a24a3f0`. (Thiếu skill `webapp-testing`/`frontend-design`/`emil-design-eng`/`web-design-guidelines`/`ponytail-review`, kiểm trực tiếp bằng `playwright-core`.)
+- **Tác động tới bên thuyết trình & bước tiếp theo:** Toàn bộ bản sửa vòng 2 trên `aeae239` đã nghiệm thu tích hợp sạch; t10 cần đóng lại và kiểm định ZIP Workshop mới từ commit mới nhất này.
+
 ### 28/11/2026 · Vá điều hướng bàn phím Kho SGK và E2E 390px (t6 vòng 2)
 
 - **Sửa [`lesson-picker.js`](../../lesson-picker.js):** Tách `searchCollapsedChapters` theo `lastSearchQuery` để khi có từ khóa tìm kiếm vẫn bấm thu gọn/mở rộng chương được (tự mở lại khi đổi từ khóa); trả focus về đúng nút tập `.sgk-vol-pill[data-sgk-volume]` kèm `aria-pressed` sau khi chọn bằng `Enter`. Không chạm vùng Soạn đề của Tú.
