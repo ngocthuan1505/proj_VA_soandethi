@@ -947,7 +947,7 @@ function buildShareTabHTML(room) {
             </div>
             <div class="er-btn-row">
               ${roomStatusBadge(room.status)}
-              <button type="button" class="er-btn er-btn-sm ${room.status === 'open' ? 'er-btn-danger' : 'er-btn-primary'}" data-er-action="toggle-room-status" data-next-status="${esc(nextStatus)}">${esc(nextStatusLabel)}</button>
+              <button type="button" class="er-btn er-btn-sm ${room.status === 'open' ? 'er-btn-danger' : 'er-btn-primary'}" data-er-action="toggle-room-status" data-room-id="${esc(room.id)}" data-next-status="${esc(nextStatus)}" ${state.switchingRoom ? 'disabled aria-disabled="true"' : ''}>${esc(nextStatusLabel)}</button>
             </div>
           </div>
 
@@ -981,7 +981,7 @@ function buildShareTabHTML(room) {
           }
         </div>
 
-        <form id="er-update-form" class="er-card" style="display:flex;flex-direction:column;gap:10px;">
+        <form id="er-update-form" data-room-id="${esc(room.id)}"${state.switchingRoom ? ' aria-busy="true"' : ''} class="er-card" style="display:flex;flex-direction:column;gap:10px;">
           <strong>Cập nhật cấu hình phòng</strong>
           <div class="er-grid-3">
             <div class="er-field">
@@ -1040,7 +1040,7 @@ function buildShareTabHTML(room) {
           </div>
           <div class="er-btn-row" style="justify-content:space-between;">
             <button type="button" class="er-btn er-btn-danger er-btn-sm" data-er-action="delete-room" data-room-id="${esc(room.id)}" ${state.switchingRoom ? 'disabled aria-disabled="true"' : ''}>Xóa phòng này</button>
-            <button type="submit" class="er-btn er-btn-primary">Lưu thay đổi phòng</button>
+            <button type="submit" class="er-btn er-btn-primary" data-room-id="${esc(room.id)}" ${state.switchingRoom ? 'disabled aria-disabled="true"' : ''}>Lưu thay đổi phòng</button>
           </div>
         </form>
         ${
@@ -2325,13 +2325,23 @@ async function executeDeleteRoom(c, roomId, triggerBtn) {
   }
 }
 
-function setDeleteRoomButtonsDisabled(shell, disabled) {
+function setRoomMutationControlsDisabled(shell, disabled) {
   if (!shell || typeof shell.querySelectorAll !== 'function') return;
-  shell.querySelectorAll('[data-er-action="delete-room"]').forEach((el) => {
-    el.disabled = Boolean(disabled);
-    if (disabled) el.setAttribute?.('aria-disabled', 'true');
-    else el.removeAttribute?.('aria-disabled');
-  });
+  const isDisabled = Boolean(disabled);
+  shell
+    .querySelectorAll(
+      '[data-er-action="delete-room"], [data-er-action="toggle-room-status"], #er-update-form button[type="submit"], #er-update-form input, #er-update-form select, #er-update-form textarea',
+    )
+    .forEach((el) => {
+      el.disabled = isDisabled;
+      if (isDisabled) el.setAttribute?.('aria-disabled', 'true');
+      else el.removeAttribute?.('aria-disabled');
+    });
+  const updateForm = shell.querySelector?.('#er-update-form');
+  if (updateForm) {
+    if (isDisabled) updateForm.setAttribute?.('aria-busy', 'true');
+    else updateForm.removeAttribute?.('aria-busy');
+  }
 }
 
 function bindShellEvents(c) {
@@ -2408,7 +2418,7 @@ function bindShellEvents(c) {
           const session = state;
           stopPolling();
           state.switchingRoom = true;
-          setDeleteRoomButtonsDisabled(shell, true);
+          setRoomMutationControlsDisabled(shell, true);
           state.selectedRoomId = visible[0]?.id || '';
           state.roomDetail = null;
           state.gradingQueue = null;
@@ -2433,7 +2443,7 @@ function bindShellEvents(c) {
         const session = state;
         stopPolling();
         state.switchingRoom = true;
-        setDeleteRoomButtonsDisabled(shell, true);
+        setRoomMutationControlsDisabled(shell, true);
         state.selectedRoomId = btn.dataset.roomId || '';
         state.confirmDeleteRoomId = '';
         state.roomDetail = null;
@@ -2483,8 +2493,10 @@ function bindShellEvents(c) {
         return;
       }
       if (action === 'toggle-room-status') {
-        const room = selectedRoom();
+        if (state.switchingRoom || btn.disabled) return;
+        const room = selectedRoom(c);
         if (!room) return;
+        if (btn.dataset?.roomId !== room.id) return;
         const nextStatus = btn.dataset.nextStatus || 'closed';
         const res = await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}`, {
           method: 'PATCH',
@@ -2627,8 +2639,11 @@ function bindShellEvents(c) {
       }
 
       if (form.id === 'er-update-form') {
-        const room = selectedRoom();
+        const submitBtn = form.querySelector?.('button[type="submit"]');
+        if (state.switchingRoom || submitBtn?.disabled) return;
+        const room = selectedRoom(c);
         if (!room) return;
+        if (form.dataset?.roomId !== room.id) return;
         const fd = new FormData(form);
         const body = {
           title: String(fd.get('title') || '').trim(),

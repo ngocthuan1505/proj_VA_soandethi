@@ -1868,3 +1868,251 @@ test('t4 Phòng thi · Chrome: vô hiệu hóa nút Xóa phòng này trong lúc 
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('t4 Phòng thi · Chrome: khóa nút Đóng/Mở và form Lưu khi chuyển phòng QR chậm và đối chiếu roomId trước PATCH', async (t) => {
+  let browser = await launchChromeForTest();
+  if (!browser) {
+    t.skip('Không tìm thấy Chrome/Chromium trên máy kiểm thử');
+    return;
+  }
+
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const rooms = [
+    {
+      id: 'room-a',
+      examId: 'ex-1',
+      roomCode: 'AAA111',
+      title: 'Phòng A',
+      status: 'open',
+      mode: 'exam',
+      resultPolicy: 'score_only',
+      joinPath: '/exam-room.html?code=AAA111',
+      attemptCount: 0,
+      needsManualCount: 0,
+      questionCount: 1,
+      totalPointsP100: 1000,
+    },
+    {
+      id: 'room-b',
+      examId: 'ex-1',
+      roomCode: 'BBB222',
+      title: 'Phòng B',
+      status: 'open',
+      mode: 'exam',
+      resultPolicy: 'score_only',
+      joinPath: '/exam-room.html?code=BBB222',
+      attemptCount: 0,
+      needsManualCount: 0,
+      questionCount: 1,
+      totalPointsP100: 1000,
+    },
+  ];
+
+  const patchCalls = [];
+  let releaseRoomBQr = null;
+  let roomBQrStartedResolve = null;
+  const roomBQrStarted = new Promise((resolve) => {
+    roomBQrStartedResolve = resolve;
+  });
+
+  const harnessHtml = `<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>t4 patch guard test</title></head>
+<body>
+  <dialog id="dialog"><div class="modal-head"><h2></h2></div><div class="modal-body"></div></dialog>
+  <dialog id="dialog-layer2"><div class="modal-head"><h2></h2></div><div class="modal-body"></div></dialog>
+  <script type="module">
+    import { openExamRooms } from '/exam-rooms.js';
+    const ctx = {
+      exam: () => ({ id: 'ex-1', title: 'Đề Toán 9', subject: 'Toán', grade: '9', minutes: 45, questions: [{}] }),
+      workspaceHeaders: () => ({}),
+      toast: () => {},
+      modal: (title, body, _subtitle, opts) => {
+        const dlg = document.getElementById(opts?.layer === 2 ? 'dialog-layer2' : 'dialog');
+        dlg.querySelector('h2').textContent = title;
+        dlg.querySelector('.modal-body').innerHTML = body;
+        if (!dlg.open) dlg.showModal();
+      },
+    };
+    window.__roomsReady = openExamRooms(ctx, { tab: 'share' });
+  </script>
+</body>
+</html>`;
+
+  const server = http.createServer((req, res) => {
+    const reqUrl = new URL(req.url || '/', 'http://127.0.0.1');
+    const pathname = reqUrl.pathname;
+
+    if (pathname === '/__t4-patch-harness.html') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(harnessHtml);
+      return;
+    }
+    if (pathname === '/api/rooms' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ rooms }));
+      return;
+    }
+    if (pathname === '/api/exports/preflight') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ready: true, blockingIssues: [] }));
+      return;
+    }
+    if (pathname === '/api/rooms/room-a/qr.svg') {
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+      res.end('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>');
+      return;
+    }
+    if (pathname === '/api/rooms/room-b/qr.svg') {
+      if (releaseRoomBQr === null) {
+        roomBQrStartedResolve();
+        new Promise((resolve) => {
+          releaseRoomBQr = resolve;
+        }).then(() => {
+          if (!res.writableEnded) {
+            res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+            res.end('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>');
+          }
+        });
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+      res.end('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>');
+      return;
+    }
+    if (pathname.startsWith('/api/rooms/') && req.method === 'PATCH') {
+      const roomId = decodeURIComponent(pathname.slice('/api/rooms/'.length));
+      const chunks = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', () => {
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        patchCalls.push({ pathname, roomId, body });
+        const target = rooms.find((r) => r.id === roomId);
+        if (!target) {
+          res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ detail: 'Not found' }));
+          return;
+        }
+        Object.assign(target, body);
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ room: target }));
+      });
+      return;
+    }
+
+    const rel = pathname.replace(/^\/+/, '');
+    const fullPath = path.resolve(repoRoot, rel);
+    if (
+      rel &&
+      fullPath.startsWith(repoRoot) &&
+      fs.existsSync(fullPath) &&
+      fs.statSync(fullPath).isFile()
+    ) {
+      const ext = path.extname(fullPath).toLowerCase();
+      const contentType =
+        ext === '.js' || ext === '.mjs'
+          ? 'application/javascript; charset=utf-8'
+          : ext === '.css'
+            ? 'text/css; charset=utf-8'
+            : 'application/octet-stream';
+      res.writeHead(200, { 'Content-Type': contentType });
+      fs.createReadStream(fullPath).pipe(res);
+      return;
+    }
+
+    res.writeHead(404);
+    res.end('Not found');
+  });
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const addr = server.address();
+  const baseUrl = `http://127.0.0.1:${addr.port}`;
+
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const pageErrors = [];
+    page.on('pageerror', (err) => pageErrors.push(err.message));
+
+    await page.goto(`${baseUrl}/__t4-patch-harness.html`, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => window.__roomsReady);
+
+    const toggleBtn = page.locator('[data-er-action="toggle-room-status"]');
+    const updateForm = page.locator('#er-update-form');
+    const saveBtn = page.locator('#er-update-form button[type="submit"]');
+    await toggleBtn.waitFor({ state: 'visible' });
+    assert.equal(await toggleBtn.isDisabled(), false);
+    assert.equal(await toggleBtn.getAttribute('data-room-id'), 'room-a');
+    assert.equal(await updateForm.getAttribute('data-room-id'), 'room-a');
+    assert.equal(await saveBtn.isDisabled(), false);
+
+    // Chuyển từ phòng A sang phòng B khi QR phòng B trả chậm
+    await page.locator('[data-er-action="select-room"][data-room-id="room-b"]').click();
+    await roomBQrStarted;
+
+    // Trong lúc chờ QR phòng B: nút Đóng/Mở và form Lưu phải bị khóa
+    assert.equal(await toggleBtn.isDisabled(), true, 'Nút Đóng/Mở phòng phải bị khóa trong lúc chuyển phòng');
+    assert.equal(await toggleBtn.getAttribute('aria-disabled'), 'true');
+    assert.equal(await saveBtn.isDisabled(), true, 'Nút Lưu thay đổi phòng phải bị khóa trong lúc chuyển phòng');
+    assert.equal(await saveBtn.getAttribute('aria-disabled'), 'true');
+    assert.equal(await updateForm.getAttribute('aria-busy'), 'true');
+    assert.equal(await page.locator('#er-u-title').isDisabled(), true);
+
+    // Kể cả khi bấm cưỡng bức nút Đóng phòng hoặc kích hoạt submit form Lưu lúc đang chuyển, tuyệt đối không gửi PATCH
+    await toggleBtn.click({ force: true });
+    await saveBtn.click({ force: true });
+    await page.evaluate(() => {
+      const form = document.getElementById('er-update-form');
+      form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    await page.waitForTimeout(50);
+    assert.equal(patchCalls.length, 0, 'Không được gửi PATCH /api/rooms/room-b khi đang chuyển từ phòng A');
+
+    // Cho phép QR phòng B hoàn tất -> giao diện chuyển sang phòng B và mở khóa đúng nút/form phòng B
+    releaseRoomBQr();
+    await page.waitForFunction(() => document.querySelector('#er-u-title')?.value === 'Phòng B');
+    assert.equal(await toggleBtn.isDisabled(), false);
+    assert.equal(await toggleBtn.getAttribute('data-room-id'), 'room-b');
+    assert.equal(await updateForm.getAttribute('data-room-id'), 'room-b');
+    assert.equal(await saveBtn.isDisabled(), false);
+    assert.equal(await updateForm.getAttribute('aria-busy'), null);
+
+    // Kiểm tra chốt đối chiếu roomId trước PATCH: nếu DOM lệch roomId thì không gửi PATCH
+    await page.evaluate(() => {
+      document.querySelector('[data-er-action="toggle-room-status"]').dataset.roomId = 'room-a';
+      document.getElementById('er-update-form').dataset.roomId = 'room-a';
+    });
+    await toggleBtn.click();
+    await saveBtn.click();
+    await page.waitForTimeout(50);
+    assert.equal(patchCalls.length, 0, 'Không được gửi PATCH khi data-room-id lệch với phòng đang chọn');
+
+    // Khôi phục đúng roomId phòng B -> cả hai thao tác Đóng phòng và Lưu thay đổi phòng đều gửi PATCH đúng phòng B
+    await page.evaluate(() => {
+      document.querySelector('[data-er-action="toggle-room-status"]').dataset.roomId = 'room-b';
+      document.getElementById('er-update-form').dataset.roomId = 'room-b';
+    });
+
+    await toggleBtn.click();
+    await page.waitForFunction(
+      () => document.querySelector('[data-er-action="toggle-room-status"]')?.dataset?.nextStatus === 'open',
+    );
+    assert.equal(patchCalls.length, 1);
+    assert.equal(patchCalls[0].pathname, '/api/rooms/room-b');
+    assert.equal(patchCalls[0].body.status, 'closed');
+
+    await page.locator('#er-u-title').fill('Phòng B đã cập nhật');
+    await saveBtn.click();
+    await page.waitForFunction(
+      () => document.querySelector('#er-u-title')?.value === 'Phòng B đã cập nhật' && !document.querySelector('#er-u-title')?.disabled,
+    );
+    assert.equal(patchCalls.length, 2);
+    assert.equal(patchCalls[1].pathname, '/api/rooms/room-b');
+    assert.equal(patchCalls[1].body.title, 'Phòng B đã cập nhật');
+    assert.equal(rooms[0].status, 'open', 'Phòng A không được bị thay đổi trạng thái');
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    if (releaseRoomBQr) releaseRoomBQr();
+    if (browser) await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
