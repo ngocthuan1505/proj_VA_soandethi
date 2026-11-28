@@ -1,0 +1,58 @@
+{
+  "jobId": "22041e97-0636-5fe3-81c6-7ab5d5af1698",
+  "examId": "fd8c5ce3-e93f-58a7-a4c0-a3188319249e",
+  "baseRevision": 1,
+  "ownerId": "poc-local",
+  "subject": "Khoa học tự nhiên",
+  "grade": "9",
+  "requireEvidence": true,
+  "instructions": "Ngữ liệu bài thực hành tự biên soạn, chưa được giáo viên duyệt. Ghi rõ đơn vị SI, công thức LaTeX trong $...$ hoặc $\\ce{...}$ và đối chiếu bảng số liệu thí nghiệm trước khi kết luận.",
+  "sources": [
+    {
+      "sourceId": "7b63f18e-e17a-5134-9f69-e4d96e0d01c2",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {
+        "kind": "passage",
+        "index": 1
+      },
+      "text": "S1. Thí nghiệm định luật Ôm với một điện trở mẫu cho bốn cặp số đo ổn định: (U = 1,5 V; I = 0,15 A), (U = 3,0 V; I = 0,30 A), (U = 4,5 V; I = 0,45 A) và (U = 6,0 V; I = 0,60 A). Điện trở mẫu bằng $R = \\frac{U}{I} = 10\\,\\Omega$. Khi hiệu điện thế là $6{,}0\\text{ V}$, công suất tỏa nhiệt bằng $P = U I = 3{,}6\\text{ W}$."
+    },
+    {
+      "sourceId": "5b8d36f7-8269-564d-8fa3-c876968054cc",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {
+        "kind": "passage",
+        "index": 2
+      },
+      "text": "S2. Thí nghiệm trung hòa: cho $25\\text{ mL}$ dung dịch $\\ce{HCl}$ $0{,}2\\text{ M}$ tác dụng vừa đủ với $25\\text{ mL}$ dung dịch $\\ce{NaOH}$ theo phương trình $\\ce{HCl + NaOH -> NaCl + H2O}$. Số mol $\\ce{HCl}$ phản ứng bằng $n = 0{,}2 \\cdot 0{,}025 = 0{,}005\\text{ mol}$, tạo thành $0{,}005\\text{ mol}$ muối $\\ce{NaCl}$ và cho nồng độ $C_M(\\ce{NaOH}) = 0{,}2\\text{ M}$."
+    }
+  ],
+  "slots": [
+    {
+      "type": "mcq",
+      "topic": "Định luật Ôm và mạch điện",
+      "level": 0,
+      "pointsQ4": 10
+    },
+    {
+      "type": "short",
+      "topic": "Tính điện trở và công suất",
+      "level": 1,
+      "pointsQ4": 10
+    },
+    {
+      "type": "mcq",
+      "topic": "Phản ứng trung hòa",
+      "level": 0,
+      "pointsQ4": 10
+    },
+    {
+      "type": "essay",
+      "topic": "Tính toán nồng độ dung dịch",
+      "level": 2,
+      "pointsQ4": 10
+    }
+  ]
+}

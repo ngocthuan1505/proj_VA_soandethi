@@ -1,0 +1,144 @@
+{
+  "clean_kv_rows": [
+    {
+      "key": "config",
+      "value": "{\"routes\":{\"generate\":\"api\",\"patch\":\"api\",\"check\":\"api\"},\"search\":{\"provider\":\"bing\",\"url\":\"\",\"hasKey\":false},\"ollama\":{\"model\":\"qwen2.5:7b\",\"url\":\"http://127.0.0.1:11434\",\"hasKey\":false},\"api\":{\"model\":\"gemini-2.5-flash\",\"url\":\"\",\"hasKey\":false},\"greennode\":{\"model\":\"\",\"url\":\"\",\"hasKey\":false}}",
+      "rev": 1,
+      "updated": 1794328493220
+    },
+    {
+      "key": "credits:a1000000000000000000000000000001",
+      "value": "{\"balance\":976,\"label\":\"Điểm MVP cục bộ — không phải số dư API\",\"ledger\":[{\"delta\":-24,\"reason\":\"Giữ điểm cho lần soạn đề\",\"reference\":\"job-math-001\",\"at\":1762700000000}]}",
+      "rev": 1,
+      "updated": 1794328493232
+    },
+    {
+      "key": "credits:b2000000000000000000000000000002",
+      "value": "{\"balance\":1000,\"label\":\"Điểm MVP cục bộ — không phải số dư API\",\"ledger\":[]}",
+      "rev": 1,
+      "updated": 1794328493233
+    },
+    {
+      "key": "email:gv.dia@example.edu.vn",
+      "value": "\"b2000000000000000000000000000002\"",
+      "rev": 1,
+      "updated": 1794328493225
+    },
+    {
+      "key": "email:gv.toan@example.edu.vn",
+      "value": "\"a1000000000000000000000000000001\"",
+      "rev": 1,
+      "updated": 1794328493223
+    },
+    {
+      "key": "export-owner:Giao-vien-2026-11-10-a1b2c3.docx",
+      "value": "\"a1000000000000000000000000000001\"",
+      "rev": 1,
+      "updated": 1794328493242
+    },
+    {
+      "key": "local-owner",
+      "value": "\"a1000000000000000000000000000001\"",
+      "rev": 1,
+      "updated": 1794328493231
+    },
+    {
+      "key": "session:bd1b9d66d2803de444e2bf843f53d1c48d82125980f60d6e1d68f6c134c0a08c",
+      "value": "{\"userId\":\"a1000000000000000000000000000001\",\"expires\":1893456000000}",
+      "rev": 1,
+      "updated": 1794328493228
+    },
+    {
+      "key": "session:e331ae3bf9a92f7f42733a701a743cd753645215f7433d0be13dc9875e016ce8",
+      "value": "{\"expires\":0}",
+      "rev": 1,
+      "updated": 1794328493229
+    },
+    {
+      "key": "share:7203157819147c2f882d9070b41abbdb4c7322189f5a040d26d9bfe20ac13def",
+      "value": "{\"owner\":\"a1000000000000000000000000000001\",\"examId\":\"exam-math-001\",\"exam\":{\"id\":\"exam-math-001\",\"title\":\"Đề kiểm tra giữa kì I — Toán 9\",\"subject\":\"Toán\",\"grade\":\"9\",\"minutes\":45,\"department\":\"PHÒNG GIÁO DỤC VÀ ĐÀO TẠO QUẬN 1\",\"school\":\"TRƯỜNG THCS NGUYỄN DU\",\"instructions\":\"Thí sinh làm bài trên giấy thi. Không sử dụng tài liệu.\",\"markingGuidance\":\"Chấm theo từng bước diện tích và định lí Pythagore, đơn vị 0,25 điểm.\",\"sample\":false,\"fullExam\":true,\"layout\":{\"font\":\"Times New Roman\",\"fontSize\":15},\"blockIds\":{\"heading\":\"blk-ex1-head\",\"general\":\"blk-ex1-gen\",\"marking\":\"blk-ex1-mark\"},\"questions\":[{\"id\":\"q-math-001\",\"v\":2,\"type\":\"mcq\",\"topic\":\"Phương trình bậc hai\",\"level\":1,\"points\":0.25,\"stem\":\"Trên ℝ, tập nghiệm của phương trình $\\\\sqrt{x^2 + 1} = 2$ là?\",\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"attrs\":{\"textAlign\":\"left\"},\"content\":[{\"type\":\"text\",\"text\":\"Trên ℝ, tập nghiệm của phương trình \"},{\"type\":\"mathInline\",\"attrs\":{\"latex\":\"\\\\sqrt{x^2 + 1} = 2\",\"display\":false}},{\"type\":\"text\",\"text\":\" là?\"}]}]},\"runs\":null,\"options\":[\"{-√3; √3}\",\"{√3}\",\"{-3; 3}\",\"∅\"],\"optionDocs\":[{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"mathInline\",\"attrs\":{\"latex\":\"\\\\{-\\\\sqrt{3}; \\\\sqrt{3}\\\\}\",\"display\":false}}]}]},{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"mathInline\",\"attrs\":{\"latex\":\"\\\\{\\\\sqrt{3}\\\\}\",\"display\":false}}]}]},{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"{-3; 3}\"}]}]},{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"∅\"}]}]}],\"answer\":0,\"answerKnown\":true,\"answerText\":\"\",\"truthValues\":[],\"explanation\":\"Bình phương hai vế: $x^2 + 1 = 4 \\\\iff x^2 = 3 \\\\iff x = \\\\pm\\\\sqrt{3}$.\",\"explanationDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Bình phương hai vế: \"},{\"type\":\"mathInline\",\"attrs\":{\"latex\":\"x^2 + 1 = 4 \\\\iff x^2 = 3 \\\\iff x = \\\\pm\\\\sqrt{3}\",\"display\":false}}]}]},\"rubric\":[],\"rule\":\"math-square\",\"dataLinked\":false,\"figure\":null,\"figureDoc\":null,\"formulas\":[{\"id\":\"form-01\",\"latex\":\"\\\\Delta = b^2 - 4ac\"}],\"tables\":[],\"images\":[],\"pageBreak\":false,\"source\":{\"docId\":\"doc-math-01\",\"location\":\"Trang 1\",\"page\":1,\"quote\":\"Phương trình quy về bậc hai\"},\"check\":{\"version\":2,\"status\":\"approved\",\"problems\":[],\"evidence\":\"Đã đối chiếu nghiệm ±√3.\",\"at\":1762700100000,\"method\":\"Giáo viên duyệt sau kiểm tra\"},\"verification\":{\"ok\":true},\"algebra\":null,\"generated\":null,\"blockIds\":{\"stem\":\"blk-q1-stem\",\"explanation\":\"blk-q1-exp\",\"rubric\":\"blk-q1-rub\",\"figure\":\"blk-q1-fig\",\"options\":\"blk-q1-opt\",\"answer\":\"blk-q1-ans\",\"answerText\":\"blk-q1-atxt\",\"truthValues\":\"blk-q1-tv\"}},{\"id\":\"q-math-002\",\"v\":1,\"type\":\"essay\",\"topic\":\"Hình học phẳng\",\"level\":2,\"points\":2,\"stem\":\"Cho tam giác ABC vuông tại A có AB = 6 cm, AC = 8 cm. Tính độ dài cạnh huyền BC và đường cao AH.\",\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Cho tam giác ABC vuông tại A có AB = 6 cm, AC = 8 cm. Tính độ dài cạnh huyền BC và đường cao AH.\"}]}]},\"runs\":null,\"options\":[],\"optionDocs\":[],\"answer\":0,\"answerKnown\":true,\"answerText\":\"\",\"truthValues\":[],\"explanation\":\"Áp dụng định lí Pythagore: $BC = \\\\sqrt{6^2 + 8^2} = 10$ cm. Đường cao $AH = \\\\frac{AB \\\\cdot AC}{BC} = 4,8$ cm.\",\"explanationDoc\":null,\"rubric\":[{\"text\":\"Tính đúng $BC = 10$ cm.\",\"points\":1.25,\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Tính đúng BC = 10 cm.\"}]}]}},{\"text\":\"Tính đúng $AH = 4,8$ cm.\",\"points\":0.75,\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Tính đúng AH = 4,8 cm.\"}]}]}}],\"rule\":\"math-pythagoras\",\"dataLinked\":false,\"figure\":{\"width\":420,\"caption\":\"Hình 1. Tam giác ABC vuông tại A\",\"points\":{\"A\":[0,0],\"B\":[0,6],\"C\":[8,0]},\"segments\":[[\"A\",\"B\"],[\"A\",\"C\"],[\"B\",\"C\"]]},\"figureDoc\":null,\"formulas\":[],\"tables\":[{\"id\":\"tbl-01\",\"rows\":[[\"Cạnh\",\"Độ dài (cm)\"],[\"AB\",\"6\"],[\"AC\",\"8\"]]}],\"images\":[],\"pageBreak\":true,\"source\":{\"docId\":\"doc-math-01\",\"location\":\"Trang 1\",\"page\":1},\"check\":{\"version\":1,\"status\":\"consistent\",\"problems\":[],\"evidence\":\"Tổng thang điểm 1,25 + 0,75 = 2,0 điểm khớp điểm bài.\",\"at\":1762700200000,\"method\":\"Rà soát cấu trúc tại máy\"},\"verification\":null,\"algebra\":null,\"generated\":{\"provider\":\"api\",\"model\":\"gemini-2.5-flash\",\"at\":1762700050000},\"blockIds\":{\"stem\":\"blk-q2-stem\",\"explanation\":\"blk-q2-exp\",\"rubric\":\"blk-q2-rub\",\"figure\":\"blk-q2-fig\",\"options\":\"blk-q2-opt\",\"answer\":\"blk-q2-ans\",\"answerText\":\"blk-q2-atxt\",\"truthValues\":\"blk-q2-tv\"}}],\"docs\":[{\"id\":\"doc-math-01\",\"fileId\":\"file-shared-pdf\",\"name\":\"Đề cương Toán 9 Học kì 1 (Bộ GD).pdf\",\"kind\":\"pdf\",\"sample\":false,\"text\":\"Phương trình quy về bậc hai và Hệ thức lượng trong tam giác vuông.\",\"pages\":[{\"number\":1,\"text\":\"Phương trình quy về bậc hai và Hệ thức lượng trong tam giác vuông.\",\"method\":\"pdf-text\",\"needsOCR\":false}],\"method\":\"pdf-text\",\"uploaded\":1762690000000}],\"assistantSources\":[\"doc-math-01\"],\"data\":[],\"matrix\":[{\"topic\":\"Phương trình bậc hai\",\"targets\":[0,1,0]},{\"topic\":\"Hình học phẳng\",\"targets\":[0,0,1]}],\"matrixConfirmed\":true,\"quote\":{\"text\":\"\",\"chosen\":null,\"versions\":[]},\"appliedPrefs\":[{\"id\":\"pref-a-01\",\"text\":\"Câu hỏi ngắn gọn dưới 30 từ\",\"kind\":\"short\",\"maxWords\":30,\"confirmedAt\":1762680000000}],\"chat\":[],\"aiPlan\":null,\"aiClarification\":null,\"activeAIJob\":null,\"aiConsent\":true,\"aiEffort\":1,\"aiChatMode\":\"auto\",\"autoUpdate\":true,\"history\":[],\"undo\":[],\"redo\":[],\"revision\":2,\"updated\":1762700200000},\"answers\":false,\"allowCopy\":true,\"created\":1762700250000}",
+      "rev": 1,
+      "updated": 1794328493248
+    },
+    {
+      "key": "share:aa33a700b69fdd47aefd92ca72a7ee69a5a6607edffdb1484101c3c640cc0dd7",
+      "value": "{\"owner\":\"a1000000000000000000000000000001\",\"examId\":\"exam-deleted-999\",\"exam\":{\"id\":\"exam-deleted-999\",\"title\":\"Đề chia sẻ độc lập sau khi xóa đề gốc\",\"subject\":\"Toán\",\"grade\":\"9\",\"minutes\":45,\"questions\":[]},\"answers\":true,\"allowCopy\":false,\"created\":1762692000000,\"revoked\":false}",
+      "rev": 1,
+      "updated": 1794328493249
+    },
+    {
+      "key": "u:a1000000000000000000000000000001:file:file-orphan-01",
+      "value": "\"data:image/png;base64,iVBORw0KGgpPUlBIQU5fSU1BR0VfUEFZTE9BRA==\"",
+      "rev": 1,
+      "updated": 1794328493241
+    },
+    {
+      "key": "u:a1000000000000000000000000000001:file:file-shared-pdf",
+      "value": "\"data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVGl0bGUgKERlIGN1b25nIEJvIEdEIDIwMjYpID4+CmVuZG9iagolJUVPRgo=\"",
+      "rev": 1,
+      "updated": 1794328493239
+    },
+    {
+      "key": "u:a1000000000000000000000000000001:job:job-deleted-exam-999",
+      "value": "{\"id\":\"job-deleted-exam-999\",\"examId\":\"exam-deleted-999\",\"baseRevision\":1,\"status\":\"cancelled\",\"plan\":{\"title\":\"Đề nháp đã xóa\",\"subject\":\"Toán\",\"grade\":\"9\",\"minutes\":45,\"slots\":[]},\"questions\":[],\"error\":\"Đã dừng soạn theo yêu cầu của bạn.\",\"created\":1762690000000}",
+      "rev": 1,
+      "updated": 1794328493247
+    },
+    {
+      "key": "u:a1000000000000000000000000000001:job:job-math-001",
+      "value": "{\"id\":\"job-math-001\",\"examId\":\"exam-math-001\",\"baseRevision\":1,\"status\":\"complete\",\"plan\":{\"title\":\"Đề kiểm tra giữa kì I — Toán 9\",\"subject\":\"Toán\",\"grade\":\"9\",\"minutes\":45,\"slots\":[{\"topic\":\"Hình học phẳng\",\"type\":\"essay\",\"points\":2}]},\"questions\":[{\"id\":\"q-math-002\",\"v\":1,\"type\":\"essay\",\"topic\":\"Hình học phẳng\",\"level\":2,\"points\":2,\"stem\":\"Cho tam giác ABC vuông tại A có AB = 6 cm, AC = 8 cm. Tính độ dài cạnh huyền BC và đường cao AH.\",\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Cho tam giác ABC vuông tại A có AB = 6 cm, AC = 8 cm. Tính độ dài cạnh huyền BC và đường cao AH.\"}]}]},\"runs\":null,\"options\":[],\"optionDocs\":[],\"answer\":0,\"answerKnown\":true,\"answerText\":\"\",\"truthValues\":[],\"explanation\":\"Áp dụng định lí Pythagore: $BC = \\\\sqrt{6^2 + 8^2} = 10$ cm. Đường cao $AH = \\\\frac{AB \\\\cdot AC}{BC} = 4,8$ cm.\",\"explanationDoc\":null,\"rubric\":[{\"text\":\"Tính đúng $BC = 10$ cm.\",\"points\":1.25,\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Tính đúng BC = 10 cm.\"}]}]}},{\"text\":\"Tính đúng $AH = 4,8$ cm.\",\"points\":0.75,\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Tính đúng AH = 4,8 cm.\"}]}]}}],\"rule\":\"math-pythagoras\",\"dataLinked\":false,\"figure\":{\"width\":420,\"caption\":\"Hình 1. Tam giác ABC vuông tại A\",\"points\":{\"A\":[0,0],\"B\":[0,6],\"C\":[8,0]},\"segments\":[[\"A\",\"B\"],[\"A\",\"C\"],[\"B\",\"C\"]]},\"figureDoc\":null,\"formulas\":[],\"tables\":[{\"id\":\"tbl-01\",\"rows\":[[\"Cạnh\",\"Độ dài (cm)\"],[\"AB\",\"6\"],[\"AC\",\"8\"]]}],\"images\":[],\"pageBreak\":true,\"source\":{\"docId\":\"doc-math-01\",\"location\":\"Trang 1\",\"page\":1},\"check\":{\"version\":1,\"status\":\"consistent\",\"problems\":[],\"evidence\":\"Tổng thang điểm 1,25 + 0,75 = 2,0 điểm khớp điểm bài.\",\"at\":1762700200000,\"method\":\"Rà soát cấu trúc tại máy\"},\"verification\":null,\"algebra\":null,\"generated\":{\"provider\":\"api\",\"model\":\"gemini-2.5-flash\",\"at\":1762700050000},\"blockIds\":{\"stem\":\"blk-q2-stem\",\"explanation\":\"blk-q2-exp\",\"rubric\":\"blk-q2-rub\",\"figure\":\"blk-q2-fig\",\"options\":\"blk-q2-opt\",\"answer\":\"blk-q2-ans\",\"answerText\":\"blk-q2-atxt\",\"truthValues\":\"blk-q2-tv\"}}],\"cost\":24,\"created\":1762700000000,\"completed\":1762700050000}",
+      "rev": 1,
+      "updated": 1794328493244
+    },
+    {
+      "key": "u:a1000000000000000000000000000001:last-job:exam-math-001",
+      "value": "\"job-math-001\"",
+      "rev": 1,
+      "updated": 1794328493245
+    },
+    {
+      "key": "u:a1000000000000000000000000000001:state",
+      "value": "{\"version\":1,\"current\":\"exam-math-001\",\"exams\":[{\"id\":\"exam-math-001\",\"title\":\"Đề kiểm tra giữa kì I — Toán 9\",\"subject\":\"Toán\",\"grade\":\"9\",\"minutes\":45,\"department\":\"PHÒNG GIÁO DỤC VÀ ĐÀO TẠO QUẬN 1\",\"school\":\"TRƯỜNG THCS NGUYỄN DU\",\"instructions\":\"Thí sinh làm bài trên giấy thi. Không sử dụng tài liệu.\",\"markingGuidance\":\"Chấm theo từng bước diện tích và định lí Pythagore, đơn vị 0,25 điểm.\",\"sample\":false,\"fullExam\":true,\"layout\":{\"font\":\"Times New Roman\",\"fontSize\":15},\"blockIds\":{\"heading\":\"blk-ex1-head\",\"general\":\"blk-ex1-gen\",\"marking\":\"blk-ex1-mark\"},\"questions\":[{\"id\":\"q-math-001\",\"v\":2,\"type\":\"mcq\",\"topic\":\"Phương trình bậc hai\",\"level\":1,\"points\":0.25,\"stem\":\"Trên ℝ, tập nghiệm của phương trình $\\\\sqrt{x^2 + 1} = 2$ là?\",\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"attrs\":{\"textAlign\":\"left\"},\"content\":[{\"type\":\"text\",\"text\":\"Trên ℝ, tập nghiệm của phương trình \"},{\"type\":\"mathInline\",\"attrs\":{\"latex\":\"\\\\sqrt{x^2 + 1} = 2\",\"display\":false}},{\"type\":\"text\",\"text\":\" là?\"}]}]},\"runs\":null,\"options\":[\"{-√3; √3}\",\"{√3}\",\"{-3; 3}\",\"∅\"],\"optionDocs\":[{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"mathInline\",\"attrs\":{\"latex\":\"\\\\{-\\\\sqrt{3}; \\\\sqrt{3}\\\\}\",\"display\":false}}]}]},{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"mathInline\",\"attrs\":{\"latex\":\"\\\\{\\\\sqrt{3}\\\\}\",\"display\":false}}]}]},{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"{-3; 3}\"}]}]},{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"∅\"}]}]}],\"answer\":0,\"answerKnown\":true,\"answerText\":\"\",\"truthValues\":[],\"explanation\":\"Bình phương hai vế: $x^2 + 1 = 4 \\\\iff x^2 = 3 \\\\iff x = \\\\pm\\\\sqrt{3}$.\",\"explanationDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Bình phương hai vế: \"},{\"type\":\"mathInline\",\"attrs\":{\"latex\":\"x^2 + 1 = 4 \\\\iff x^2 = 3 \\\\iff x = \\\\pm\\\\sqrt{3}\",\"display\":false}}]}]},\"rubric\":[],\"rule\":\"math-square\",\"dataLinked\":false,\"figure\":null,\"figureDoc\":null,\"formulas\":[{\"id\":\"form-01\",\"latex\":\"\\\\Delta = b^2 - 4ac\"}],\"tables\":[],\"images\":[],\"pageBreak\":false,\"source\":{\"docId\":\"doc-math-01\",\"location\":\"Trang 1\",\"page\":1,\"quote\":\"Phương trình quy về bậc hai\"},\"check\":{\"version\":2,\"status\":\"approved\",\"problems\":[],\"evidence\":\"Đã đối chiếu nghiệm ±√3.\",\"at\":1762700100000,\"method\":\"Giáo viên duyệt sau kiểm tra\"},\"verification\":{\"ok\":true},\"algebra\":null,\"generated\":null,\"blockIds\":{\"stem\":\"blk-q1-stem\",\"explanation\":\"blk-q1-exp\",\"rubric\":\"blk-q1-rub\",\"figure\":\"blk-q1-fig\",\"options\":\"blk-q1-opt\",\"answer\":\"blk-q1-ans\",\"answerText\":\"blk-q1-atxt\",\"truthValues\":\"blk-q1-tv\"}},{\"id\":\"q-math-002\",\"v\":1,\"type\":\"essay\",\"topic\":\"Hình học phẳng\",\"level\":2,\"points\":2,\"stem\":\"Cho tam giác ABC vuông tại A có AB = 6 cm, AC = 8 cm. Tính độ dài cạnh huyền BC và đường cao AH.\",\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Cho tam giác ABC vuông tại A có AB = 6 cm, AC = 8 cm. Tính độ dài cạnh huyền BC và đường cao AH.\"}]}]},\"runs\":null,\"options\":[],\"optionDocs\":[],\"answer\":0,\"answerKnown\":true,\"answerText\":\"\",\"truthValues\":[],\"explanation\":\"Áp dụng định lí Pythagore: $BC = \\\\sqrt{6^2 + 8^2} = 10$ cm. Đường cao $AH = \\\\frac{AB \\\\cdot AC}{BC} = 4,8$ cm.\",\"explanationDoc\":null,\"rubric\":[{\"text\":\"Tính đúng $BC = 10$ cm.\",\"points\":1.25,\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Tính đúng BC = 10 cm.\"}]}]}},{\"text\":\"Tính đúng $AH = 4,8$ cm.\",\"points\":0.75,\"richDoc\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Tính đúng AH = 4,8 cm.\"}]}]}}],\"rule\":\"math-pythagoras\",\"dataLinked\":false,\"figure\":{\"width\":420,\"caption\":\"Hình 1. Tam giác ABC vuông tại A\",\"points\":{\"A\":[0,0],\"B\":[0,6],\"C\":[8,0]},\"segments\":[[\"A\",\"B\"],[\"A\",\"C\"],[\"B\",\"C\"]]},\"figureDoc\":null,\"formulas\":[],\"tables\":[{\"id\":\"tbl-01\",\"rows\":[[\"Cạnh\",\"Độ dài (cm)\"],[\"AB\",\"6\"],[\"AC\",\"8\"]]}],\"images\":[],\"pageBreak\":true,\"source\":{\"docId\":\"doc-math-01\",\"location\":\"Trang 1\",\"page\":1},\"check\":{\"version\":1,\"status\":\"consistent\",\"problems\":[],\"evidence\":\"Tổng thang điểm 1,25 + 0,75 = 2,0 điểm khớp điểm bài.\",\"at\":1762700200000,\"method\":\"Rà soát cấu trúc tại máy\"},\"verification\":null,\"algebra\":null,\"generated\":{\"provider\":\"api\",\"model\":\"gemini-2.5-flash\",\"at\":1762700050000},\"blockIds\":{\"stem\":\"blk-q2-stem\",\"explanation\":\"blk-q2-exp\",\"rubric\":\"blk-q2-rub\",\"figure\":\"blk-q2-fig\",\"options\":\"blk-q2-opt\",\"answer\":\"blk-q2-ans\",\"answerText\":\"blk-q2-atxt\",\"truthValues\":\"blk-q2-tv\"}}],\"docs\":[{\"id\":\"doc-math-01\",\"fileId\":\"file-shared-pdf\",\"name\":\"Đề cương Toán 9 Học kì 1 (Bộ GD).pdf\",\"kind\":\"pdf\",\"sample\":false,\"text\":\"Phương trình quy về bậc hai và Hệ thức lượng trong tam giác vuông.\",\"pages\":[{\"number\":1,\"text\":\"Phương trình quy về bậc hai và Hệ thức lượng trong tam giác vuông.\",\"method\":\"pdf-text\",\"needsOCR\":false}],\"method\":\"pdf-text\",\"uploaded\":1762690000000}],\"assistantSources\":[\"doc-math-01\"],\"data\":[],\"matrix\":[{\"topic\":\"Phương trình bậc hai\",\"targets\":[0,1,0]},{\"topic\":\"Hình học phẳng\",\"targets\":[0,0,1]}],\"matrixConfirmed\":true,\"quote\":{\"text\":\"\",\"chosen\":null,\"versions\":[]},\"appliedPrefs\":[{\"id\":\"pref-a-01\",\"text\":\"Câu hỏi ngắn gọn dưới 30 từ\",\"kind\":\"short\",\"maxWords\":30,\"confirmedAt\":1762680000000}],\"chat\":[{\"role\":\"user\",\"text\":\"Kiểm tra và chỉnh câu 1 giúp mình\",\"at\":1762700080000},{\"role\":\"assistant\",\"text\":\"Đã cập nhật phương trình có nghiệm ±√3.\",\"at\":1762700090000,\"undoRevision\":2}],\"aiPlan\":null,\"aiClarification\":null,\"activeAIJob\":null,\"aiConsent\":true,\"aiEffort\":1,\"aiChatMode\":\"auto\",\"autoUpdate\":true,\"history\":[{\"id\":\"hist-math-r1\",\"label\":\"Khởi tạo đề Toán 9\",\"at\":1762695000000,\"revision\":1,\"state\":{\"id\":\"exam-math-001\",\"title\":\"Đề kiểm tra giữa kì I — Toán 9 (Bản 1)\",\"revision\":1}},{\"id\":\"hist-math-r2\",\"label\":\"AI sửa câu 1 và hoàn thiện câu 2\",\"at\":1762700090000,\"revision\":2,\"state\":{\"id\":\"exam-math-001\",\"title\":\"Đề kiểm tra giữa kì I — Toán 9\",\"revision\":2}}],\"undo\":[{\"label\":\"AI sửa câu 1 và hoàn thiện câu 2\",\"state\":{\"id\":\"exam-math-001\",\"title\":\"Đề kiểm tra giữa kì I — Toán 9 (Bản 1)\",\"revision\":1}}],\"redo\":[],\"revision\":2,\"updated\":1762700200000}],\"prefs\":[{\"id\":\"pref-a-01\",\"text\":\"Câu hỏi ngắn gọn dưới 30 từ\",\"kind\":\"short\",\"maxWords\":30,\"confirmedAt\":1762680000000}],\"seenAIJobs\":[\"job-math-001\"]}",
+      "rev": 2,
+      "updated": 1794328493236
+    },
+    {
+      "key": "u:b2000000000000000000000000000002:file:file-shared-pdf-b",
+      "value": "\"data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVGl0bGUgKERlIGN1b25nIEJvIEdEIDIwMjYpID4+CmVuZG9iagolJUVPRgo=\"",
+      "rev": 1,
+      "updated": 1794328493240
+    },
+    {
+      "key": "u:b2000000000000000000000000000002:state",
+      "value": "{\"version\":1,\"current\":\"exam-geo-001\",\"exams\":[{\"id\":\"exam-geo-001\",\"title\":\"Kiểm tra Địa lí 10 — Đô thị hóa\",\"subject\":\"Địa lí\",\"grade\":\"10\",\"minutes\":45,\"department\":\"SỞ GIÁO DỤC VÀ ĐÀO TẠO TP.HCM\",\"school\":\"TRƯỜNG THPT LÊ QUÝ ĐÔN\",\"instructions\":\"Chọn phương án đúng nhất dựa vào bảng số liệu.\",\"markingGuidance\":\"\",\"sample\":false,\"fullExam\":false,\"layout\":{\"font\":\"Times New Roman\",\"fontSize\":14},\"blockIds\":{\"heading\":\"blk-ex2-head\",\"general\":\"blk-ex2-gen\",\"marking\":\"blk-ex2-mark\"},\"questions\":[{\"id\":\"q-geo-001\",\"v\":1,\"type\":\"mcq\",\"topic\":\"Đọc biểu đồ\",\"level\":0,\"points\":0.5,\"stem\":\"Theo Bảng 1, khu vực nào có số người sử dụng thư viện cao nhất?\",\"richDoc\":null,\"runs\":null,\"options\":[\"Khu vực A\",\"Khu vực B\",\"Khu vực C\",\"Ba khu vực bằng nhau\"],\"optionDocs\":[],\"answer\":1,\"answerKnown\":true,\"answerText\":\"\",\"truthValues\":[],\"explanation\":\"Khu vực B có 240 người, cao nhất.\",\"explanationDoc\":null,\"rubric\":[],\"rule\":\"max\",\"dataLinked\":true,\"figure\":null,\"figureDoc\":null,\"formulas\":[],\"tables\":[],\"images\":[],\"pageBreak\":false,\"source\":{\"docId\":\"doc-geo-01\",\"location\":\"Bảng 1\",\"page\":1},\"check\":{\"version\":1,\"status\":\"review\",\"problems\":[\"Cần đối chiếu thêm nguồn năm 2026\"],\"evidence\":\"Khu vực B = 240\",\"at\":1762700300000,\"method\":\"Phép tính từ bảng dữ kiện\"},\"verification\":null,\"algebra\":null,\"generated\":null,\"blockIds\":{\"stem\":\"blk-g1-stem\",\"explanation\":\"blk-g1-exp\",\"rubric\":\"blk-g1-rub\",\"figure\":\"blk-g1-fig\",\"options\":\"blk-g1-opt\",\"answer\":\"blk-g1-ans\",\"answerText\":\"blk-g1-atxt\",\"truthValues\":\"blk-g1-tv\"}}],\"docs\":[{\"id\":\"doc-geo-01\",\"fileId\":\"file-shared-pdf-b\",\"name\":\"Tư liệu Địa lí & Đề cương chung.pdf\",\"kind\":\"pdf\",\"sample\":false,\"text\":\"Số liệu sử dụng thư viện tại khu vực A, B, C.\",\"pages\":[{\"number\":1,\"text\":\"Số liệu sử dụng thư viện tại khu vực A, B, C.\",\"method\":\"pdf-text\",\"needsOCR\":false}],\"method\":\"pdf-text\",\"uploaded\":1762691000000}],\"assistantSources\":[\"doc-geo-01\"],\"data\":[{\"label\":\"Khu vực A\",\"value\":120},{\"label\":\"Khu vực B\",\"value\":240},{\"label\":\"Khu vực C\",\"value\":180}],\"matrix\":[{\"topic\":\"Đọc biểu đồ\",\"targets\":[1,0,0]}],\"matrixConfirmed\":true,\"quote\":{\"text\":\"Đô thị hóa là quá trình gia tăng tỉ lệ dân thành thị.\",\"chosen\":\"quote-v1\",\"versions\":[{\"id\":\"quote-v1\",\"label\":\"Bản A • Tư liệu gốc\",\"text\":\"Đô thị hóa là quá trình gia tăng tỉ lệ dân thành thị.\",\"docId\":\"doc-geo-01\",\"location\":\"Đoạn 1\"}]},\"appliedPrefs\":[],\"chat\":[],\"aiPlan\":null,\"aiClarification\":null,\"activeAIJob\":null,\"aiConsent\":false,\"aiEffort\":1,\"aiChatMode\":\"auto\",\"autoUpdate\":false,\"history\":[],\"undo\":[],\"redo\":[],\"revision\":1,\"updated\":1762700300000}],\"prefs\":[]}",
+      "rev": 1,
+      "updated": 1794328493237
+    },
+    {
+      "key": "user:a1000000000000000000000000000001",
+      "value": "{\"id\":\"a1000000000000000000000000000001\",\"name\":\"Nguyễn Văn Toán\",\"email\":\"gv.toan@example.edu.vn\",\"salt\":\"11111111111111111111111111111111\",\"passwordHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}",
+      "rev": 1,
+      "updated": 1794328493221
+    },
+    {
+      "key": "user:b2000000000000000000000000000002",
+      "value": "{\"id\":\"b2000000000000000000000000000002\",\"name\":\"Trần Thị Địa\",\"email\":\"gv.dia@example.edu.vn\",\"salt\":\"22222222222222222222222222222222\",\"passwordHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
+      "rev": 1,
+      "updated": 1794328493224
+    }
+  ],
+  "corrupt_extra_rows": [
+    {
+      "key": "u:a1000000000000000000000000000001:file:file-corrupt-b64",
+      "value": "\"not-a-valid-data-url-at-all\"",
+      "rev": 1,
+      "updated": 1762700999000
+    },
+    {
+      "key": "u:corrupt-user:state",
+      "value": "{\"version\":1,\"exams\":[{\"id\":\"broken-json\"",
+      "rev": 1,
+      "updated": 1762700999000
+    }
+  ]
+}

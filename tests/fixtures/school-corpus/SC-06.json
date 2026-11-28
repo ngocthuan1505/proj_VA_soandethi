@@ -1,0 +1,2031 @@
+{
+  "id": "b32d05b7-1aae-514b-8d1f-f480b3df0774",
+  "title": "Đề thi thử tốt nghiệp THPT — Tiếng Anh 12 (GDPT 2018)",
+  "school": "TRƯỜNG THPT CHU VĂN AN (MẪU)",
+  "department": "Tổ Ngoại ngữ",
+  "subject": "Tiếng Anh",
+  "grade": "12",
+  "minutes": 50,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Read the questions carefully and choose the best option A, B, C, or D. Listening track allows at most 2 plays.",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 2
+  },
+  "blockIds": {
+    "heading": "e196e258-d2fc-59cf-ae73-b58a1fec6236",
+    "general": "c48d9ddb-75c5-5146-8ee0-bdf6a05d43b5",
+    "marking": "ae8b47fe-5a94-5a1c-a16a-b3e2daaa3d91"
+  },
+  "docs": [
+    {
+      "id": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+      "name": "English_12_Original_Source_Pack.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "[Audio Track 1: Green Campus Initiative]\nPresenter: Welcome to our weekly school sustainability podcast. Today we speak with Lan, student coordinator of the Green Campus Initiative at Binh Minh High School. Lan explains that the team began by placing color-coded recycling bins beside every staircase and organizing monthly repair workshops for broken bicycles and umbrellas.\n\nUrban Community Gardens\nIn many crowded cities, unused rooftop spaces are gradually being turned into thriving vegetable gardens. Residents work together every weekend to prepare soil beds [1] _____ install rainwater barrels. These shared plots not only supply fresh produce [2] _____ also strengthen social bonds among neighbors of all ages. Schools located nearby often bring students to the rooftops [3] _____ learn practical lessons in plant biology. Although maintaining a rooftop garden requires careful planning, [4] _____ benefits far outweigh the initial cost. Local authorities have begun offering small grants to neighborhoods [5] _____ wish to launch similar projects, proving that sustainable habits can take root [6] _____ in densely populated districts.\n\nReading Passage 1: Quiet Libraries in a Hyper-Connected World\nFor decades, public libraries were viewed mainly as silent warehouses for printed volumes. Today, however, neighborhood libraries are reinventing themselves as flexible civic hubs while preserving quiet study rooms. Visitors can borrow audiobooks, reserve soundproof booths for online interviews, or attend free workshops on digital literacy.\n\nResearch conducted across twelve municipal branches showed that teenagers visited libraries most frequently when quiet reading zones were paired with collaborative project tables. Rather than replacing printed books, digital catalogs actually boosted borrowing rates because readers could locate niche titles within seconds. Librarians increasingly act as information guides who help citizens verify online sources and distinguish evidence-based reporting from misleading claims.\n\nReading Passage 2: Coastal Mangrove Restoration and Local Livelihoods\nAlong tropical estuaries, mangrove forests serve as living buffers that absorb storm waves and trap river sediment before it clouds offshore reefs. Between 1990 and 2010, rapid pond construction cleared wide belts of coastal trees, leaving nearby villages vulnerable to high tides and coastal erosion.\n\nRecent community-led programs have shifted from top-down fencing toward integrated mangrove-aquaculture systems. Under this approach, farmers maintain at least sixty percent natural tree cover around tidal channels, allowing shrimp and mud crabs to feed on fallen leaves without artificial chemical feeds. Field measurements over five years revealed that restored belts reduced wave energy by nearly half while generating steadier household incomes than intensive open ponds. Planners note that long-term success depends on clear land-use agreements and shared monitoring between villagers and marine scientists.",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Listening Comprehension",
+      "type": "mcq",
+      "targets": [
+        3,
+        2,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Phonetics",
+      "type": "mcq",
+      "targets": [
+        4,
+        0,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Grammar and Vocabulary",
+      "type": "mcq",
+      "targets": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Discourse Arrangement",
+      "type": "mcq",
+      "targets": [
+        0,
+        0,
+        5,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Cloze Reading",
+      "type": "mcq",
+      "targets": [
+        0,
+        6,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Reading Comprehension 1",
+      "type": "mcq",
+      "targets": [
+        1,
+        5,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Reading Comprehension 2",
+      "type": "mcq",
+      "targets": [
+        1,
+        3,
+        4,
+        0
+      ],
+      "points": 0.25
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "c8623190-8b80-57ec-80e8-bf86ad3b589a",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Listening Comprehension",
+      "lesson": "Unit 1: Sustainable Living",
+      "competency": "Extract key details from an informational audio talk",
+      "level": 0,
+      "points": 0.25,
+      "stem": "What is the main topic of the student podcast interview?",
+      "options": [
+        "A school sustainability project",
+        "A national sports festival",
+        "A city bus expansion plan",
+        "A science museum renovation"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "The presenter introduces Lan as the coordinator of the Green Campus Initiative.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "85156c13-5a63-5833-8236-c964acbc9077",
+        "options": "de8739aa-2bad-53e4-a699-2da822b826f4",
+        "answer": "35a6bb9f-488b-5c60-9d50-237673766023",
+        "explanation": "d2811bc9-3141-580a-a6fe-933f75952736",
+        "rubric": "24bc519d-5fc0-556b-936a-21afabba87df",
+        "figure": "f7f5526c-c008-52aa-86be-f26563d26640"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Listening Track 1"
+      },
+      "sectionId": "sec-listening",
+      "passageTitle": "Listening: Green Campus Initiative (Audio Track)",
+      "passageText": "[Audio Track 1: Green Campus Initiative]\nPresenter: Welcome to our weekly school sustainability podcast. Today we speak with Lan, student coordinator of the Green Campus Initiative at Binh Minh High School. Lan explains that the team began by placing color-coded recycling bins beside every staircase and organizing monthly repair workshops for broken bicycles and umbrellas.",
+      "groupId": "eng12-listening-1",
+      "audio": {
+        "fileId": "48d8617b-539b-553a-8b5f-edd7048e5327",
+        "filename": "sc06-green-campus-talk.mp3",
+        "mimeType": "audio/mpeg",
+        "maxPlays": 2,
+        "durationSeconds": 110,
+        "title": "Listening Track 1 — Green Campus Initiative"
+      },
+      "lockPosition": true
+    },
+    {
+      "id": "6f9682a8-f4a7-524a-b91c-85dc9d76db02",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Listening Comprehension",
+      "lesson": "Unit 1: Sustainable Living",
+      "competency": "Extract key details from an informational audio talk",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Where did the student team first place color-coded recycling bins?",
+      "options": [
+        "Inside the main kitchen",
+        "Beside every staircase",
+        "Along the football field",
+        "Behind the parking lot"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "The script states the bins were placed beside every staircase.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "56df68db-0615-513b-928f-bed6cc870b3a",
+        "options": "c85fbdd6-e890-54dc-ad7f-23995a2221e2",
+        "answer": "2d923feb-1dd1-560e-8ae2-57baa307e21e",
+        "explanation": "c40be573-89e2-592f-93d5-6abd34788488",
+        "rubric": "dc415bb8-1973-52b5-9def-753fed4656f7",
+        "figure": "9260985f-4eaa-5133-ac02-c9b7da2972cf"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Listening Track 1"
+      },
+      "sectionId": "sec-listening",
+      "groupId": "eng12-listening-1",
+      "audio": {
+        "fileId": "48d8617b-539b-553a-8b5f-edd7048e5327",
+        "filename": "sc06-green-campus-talk.mp3",
+        "mimeType": "audio/mpeg",
+        "maxPlays": 2,
+        "durationSeconds": 110,
+        "title": "Listening Track 1 — Green Campus Initiative"
+      }
+    },
+    {
+      "id": "6baa1a7f-b483-5dba-bfc0-a2764647ed1b",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Listening Comprehension",
+      "lesson": "Unit 1: Sustainable Living",
+      "competency": "Extract key details from an informational audio talk",
+      "level": 0,
+      "points": 0.25,
+      "stem": "How often does the club organize repair workshops?",
+      "options": [
+        "Every two years",
+        "Daily",
+        "Monthly",
+        "Only in summer"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "They organize monthly repair workshops for broken bicycles and umbrellas.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "d7b41c32-cb1f-53cb-ab97-3a139a131b9d",
+        "options": "33b607f8-0731-551c-8209-1eb9be9fa053",
+        "answer": "6849852a-2b6e-508b-b1c6-e7062736239d",
+        "explanation": "7c89ff11-3e65-500d-a903-ca4d9e2ed05a",
+        "rubric": "8c410024-2de7-5616-a26f-53e39c5265bc",
+        "figure": "03b0c633-9a76-5f90-8615-0eb38e0b239c"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Listening Track 1"
+      },
+      "sectionId": "sec-listening",
+      "groupId": "eng12-listening-1",
+      "audio": {
+        "fileId": "48d8617b-539b-553a-8b5f-edd7048e5327",
+        "filename": "sc06-green-campus-talk.mp3",
+        "mimeType": "audio/mpeg",
+        "maxPlays": 2,
+        "durationSeconds": 110,
+        "title": "Listening Track 1 — Green Campus Initiative"
+      }
+    },
+    {
+      "id": "56956190-9210-518c-9046-964eda41acfa",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Listening Comprehension",
+      "lesson": "Unit 1: Sustainable Living",
+      "competency": "Extract key details from an informational audio talk",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Which items are mentioned as repaired during the workshops?",
+      "options": [
+        "Cameras and radios",
+        "Laptops and printers",
+        "Desks and blackboards",
+        "Bicycles and umbrellas"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Broken bicycles and umbrellas are explicitly listed.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "231e0cf3-b38e-523f-aa98-405e6b73b2f5",
+        "options": "7f8a30f3-1241-53a5-a9c4-d6696e2a7edc",
+        "answer": "890dd917-727b-5dcf-b907-f449ebb2450c",
+        "explanation": "421276a3-3ee9-5c7e-bb0a-2266801703e3",
+        "rubric": "7f56e394-3930-5f04-b5d0-0c588d217fe1",
+        "figure": "a20b52ba-34cb-5b78-917c-52f0bf1d2266"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Listening Track 1"
+      },
+      "sectionId": "sec-listening",
+      "groupId": "eng12-listening-1",
+      "audio": {
+        "fileId": "48d8617b-539b-553a-8b5f-edd7048e5327",
+        "filename": "sc06-green-campus-talk.mp3",
+        "mimeType": "audio/mpeg",
+        "maxPlays": 2,
+        "durationSeconds": 110,
+        "title": "Listening Track 1 — Green Campus Initiative"
+      }
+    },
+    {
+      "id": "0408403f-e600-5341-a16d-4e76e17e2241",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Listening Comprehension",
+      "lesson": "Unit 1: Sustainable Living",
+      "competency": "Extract key details from an informational audio talk",
+      "level": 0,
+      "points": 0.25,
+      "stem": "What is Lan's role in the Green Campus Initiative?",
+      "options": [
+        "School principal",
+        "Student coordinator",
+        "Bus driver",
+        "Guest scientist"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Lan is introduced as the student coordinator of the initiative.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "401b4c3a-eec0-524c-b96c-472219888ec2",
+        "options": "2c302799-7f2b-54cc-ad8a-098fa4894ca5",
+        "answer": "d031e050-0d01-5286-bc48-a028a7ef682f",
+        "explanation": "2c5561e6-1e73-5bdb-84b0-260613d6974a",
+        "rubric": "86de5615-40ef-55f6-9f12-8bb35ac85ab7",
+        "figure": "59e0495d-38e3-5860-ac99-4882759ca54d"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Listening Track 1"
+      },
+      "sectionId": "sec-listening",
+      "groupId": "eng12-listening-1",
+      "audio": {
+        "fileId": "48d8617b-539b-553a-8b5f-edd7048e5327",
+        "filename": "sc06-green-campus-talk.mp3",
+        "mimeType": "audio/mpeg",
+        "maxPlays": 2,
+        "durationSeconds": 110,
+        "title": "Listening Track 1 — Green Campus Initiative"
+      }
+    },
+    {
+      "id": "24f6c9dc-2abd-5988-95e0-2d0205b306a7",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Phonetics",
+      "lesson": "Pronunciation: Vowel contrasts",
+      "competency": "Distinguish vowel pronunciation in English words",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Mark the letter A, B, C, or D to indicate the word whose underlined digraph 'ea' differs in vowel pronunciation.",
+      "options": [
+        "measure",
+        "treasure",
+        "feather",
+        "feature"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "'feature' pronounces 'ea' as /iː/, whereas 'measure', 'treasure', 'feather' use /e/.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "12a7634a-e81d-5601-a76c-fb54868fc77a",
+        "options": "00fc627d-0f1c-56d6-999d-b2435d9b51e6",
+        "answer": "7ab316e7-2ddb-5960-ab6d-03f747367d59",
+        "explanation": "e189160f-08a5-5d83-83de-5cc6f43ffa94",
+        "rubric": "c5df52c5-cb28-5050-bac3-5ec1e7247f51",
+        "figure": "8b3c9fbb-d58e-516c-96ed-cbba437c0d2d"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section II · Phonetics"
+      },
+      "optionDocs": [
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "m"
+                },
+                {
+                  "type": "text",
+                  "text": "ea",
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "sure"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "tr"
+                },
+                {
+                  "type": "text",
+                  "text": "ea",
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "sure"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "f"
+                },
+                {
+                  "type": "text",
+                  "text": "ea",
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "ther"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "f"
+                },
+                {
+                  "type": "text",
+                  "text": "ea",
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "ture"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "sectionId": "sec-phonetics"
+    },
+    {
+      "id": "7dd4c463-6c9c-5d70-893e-3720deaf2db8",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Phonetics",
+      "lesson": "Pronunciation: Vowel contrasts",
+      "competency": "Distinguish vowel pronunciation in English words",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Identify the English item in which the highlighted single vowel 'a' has a distinct sound from the others.",
+      "options": [
+        "plan",
+        "stage",
+        "shape",
+        "plane"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "'plan' pronounces 'a' as /æ/, whereas 'plane', 'stage', 'shape' use /eɪ/.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "cde3591b-1304-5a76-abe3-5204e2092d2f",
+        "options": "52082ad5-e0b8-5ba3-aaf6-b050d8ab8072",
+        "answer": "0dfcb48b-0b28-55dc-9b5b-09e2ab54c6dc",
+        "explanation": "aec938bd-a5e9-5f9d-b00e-31a1e3482945",
+        "rubric": "d826416c-8080-5f2a-a6dd-19d55d25b0ce",
+        "figure": "d0508f1a-f6e7-57b4-9407-26c1373e2940"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section II · Phonetics"
+      },
+      "optionDocs": [
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "pl"
+                },
+                {
+                  "type": "text",
+                  "text": "a",
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "n"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "st"
+                },
+                {
+                  "type": "text",
+                  "text": "a",
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "ge"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "sh"
+                },
+                {
+                  "type": "text",
+                  "text": "a",
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "pe"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "pl"
+                },
+                {
+                  "type": "text",
+                  "text": "a",
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "ne"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "sectionId": "sec-phonetics"
+    },
+    {
+      "id": "9041add7-caba-5e8f-adfd-75239879b1b1",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Phonetics",
+      "lesson": "Word Stress Patterns",
+      "competency": "Identify primary stress placement",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Mark the disyllabic noun or verb whose primary stress falls on a different syllable.",
+      "options": [
+        "garden",
+        "window",
+        "collect",
+        "paper"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "collect stresses syllable 2; window, garden, paper stress syllable 1.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "1e5d0b93-d58c-5e4f-a491-fc48631df2bf",
+        "options": "98fb91ad-2f66-52ec-b0df-efc9675c61ee",
+        "answer": "aa3e13c5-9cd8-5552-a610-b0cbdd5b86f1",
+        "explanation": "d57c4d5f-3b74-575b-b1f5-73253564d226",
+        "rubric": "85354a3c-c07d-5082-8339-1a338bdbc9dd",
+        "figure": "e16f6a1f-6612-555b-bf2d-1d6648a868cd"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section II · Stress"
+      },
+      "sectionId": "sec-phonetics"
+    },
+    {
+      "id": "92861b54-560c-5594-b0be-4d48aab53e02",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Phonetics",
+      "lesson": "Word Stress Patterns",
+      "competency": "Identify primary stress placement",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Which three-syllable vocabulary word carries its main stress on the third syllable instead of the first?",
+      "options": [
+        "manager",
+        "scientist",
+        "engineer",
+        "resident"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "engineer stresses syllable 3; the others stress syllable 1.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "89a0d813-df14-5db0-b309-51214af155a5",
+        "options": "cd626385-73d0-55f7-b907-ffc4c74367ef",
+        "answer": "b22ccea4-803a-5709-acd2-0a566258e8cb",
+        "explanation": "3e8b6b57-fa7a-52ed-8d1c-dcf92d7ac707",
+        "rubric": "056145b7-666e-50f8-a997-e94c5ac3a63c",
+        "figure": "fc97164c-688c-5b15-bcc3-5dc859a19e46"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section II · Stress"
+      },
+      "sectionId": "sec-phonetics"
+    },
+    {
+      "id": "c22e4cf3-c099-5d05-9fa4-b177333d8eeb",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Grammar and Vocabulary",
+      "lesson": "Core Academic Structures",
+      "competency": "Apply inversion, reduced clauses, conditionals, and collocations",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Rarely _____ such an enthusiastic group of student volunteers during a coastal cleanup.",
+      "options": [
+        "have organizers met",
+        "organizers have met",
+        "did organizers met",
+        "organizers met"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Negative adverb 'Rarely' at the beginning requires subject-auxiliary inversion.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "c20598fc-6761-5641-b99f-0b2c2a0c21c0",
+        "options": "1438629e-0097-59ff-b315-d5bb0fe8c88e",
+        "answer": "99948c02-56fd-5c93-9df0-66a225237271",
+        "explanation": "ec298d00-2f87-5b91-9c55-f74fffe267e1",
+        "rubric": "0cb1ac56-8ff2-542a-b7e4-24de50cd6a49",
+        "figure": "7097d899-24ee-5614-92e9-1d1370c74ca2"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section III · Grammar"
+      },
+      "sectionId": "sec-grammar"
+    },
+    {
+      "id": "0d66a67d-555a-552a-9536-5f71f1c4b4aa",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Grammar and Vocabulary",
+      "lesson": "Core Academic Structures",
+      "competency": "Apply inversion, reduced clauses, conditionals, and collocations",
+      "level": 1,
+      "points": 0.25,
+      "stem": "The solar microgrid _____ last autumn now powers every classroom computer lab.",
+      "options": [
+        "installs",
+        "installing",
+        "was installed",
+        "installed"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Reduced passive relative clause: '(which was) installed last autumn'.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3cfb13a4-5033-5e14-9e82-485f8aa8c04a",
+        "options": "8319ce0d-8cf2-5df9-adb8-4480176141ec",
+        "answer": "3873637c-e4c1-5c8b-b743-6011999f9757",
+        "explanation": "d54670c2-801c-5c95-9f6d-78c51e17e4aa",
+        "rubric": "702b0078-6738-5754-b0e2-689fc3ef8049",
+        "figure": "1519da73-4bfa-5dbf-a444-c88eea01a02f"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section III · Grammar"
+      },
+      "sectionId": "sec-grammar"
+    },
+    {
+      "id": "0bcd047e-0e01-523b-ac2a-3d217238124c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Grammar and Vocabulary",
+      "lesson": "Core Academic Structures",
+      "competency": "Apply inversion, reduced clauses, conditionals, and collocations",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Students are encouraged to _____ old textbooks at the library exchange shelf instead of discarding them.",
+      "options": [
+        "turn down",
+        "pass on",
+        "break out",
+        "put off"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "'Pass on' means to give something you have used to someone else.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "af370b62-09e9-5f9e-a3a4-4ec7110d00af",
+        "options": "f789c7a3-e06b-55aa-a159-6c8b99db6ad5",
+        "answer": "504cd96e-df4a-5836-b2ca-1a57d9c57266",
+        "explanation": "326268ca-4e98-53a2-a147-e343130c6793",
+        "rubric": "b96aefa3-c5ce-51ad-bd81-a136006269fc",
+        "figure": "946c937d-3873-5ef2-8d73-2c7b561a3110"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section III · Grammar"
+      },
+      "sectionId": "sec-grammar"
+    },
+    {
+      "id": "58ebe165-e4e7-5799-aea1-09bc9464067f",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Grammar and Vocabulary",
+      "lesson": "Core Academic Structures",
+      "competency": "Apply inversion, reduced clauses, conditionals, and collocations",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Had the municipal team checked the bridge sensors earlier, the traffic delay _____ avoided.",
+      "options": [
+        "can be",
+        "will be",
+        "has been",
+        "could have been"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Inverted third conditional describing an unreal past result.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "272c3cd6-db9d-56bb-9c76-a73f9dc425ef",
+        "options": "3d06f47d-e137-52dd-b85b-33d574d076cf",
+        "answer": "e8fc1d98-0f7f-5b83-824c-8cb0772b318c",
+        "explanation": "ed3a1f88-b77d-521b-9bd9-9025bb590727",
+        "rubric": "fc6fe708-db62-539d-8471-8e23178ac59a",
+        "figure": "fee505e3-5c23-5959-92ca-4be060db722a"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section III · Grammar"
+      },
+      "sectionId": "sec-grammar"
+    },
+    {
+      "id": "1283f421-5bf6-5c93-9176-d74f4e0d83a3",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Grammar and Vocabulary",
+      "lesson": "Core Academic Structures",
+      "competency": "Apply inversion, reduced clauses, conditionals, and collocations",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Clear communication is essential _____ building trust between mentors and first-year apprentices.",
+      "options": [
+        "over",
+        "with",
+        "for",
+        "into"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "The adjective 'essential' collocates with 'for' or 'to'.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "4231fcdb-f3e4-5f2c-a5aa-c688bfc5e974",
+        "options": "337a586a-5ee4-540f-9936-b6b2db4cf029",
+        "answer": "44e6c382-fd9c-50be-ae6b-21101568621d",
+        "explanation": "3294bc0a-debf-5141-b36a-2d674f96b567",
+        "rubric": "0eb40d5f-b438-52d2-9f68-3c3f560e0cb4",
+        "figure": "dbfc1061-3d2b-5841-baa6-c203cf7f41d9"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section III · Grammar"
+      },
+      "sectionId": "sec-grammar"
+    },
+    {
+      "id": "7f64aac6-dc95-54b1-bc4c-8e7ff77ffcdf",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Discourse Arrangement",
+      "lesson": "Coherence and Cohesion",
+      "competency": "Sequence conversational turns and paragraph sentences logically",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Arrange the turns to make a natural conversation:\na. Mai: Would you like to join our museum audio-guide project?\nb. Nam: That sounds great! When do we meet?\nc. Mai: Every Thursday afternoon in the media room.",
+      "options": [
+        "b - a - c",
+        "a - b - c",
+        "c - a - b",
+        "a - c - b"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Invitation (a) -> acceptance and question (b) -> schedule answer (c).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "d8998397-f20e-5e25-8c92-c3aeb69d3a87",
+        "options": "b62c2bab-aa5a-5033-8013-e7f669ffd8b9",
+        "answer": "d2338fc5-603c-5ecf-873c-376a28e3fbf1",
+        "explanation": "febd84a0-743f-5dde-8314-185607f704c6",
+        "rubric": "22cec0f4-e204-562c-9539-16fcaa23926c",
+        "figure": "da1ab4ae-6378-54ab-b5af-c7cb2e8704fa"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section IV · Arrangement"
+      },
+      "sectionId": "sec-arrangement"
+    },
+    {
+      "id": "3f0815b5-da63-5132-a1e7-cf81f60cc3f6",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Discourse Arrangement",
+      "lesson": "Coherence and Cohesion",
+      "competency": "Sequence conversational turns and paragraph sentences logically",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Arrange the turns to make a coherent exchange:\na. Teacher: Have you uploaded your lab summary yet?\nb. Minh: Yes, I submitted the PDF five minutes ago.\nc. Teacher: Thank you, I will review it before Friday.",
+      "options": [
+        "a - b - c",
+        "b - c - a",
+        "c - b - a",
+        "a - c - b"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Question (a) -> confirmation (b) -> acknowledgment (c).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "81ab7c15-b035-5402-ac5a-f541c950a0ee",
+        "options": "959fd4de-73b4-5519-8ebe-a3b0f9e04490",
+        "answer": "2c84d828-a378-529d-8572-9eda60079e39",
+        "explanation": "2a9762f3-0974-5202-9e10-625b55c2d35a",
+        "rubric": "2cd946ff-2eaf-5204-b9a9-a2314037efa7",
+        "figure": "1e4b1720-eee9-5c72-9e99-8c3917a31fdd"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section IV · Arrangement"
+      },
+      "sectionId": "sec-arrangement"
+    },
+    {
+      "id": "411a42b6-165b-5200-9bc6-a27b10469f37",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Discourse Arrangement",
+      "lesson": "Coherence and Cohesion",
+      "competency": "Sequence conversational turns and paragraph sentences logically",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Arrange the sentences into a cohesive short note about bicycle commuting:\na. First, dedicated bike lanes keep morning commuters separated from heavy trucks.\nb. Riding a bicycle to school benefits both personal fitness and air quality.\nc. In addition, covered racks near school gates protect bikes from sudden rain.\nd. Therefore, expanding safe cycling routes is a smart investment for towns.",
+      "options": [
+        "b - a - c - d",
+        "a - b - d - c",
+        "d - b - a - c",
+        "b - d - a - c"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Topic sentence (b) -> supporting reasons (a, c) -> conclusion (d).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "1e537a06-3baa-57cd-8f7a-c07c551aad12",
+        "options": "8425e8ba-8f25-5014-9a71-e29b29f78a7c",
+        "answer": "396176af-f4d4-5834-b770-5aba089fad09",
+        "explanation": "70bb7c52-6552-55dd-859b-0819b8c0fbef",
+        "rubric": "b032ac60-088e-5b99-92b9-7be5fcacf456",
+        "figure": "7ac31896-db25-5720-9e04-ac20742c370b"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section IV · Arrangement"
+      },
+      "sectionId": "sec-arrangement"
+    },
+    {
+      "id": "521c40bd-575e-5124-abf2-f1b6c6c85cbf",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Discourse Arrangement",
+      "lesson": "Coherence and Cohesion",
+      "competency": "Sequence conversational turns and paragraph sentences logically",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Arrange the sentences to form a logical thank-you email:\na. Dear Dr. Linh, thank you for mentoring our robotics club this term.\nb. Your feedback on our sensor calibration helped us reach the regional finals.\nc. We would be honored to invite you to our showcase next Saturday.\nd. Best regards, Hoang Anh.",
+      "options": [
+        "b - a - c - d",
+        "a - b - c - d",
+        "a - c - b - d",
+        "d - a - b - c"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Greeting & thanks (a) -> specific detail (b) -> invitation (c) -> sign-off (d).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "b609c1ac-046b-5f4a-ae3f-a56059976d7b",
+        "options": "a152d2ec-bdbf-509f-bbef-87effb2f808c",
+        "answer": "51683d5d-4587-5948-ab16-11f112a14049",
+        "explanation": "8c61811e-4f52-5ed0-b20d-a930931151a6",
+        "rubric": "63fec1e3-c4b0-53c9-8d19-4647a2ad823d",
+        "figure": "b35e270b-3d30-591f-8416-6f1a0ac32053"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section IV · Arrangement"
+      },
+      "sectionId": "sec-arrangement"
+    },
+    {
+      "id": "48566059-86d3-5937-8636-f4f0f147ae13",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Discourse Arrangement",
+      "lesson": "Coherence and Cohesion",
+      "competency": "Sequence conversational turns and paragraph sentences logically",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Arrange the sentences into an informational paragraph about wetlands:\na. As water slows down through dense reeds, suspended mud settles naturally.\nb. Freshwater wetlands filter agricultural runoff before it reaches main rivers.\nc. Consequently, downstream communities enjoy cleaner water and lower treatment costs.",
+      "options": [
+        "c - b - a",
+        "a - c - b",
+        "b - a - c",
+        "b - c - a"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Claim (b) -> mechanism (a) -> consequence (c).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "4c785788-f8c6-5c6e-82bf-119709379f9b",
+        "options": "af2609c0-7f6c-5db5-b123-a575f0adddad",
+        "answer": "f1941d8e-1951-5c93-ba09-a41844c7354a",
+        "explanation": "2c844380-cb51-5944-a71b-b97bcbb580cc",
+        "rubric": "40fa36b9-1d5a-5545-96a3-c0254ac7812a",
+        "figure": "3f8d51a8-6a82-5a8c-8d50-d195158741a9"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Section IV · Arrangement"
+      },
+      "sectionId": "sec-arrangement"
+    },
+    {
+      "id": "b5632aac-86c3-572f-b598-916207ac92f5",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cloze Reading",
+      "lesson": "Urban Community Gardens",
+      "competency": "Select grammatically and contextually accurate words for cloze blanks",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Select the conjunction for blank [1] linking soil preparation and rainwater barrels.",
+      "options": [
+        "yet",
+        "but",
+        "or",
+        "and"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Parallel actions 'prepare soil beds and install rainwater barrels'.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e360ff1a-8967-5ca0-9392-d0255f0bd192",
+        "options": "9b6fe5ad-155b-5578-b20c-f9d18ce3dae2",
+        "answer": "fe563109-7137-5d65-bf77-6df731f15cb3",
+        "explanation": "57d4d3ea-ff70-56e6-9d89-b32c9691ad36",
+        "rubric": "37d6ec12-478b-5500-afe4-085f7e8b07c2",
+        "figure": "880a760c-efa9-5ee4-896a-c9ec014b6523"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Cloze Passage [1]..[6]"
+      },
+      "sectionId": "sec-cloze",
+      "passageId": "eng12-cloze-1",
+      "passageTitle": "Cloze Test: Urban Community Gardens [1]–[6]",
+      "passageText": "Urban Community Gardens\nIn many crowded cities, unused rooftop spaces are gradually being turned into thriving vegetable gardens. Residents work together every weekend to prepare soil beds [1] _____ install rainwater barrels. These shared plots not only supply fresh produce [2] _____ also strengthen social bonds among neighbors of all ages. Schools located nearby often bring students to the rooftops [3] _____ learn practical lessons in plant biology. Although maintaining a rooftop garden requires careful planning, [4] _____ benefits far outweigh the initial cost. Local authorities have begun offering small grants to neighborhoods [5] _____ wish to launch similar projects, proving that sustainable habits can take root [6] _____ in densely populated districts."
+    },
+    {
+      "id": "9513933d-fee2-5fe5-8aff-eabe42e550ab",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cloze Reading",
+      "lesson": "Urban Community Gardens",
+      "competency": "Select grammatically and contextually accurate words for cloze blanks",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Which correlative word completes '[2]' after 'not only fresh tomatoes'?",
+      "options": [
+        "so",
+        "but",
+        "for",
+        "nor"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Correlative pair 'not only ... but also'.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "299afdbf-5656-57bd-869d-96dc9861a86d",
+        "options": "57e261a6-c3de-5cd0-8435-95836c1f4ce6",
+        "answer": "5d8d6b8b-0dc1-5a45-80bb-a4d0341bed1d",
+        "explanation": "7c35998a-572c-5cac-8e32-da0a562a8554",
+        "rubric": "8e959785-02fa-5ea8-8c6b-8d6d71c7ae22",
+        "figure": "bcdae78f-125e-5539-bc51-0706a84055e7"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Cloze Passage [1]..[6]"
+      },
+      "sectionId": "sec-cloze",
+      "passageId": "eng12-cloze-1"
+    },
+    {
+      "id": "8250cebf-533e-5887-87be-9282e97c85c8",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cloze Reading",
+      "lesson": "Urban Community Gardens",
+      "competency": "Select grammatically and contextually accurate words for cloze blanks",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Fill gap [3] before 'learn practical science lessons about composting'.",
+      "options": [
+        "from",
+        "for",
+        "with",
+        "to"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Infinitive of purpose 'to learn practical lessons'.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "db9a2af4-7263-58a4-9318-ba2eb2b779bb",
+        "options": "ee96976f-46a2-5566-9242-011c9c1ac0a1",
+        "answer": "3cd240bb-205a-5613-ba37-cf0adce55eda",
+        "explanation": "393b24c5-144f-5486-97df-e640af2dec04",
+        "rubric": "985043a2-9a94-5fff-9433-eded794bfc4b",
+        "figure": "09b2de5a-f312-53f0-b30a-98dd4c772509"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Cloze Passage [1]..[6]"
+      },
+      "sectionId": "sec-cloze",
+      "passageId": "eng12-cloze-1"
+    },
+    {
+      "id": "72975a08-a1a5-5973-8677-fdbad6c941af",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cloze Reading",
+      "lesson": "Urban Community Gardens",
+      "competency": "Select grammatically and contextually accurate words for cloze blanks",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Supply the grammatical determiner at [4] preceding 'benefits of rooftop farms'.",
+      "options": [
+        "the",
+        "a",
+        "an",
+        "one"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Definite article 'the benefits' referring to specific garden gains.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8d678927-1745-52ef-833a-864099eb010f",
+        "options": "930cf1f1-3925-543b-8edf-6f0b976661df",
+        "answer": "77c45f31-d0af-56be-a7ca-9655901e8e68",
+        "explanation": "b881a558-25a2-5707-9448-e06ef5e1834d",
+        "rubric": "e5e29544-5c02-5d29-ab08-31a637692e4a",
+        "figure": "c7c88a1d-904c-52bf-8cfd-e67c3d39b8db"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Cloze Passage [1]..[6]"
+      },
+      "sectionId": "sec-cloze",
+      "passageId": "eng12-cloze-1"
+    },
+    {
+      "id": "1f13c27f-aca2-5718-8e18-031a5237965c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cloze Reading",
+      "lesson": "Urban Community Gardens",
+      "competency": "Select grammatically and contextually accurate words for cloze blanks",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Pick the subject relative pronoun needed at [5] referring to 'neighborhoods'.",
+      "options": [
+        "where",
+        "whom",
+        "that",
+        "what"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Subject relative pronoun referring to 'neighborhoods'.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "ab6db635-a702-59df-b562-fce4a02e90eb",
+        "options": "3466c7b8-fec8-552f-bb4b-214eb017f1b8",
+        "answer": "381ff907-5d89-5fcc-bc1b-5d517b920359",
+        "explanation": "5c5bed53-72d8-5d93-963a-488098cbda74",
+        "rubric": "4566983b-c35d-57b6-98d7-00d24149bdda",
+        "figure": "0615050a-5eb4-52fb-9c7b-b84c886cba32"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Cloze Passage [1]..[6]"
+      },
+      "sectionId": "sec-cloze",
+      "passageId": "eng12-cloze-1"
+    },
+    {
+      "id": "ef2fd8c7-4ea9-5702-9018-f8127da8fbf7",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cloze Reading",
+      "lesson": "Urban Community Gardens",
+      "competency": "Select grammatically and contextually accurate words for cloze blanks",
+      "level": 1,
+      "points": 0.25,
+      "stem": "What adverb belongs in slot [6] before 'in densely populated districts'?",
+      "options": [
+        "never",
+        "hardly",
+        "even",
+        "neither"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "'even in densely populated districts' emphasizes contrast.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "455550ff-418b-5888-8304-ae715ff6629f",
+        "options": "5d9d49c3-4299-5790-ab33-9e695bf98c54",
+        "answer": "dab52860-5265-5c81-b954-d2b920e1f124",
+        "explanation": "4ccf23c2-6bc7-512c-8041-347481c2cfa7",
+        "rubric": "77d0ccce-306f-5f04-baca-357f34a7cf8c",
+        "figure": "3c93d035-0345-547e-a853-56c221533213"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Cloze Passage [1]..[6]"
+      },
+      "sectionId": "sec-cloze",
+      "passageId": "eng12-cloze-1"
+    },
+    {
+      "id": "7dd9fc36-074a-5efc-b50b-8742c775b703",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 1",
+      "lesson": "Quiet Libraries in a Hyper-Connected World",
+      "competency": "Identify main idea, vocabulary in context, and supporting facts",
+      "level": 1,
+      "points": 0.25,
+      "stem": "What is the main idea of Reading Passage 1?",
+      "options": [
+        "Public libraries are evolving into modern civic hubs while keeping quiet reading spaces.",
+        "Public libraries have stopped lending printed books altogether.",
+        "Teenagers only visit libraries when music concerts are held.",
+        "Digital catalogs make human librarians unnecessary."
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Paragraph 1 explains that libraries reinvent themselves as civic hubs while preserving quiet study rooms.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "dec44d09-4f0b-5720-baaf-b6b52fdeef3f",
+        "options": "42b7435b-310c-5796-99ad-3e95bbbd2c54",
+        "answer": "d34af437-47f5-5811-8ede-9d2bd8e3df67",
+        "explanation": "7d7a987d-3b88-5538-a814-992e4d8066b9",
+        "rubric": "7e8a9694-1aa3-5035-a0aa-e42008aff950",
+        "figure": "ee230cd9-e0f0-568c-8377-c434162682b4"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 1"
+      },
+      "sectionId": "sec-reading-1",
+      "passageId": "eng12-reading-1",
+      "passageTitle": "Reading Passage 1: Quiet Libraries",
+      "passageText": "Reading Passage 1: Quiet Libraries in a Hyper-Connected World\nFor decades, public libraries were viewed mainly as silent warehouses for printed volumes. Today, however, neighborhood libraries are reinventing themselves as flexible civic hubs while preserving quiet study rooms. Visitors can borrow audiobooks, reserve soundproof booths for online interviews, or attend free workshops on digital literacy.\n\nResearch conducted across twelve municipal branches showed that teenagers visited libraries most frequently when quiet reading zones were paired with collaborative project tables. Rather than replacing printed books, digital catalogs actually boosted borrowing rates because readers could locate niche titles within seconds. Librarians increasingly act as information guides who help citizens verify online sources and distinguish evidence-based reporting from misleading claims."
+    },
+    {
+      "id": "3a012adc-4ace-5978-9d05-fae49df3855b",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 1",
+      "lesson": "Quiet Libraries in a Hyper-Connected World",
+      "competency": "Identify main idea, vocabulary in context, and supporting facts",
+      "level": 0,
+      "points": 0.25,
+      "stem": "According to Paragraph 1, which service can visitors now find at neighborhood libraries?",
+      "options": [
+        "Overnight hotel accommodation",
+        "Free bicycle repair licenses",
+        "Commercial restaurant kitchens",
+        "Soundproof booths for online interviews"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Paragraph 1 explicitly mentions reserving soundproof booths for online interviews.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "eb6f7761-9f6e-5362-800f-6c4fd05c6635",
+        "options": "4d01d7ba-9f6c-5fdc-af07-2c9289379815",
+        "answer": "39005e21-a9e1-5130-b09f-e06baffddaa7",
+        "explanation": "c56f9ec9-d778-5d87-bf02-22cb3a6ce705",
+        "rubric": "7291c4dd-e009-5be4-b687-f867e1010bc5",
+        "figure": "d6e87ede-c1dd-5246-bfa1-148ee0f82754"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 1"
+      },
+      "sectionId": "sec-reading-1",
+      "passageId": "eng12-reading-1"
+    },
+    {
+      "id": "706d5926-c03b-5583-aeff-34b4a886b250",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 1",
+      "lesson": "Quiet Libraries in a Hyper-Connected World",
+      "competency": "Identify main idea, vocabulary in context, and supporting facts",
+      "level": 1,
+      "points": 0.25,
+      "stem": "The word 'boosted' in Paragraph 2 is closest in meaning to which option?",
+      "options": [
+        "delayed",
+        "increased",
+        "restricted",
+        "canceled"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Digital catalogs increased ('boosted') borrowing rates by helping readers find titles quickly.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5d9d851e-eb4b-5842-beb4-90d814ce957e",
+        "options": "1ca30486-60a8-5b51-9670-203531d414d0",
+        "answer": "b0b619ea-5838-5761-b3cc-35cbffc15dfe",
+        "explanation": "e2ebaa8d-bee5-5499-beaa-7a2a326ab1a0",
+        "rubric": "7b2b549e-1b82-5a84-b23e-656b245158f0",
+        "figure": "16e1ca23-b23e-5591-a265-da17079b81e9"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 1"
+      },
+      "sectionId": "sec-reading-1",
+      "passageId": "eng12-reading-1"
+    },
+    {
+      "id": "eb0313e7-1d1a-53bd-bee1-09c8477e5a83",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 1",
+      "lesson": "Quiet Libraries in a Hyper-Connected World",
+      "competency": "Identify main idea, vocabulary in context, and supporting facts",
+      "level": 1,
+      "points": 0.25,
+      "stem": "What did the survey of twelve municipal branches show about teenagers?",
+      "options": [
+        "They only borrowed audio equipment on weekends.",
+        "They refused to use digital search terminals.",
+        "They preferred empty warehouses without tables.",
+        "They visited more when quiet zones coexisted with group tables."
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Teenagers visited most frequently when quiet reading zones were paired with collaborative tables.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "ebb3f5ad-8ab7-52e3-bbb8-960a2947d24a",
+        "options": "d66868af-b5c7-536c-a0dc-e926d575be8c",
+        "answer": "b5fddb68-06b3-5e3a-aba9-eb2aa20bf134",
+        "explanation": "1587c270-82aa-530a-a943-d0c24e29e934",
+        "rubric": "0bd82350-0c2f-5203-aa62-28b1e482da9a",
+        "figure": "434cde47-a3e5-583c-8642-b503edfd18a1"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 1"
+      },
+      "sectionId": "sec-reading-1",
+      "passageId": "eng12-reading-1"
+    },
+    {
+      "id": "194272db-6919-59fc-9fae-25847f454e9e",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 1",
+      "lesson": "Quiet Libraries in a Hyper-Connected World",
+      "competency": "Identify main idea, vocabulary in context, and supporting facts",
+      "level": 1,
+      "points": 0.25,
+      "stem": "In Paragraph 2, what enabled readers to locate niche titles within seconds?",
+      "options": [
+        "Printed newspapers",
+        "Soundproof booths",
+        "Digital catalogs",
+        "Civic permits"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Digital catalogs allowed readers to locate niche titles within seconds.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "415dba1d-ad6b-5f81-ac68-5050a4549fc4",
+        "options": "4fc40306-de47-5948-b328-7ef6b2935323",
+        "answer": "eba565da-0135-51b3-b054-6a9de8c3ac29",
+        "explanation": "6f685ef3-b8a1-535e-b506-53c18fedfe0d",
+        "rubric": "2fd7bb67-b510-5cc2-9ffc-fc2d46db6947",
+        "figure": "c3da31cb-0ece-5b24-981d-0f283b81514f"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 1"
+      },
+      "sectionId": "sec-reading-1",
+      "passageId": "eng12-reading-1"
+    },
+    {
+      "id": "146785a6-c5e9-5d4d-bb35-56e4999bb71e",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 1",
+      "lesson": "Quiet Libraries in a Hyper-Connected World",
+      "competency": "Identify main idea, vocabulary in context, and supporting facts",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Which role do modern librarians increasingly take on according to the last sentence?",
+      "options": [
+        "Designing building roofs",
+        "Helping citizens verify online sources",
+        "Printing city tax forms",
+        "Managing subway tickets"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "They act as information guides helping citizens verify online sources.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "56220ec7-9bd1-587e-9852-85a4a0e2c964",
+        "options": "25e4da59-184d-5165-8f0f-644ffd0b5c5e",
+        "answer": "aeb4759e-38a3-5867-b640-7654a1c3ecbc",
+        "explanation": "2d35be0e-0660-596b-9ed2-2d34f85e27db",
+        "rubric": "ee735de0-8ced-508a-b8d9-db22df2679ec",
+        "figure": "cb0e12ba-e0a0-5e3d-be1a-982f29fac2aa"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 1"
+      },
+      "sectionId": "sec-reading-1",
+      "passageId": "eng12-reading-1"
+    },
+    {
+      "id": "6715243e-5fbd-5fb8-b6db-168feba3b0b8",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 1",
+      "lesson": "Quiet Libraries in a Hyper-Connected World",
+      "competency": "Identify main idea, vocabulary in context, and supporting facts",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Which statement is TRUE according to Reading Passage 1?",
+      "options": [
+        "Printed books remain actively borrowed alongside digital tools.",
+        "All quiet study rooms were closed in the twelve branches.",
+        "Digital literacy workshops charge high tuition fees.",
+        "Readers wait several days to search digital catalogs."
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Paragraph 2 notes digital catalogs actually boosted borrowing of printed books.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "305a1d36-009a-588a-a7b8-2a47b66304ee",
+        "options": "f2eeb109-fb31-546f-b1ad-e72992d2e901",
+        "answer": "c4cc9917-d5d3-5742-a246-da96020c163c",
+        "explanation": "ad348b57-622b-5957-ae11-73b357b3da07",
+        "rubric": "f25d578e-2a1a-5107-a62b-b4b6c5a6cd56",
+        "figure": "594402e2-4d84-5b2b-87f6-69369b4e08e2"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 1"
+      },
+      "sectionId": "sec-reading-1",
+      "passageId": "eng12-reading-1"
+    },
+    {
+      "id": "858a3d41-b385-5db8-b170-a593eff5835e",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 2",
+      "lesson": "Coastal Mangrove Restoration",
+      "competency": "Infer meaning, synthesize data, and summarize academic prose",
+      "level": 1,
+      "points": 0.25,
+      "stem": "What ecological function of mangrove forests is highlighted in Paragraph 1?",
+      "options": [
+        "Absorbing storm waves and trapping river sediment",
+        "Increasing salinity in freshwater wells",
+        "Blocking ocean currents across deep trenches",
+        "Preventing rainfall along tropical coasts"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Paragraph 1 states mangroves absorb storm waves and trap river sediment.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3f0f19da-d345-56e8-9400-ad8829fc8ba9",
+        "options": "b23993c5-e1e9-59aa-8974-65eda5d753da",
+        "answer": "6407b38f-d28d-5d61-a726-bcfa69b014c7",
+        "explanation": "577ea137-d134-58e2-89d7-b66355ffe034",
+        "rubric": "50df221f-185d-575e-9903-f7c80278b694",
+        "figure": "aab716cd-bfbf-5678-ba7a-25d4e8f3ff21"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 2"
+      },
+      "sectionId": "sec-reading-2",
+      "passageId": "eng12-reading-2",
+      "passageTitle": "Reading Passage 2: Coastal Mangrove Restoration",
+      "passageText": "Reading Passage 2: Coastal Mangrove Restoration and Local Livelihoods\nAlong tropical estuaries, mangrove forests serve as living buffers that absorb storm waves and trap river sediment before it clouds offshore reefs. Between 1990 and 2010, rapid pond construction cleared wide belts of coastal trees, leaving nearby villages vulnerable to high tides and coastal erosion.\n\nRecent community-led programs have shifted from top-down fencing toward integrated mangrove-aquaculture systems. Under this approach, farmers maintain at least sixty percent natural tree cover around tidal channels, allowing shrimp and mud crabs to feed on fallen leaves without artificial chemical feeds. Field measurements over five years revealed that restored belts reduced wave energy by nearly half while generating steadier household incomes than intensive open ponds. Planners note that long-term success depends on clear land-use agreements and shared monitoring between villagers and marine scientists."
+    },
+    {
+      "id": "0763657d-d305-5273-bfca-ecf082482c21",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 2",
+      "lesson": "Coastal Mangrove Restoration",
+      "competency": "Infer meaning, synthesize data, and summarize academic prose",
+      "level": 1,
+      "points": 0.25,
+      "stem": "What left coastal villages vulnerable to erosion between 1990 and 2010?",
+      "options": [
+        "Natural snowfall during winter",
+        "Clearing mangrove belts for pond construction",
+        "Building too many offshore reefs",
+        "Banning all local fishing boats"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Rapid pond construction cleared wide belts of coastal trees.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "821c9105-d5e1-57ae-a03d-53c816825188",
+        "options": "d2b6c2c3-ddca-5aed-934d-46cd1a1ff029",
+        "answer": "2ef1203e-fb21-5ab0-82c1-8805eb66c390",
+        "explanation": "d9e9da10-e5bd-543b-a791-699e10f0d38d",
+        "rubric": "48263c71-ed1c-5499-8ae6-c62b35dd3adb",
+        "figure": "35d28ccb-a669-5f72-943f-acf3745ed1b9"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 2"
+      },
+      "sectionId": "sec-reading-2",
+      "passageId": "eng12-reading-2"
+    },
+    {
+      "id": "ecf654da-fff4-5b18-8b95-7dccbd794612",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 2",
+      "lesson": "Coastal Mangrove Restoration",
+      "competency": "Infer meaning, synthesize data, and summarize academic prose",
+      "level": 0,
+      "points": 0.25,
+      "stem": "In integrated mangrove-aquaculture systems, how much natural tree cover do farmers keep?",
+      "options": [
+        "Less than twenty percent",
+        "Exactly ten percent",
+        "At least sixty percent",
+        "Zero percent around channels"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Farmers maintain at least sixty percent natural tree cover around tidal channels.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "6f8d4f42-0f95-5e01-87b8-a9069f6bba78",
+        "options": "c5bb0279-6149-53e9-832f-ca5c4c7cee01",
+        "answer": "cace49a1-fb57-53ad-9817-b15f1268f245",
+        "explanation": "be16c161-9d60-5c10-895f-4670b0632fa7",
+        "rubric": "6edc0707-74c0-52d3-86ff-cd47f76f578a",
+        "figure": "b73289de-bde0-5725-ae7a-5bd8a9a2e9d8"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 2"
+      },
+      "sectionId": "sec-reading-2",
+      "passageId": "eng12-reading-2"
+    },
+    {
+      "id": "e65a8185-4e2b-5392-a5c1-19e1af9652de",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 2",
+      "lesson": "Coastal Mangrove Restoration",
+      "competency": "Infer meaning, synthesize data, and summarize academic prose",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Why do shrimp and mud crabs thrive in these integrated channels?",
+      "options": [
+        "Tidal channels are sealed off from sea water",
+        "They receive imported synthetic pellets daily",
+        "Water temperature stays frozen year-round",
+        "They feed naturally on fallen mangrove leaves"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "They feed on fallen leaves without artificial chemical feeds.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "37e83353-b47b-5346-bde3-5889f20bcff8",
+        "options": "91de6213-57a3-5a23-b789-d5666d4e9e0f",
+        "answer": "f59ec48d-6a65-5988-ad73-1690ae994afc",
+        "explanation": "c594d10b-30a9-5a14-8f95-4d26c535097c",
+        "rubric": "e86d29db-e430-5e8b-a473-0e0134ad8aab",
+        "figure": "cbd4a1ba-1ff3-553d-8379-0d783256a55c"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 2"
+      },
+      "sectionId": "sec-reading-2",
+      "passageId": "eng12-reading-2"
+    },
+    {
+      "id": "b54d7931-2cbd-54ce-be7f-1d73c45d3215",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 2",
+      "lesson": "Coastal Mangrove Restoration",
+      "competency": "Infer meaning, synthesize data, and summarize academic prose",
+      "level": 2,
+      "points": 0.25,
+      "stem": "The word 'buffers' in Paragraph 1 is closest in meaning to which term?",
+      "options": [
+        "pollution sources",
+        "protective barriers",
+        "shipping harbors",
+        "mineral deposits"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "'Living buffers' act as protective barriers absorbing storm waves.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "273bc27c-ae69-5317-b715-f4c0928d4ce4",
+        "options": "8a86fc70-5ff1-55bc-a129-6dce796ce59b",
+        "answer": "e52c1e9d-5e0b-50ca-b2f3-e27abbd1493c",
+        "explanation": "80dd672d-8109-5c61-b0ee-c37606d08bdb",
+        "rubric": "3b70e312-234c-5f3d-8c20-a6b90b30c1c1",
+        "figure": "da066de5-a875-58f1-a289-8e847577c7ab"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 2"
+      },
+      "sectionId": "sec-reading-2",
+      "passageId": "eng12-reading-2"
+    },
+    {
+      "id": "18171560-e51f-5183-ada6-25f6d915567d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 2",
+      "lesson": "Coastal Mangrove Restoration",
+      "competency": "Infer meaning, synthesize data, and summarize academic prose",
+      "level": 2,
+      "points": 0.25,
+      "stem": "What did five years of field measurements show about restored mangrove belts?",
+      "options": [
+        "They eliminated mud crabs from tidal estuaries.",
+        "They doubled coastal wave height during storms.",
+        "They reduced household income compared with open ponds.",
+        "They cut wave energy nearly in half and stabilized incomes."
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Wave energy fell by nearly half while household incomes became steadier.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3583c702-d3f1-55af-8a2c-92481663b47a",
+        "options": "942d63ef-ddfa-5910-9a47-5c4c2ffd5a72",
+        "answer": "e849f977-6595-5b01-b8f6-fe0984a5ef4f",
+        "explanation": "9d7e6bdd-6958-56ed-b336-6ff68cd13dee",
+        "rubric": "fbc91ee0-3384-5f3f-937d-2ce7a971ad30",
+        "figure": "b384d4e8-87cb-5bb8-8126-9a019731ac8c"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 2"
+      },
+      "sectionId": "sec-reading-2",
+      "passageId": "eng12-reading-2"
+    },
+    {
+      "id": "7c8df5d0-2d77-56e5-a556-1d52e395d875",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 2",
+      "lesson": "Coastal Mangrove Restoration",
+      "competency": "Infer meaning, synthesize data, and summarize academic prose",
+      "level": 2,
+      "points": 0.25,
+      "stem": "What do planners emphasize as necessary for long-term program success?",
+      "options": [
+        "Clear land-use agreements and joint monitoring",
+        "Complete removal of local aquaculture",
+        "Top-down fencing without village input",
+        "Replacing mangroves with concrete walls"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "The final sentence cites clear land-use agreements and shared monitoring.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3867496b-0fbf-54ca-b94b-87d19713dde7",
+        "options": "14c278f0-f6df-5247-9054-28b0b35d5892",
+        "answer": "c9be5f47-3081-554d-9117-552908ffbe9d",
+        "explanation": "ad26a84f-f332-547e-9754-a1a2e0319c3e",
+        "rubric": "79e0d3ad-547f-5f21-a794-ef7cf0fe7085",
+        "figure": "d81591a6-fd49-5416-9678-31d03dc77603"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 2"
+      },
+      "sectionId": "sec-reading-2",
+      "passageId": "eng12-reading-2"
+    },
+    {
+      "id": "cdb3b405-77fa-53d9-b687-7e09e2bccafa",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Reading Comprehension 2",
+      "lesson": "Coastal Mangrove Restoration",
+      "competency": "Infer meaning, synthesize data, and summarize academic prose",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Which title best summarizes Reading Passage 2?",
+      "options": [
+        "How Offshore Reefs Form Deep Ocean Trenches",
+        "The Decline of Urban Rooftop Gardening",
+        "Balancing Coastal Protection and Aquaculture through Mangroves",
+        "Replacing Fishing Villages with Industrial Ports"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "The passage centers on mangrove restoration supporting both coastal protection and livelihoods.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "591d3c93-14b6-5af1-8dff-bf08ea2a5261",
+        "options": "7ca69cf2-1f64-5fdb-9716-5b4e7e7ddc79",
+        "answer": "f3003c4f-9ec4-5428-8e92-8aef00400ebb",
+        "explanation": "79298997-5d6d-5285-ac83-90f79aac71bb",
+        "rubric": "1c41de2e-b9f9-591c-bdd7-87c0188282a7",
+        "figure": "ee15a5ef-7ad7-5ab9-8cac-7dc1ed99fc8c"
+      },
+      "source": {
+        "docId": "4bf926b7-b51c-5c2d-b3dc-e6b6ec4020c8",
+        "page": 1,
+        "location": "Reading Passage 2"
+      },
+      "sectionId": "sec-reading-2",
+      "passageId": "eng12-reading-2"
+    }
+  ]
+}

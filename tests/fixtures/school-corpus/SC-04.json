@@ -1,0 +1,1387 @@
+{
+  "id": "647abf04-50af-5cf8-a282-4f2947a79e66",
+  "title": "Đề thi thử tốt nghiệp THPT — Vật lí 12 (CV 7991)",
+  "school": "TRƯỜNG THPT LÊ LỢI (MẪU)",
+  "department": "Tổ Vật lí – Kĩ thuật",
+  "subject": "Vật lí",
+  "grade": "12",
+  "minutes": 50,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Đề gồm 28 câu (18 trắc nghiệm 4 lựa chọn, 4 Đúng–Sai, 6 trả lời ngắn). Sử dụng g = 10 m/s² khi cần.",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 2
+  },
+  "blockIds": {
+    "heading": "6ecf6bc6-9941-51f3-8e5b-46a0c44f6476",
+    "general": "cbe823e2-e09f-592c-852a-2954be074075",
+    "marking": "9e0c0d50-4ed0-5339-8cde-46396ad4037b"
+  },
+  "docs": [
+    {
+      "id": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+      "name": "Tu_lieu_thi_nghiem_Vat_li_12.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "Tư liệu Vật lí 12 tự biên soạn: Vật lí nhiệt, Khí lí tưởng, Từ trường và Vật lí hạt nhân.\n<figure><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 360 200\" aria-label=\"Đồ thị quá trình biến đổi trạng thái khí lí tưởng\"><line x1=\"40\" y1=\"20\" x2=\"40\" y2=\"170\" stroke=\"#1e293b\" stroke-width=\"2\"/><line x1=\"40\" y1=\"170\" x2=\"330\" y2=\"170\" stroke=\"#1e293b\" stroke-width=\"2\"/><polyline points=\"70,130 160,60 270,60 270,130 70,130\" fill=\"none\" stroke=\"#0f766e\" stroke-width=\"2\"/></svg><figcaption>Hình 1. Chu trình biến đổi trạng thái (p, V) trong thí nghiệm Vật lí 12</figcaption></figure>",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Vật lí nhiệt",
+      "type": "mcq",
+      "targets": [
+        2,
+        2,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Khí lí tưởng",
+      "type": "mcq",
+      "targets": [
+        1,
+        2,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Từ trường",
+      "type": "mcq",
+      "targets": [
+        2,
+        3,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Vật lí hạt nhân",
+      "type": "mcq",
+      "targets": [
+        1,
+        2,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Vật lí nhiệt",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Khí lí tưởng",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Từ trường",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Vật lí hạt nhân",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Vật lí nhiệt",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Khí lí tưởng",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Từ trường",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Vật lí hạt nhân",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "points": 0.25
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "e7e6a0e6-8a27-5e93-a4ee-94be5b3021a2",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí nhiệt",
+      "lesson": "Bài 1: Cấu trúc chất và sự chuyển thể",
+      "competency": "Nhận biết tính chất chuyển động phân tử",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Khi nhiệt độ của một khối chất khí lí tưởng tăng lên thì đại lượng nào sau đây của các phân tử khí tăng theo?",
+      "options": [
+        "Tốc độ chuyển động nhiệt trung bình",
+        "Khối lượng riêng của từng phân tử",
+        "Điện tích hạt nhân nguyên tử",
+        "Số lượng phân tử nếu bình kín"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Nhiệt độ tuyệt đối tỉ lệ thuận với động năng tịnh tiến trung bình của phân tử.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "da80c772-ec52-5451-96bc-5f6a239252fc",
+        "options": "9c907655-00cf-5d8a-9561-68cef83626c9",
+        "answer": "0dc519d3-4ded-5707-97d6-fda2f41ee89f",
+        "explanation": "a3b9e037-6c32-5624-8c09-fe72367a200e",
+        "rubric": "13acb1f9-b0da-5295-b7f5-d3a68203c5a9",
+        "figure": "064997e9-ead3-5111-99f0-c84584cb4827"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "eb708a66-5bfb-5a82-95ad-2576e7d49d84",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí nhiệt",
+      "lesson": "Bài 2: Định luật I nhiệt động lực học",
+      "competency": "Vận dụng dấu của công và nhiệt lượng",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Một khối khí nhận nhiệt lượng $Q = 120\\text{ J}$ và thực hiện công ra bên ngoài $A' = 45\\text{ J}$. Độ biến thiên nội năng $\\Delta U$ của khí bằng?",
+      "options": [
+        "$165\\text{ J}$",
+        "$75\\text{ J}$",
+        "$-75\\text{ J}$",
+        "$-165\\text{ J}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Theo quy ước $\\Delta U = A + Q$ với $A = -45\\text{ J}, Q = +120\\text{ J} \\Rightarrow \\Delta U = 75\\text{ J}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "030759c3-776c-5042-9220-f0723543fca2",
+        "options": "1cdc0b66-c3c0-5b28-b01d-5d859fa1befc",
+        "answer": "9ce3563b-971b-5c2e-a4eb-8d52867989b6",
+        "explanation": "00f1aa3e-4bd7-509b-ba0a-1bb1e3aba8b8",
+        "rubric": "22797dac-548b-53af-8f23-da6b72ea5283",
+        "figure": "df959f01-de72-53c9-a3a3-af0b4130e768"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "ed33c1f8-4d3a-5ca5-abcf-c5ce1e564201",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí nhiệt",
+      "lesson": "Bài 3: Nhiệt dung riêng",
+      "competency": "Tính nhiệt lượng thu vào để đun nóng nước",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Cần cung cấp nhiệt lượng bao nhiêu để đun $2{,}0\\text{ kg}$ nước ($c = 4200\\text{ J/(kg}\\cdot\\text{K)}$) tăng từ $25^\\circ\\text{C}$ lên $75^\\circ\\text{C}$?",
+      "options": [
+        "$630\\text{ kJ}$",
+        "$210\\text{ kJ}$",
+        "$420\\text{ kJ}$",
+        "$840\\text{ kJ}$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "$Q = mc\\Delta t = 2{,}0 \\cdot 4200 \\cdot 50 = 420\\,000\\text{ J} = 420\\text{ kJ}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "4c9e6b7d-c619-5e5a-8517-a224eebf0036",
+        "options": "5cd4325c-184f-5672-9938-dc424ef3d48b",
+        "answer": "a5ef6f21-5947-563e-b0b8-1e7a2a7157d1",
+        "explanation": "73cd97ca-8e1f-52e6-abe1-5de81f0eab72",
+        "rubric": "896adc2d-0fee-5c79-bbfc-df7ec6198999",
+        "figure": "80d99d38-5df3-54b5-9108-a6249e24177e"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "434cf5b5-d6da-5e6c-ae09-2ededa9c8a4b",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí nhiệt",
+      "lesson": "Bài 4: Nhiệt nóng chảy riêng",
+      "competency": "Phân biệt quá trình nóng chảy đẳng nhiệt",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Trong suốt thời gian một chất rắn kết tinh tinh khiết đang nóng chảy hoàn toàn ở áp suất không đổi, nhiệt độ của chất đó như thế nào?",
+      "options": [
+        "Biến thiên tuần hoàn",
+        "Tăng đều theo thời gian",
+        "Giảm dần rồi ổn định",
+        "Không thay đổi"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Nhiệt lượng cung cấp chỉ dùng để phá vỡ mạng tinh thể nên nhiệt độ giữ nguyên.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "36fc0272-8b74-55a6-b43e-9de587a85256",
+        "options": "9297f63a-fa8c-532f-a941-d5830c476358",
+        "answer": "32b88e53-945d-51ba-93c5-ec2d87f97557",
+        "explanation": "ba047114-7b99-5ebc-930e-d95fae3cd12f",
+        "rubric": "546471c1-ddf1-5c21-9713-d6071e6944da",
+        "figure": "56854323-7a58-53e7-82ed-895d73d7a62f"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "f6daff9b-f5e0-51c8-9abc-d0232d524237",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Khí lí tưởng",
+      "lesson": "Bài 5: Thang nhiệt độ Kelvin",
+      "competency": "Chuyển đổi giữa thang Celsius và thang Kelvin",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Nhiệt độ $27^\\circ\\text{C}$ trong thang Celsius tương ứng với giá trị nào trong thang Kelvin?",
+      "options": [
+        "$246\\text{ K}$",
+        "$300\\text{ K}$",
+        "$273\\text{ K}$",
+        "$327\\text{ K}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Áp dụng công thức $T(\\text{K}) = t(^\\circ\\text{C}) + 273 = 300\\text{ K}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "98026415-0d25-5d6f-a22c-a19961a212c7",
+        "options": "3a697d03-4c7e-5537-8aa0-cde962a053dd",
+        "answer": "e2f96d1c-b366-5c83-b1eb-15ad1a797ae4",
+        "explanation": "cc0b2d0a-cfd0-563a-9816-dafd28f7f8c8",
+        "rubric": "42b7b970-7c47-5bba-b94f-c14d7d153eac",
+        "figure": "a736f934-4983-5627-9a8f-8dd42d304b95"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "bda293a8-8047-5fd6-94de-3e888112dc5d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Khí lí tưởng",
+      "lesson": "Bài 6: Định luật Boyle",
+      "competency": "Tính áp suất sau khi nén đẳng nhiệt",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Nén đẳng nhiệt $6{,}0\\text{ L}$ khí lí tưởng từ áp suất $p_1 = 1{,}0 \\cdot 10^5\\text{ Pa}$ xuống còn $2{,}0\\text{ L}$. Áp suất khí lúc sau là?",
+      "options": [
+        "$0{,}33 \\cdot 10^5\\text{ Pa}$",
+        "$1{,}5 \\cdot 10^5\\text{ Pa}$",
+        "$2{,}0 \\cdot 10^5\\text{ Pa}$",
+        "$3{,}0 \\cdot 10^5\\text{ Pa}$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$p_1 V_1 = p_2 V_2 \\Rightarrow p_2 = \\frac{1{,}0 \\cdot 10^5 \\cdot 6{,}0}{2{,}0} = 3{,}0 \\cdot 10^5\\text{ Pa}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "81c43f48-689c-5cde-9372-b58bec159839",
+        "options": "7d35761f-e29b-58dc-aff2-1c1e8b9b61b7",
+        "answer": "43956446-6949-50b3-921f-77f1f3294d33",
+        "explanation": "18bf36d4-2857-50c9-bcb9-81391f74be6c",
+        "rubric": "4d640fd7-efab-5d1a-80be-928f1f6d55fe",
+        "figure": "60d1263c-c2b9-53dc-bf66-9fc4c4b5af8d"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "b1d1e636-77b2-5bdc-9b1e-69a42cb80f1a",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Khí lí tưởng",
+      "lesson": "Bài 7: Định luật Charles",
+      "competency": "Tính thể tích khi nung nóng đẳng áp",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Một lượng khí lí tưởng ở $300\\text{ K}$ chiếm thể tích $4{,}0\\text{ L}$. Làm nóng đẳng áp đến $450\\text{ K}$ thì thể tích khí là?",
+      "options": [
+        "$6{,}0\\text{ L}$",
+        "$5{,}0\\text{ L}$",
+        "$2{,}7\\text{ L}$",
+        "$8{,}0\\text{ L}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "$\\frac{V_1}{T_1} = \\frac{V_2}{T_2} \\Rightarrow V_2 = 4{,}0 \\cdot \\frac{450}{300} = 6{,}0\\text{ L}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "42daa674-da2d-5b62-81ec-a8e175c886ba",
+        "options": "3b7d6f90-094e-5a34-87d2-a6cfe1eac1c8",
+        "answer": "09ddd902-58cc-5d04-b53f-0049f6ca3367",
+        "explanation": "c63315c1-bd86-5174-bc49-169586d54cee",
+        "rubric": "4ae3d673-0b1c-5510-b3a8-99e011fe54e3",
+        "figure": "d5eaa912-d355-5d91-984b-ccb613b79da7"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "c2b73cf5-5364-55e4-b132-5db19f078193",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Khí lí tưởng",
+      "lesson": "Bài 8: Áp suất khí theo mô hình động học",
+      "competency": "Tính gia tốc va chạm và áp suất thành bình",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Trong hệ SI, nếu mật độ phân tử khí là $n$ và động năng tịnh tiến trung bình mỗi phân tử là $E_d$, biểu thức áp suất khí lí tưởng là?",
+      "options": [
+        "$p = \\frac{3}{2} n E_d$",
+        "$p = \\frac{1}{3} n E_d$",
+        "$p = \\frac{2}{3} n E_d$",
+        "$p = 2 n E_d$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Từ mô hình động học phân tử khí lí tưởng, $p = \\frac{2}{3} n E_d$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "a003e020-2594-52ed-8169-342363f33fd8",
+        "options": "6860088e-d17e-50cf-ac86-48d41cd28bf3",
+        "answer": "e355c77f-9d8f-5eac-b465-476dad3f858a",
+        "explanation": "019c6c4c-2336-540b-b4aa-28c2262d8e87",
+        "rubric": "b98d8abe-55db-5b10-850b-e4fbdc82320e",
+        "figure": "55e5d440-9dbb-5690-bbe0-ef025de5d4c1"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "96cf1db8-08f4-5163-bc2f-536f88aed720",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Từ trường",
+      "lesson": "Bài 9: Lực từ tác dụng lên đoạn dây dẫn",
+      "competency": "Tính lực từ với dây dẫn vuông góc đường sức",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Một đoạn dây dẫn dài $0{,}5\\text{ m}$ mang dòng điện $I = 4{,}0\\text{ A}$ đặt vuông góc với từ trường đều có cảm ứng từ $B = 0{,}2\\text{ T}$. Độ lớn lực từ tác dụng lên dây là?",
+      "options": [
+        "$0{,}8\\text{ N}$",
+        "$0{,}2\\text{ N}$",
+        "$0{,}4\\text{ N}$",
+        "$4{,}0\\text{ N}$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "$F = B I l \\sin 90^\\circ = 0{,}2 \\cdot 4{,}0 \\cdot 0{,}5 = 0{,}4\\text{ N}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "a131809d-f2ed-5d88-ac95-16ee88685c32",
+        "options": "60223118-e6c5-50c2-ae08-3a44a8a7fd09",
+        "answer": "c4ba35c0-e2bb-574d-a29d-25968ee25029",
+        "explanation": "9555b63b-5dc7-51bf-9eae-e517583e4282",
+        "rubric": "979fb0c8-0a7f-56ee-88b4-af899122e5ec",
+        "figure": "69370d77-3a18-50fb-a39b-abd8694e0461"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "d18f41fd-3653-59b9-8af7-413270fb19fc",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Từ trường",
+      "lesson": "Bài 10: Từ thông và cảm ứng điện từ",
+      "competency": "Tính từ thông qua khung dây phẳng",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Khung dây phẳng diện tích $S = 20\\text{ cm}^2$ đặt sao cho mặt phẳng khung hợp với vectơ cảm ứng từ $B = 0{,}5\\text{ T}$ một góc $30^\\circ$. Từ thông qua khung bằng?",
+      "options": [
+        "$5{,}0 \\cdot 10^{-4}\\text{ Wb}$",
+        "$8{,}66 \\cdot 10^{-4}\\text{ Wb}$",
+        "$1{,}0 \\cdot 10^{-3}\\text{ Wb}$",
+        "$2{,}5 \\cdot 10^{-4}\\text{ Wb}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Góc giữa pháp tuyến $\\vec{n}$ và $\\vec{B}$ là $\\alpha = 60^\\circ$, nên $\\Phi = BS\\cos 60^\\circ = 0{,}5 \\cdot 20\\cdot 10^{-4} \\cdot 0{,}5 = 5{,}0\\cdot 10^{-4}\\text{ Wb}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "0d8ef2b3-7ae2-57dc-ac5f-61e4f8705166",
+        "options": "b49cfd5b-9359-55c8-8340-950fcd1ede37",
+        "answer": "343544df-3743-5694-b67f-86787d6f4d4c",
+        "explanation": "fc19341b-c873-56d6-a07d-e4b5a33cf78f",
+        "rubric": "fc18e511-1ce3-51a9-b61e-ae48aebf0a21",
+        "figure": "038a7aa3-31f5-5f3d-a15d-db6192a345a9"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "75891758-0239-5270-8cbc-4a96f9808f52",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Từ trường",
+      "lesson": "Bài 11: Dòng điện xoay chiều và mạch điện",
+      "competency": "Tính cường độ dòng điện hiệu dụng qua điện trở",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Đặt điện áp xoay chiều có giá trị hiệu dụng $U = 220\\text{ V}$ vào hai đầu đoạn mạch chỉ có điện trở thuần $R = 44\\,\\Omega$. Cường độ dòng điện hiệu dụng là?",
+      "options": [
+        "$0{,}2\\text{ A}$",
+        "$5\\sqrt{2}\\text{ A}$",
+        "$10\\text{ A}$",
+        "$5\\text{ A}$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$I = \\frac{U}{R} = \\frac{220}{44} = 5\\text{ A}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "57ff863e-7e59-5c0a-93e1-c8b5f1f3a561",
+        "options": "51e3ea2b-14b2-5b95-8838-362f019476cb",
+        "answer": "105dce51-7468-562d-bf37-6845ba21273d",
+        "explanation": "6de6caf4-7809-5454-9201-8453f220ffe3",
+        "rubric": "27e94177-aff1-5b13-802f-457a2d79951e",
+        "figure": "4f726cb5-b08a-5f14-a3f6-4c31f7f28b01"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "ee871030-08ed-50e2-a4c1-2f0060fc325e",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Từ trường",
+      "lesson": "Bài 12: Máy biến áp và truyền tải điện",
+      "competency": "Tính tỉ số vòng dây máy biến áp lí tưởng",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Một máy biến áp lí tưởng có cuộn sơ cấp $1000$ vòng đặt vào điện áp $220\\text{ V}$ để lấy ra điện áp $11\\text{ V}$ ở cuộn thứ cấp. Số vòng dây cuộn thứ cấp là?",
+      "options": [
+        "$100$ vòng",
+        "$50$ vòng",
+        "$200$ vòng",
+        "$20$ vòng"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "$N_2 = N_1 \\frac{U_2}{U_1} = 1000 \\cdot \\frac{11}{220} = 50$ vòng.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "288d1d43-5c92-58eb-b3a9-01164df513fa",
+        "options": "0d404016-856e-5376-bf65-2907067c18c8",
+        "answer": "ae066bd0-1aae-51d3-b561-b8bbc2b588ab",
+        "explanation": "18df0994-00c3-5505-ab53-2f87a77738b2",
+        "rubric": "a444da40-aac5-5b52-87ed-4f14f1a1c5b3",
+        "figure": "4feb0cb4-3bc2-5d53-bb3c-18f9a71600e8"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "def5ff58-b570-59b1-91bc-2e4d718bab0c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Từ trường",
+      "lesson": "Bài 13: Sóng điện từ",
+      "competency": "Nhận biết bản chất truyền lan sóng điện từ",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Trong chân không, thành phần điện trường $\\vec{E}$ và thành phần từ trường $\\vec{B}$ tại một điểm của sóng điện từ luôn có đặc điểm nào?",
+      "options": [
+        "Song song với phương truyền sóng",
+        "Cùng phương và ngược pha",
+        "Vuông góc với nhau và vuông pha",
+        "Vuông góc với nhau và cùng pha"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Sóng điện từ là sóng ngang: $\\vec{E}$, $\\vec{B}$, $\\vec{v}$ lập thành tam diện thuận và $\\vec{E}, \\vec{B}$ biến thiên cùng pha.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "a01be4d0-c639-5e34-95b1-31c77b4b6561",
+        "options": "2fad895b-d6e7-5c04-b651-fad7958c4e76",
+        "answer": "10af10eb-b1b4-518d-8d0b-ed79d4f77f3c",
+        "explanation": "029c69c1-12ac-53e7-a158-7eeb0c1f9ee4",
+        "rubric": "ca0a97df-b83a-5861-99c4-e487b3eb9df3",
+        "figure": "835047a7-2a3c-59c3-82f9-ceefb4838e13"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "7741d368-e4ab-58ed-86e8-29c9d9edc71c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí hạt nhân",
+      "lesson": "Bài 14: Cấu tạo hạt nhân nguyên tử",
+      "competency": "Xác định số nơtron của đồng vị",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Hạt nhân đồng vị $_{11}^{23}\\text{Na}$ chứa bao nhiêu nơtron?",
+      "options": [
+        "$23$",
+        "$11$",
+        "$12$",
+        "$34$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Số nơtron $N = A - Z = 23 - 11 = 12$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "a2f056aa-5f93-54fa-8848-5b3f6311b2bf",
+        "options": "144b54d0-5555-53b1-804c-82a23a42c412",
+        "answer": "90feaf86-0318-5cdd-8240-a315521ebbdf",
+        "explanation": "f73430fd-f29c-5754-b929-034751e68a74",
+        "rubric": "f7d78f87-7a35-5417-865e-384e88c3ccf8",
+        "figure": "64fe6d62-14a7-5eaa-a238-53085e3d9bff"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "2dafb1ef-1cdb-58ee-85bf-70d6268f41ea",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí hạt nhân",
+      "lesson": "Bài 15: Năng lượng liên kết hạt nhân",
+      "competency": "Tính năng lượng liên kết riêng",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Hạt nhân $_2^4\\text{He}$ có độ hụt khối $\\Delta m = 0{,}0304\\text{ u}$. Lấy $1\\text{ u}c^2 = 931{,}5\\text{ MeV}$. Năng lượng liên kết riêng của hạt nhân này xấp xỉ?",
+      "options": [
+        "$28{,}32\\text{ MeV/nuclôn}$",
+        "$7{,}08\\text{ MeV/nuclôn}$",
+        "$14{,}16\\text{ MeV/nuclôn}$",
+        "$3{,}54\\text{ MeV/nuclôn}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "$W_{\\text{lk}} \\approx 0{,}0304 \\cdot 931{,}5 \\approx 28{,}32\\text{ MeV}$, chia cho $A = 4$ được $7{,}08\\text{ MeV/nuclôn}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "ae2161c7-c084-52da-a166-f1c2387d1b39",
+        "options": "a44b3cbd-d85d-57e7-b12f-5e8f47abc7f2",
+        "answer": "4b4f1b1a-a190-5108-b086-c79186144181",
+        "explanation": "c8917522-5d79-5bf9-a6b3-309cffccc9bb",
+        "rubric": "18032a00-c0a1-584d-8777-93277dee6736",
+        "figure": "05159acd-954c-53e9-83dc-c10455bd0bf4"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "05ecd63a-74b2-5fbe-8559-894604327a2c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí hạt nhân",
+      "lesson": "Bài 16: Định luật phóng xạ",
+      "competency": "Tính khối lượng chất phóng xạ còn lại",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Một mẫu chất phóng xạ có chu kì bán rã $T = 8$ ngày và khối lượng ban đầu $m_0 = 64\\text{ g}$. Sau $24$ ngày, khối lượng chất phóng xạ còn lại là?",
+      "options": [
+        "$8\\text{ g}$",
+        "$16\\text{ g}$",
+        "$4\\text{ g}$",
+        "$56\\text{ g}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Sau $t = 24 = 3T$, khối lượng còn lại là $m = m_0 \\cdot 2^{-3} = \\frac{64}{8} = 8\\text{ g}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "950c841f-6343-5133-9f1c-c5a813974946",
+        "options": "7253530c-419f-5b9a-927d-98cd130d9371",
+        "answer": "338b2f6f-d764-5e00-a459-347a1d60e923",
+        "explanation": "0348e5e4-fdad-5052-b6dd-947f70cedc5d",
+        "rubric": "bd8b7bfc-29ea-5f01-b03b-694b114e3c65",
+        "figure": "ee0ae5fe-a095-5ac9-9e00-91d667a613f2"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "f0c4e60d-17d0-50b0-82eb-cf93a0942fe7",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí hạt nhân",
+      "lesson": "Bài 17: Phản ứng phân hạch và tổng hợp",
+      "competency": "Phân biệt bản chất hai loại phản ứng hạt nhân",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Đặc điểm chung của phản ứng phân hạch và phản ứng tổng hợp hạt nhân là gì?",
+      "options": [
+        "Đều là phản ứng hạt nhân tỏa năng lượng",
+        "Đều xảy ra tự phát ở nhiệt độ phòng",
+        "Đều bảo toàn số prôtôn và khối lượng nghỉ",
+        "Đều chỉ xảy ra với các hạt nhân nhẹ"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Cả hai quá trình đều tạo ra hạt nhân bền vững hơn nên đều tỏa năng lượng lớn.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "c6dc7302-f4ab-5b21-9429-41c4d92d05eb",
+        "options": "e120a5b3-d2c6-5e5e-8233-6731a3b50f73",
+        "answer": "904d0887-e616-5514-a625-b4f1759dcece",
+        "explanation": "e497bd04-f91a-5d99-a52b-6840e272a852",
+        "rubric": "2e032f58-e085-5f8d-beef-758d6d376c79",
+        "figure": "52e2dfc2-39ac-5a0f-85eb-64473d3e2a8f"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "7ed35e41-4025-575d-847c-a3fefd923247",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Vật lí nhiệt",
+      "lesson": "Bài 18: Thí nghiệm đo gia tốc và nhiệt dung",
+      "competency": "Xử lí đơn vị SI và sai số đo lường",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Một vật khối lượng $2{,}0\\text{ kg}$ trượt trên mặt phẳng ngang với gia tốc có độ lớn $a = 1{,}5\\text{ m/s}^2$ dưới tác dụng của lực kéo $F_k = 5{,}0\\text{ N}$. Độ lớn lực ma sát là?",
+      "options": [
+        "$3{,}0\\text{ N}$",
+        "$2{,}0\\text{ N}$",
+        "$8{,}0\\text{ N}$",
+        "$1{,}5\\text{ N}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Theo định luật II Newton: $F_k - F_{\\text{ms}} = ma \\Rightarrow F_{\\text{ms}} = 5{,}0 - 2{,}0 \\cdot 1{,}5 = 2{,}0\\text{ N}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "92147cbc-a0e1-5685-b880-da9a99373ccc",
+        "options": "886ab001-c33e-5fc6-8747-63e0ba1a84e6",
+        "answer": "cc957f51-de1e-562b-b785-60afaceafddf",
+        "explanation": "d3edfe4e-8486-5268-802e-2c599dfc4389",
+        "rubric": "139fb407-c547-559b-b1dd-227ed5cd202e",
+        "figure": "e065cbe0-3932-5441-8cd4-5782b9ab279e"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "b8c7d00e-2aff-57ce-9ad8-40e65fc6e6e7",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Vật lí nhiệt",
+      "lesson": "Bài 3: Thực hành đo nhiệt dung riêng của nước",
+      "competency": "Đánh giá số liệu thực nghiệm và đồ thị nhiệt độ theo thời gian",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Một nhóm học sinh dùng dây đốt điện có công suất ổn định $P = 250\\text{ W}$ (điện trở $R = 20\\,\\Omega$) để đun $0{,}50\\text{ kg}$ nước trong nhiệt lượng kế và ghi lại số liệu ở bảng sau. Coi hiệu suất truyền nhiệt là $84\\%$. Xét các nhận định:",
+      "options": [
+        "a) Trong mỗi giây, dây đốt tỏa ra nhiệt lượng $250\\text{ J}$.",
+        "b) Từ $t = 0\\text{ s}$ đến $t = 200\\text{ s}$, nhiệt lượng nước thực sự thu vào là $42\\,000\\text{ J}$.",
+        "c) Tốc độ tăng nhiệt độ trung bình của nước trong thí nghiệm là $0{,}10\\text{ K/s}$.",
+        "d) Cường độ dòng điện hiệu dụng chạy qua dây đốt có giá trị nhỏ hơn $3{,}0\\text{ A}$."
+      ],
+      "truthValues": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) Đúng ($Q = Pt$). b) Đúng ($Q_{\\text{thu}} = 0{,}84 \\cdot 250 \\cdot 200 = 42\\,000\\text{ J}$). c) Đúng ($\\Delta T = 20\\text{ K}$ trong $200\\text{ s}$). d) Sai ($I = \\sqrt{P/R} = \\sqrt{250/20} \\approx 3{,}54\\text{ A} > 3{,}0\\text{ A}$).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "296fc238-dae2-5d51-81f3-aa2c7e36026a",
+        "options": "4bca8790-c403-51c8-aed9-316465d928ce",
+        "answer": "b1a01a9c-863c-5885-996c-fb9ace7484fd",
+        "explanation": "8ba1cacd-b6e5-511a-9a2d-ff6eeff25d83",
+        "rubric": "c9fd1b04-d3d3-5813-9bb9-54347ee5273d",
+        "figure": "e4fadc2a-4e19-514c-a674-ea8b55e15b3c"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần II · Câu 19"
+      },
+      "tables": [
+        {
+          "rows": [
+            [
+              "Thời gian t (s)",
+              "0",
+              "50",
+              "100",
+              "150",
+              "200"
+            ],
+            [
+              "Nhiệt độ T (°C)",
+              "25,0",
+              "30,0",
+              "35,0",
+              "40,0",
+              "45,0"
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "id": "84540650-af6a-5d85-826d-440ca7c30a95",
+          "data": "data:image/png;base64,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",
+          "caption": "Đồ thị độ tăng nhiệt độ theo thời gian đun nước"
+        }
+      ],
+      "figure": {
+        "points": {
+          "O": {
+            "x": 0,
+            "y": 0
+          },
+          "X": {
+            "x": 8,
+            "y": 0
+          },
+          "Y": {
+            "x": 0,
+            "y": 6
+          },
+          "A": {
+            "x": 2,
+            "y": 1.2
+          },
+          "B": {
+            "x": 6,
+            "y": 3.6
+          },
+          "C": {
+            "x": 8,
+            "y": 4.8
+          }
+        },
+        "constraints": [],
+        "objects": [
+          "segment(O,X)",
+          "segment(O,Y)",
+          "segment(O,A)",
+          "segment(A,B)",
+          "segment(B,C)"
+        ],
+        "labels": {
+          "O": "left",
+          "X": "right",
+          "Y": "above",
+          "A": "above",
+          "B": "above",
+          "C": "above"
+        },
+        "caption": "Đồ thị tuyến tính biểu diễn sự tăng nhiệt độ theo thời gian",
+        "width": 460,
+        "align": "center"
+      },
+      "sectionId": "phan-2-tf"
+    },
+    {
+      "id": "39f52a03-1eab-5b75-b736-3260826fac08",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Khí lí tưởng",
+      "lesson": "Bài 7: Phương trình trạng thái khí lí tưởng",
+      "competency": "Phân tích chu trình kín trên giản đồ p-V",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Một lượng khí lí tưởng đơn nguyên tử chuyển từ trạng thái $(1)$ sang $(2)$ đẳng tích tăng áp suất, rồi giãn đẳng áp từ $(2)$ sang $(3)$. Xét các phát biểu:",
+      "options": [
+        "a) Trong quá trình đẳng tích $(1) \\to (2)$, khí không thực hiện công cơ học ($A = 0$).",
+        "b) Khi chuyển từ $(1)$ sang $(2)$ tăng áp suất, nhiệt độ tuyệt đối của khí tăng.",
+        "c) Trong quá trình giãn đẳng áp $(2) \\to (3)$, khí nhận công từ bên ngoài ($A > 0$).",
+        "d) Nội năng của khí ở trạng thái $(3)$ lớn hơn ở trạng thái $(1)$."
+      ],
+      "truthValues": [
+        true,
+        true,
+        false,
+        true
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b) Đúng. c) Sai: khí giãn nở sinh công nên $A < 0$. d) Đúng vì $T_3 > T_2 > T_1$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5679dc94-b183-5793-9125-636b54f0eab0",
+        "options": "0c706afe-b813-5396-b730-421d90c9a208",
+        "answer": "2d1816a7-ff64-5331-8c86-37d510bebcb6",
+        "explanation": "a099618d-854f-57f5-994e-b43b87de6d2d",
+        "rubric": "1f682758-2a82-5f55-b548-d8b1d677ab96",
+        "figure": "10569312-cfec-5d3c-b22d-58fec6707406"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần II · Câu 20"
+      },
+      "sectionId": "phan-2-tf"
+    },
+    {
+      "id": "6c67b3fe-4887-562e-8518-0e40df2a6ebe",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Từ trường",
+      "lesson": "Bài 10: Hiện tượng cảm ứng điện từ",
+      "competency": "Xác định chiều dòng điện cảm ứng và suất điện động",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Đặt một khung dây tròn $100$ vòng, diện tích mỗi vòng $S = 50\\text{ cm}^2$, điện trở tổng cộng $R = 4\\,\\Omega$ vuông góc với từ trường đều có cảm ứng từ giảm đều từ $0{,}8\\text{ T}$ về $0{,}2\\text{ T}$ trong $0{,}3\\text{ s}$. Xét các khẳng định:",
+      "options": [
+        "a) Độ biến thiên cảm ứng từ trong khoảng thời gian trên có độ lớn $0{,}6\\text{ T}$.",
+        "b) Suất điện động cảm ứng xuất hiện trong khung có độ lớn bằng $1{,}0\\text{ V}$.",
+        "c) Cường độ dòng điện cảm ứng chạy qua khung dây bằng $0{,}25\\text{ A}$.",
+        "d) Theo định luật Lenz, cảm ứng từ do dòng điện cảm ứng sinh ra ngược chiều với từ trường ngoài."
+      ],
+      "truthValues": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) $|\\Delta B| = 0{,}6\\text{ T}$. b) $|e_c| = N \\frac{|\\Delta B| S}{\\Delta t} = 100 \\cdot \\frac{0{,}6 \\cdot 50\\cdot 10^{-4}}{0{,}3} = 1{,}0\\text{ V}$. c) $I = 1{,}0/4 = 0{,}25\\text{ A}$. d) Sai: từ trường ngoài đang giảm nên từ trường cảm ứng cùng chiều để chống lại sự giảm.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8c0c6d60-3fe6-5ce4-b19f-ae96aeb823b6",
+        "options": "54b0e47c-fd2e-5135-a838-8173e4e34662",
+        "answer": "971f9ca7-d2bc-5040-8166-e616b648a7ab",
+        "explanation": "4191761c-3513-594f-81f7-07e8a374eea6",
+        "rubric": "c0949cf4-0bf1-5a24-90d7-7ffb162293d7",
+        "figure": "8f7b04da-9c47-5924-bcdd-ddbad4b2b285"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần II · Câu 21"
+      },
+      "sectionId": "phan-2-tf"
+    },
+    {
+      "id": "99b0b61b-80ea-5010-b157-2156406c2403",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Vật lí hạt nhân",
+      "lesson": "Bài 16: Phóng xạ và an toàn bức xạ",
+      "competency": "Đọc đồ thị phân rã và tính độ phóng xạ",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Một nguồn phóng xạ Iôt $_{53}^{131}\\text{I}$ có chu kì bán rã $T = 8$ ngày được sử dụng trong y học. Ban đầu mẫu có $N_0 = 8{,}0 \\cdot 10^{14}$ hạt nhân. Xét các nhận định:",
+      "options": [
+        "a) Hạt nhân $_{53}^{131}\\text{I}$ có $53$ prôtôn và $78$ nơtron.",
+        "b) Sau $16$ ngày, số hạt nhân Iôt bị phân rã là $6{,}0 \\cdot 10^{14}$ hạt.",
+        "c) Độ phóng xạ của mẫu giảm tuyến tính theo thời gian.",
+        "d) Tỉ số giữa số hạt đã phân rã và số hạt còn lại sau $8$ ngày bằng $1$."
+      ],
+      "truthValues": [
+        true,
+        true,
+        false,
+        true
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) Đúng ($131 - 53 = 78$). b) Đúng ($\\Delta N = N_0(1 - 2^{-2}) = 0{,}75 N_0$). c) Sai: giảm theo hàm mũ $H = H_0 2^{-t/T}$. d) Đúng (sau $1T$ còn một nửa và phân rã một nửa).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3a827f18-140b-51da-8e1c-88142a13f567",
+        "options": "08dbcb44-609a-55f2-b7df-8a19a0d54127",
+        "answer": "73908094-2c70-5b53-9c7c-c72798b2807e",
+        "explanation": "ff452b6e-5a1f-5c49-8644-2dd91fbf8e23",
+        "rubric": "9ac03991-241e-5c07-9683-6a3d2ee72b9f",
+        "figure": "1e3f2aa5-209a-5ea4-a460-a47b873d94c6"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần II · Câu 22"
+      },
+      "sectionId": "phan-2-tf"
+    },
+    {
+      "id": "2db6322e-3043-5204-aa56-bf9d2ab6d0da",
+      "v": 1,
+      "type": "short",
+      "topic": "Vật lí nhiệt",
+      "lesson": "Bài 2: Định luật I nhiệt động lực học",
+      "competency": "Tính công cơ học khi biết nhiệt và nội năng",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Một khối khí nhận nhiệt lượng $450\\text{ J}$ đồng thời nội năng tăng thêm $320\\text{ J}$. Khối khí đã thực hiện ra ngoài một công bằng bao nhiêu jun ($\\text{J}$)?",
+      "options": [],
+      "answer": null,
+      "answerText": "130",
+      "answerKnown": true,
+      "explanation": "$\\Delta U = Q - A' \\Rightarrow A' = 450 - 320 = 130\\text{ J}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2378a898-498d-5e8b-ba0a-9f045e322e79",
+        "options": "849b2e14-02a8-5a4d-921c-d49bf6b02f7e",
+        "answer": "443187c5-5624-5a8d-a145-299a28eb1fe3",
+        "explanation": "a89e8b06-6f04-501c-8d41-19e9beddde38",
+        "rubric": "e7871af5-7683-57bf-aade-523014130b4b",
+        "figure": "392d1fa3-e00a-58df-9a1a-7c0e89614109"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần III · Câu 23"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "4e073f5e-1f75-5fbe-a117-8a30db7317ac",
+      "v": 1,
+      "type": "short",
+      "topic": "Khí lí tưởng",
+      "lesson": "Bài 7: Phương trình Clapeyron",
+      "competency": "Tính số mol khí lí tưởng từ áp suất, thể tích, nhiệt độ",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Một bình dung tích $8{,}31\\text{ L}$ chứa khí lí tưởng ở nhiệt độ $300\\text{ K}$ và áp suất $1{,}5 \\cdot 10^5\\text{ Pa}$. Lấy $R = 8{,}31\\text{ J/(mol}\\cdot\\text{K)}$. Số mol khí trong bình là bao nhiêu (làm tròn đến một chữ số thập phân)?",
+      "options": [],
+      "answer": null,
+      "answerText": "0,5",
+      "answerKnown": true,
+      "explanation": "$n = \\frac{pV}{RT} = \\frac{1{,}5 \\cdot 10^5 \\cdot 8{,}31 \\cdot 10^{-3}}{8{,}31 \\cdot 300} = 0{,}5\\text{ mol}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e6f35601-666a-5c5b-9e5e-604539b9b85b",
+        "options": "6d256345-4da1-5d53-8352-299cb0b80dc4",
+        "answer": "bdf21aed-3524-5ed2-90ad-147bb39c7656",
+        "explanation": "2017256f-40e9-517a-ab64-99a604bc7757",
+        "rubric": "7d477e29-2a3a-5e5b-a7b0-c174fdd5a236",
+        "figure": "08e8908b-e494-51b4-b68b-fa20dc1c4feb"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần III · Câu 24"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "61143fcc-18a2-5145-83bb-a186ef1c963d",
+      "v": 1,
+      "type": "short",
+      "topic": "Từ trường",
+      "lesson": "Bài 9: Cân bằng lực từ trên dây dẫn",
+      "competency": "Tính cường độ dòng điện làm dây treo cân bằng",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Thanh dẫn điện dài $l = 0{,}4\\text{ m}$, khối lượng $m = 20\\text{ g}$ đặt ngang vuông góc từ trường đều $B = 0{,}5\\text{ T}$ ($g = 10\\text{ m/s}^2$). Cần dòng điện $I$ bằng bao nhiêu ampe ($\\text{A}$) để lực từ hướng lên cân bằng trọng lực?",
+      "options": [],
+      "answer": null,
+      "answerText": "1",
+      "answerKnown": true,
+      "explanation": "$BIl = mg \\Rightarrow I = \\frac{0{,}02 \\cdot 10}{0{,}5 \\cdot 0{,}4} = 1\\text{ A}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "758bf42f-f826-5cf1-babb-e56677bdd706",
+        "options": "5fde5e70-22ba-50e7-abc8-6253c1460af5",
+        "answer": "18a0d620-df80-547b-84c7-9f734394d05b",
+        "explanation": "bbeecd4c-40d1-51f0-ab91-fde9879ad2ed",
+        "rubric": "7d1fdb23-d715-5471-9f4b-8f5b0dca181a",
+        "figure": "f8630423-e1ee-5c2e-90ac-e9f41ae13340"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần III · Câu 25"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "4f788577-b0b4-5702-bda3-4a1925dba066",
+      "v": 1,
+      "type": "short",
+      "topic": "Từ trường",
+      "lesson": "Bài 11: Công suất tiêu thụ mạch điện trở",
+      "competency": "Tính công suất tỏa nhiệt theo định luật Joule-Lenz",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Dòng điện có cường độ hiệu dụng $I = 2{,}5\\text{ A}$ chạy qua điện trở $R = 16\\,\\Omega$. Công suất tỏa nhiệt trên điện trở bằng bao nhiêu oát ($\\text{W}$)?",
+      "options": [],
+      "answer": null,
+      "answerText": "100",
+      "answerKnown": true,
+      "explanation": "$P = I^2 R = 2{,}5^2 \\cdot 16 = 100\\text{ W}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "41859f7e-3643-534c-92c3-b8b25b207e7b",
+        "options": "815ab6eb-ddcf-5671-b103-88daefccd8a2",
+        "answer": "fa733d4f-5e4b-5a4f-a03a-bab4a5390745",
+        "explanation": "28743b3c-7fc0-5930-a213-d8667aa36474",
+        "rubric": "1cc5b853-22a0-555e-83e0-0ae9064f5b68",
+        "figure": "eb4c6deb-e7cd-539d-99fd-b74422f1ce59"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần III · Câu 26"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "2c84ee8e-5903-562f-adc0-d35c3aae2a6b",
+      "v": 1,
+      "type": "short",
+      "topic": "Vật lí hạt nhân",
+      "lesson": "Bài 15: Phương trình phản ứng hạt nhân",
+      "competency": "Tìm số khối hạt nhân sản phẩm",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Trong phản ứng hạt nhân $_1^2\\text{H} + _1^3\\text{H} \\to _2^4\\text{He} + _Z^A n$, tổng $A + Z$ của hạt nơtron sinh ra bằng bao nhiêu?",
+      "options": [],
+      "answer": null,
+      "answerText": "1",
+      "answerKnown": true,
+      "explanation": "Bảo toàn số khối và điện tích: $A = 2+3-4 = 1$, $Z = 1+1-2 = 0$, nên $A + Z = 1$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "9887ddcf-28fa-567f-a180-44474b8ccec2",
+        "options": "c1f13107-01ab-51aa-bdf0-4690f1dcf6fb",
+        "answer": "14a2f00e-49f5-5299-b36f-e4719f71c6f0",
+        "explanation": "b09fc01d-4779-555a-b25d-97e72921ae47",
+        "rubric": "555580a8-99b3-5b2a-8612-b2638f5e7490",
+        "figure": "4014982e-8422-583f-8ad3-4bfaec21a211"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần III · Câu 27"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "8d710fee-47e6-5b91-9bdb-685c67e26d37",
+      "v": 1,
+      "type": "short",
+      "topic": "Vật lí hạt nhân",
+      "lesson": "Bài 16: Tuổi mẫu vật phóng xạ",
+      "competency": "Tính tuổi mẫu gỗ dựa vào chu kì bán rã C-14",
+      "level": 3,
+      "points": 0.25,
+      "stem": "Một mẫu gỗ cổ có độ phóng xạ của đồng vị $^{14}\\text{C}$ giảm đi $4$ lần so với mẫu gỗ tươi cùng khối lượng. Biết chu kì bán rã của $^{14}\\text{C}$ là $5730$ năm. Tuổi của mẫu gỗ là bao nhiêu năm?",
+      "options": [],
+      "answer": null,
+      "answerText": "11460",
+      "answerKnown": true,
+      "explanation": "$H = H_0 \\cdot 2^{-t/T} = \\frac{H_0}{4} \\Rightarrow t = 2T = 2 \\cdot 5730 = 11460$ năm.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "63472f62-c559-5478-b1e3-df6295fdd2b6",
+        "options": "b20f1f6a-7bf7-5700-b543-2ce1621076cd",
+        "answer": "79d36405-db43-5628-9dfe-d3dec6252ba2",
+        "explanation": "22930045-d777-5e7f-b04c-60e52d54dddd",
+        "rubric": "f86a6de0-b0a1-527e-9950-b5986d081d6e",
+        "figure": "bfca8489-6ee9-5617-9074-412fc70e0a0a"
+      },
+      "source": {
+        "docId": "52f5304c-8dd6-526b-9702-88e4866f29ee",
+        "page": 1,
+        "location": "Phần III · Câu 28"
+      },
+      "sectionId": "phan-3-short"
+    }
+  ]
+}

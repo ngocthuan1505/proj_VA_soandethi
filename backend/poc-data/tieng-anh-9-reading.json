@@ -1,0 +1,58 @@
+{
+  "jobId": "cfac4b66-2dbe-53e8-b50f-475b6cc9d783",
+  "examId": "c5f31893-1d7c-589f-8f67-1fa048301a75",
+  "baseRevision": 1,
+  "ownerId": "poc-local",
+  "subject": "Tiếng Anh",
+  "grade": "9",
+  "requireEvidence": true,
+  "instructions": "Self-written English reading passage and grammar notes for PoC testing, not yet approved by a teacher. Ensure each multiple-choice item has exactly one unambiguous correct option grounded in S1 or S2.",
+  "sources": [
+    {
+      "sourceId": "df995323-84de-5aa7-a305-25b414ede33c",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {
+        "kind": "passage",
+        "index": 1
+      },
+      "text": "S1. Last autumn, a group of ninth-grade students at Binh Minh Secondary School turned an unused concrete rooftop into a compact herb garden. Instead of buying expensive plastic planters, the club reused wooden crates lined with breathable cloth and collected rainwater in two covered barrels beside the staircase. Each week, teams measured soil moisture, recorded plant height in a shared notebook, and harvested mint and lemongrass for the school canteen. Teachers noticed that the green layer lowered the afternoon ceiling temperature of the rooms below by nearly two degrees Celsius."
+    },
+    {
+      "sourceId": "03b07e40-a3bd-55bf-9dbb-e25e2ccadaa7",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {
+        "kind": "passage",
+        "index": 2
+      },
+      "text": "S2. Grammar focus: First conditional ('If students collect rainwater, the garden will stay green during dry weeks') vs second conditional ('If our school had a larger yard, we would plant more shade trees'). Relative clauses use 'which' for objects and 'who' for people. Useful collocations: take part in, cut down on, carry out, keep track of."
+    }
+  ],
+  "slots": [
+    {
+      "type": "mcq",
+      "topic": "Reading comprehension",
+      "level": 0,
+      "pointsQ4": 10
+    },
+    {
+      "type": "mcq",
+      "topic": "Vocabulary and grammar in context",
+      "level": 1,
+      "pointsQ4": 10
+    },
+    {
+      "type": "truefalse",
+      "topic": "True/False reading statements",
+      "level": 1,
+      "pointsQ4": 10
+    },
+    {
+      "type": "short",
+      "topic": "Sentence completion",
+      "level": 2,
+      "pointsQ4": 10
+    }
+  ]
+}

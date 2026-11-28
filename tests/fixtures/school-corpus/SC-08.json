@@ -1,0 +1,1253 @@
+{
+  "id": "897d64e6-5e92-52cd-845f-53a2f1b258ef",
+  "title": "Đề kiểm tra cuối học kì I — Lịch sử và Địa lí 9",
+  "school": "TRƯỜNG THCS QUANG TRUNG (MẪU)",
+  "department": "Tổ Lịch sử – Địa lí",
+  "subject": "Lịch sử và Địa lí",
+  "grade": "9",
+  "minutes": 60,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Học sinh làm bắt buộc Phần chung (16 câu, 6,0 điểm) và chọn 01 trong 02 nhánh: Phân môn Lịch sử hoặc Phân môn Địa lí (4 câu, 4,0 điểm).",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 2
+  },
+  "blockIds": {
+    "heading": "027f6f01-77e1-5a59-b001-9f8be6494229",
+    "general": "e5aab60b-b5e9-5681-afa2-5aaec7b8bb80",
+    "marking": "996879a0-4292-527c-8687-296f70af7ac1"
+  },
+  "docs": [
+    {
+      "id": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+      "name": "Tu_lieu_Lich_su_Dia_li_9.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "Tư liệu tự biên soạn Lịch sử và Địa lí 9: Thế giới và Việt Nam từ 1945 đến nay; Địa lí dân cư, vùng kinh tế trọng điểm và Bảng 1 sản lượng thủy sản nuôi trồng theo vùng.",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [
+    {
+      "label": "Đồng bằng sông Cửu Long",
+      "value": 3650
+    },
+    {
+      "label": "Đồng bằng sông Hồng",
+      "value": 920
+    },
+    {
+      "label": "Bắc Trung Bộ",
+      "value": 410
+    },
+    {
+      "label": "Duyên hải Nam Trung Bộ",
+      "value": 340
+    }
+  ],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Lịch sử thế giới hiện đại",
+      "type": "mcq",
+      "targets": [
+        2,
+        0,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Lịch sử Việt Nam 1945–1975",
+      "type": "mcq",
+      "targets": [
+        2,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Lịch sử Việt Nam 1975–nay",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Địa lí dân cư Việt Nam",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Địa lí các ngành kinh tế",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Địa lí các vùng kinh tế",
+      "type": "mcq",
+      "targets": [
+        0,
+        2,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Địa lí thủy sản Việt Nam",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Lịch sử Việt Nam 1975–nay",
+      "type": "truefalse",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Địa lí các vùng kinh tế",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Địa lí thủy sản Việt Nam",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Lịch sử Việt Nam 1945–1975",
+      "type": "short",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Chuyên đề Lịch sử 9",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "choiceGroup": "Phân môn Lịch sử",
+      "points": 0.5
+    },
+    {
+      "topic": "Chuyên đề Lịch sử 9",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "choiceGroup": "Phân môn Lịch sử",
+      "points": 1.5
+    },
+    {
+      "topic": "Chuyên đề Địa lí 9",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "choiceGroup": "Phân môn Địa lí",
+      "points": 0.5
+    },
+    {
+      "topic": "Chuyên đề Địa lí 9",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "choiceGroup": "Phân môn Địa lí",
+      "points": 1.5
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "8d25affc-c1f9-5c4b-a6c3-5c96275ca860",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Lịch sử thế giới hiện đại",
+      "lesson": "LS 9 · Trật tự thế giới sau 1945",
+      "competency": "Nhận biết mục tiêu tổ chức Liên hợp quốc",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Một trong những mục tiêu hàng đầu được nêu trong Hiến chương Liên hợp quốc năm 1945 là gì?",
+      "options": [
+        "Duy trì hòa bình và an ninh quốc tế",
+        "Thành lập liên minh quân sự đơn phương",
+        "Thiết lập một đồng tiền chung toàn cầu",
+        "Chia lại thuộc địa giữa các nước thắng trận"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Hiến chương Liên hợp quốc đề cao việc duy trì hòa bình, an ninh quốc tế và hợp tác bình đẳng.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "fe4a763d-3851-5e90-9ba2-f749f6bf8e24",
+        "options": "b6dd7c1d-ac33-5487-8251-a1aca2b70134",
+        "answer": "3340ce9f-227d-5298-99f4-8222ec986f0e",
+        "explanation": "eacbf43c-947d-556c-9694-49e80f1f869e",
+        "rubric": "cbb39e15-ba81-5e64-82a6-71b0dbe9512b",
+        "figure": "877b4095-a5c6-5be6-81d4-d6c481e2fd83"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "8611bd31-4cb5-5a4d-aaa2-8f197c18dd5e",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Lịch sử Việt Nam 1945–1975",
+      "lesson": "LS 9 · Cách mạng tháng Tám",
+      "competency": "Nhận biết sự kiện thành lập nước Việt Nam Dân chủ Cộng hòa",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Ngày 2/9/1945 tại Quảng trường Ba Đình (Hà Nội), Chủ tịch Hồ Chí Minh đã đọc văn kiện lịch sử nào?",
+      "options": [
+        "Lời kêu gọi toàn quốc kháng chiến",
+        "Tuyên ngôn Độc lập",
+        "Chính cương vắn tắt",
+        "Cương lĩnh tháng Mười"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Ngày 2/9/1945, Chủ tịch Hồ Chí Minh đọc Tuyên ngôn Độc lập khai sinh nước Việt Nam Dân chủ Cộng hòa.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "9c2d0a62-4b40-5f04-a2a6-f4437365bf93",
+        "options": "203357b8-731c-56db-921e-529bd8c73b55",
+        "answer": "44b080d6-305d-55ce-beab-d51012506738",
+        "explanation": "c9e05223-26bf-5458-925b-65271a716f12",
+        "rubric": "2cbebc68-0a09-58fb-8b8a-04e5ecce5f54",
+        "figure": "52e93071-ab14-5ec4-955c-cf7b65c531db"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "12840118-9aef-5be0-825d-575f88734e2d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Lịch sử Việt Nam 1945–1975",
+      "lesson": "LS 9 · Kháng chiến chống Pháp",
+      "competency": "Nhận biết ý nghĩa chiến dịch Điện Biên Phủ",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Chiến thắng Điện Biên Phủ năm 1954 đã dẫn trực tiếp tới việc kí kết văn bản ngoại giao nào?",
+      "options": [
+        "Hiệp ước Nhâm Tuất",
+        "Hiệp định Pa-ri về Việt Nam",
+        "Hiệp định Giơ-ne-vơ về Đông Dương",
+        "Hiệp ước Pốt-xđam"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Sau Điện Biên Phủ, Hiệp định Giơ-ne-vơ được kí ngày 21/7/1954.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "976cc610-ab78-55da-81b9-e8119aa61ce2",
+        "options": "142b48eb-c3bb-5bdb-9c90-1f7332b0b570",
+        "answer": "9f2a19ba-e750-5bbe-8813-ca05568bd62f",
+        "explanation": "3bb4b1f2-c355-5c9b-b706-6221ae415471",
+        "rubric": "4f7d7a54-277c-569a-b856-664f67cc8fea",
+        "figure": "b763098a-f5ae-5891-bf3b-5295f7a58ccb"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "176ecf13-f1b3-5f26-9486-4132724b84d7",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Lịch sử Việt Nam 1975–nay",
+      "lesson": "LS 9 · Công cuộc Đổi mới 1986",
+      "competency": "Nhận biết dấu mốc mở đầu Đổi mới",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Đường lối Đổi mới đất nước ở Việt Nam được đề ra đầu tiên tại Đại hội đại biểu toàn quốc lần thứ mấy của Đảng Cộng sản Việt Nam?",
+      "options": [
+        "Đại hội lần thứ VII (năm 1991)",
+        "Đại hội lần thứ IV (năm 1976)",
+        "Đại hội lần thứ V (năm 1982)",
+        "Đại hội lần thứ VI (năm 1986)"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Đại hội VI (12/1986) khởi xướng công cuộc Đổi mới toàn diện.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "105d150c-a00d-57a7-84d6-782ab6140a87",
+        "options": "babb0756-2e39-5d76-9412-dd5efecea64e",
+        "answer": "c2629210-a5fc-5061-a8ce-92aefa6ee8a5",
+        "explanation": "37475a08-a954-51ee-9580-62127938d774",
+        "rubric": "a3b75d06-9845-539c-b948-8bf8542da80a",
+        "figure": "4253b87d-54fd-5289-b4b2-b262678ef3bd"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "15fbc0fa-b536-585c-9d8a-faf024de9675",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Lịch sử thế giới hiện đại",
+      "lesson": "LS 9 · Hiệp hội ASEAN",
+      "competency": "Nhận biết năm Việt Nam gia nhập ASEAN",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Việt Nam chính thức trở thành thành viên thứ 7 của Hiệp hội các quốc gia Đông Nam Á (ASEAN) vào năm nào?",
+      "options": [
+        "Năm 1967",
+        "Năm 1995",
+        "Năm 1986",
+        "Năm 2007"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Việt Nam gia nhập ASEAN ngày 28/7/1995.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "ec154b1e-2622-5dcc-a84d-5c2c81f086cb",
+        "options": "3f855874-cfa5-593b-875a-96b345b0a44c",
+        "answer": "c84cd139-f2ff-530b-87c3-e76384ee4533",
+        "explanation": "c2ab1c9d-28c8-5131-baa5-864b2b400e1d",
+        "rubric": "6d54ccaf-2719-5526-863e-ff05604f0c01",
+        "figure": "5f2df1a0-e577-5e02-8617-7ca40bf1a7a0"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "34df39f6-7fe4-5e61-aaea-143f93d1c444",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Lịch sử Việt Nam 1945–1975",
+      "lesson": "LS 9 · Kháng chiến chống Mỹ",
+      "competency": "Nhận biết kết quả Hiệp định Pa-ri 1973",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Nội dung quan trọng nào được ghi nhận trong Hiệp định Pa-ri năm 1973 về Việt Nam?",
+      "options": [
+        "Thành lập liên bang Đông Dương mới",
+        "Chia cắt lâu dài hai miền Nam – Bắc Việt Nam",
+        "Quân đồng minh tiếp tục đóng quân tại miền Nam",
+        "Hoa Kỳ cam kết tôn trọng độc lập, chủ quyền và rút hết quân viễn chinh"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Hiệp định Pa-ri (27/1/1973) buộc Hoa Kỳ và các nước cam kết tôn trọng độc lập, thống nhất và rút quân.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3cd0ba18-07a7-54d9-b552-005b2a09c9c5",
+        "options": "ccde146a-834c-5eac-9e52-bd4aea470e27",
+        "answer": "7f53d70a-fe6d-526e-ae79-f1fc6527801f",
+        "explanation": "5af9816d-f952-5603-9c8d-6817661795ae",
+        "rubric": "a5356ef5-20d9-577c-9980-83822616c707",
+        "figure": "815ebd19-5dee-542a-a9b2-c9084c5e0f5b"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "dc00328e-01a3-529e-ac06-ccd43b8b47a1",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Địa lí dân cư Việt Nam",
+      "lesson": "ĐL 9 · Phân bố dân cư",
+      "competency": "Nhận biết vùng có mật độ dân số cao nhất",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Vùng nào của Việt Nam hiện nay có mật độ dân số cao nhất cả nước?",
+      "options": [
+        "Đồng bằng sông Hồng",
+        "Tây Nguyên",
+        "Trung du và miền núi Bắc Bộ",
+        "Bắc Trung Bộ"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Đồng bằng sông Hồng có mật độ dân số cao nhất nhờ địa hình bằng phẳng và lịch sử khai thác lâu đời.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "68f16361-a999-50a1-ad6f-361247ff7385",
+        "options": "af3e5877-dca9-53fa-b2e3-a98352d06905",
+        "answer": "7c3792db-cefe-5ac1-922c-4e384229890c",
+        "explanation": "6d73d7df-0221-5432-899b-4d2cb868eac3",
+        "rubric": "9339f54d-05b2-5d1f-ae18-272022b4fabb",
+        "figure": "c4df0f45-7621-5127-bd84-7b1783bbb0d9"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "b18835de-7db2-5ced-b717-9ddf23983d29",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Địa lí các ngành kinh tế",
+      "lesson": "ĐL 9 · Nông – lâm – thủy sản",
+      "competency": "Nhận biết thế mạnh cây công nghiệp Tây Nguyên",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Loại cây công nghiệp lâu năm nào chiếm diện tích lớn nhất và là mặt hàng xuất khẩu chủ lực của vùng Tây Nguyên?",
+      "options": [
+        "Dừa nước",
+        "Đay và cói",
+        "Cà phê",
+        "Mía đường ôn đới"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Đất badan màu mỡ cùng khí hậu cận xích đạo giúp Tây Nguyên dẫn đầu cả nước về cà phê.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5d07cb62-9b01-5d0c-b203-d64234e6bbe0",
+        "options": "a67f2dd1-796e-53e3-8c68-b39a4e3312f9",
+        "answer": "8f0b5732-70a2-54ae-9137-aed1a8b4b25b",
+        "explanation": "13b659d9-b757-5c21-b8cd-afbb2d871a7f",
+        "rubric": "b6625f88-fb40-5a48-bb58-28e4c57b806a",
+        "figure": "bc5e5b08-d845-5ee8-829b-8cbdb43ab1df"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "c021dc7f-f89a-52e2-a6ea-2aaed962824c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Địa lí các ngành kinh tế",
+      "lesson": "ĐL 9 · Giao thông vận tải",
+      "competency": "Phân biệt vai trò tuyến đường sắt Bắc – Nam",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Loại hình vận tải nào giữ vai trò chủ đạo trong việc chuyên chở hàng hóa xuất nhập khẩu đường biển quốc tế của nước ta?",
+      "options": [
+        "Đường ống dẫn khí",
+        "Đường sông nội địa",
+        "Đường biển",
+        "Đường sắt đô thị"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Đường biển có khối lượng luân chuyển lớn và phù hợp giao thương quốc tế.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2de096e5-9ab8-5c7a-b864-4b4b2e3166ae",
+        "options": "e5677ad5-32a5-5f96-a475-417a0634d1d3",
+        "answer": "f557851b-1530-5304-a035-c448e60083fe",
+        "explanation": "7fa025f1-7f9d-5f67-9403-aaee34f6136a",
+        "rubric": "9fad03ef-c04b-5515-935f-9de13276eff1",
+        "figure": "c94a73a8-b9aa-5ca4-bca2-b6580efc6a74"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "393052aa-4d67-5df5-88c1-b3267ad6c416",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Địa lí các vùng kinh tế",
+      "lesson": "ĐL 9 · Vùng Đông Nam Bộ",
+      "competency": "Xác định đặc điểm kinh tế Đông Nam Bộ",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Yếu tố nào thúc đẩy Đông Nam Bộ trở thành vùng dẫn đầu cả nước về thu hút đầu tư và giá trị sản xuất công nghiệp?",
+      "options": [
+        "Vị trí cửa ngõ kinh tế, hạ tầng phát triển và nguồn lao động dồi dào",
+        "Diện tích đất phù sa ngọt lớn nhất cả nước",
+        "Trữ lượng than đá tập trung lớn nhất cả nước",
+        "Khí hậu ôn hòa có mùa đông lạnh kéo dài"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Đông Nam Bộ hội tụ lợi thế vị trí, cảng biển, sân bay và nhân lực kỹ thuật cao.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "f44ee1a2-1300-5985-b6df-77a977314e03",
+        "options": "62692a94-69fb-5258-b37d-f2727e1b247d",
+        "answer": "e0863818-18f8-585d-bc5e-655aef2ede3e",
+        "explanation": "27d953d1-d7d0-5bc6-af90-397b9ad0c877",
+        "rubric": "b97fee28-d772-5720-bf5d-fe350e55f3c9",
+        "figure": "d13e6a8a-d046-539e-8f00-22085cf58ff0"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "8b27843d-6315-5ab5-974a-0ae6291cabc6",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Địa lí các vùng kinh tế",
+      "lesson": "ĐL 9 · Vùng Trung du và miền núi Bắc Bộ",
+      "competency": "Nhận biết thế mạnh thủy điện",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Nhà máy thủy điện Sơn La và Hòa Bình được xây dựng trên hệ thống sông nào của nước ta?",
+      "options": [
+        "Sông Thu Bồn",
+        "Sông Tiền (hệ thống sông Mê Kông)",
+        "Sông Đồng Nai",
+        "Sông Đà (hệ thống sông Hồng)"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Các bậc thang thủy điện lớn Hòa Bình, Sơn La, Lai Châu đều nằm trên sông Đà.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "11668745-3259-50a9-a68a-0217682ba791",
+        "options": "88f7f114-98de-5323-91c8-5a22f643a36e",
+        "answer": "d87bc32e-bedd-5f19-8f1f-f93f2803c281",
+        "explanation": "e34084dd-20a8-5fe8-be20-5757f72eaf0d",
+        "rubric": "8b54a005-3081-5eb5-9e2e-e2925485fd98",
+        "figure": "88fa54cc-ea94-54e2-a8d8-2893eac8a621"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "ad59e01b-a3cb-5dd5-bcec-7fb5328848f9",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Địa lí thủy sản Việt Nam",
+      "lesson": "ĐL 9 · Đọc bảng dữ kiện Bảng 1",
+      "competency": "Xác định vùng đứng đầu từ Bảng 1 dữ kiện liên kết",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Theo Bảng 1 (số liệu giả định đơn vị nghìn tấn), vùng nào có sản lượng thủy sản nuôi trồng cao nhất?",
+      "options": [
+        "Đồng bằng sông Hồng",
+        "Đồng bằng sông Cửu Long",
+        "Bắc Trung Bộ",
+        "Duyên hải Nam Trung Bộ"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Từ Bảng 1, Đồng bằng sông Cửu Long đạt 3650 nghìn tấn, cao nhất trong bốn vùng.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2ae6b038-9b7b-5ded-a126-c92208fbe951",
+        "options": "420672b5-1e3d-5a54-a1b1-b5906b4be9f8",
+        "answer": "32511379-551a-5f58-8841-398fb11211e8",
+        "explanation": "5527c0a2-e805-5ff2-afde-b95745287069",
+        "rubric": "2625d9ce-fb5c-5c9b-9610-2f7877487e1a",
+        "figure": "e1057a9c-f3fa-5ac9-890f-ffb4fdccc185"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Trắc nghiệm"
+      },
+      "sectionId": "phan-chung",
+      "dataLinked": true,
+      "rule": "max"
+    },
+    {
+      "id": "048a59a5-4cff-5b43-b9ce-2c27983d5165",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Lịch sử Việt Nam 1975–nay",
+      "lesson": "LS 9 · Thành tựu Đổi mới",
+      "competency": "Đánh giá thành tựu hội nhập kinh tế từ 1986",
+      "level": 1,
+      "points": 1.0,
+      "stem": "Dựa vào tư liệu về công cuộc Đổi mới ở Việt Nam từ năm 1986 đến nay, xét các nhận định sau:",
+      "options": [
+        "a) Việt Nam chuyển từ cơ chế tập trung bao cấp sang kinh tế thị trường định hướng xã hội chủ nghĩa.",
+        "b) Từ nước thiếu lương thực, Việt Nam đã vươn lên trở thành một trong các nước xuất khẩu gạo hàng đầu.",
+        "c) Chính sách đối ngoại Đổi mới là khép kín, hạn chế giao lưu quốc tế.",
+        "d) Gia nhập WTO năm 2007 mở rộng thị trường xuất khẩu cho hàng hóa Việt Nam."
+      ],
+      "truthValues": [
+        true,
+        true,
+        false,
+        true
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b, d) Đúng. c) Sai: đường lối đối ngoại là đa phương hóa, đa dạng hóa và chủ động hội nhập quốc tế.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "a6f337da-2612-56d7-a704-5cbafc6a280b",
+        "options": "102a7ca5-33e1-57ec-aaad-4ccf4e9c9e38",
+        "answer": "70df3907-5058-5222-93a2-cfb9d066fc05",
+        "explanation": "5d9bb668-2464-5fc4-b98b-b606cb45215e",
+        "rubric": "8b663a6c-aab0-5657-8148-2118cd97d7dc",
+        "figure": "96db9840-bf37-51ef-bd4a-bef351df0f7e"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Câu 13"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "950adef9-259d-5837-87e9-45d127b85d3b",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Địa lí các vùng kinh tế",
+      "lesson": "ĐL 9 · Đồng bằng sông Cửu Long",
+      "competency": "Phân tích thách thức biến đổi khí hậu tại ĐBSCL",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Quan sát các đặc điểm tự nhiên và kinh tế vùng Đồng bằng sông Cửu Long, xét các khẳng định sau:",
+      "options": [
+        "a) Là vùng trọng điểm sản xuất lúa gạo và nuôi trồng thủy sản lớn nhất cả nước.",
+        "b) Biến đổi khí hậu làm gia tăng nguy cơ xâm nhập mặn vào mùa khô.",
+        "c) Khoảng cách từ vùng tới thị trường quốc tế không bị ảnh hưởng bởi mùa lũ.",
+        "d) Phục hồi rừng ngập mặn ven biển góp phần bảo vệ đê điều trước nước biển dâng."
+      ],
+      "truthValues": [
+        true,
+        true,
+        false,
+        true
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b, d) Đúng. c) Sai: mùa khô thiếu nước ngọt gây xâm nhập mặn và mùa lũ ảnh hưởng trực tiếp tới mùa vụ, vận tải thủy.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e0e99c09-feb3-5635-a04d-99709b8b9339",
+        "options": "cdfc1986-69d3-5785-91e9-e236552a67d4",
+        "answer": "24a04860-f2c6-56b1-b62f-a0a7ae7788c1",
+        "explanation": "34a1940b-cb2f-5751-a179-3d2eec93f7eb",
+        "rubric": "319a2c9f-39b7-5e77-a792-c995561be14e",
+        "figure": "ee07c6a8-c4c9-5e7e-b3d8-d0852f4ae350"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Câu 14"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "8189ddb1-524d-5bd3-9677-ec181ee149be",
+      "v": 1,
+      "type": "short",
+      "topic": "Địa lí thủy sản Việt Nam",
+      "lesson": "ĐL 9 · So sánh số liệu Bảng 1",
+      "competency": "Tính hiệu sản lượng giữa hai vùng dẫn đầu ở Bảng 1",
+      "level": 2,
+      "points": 0.5,
+      "stem": "Theo Bảng 1 dữ kiện liên kết, sản lượng của Đồng bằng sông Cửu Long nhiều hơn Đồng bằng sông Hồng bao nhiêu nghìn tấn?",
+      "options": [],
+      "answer": null,
+      "answerText": "2730",
+      "answerKnown": true,
+      "explanation": "Từ Bảng 1: $3650 - 920 = 2730$ nghìn tấn.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8c1fd712-d8a7-5695-89fb-8bd2e6b4ab6a",
+        "options": "08764258-93b4-5293-b9b6-f4d1b0bc5b8f",
+        "answer": "8ebfd6c1-4d5a-5c64-b83a-bf410e612f08",
+        "explanation": "737f118e-1439-578a-b8b8-1bb73aae68cc",
+        "rubric": "8bc4d1cb-991a-54bf-b5e0-0cf5f0fea501",
+        "figure": "10637bd1-5f7f-5ede-b4b3-8a0ec3e03f21"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Câu 15"
+      },
+      "sectionId": "phan-chung",
+      "dataLinked": true
+    },
+    {
+      "id": "794d57c3-eb19-5af8-910b-eb3cf492b9a0",
+      "v": 1,
+      "type": "short",
+      "topic": "Lịch sử Việt Nam 1945–1975",
+      "lesson": "LS 9 · Mốc thời gian thống nhất",
+      "competency": "Xác định năm hoàn thành giải phóng miền Nam",
+      "level": 0,
+      "points": 0.5,
+      "stem": "Cuộc Tổng tiến công và nổi dậy mùa Xuân giải phóng hoàn toàn miền Nam, thống nhất đất nước diễn ra vào năm nào?",
+      "options": [],
+      "answer": null,
+      "answerText": "1975",
+      "answerKnown": true,
+      "explanation": "Chiến dịch Hồ Chí Minh toàn thắng vào ngày 30/4/1975.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "99c684f8-560f-5b4f-a222-d32018b5dfe3",
+        "options": "bdc74654-edaa-59c5-ada1-aa58075a80ee",
+        "answer": "02e7cbdc-7f7d-5041-ad11-002f4a94f1af",
+        "explanation": "478ae192-07ef-5ad6-929a-4b0145f4f507",
+        "rubric": "bbc509d1-f0f8-5822-b747-44b058ec3f88",
+        "figure": "26c8b83a-2d53-5f73-ab96-47ff79b8c375"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Phần chung · Câu 16"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "b581b7bd-f772-5834-97a0-8b52bf3a9150",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Chuyên đề Lịch sử 9",
+      "lesson": "LS 9 · Hội nghị thành lập Đảng",
+      "competency": "Xác định người chủ trì hội nghị hợp nhất 1930",
+      "level": 0,
+      "points": 0.5,
+      "stem": "Hội nghị hợp nhất các tổ chức cộng sản thành Đảng Cộng sản Việt Nam đầu năm 1930 do ai chủ trì?",
+      "options": [
+        "Hà Huy Tập",
+        "Trần Phú",
+        "Lê Hồng Phong",
+        "Nguyễn Ái Quốc"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Nguyễn Ái Quốc triệu tập và chủ trì Hội nghị hợp nhất tại Cửu Long (Hương Cảng).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "745984bd-874d-5c3d-b81f-336f4ae20f79",
+        "options": "b7ce315f-f7fd-5a8b-955c-40a8424ed65c",
+        "answer": "e36db56c-9a57-5311-8b15-577ca63b4d89",
+        "explanation": "ab4c95b6-fcad-538b-9492-cc3e6b8c5d1b",
+        "rubric": "b9937b72-bb3a-526f-a58e-5ce8a63944fa",
+        "figure": "c78d0823-381a-53a7-8ddb-2d1bd89a5181"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Nhánh Lịch sử · Câu 17"
+      },
+      "sectionId": "nhanh-lich-su",
+      "choiceGroup": "Phân môn Lịch sử"
+    },
+    {
+      "id": "11830b84-8799-5a15-8540-74202949d87d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Chuyên đề Lịch sử 9",
+      "lesson": "LS 9 · Đường lối toàn quốc kháng chiến",
+      "competency": "Nhận biết phương châm kháng chiến chống Pháp",
+      "level": 1,
+      "points": 0.5,
+      "stem": "Đường lối kháng chiến chống thực dân Pháp giai đoạn 1946–1954 mang tính chất nào sau đây?",
+      "options": [
+        "Chủ yếu dựa vào lực lượng ngoại viện",
+        "Chỉ đánh nhanh thắng nhanh ở đô thị",
+        "Toàn dân, toàn diện, trường kì, tự lực cánh sinh",
+        "Chỉ đấu tranh trên mặt trận ngoại giao"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Đường lối xuyên suốt là kháng chiến toàn dân, toàn diện, lâu dài và tự lực cánh sinh.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "1973a807-f359-5034-b4fb-8d3f9bc759f2",
+        "options": "ea6f06d5-a3a6-5a49-a6b9-29617b4f168c",
+        "answer": "ba653956-b963-55ce-861c-b0c6629e7310",
+        "explanation": "208a169f-06ef-552e-86c5-eae6a6a4b73b",
+        "rubric": "9e8d93a2-df8d-501e-92a0-4fdd2adcfd18",
+        "figure": "65734e68-2cca-59cb-a258-2202cf617305"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Nhánh Lịch sử · Câu 18"
+      },
+      "sectionId": "nhanh-lich-su",
+      "choiceGroup": "Phân môn Lịch sử"
+    },
+    {
+      "id": "f5d1451f-f2f9-5a00-922e-9cc8a6a0212a",
+      "v": 1,
+      "type": "essay",
+      "topic": "Chuyên đề Lịch sử 9",
+      "lesson": "LS 9 · Cách mạng tháng Tám",
+      "competency": "Phân tích nguyên nhân thắng lợi của Cách mạng tháng Tám",
+      "level": 2,
+      "points": 1.5,
+      "stem": "Phân tích những nguyên nhân chủ quan dẫn tới thắng lợi nhanh chóng và ít đổ máu của Cách mạng tháng Tám năm 1945.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Nguyên nhân chủ quan: truyền thống yêu nước của dân tộc; sự lãnh đạo đúng đắn, sáng suốt của Đảng và Chủ tịch Hồ Chí Minh; quá trình chuẩn bị lực lượng chính trị, vũ trang chu đáo suốt 15 năm.",
+      "rubric": [
+        {
+          "text": "Nêu được truyền thống yêu nước và khối đại đoàn kết toàn dân qua Mặt trận Việt Minh",
+          "points": 0.5
+        },
+        {
+          "text": "Phân tích vai trò lãnh đạo nhạy bén của Đảng trong việc chớp thời cơ lịch sử",
+          "points": 0.5
+        },
+        {
+          "text": "Nêu được quá trình chuẩn bị lực lượng lâu dài qua các cao trào cách mạng",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "385a2404-a47c-5206-8226-3ded4799bb99",
+        "options": "9e2f287d-b701-5d77-8a22-bd387290bb59",
+        "answer": "de89de1b-4d75-535f-acad-1d5907a89e89",
+        "explanation": "69f50905-9573-580c-aed6-01b999b6863b",
+        "rubric": "4ae8fbc4-4c18-514d-946f-ef879f133266",
+        "figure": "8046434f-f251-5baf-b371-410d8f3db60e"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Nhánh Lịch sử · Câu 19"
+      },
+      "sectionId": "nhanh-lich-su",
+      "choiceGroup": "Phân môn Lịch sử"
+    },
+    {
+      "id": "f4da0af3-1a5b-5d55-b00f-16d52a428301",
+      "v": 1,
+      "type": "essay",
+      "topic": "Chuyên đề Lịch sử 9",
+      "lesson": "LS 9 · Ý nghĩa bài học Đổi mới",
+      "competency": "Rút ra bài học kinh nghiệm từ công cuộc Đổi mới",
+      "level": 3,
+      "points": 1.5,
+      "stem": "Từ thực tiễn công cuộc Đổi mới từ năm 1986 đến nay, hãy nêu bài học kinh nghiệm nổi bật đối với công cuộc xây dựng và phát triển đất nước hiện nay.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Xuất phát từ thực tiễn khách quan, kiên định mục tiêu độc lập dân tộc gắn liền phát triển kinh tế số – kinh tế xanh, phát huy nội lực kết hợp sức mạnh thời đại.",
+      "rubric": [
+        {
+          "text": "Nhấn mạnh nguyên tắc tôn trọng quy luật khách quan, xuất phát từ thực tiễn đời sống",
+          "points": 0.75
+        },
+        {
+          "text": "Phân tích sự kết hợp nội lực dân tộc với hội nhập quốc tế sâu rộng",
+          "points": 0.75
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "188f78c9-22f8-5b58-a8d1-4d7753ca186b",
+        "options": "adbf2e85-86fb-5a5c-8343-7b1398ebd3e9",
+        "answer": "9a1da73a-80cb-5b10-8bcb-2ef11d1199ce",
+        "explanation": "22b38818-450f-58de-b89e-be23469c58db",
+        "rubric": "84a07475-b33e-5967-a2c9-bf8f655ab45f",
+        "figure": "cb950c73-9673-5c7f-a8ca-89ebf9c71b30"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Nhánh Lịch sử · Câu 20"
+      },
+      "sectionId": "nhanh-lich-su",
+      "choiceGroup": "Phân môn Lịch sử"
+    },
+    {
+      "id": "c0972286-fd43-5011-abcc-4f645b680253",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Chuyên đề Địa lí 9",
+      "lesson": "ĐL 9 · Kinh tế biển đảo",
+      "competency": "Nhận biết thế mạnh tổng hợp kinh tế biển",
+      "level": 0,
+      "points": 0.5,
+      "stem": "Ngành nào sau đây không thuộc bốn trụ cột kinh tế biển tổng hợp của nước ta?",
+      "options": [
+        "Khai thác và nuôi trồng hải sản",
+        "Khai thác than bùn vùng đồi trung du",
+        "Giao thông vận tải biển và cảng nước sâu",
+        "Du lịch biển – đảo"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Kinh tế biển gồm thủy sản, du lịch biển, hàng hải và khai thác khoáng sản biển.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "446d42be-71eb-5a74-a84a-8f58b13fb2c9",
+        "options": "e1e3c2ea-cea9-5ce9-acc5-78e629365509",
+        "answer": "0e37bacb-ceb7-5269-ad33-07b5a5f3edc1",
+        "explanation": "2d9365a8-7d84-5d66-8d88-181be6e0943b",
+        "rubric": "26b23931-03f5-5b5e-ba3f-bc128a90fe6d",
+        "figure": "823c032a-e600-5e81-af36-e5102c217e4e"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Nhánh Địa lí · Câu 21"
+      },
+      "sectionId": "nhanh-dia-li",
+      "choiceGroup": "Phân môn Địa lí"
+    },
+    {
+      "id": "202a0927-20be-5567-9541-3254dc2cc15b",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Chuyên đề Địa lí 9",
+      "lesson": "ĐL 9 · Chuyển dịch cơ cấu kinh tế",
+      "competency": "Đọc hiểu xu hướng tỉ trọng các khu vực kinh tế",
+      "level": 1,
+      "points": 0.5,
+      "stem": "Xu hướng chuyển dịch cơ cấu GDP theo ngành của nước ta trong thời kì công nghiệp hóa là gì?",
+      "options": [
+        "Giảm tỉ trọng nông – lâm – thủy sản, tăng tỉ trọng công nghiệp và dịch vụ",
+        "Tăng nhanh tỉ trọng thuần nông",
+        "Loại bỏ hoàn toàn khu vực dịch vụ",
+        "Giữ nguyên tỉ trọng giữa ba khu vực"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Tỉ trọng khu vực I giảm dần trong khi khu vực II và III tăng lên.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7a6a91f8-04ce-5bcd-9d7d-8d6e9da1a9fe",
+        "options": "a4d9e0fd-2c53-5f8f-b29a-67d37826d096",
+        "answer": "935b66f5-a045-573c-ad07-1a50ed07d2f2",
+        "explanation": "414e0992-21dd-52d0-9974-e4033532efbe",
+        "rubric": "dd6adcce-61e4-572f-b842-f097dfdb5c81",
+        "figure": "29953c5d-f86a-518d-9676-8ff5248acae9"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Nhánh Địa lí · Câu 22"
+      },
+      "sectionId": "nhanh-dia-li",
+      "choiceGroup": "Phân môn Địa lí"
+    },
+    {
+      "id": "6a538a21-506a-52ad-92a2-4f1a883e99de",
+      "v": 1,
+      "type": "essay",
+      "topic": "Chuyên đề Địa lí 9",
+      "lesson": "ĐL 9 · Phát triển thủy sản Bảng 1",
+      "competency": "Phân tích số liệu Bảng 1 và giải thích thế mạnh ĐBSCL",
+      "level": 2,
+      "points": 1.5,
+      "stem": "Dựa vào Bảng 1 dữ kiện liên kết, nhận xét sản lượng thủy sản nuôi trồng giữa các vùng và giải thích vì sao Đồng bằng sông Cửu Long dẫn đầu cả nước.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "ĐBSCL dẫn đầu tuyệt đối (3650 nghìn tấn, gấp gần 4 lần ĐBSH) nhờ mạng lưới sông rạch dày đặc, vùng bãi triều rộng, nguồn thức ăn dồi dào và công nghiệp chế biến phát triển.",
+      "rubric": [
+        {
+          "text": "Nhận xét sự chênh lệch lớn từ Bảng 1 (ĐBSCL đứng đầu, gấp gần 4 lần ĐBSH)",
+          "points": 0.5
+        },
+        {
+          "text": "Giải thích điều kiện tự nhiên thuận lợi (sông Cửu Long, diện tích mặt nước lợ – ngọt lớn)",
+          "points": 0.5
+        },
+        {
+          "text": "Giải thích điều kiện kinh tế – xã hội (thị trường xuất khẩu, nhà máy chế biến)",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5251aeba-b73e-5bd3-b2bc-6d06e92dfe43",
+        "options": "6e54721c-a656-53bc-b529-cee2ced09fba",
+        "answer": "7e0233b1-e544-5acb-a4c3-5b40714a09d9",
+        "explanation": "a657e54f-e7c4-5fff-83a6-8e8867fee482",
+        "rubric": "8681507c-fc7c-5810-a5b5-33e45a43c134",
+        "figure": "8326a66e-a631-5a1b-8b65-e37d2db52a47"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Nhánh Địa lí · Câu 23"
+      },
+      "sectionId": "nhanh-dia-li",
+      "choiceGroup": "Phân môn Địa lí",
+      "dataLinked": true
+    },
+    {
+      "id": "4ce93a6f-507f-5854-82c2-51a93836d8d1",
+      "v": 1,
+      "type": "essay",
+      "topic": "Chuyên đề Địa lí 9",
+      "lesson": "ĐL 9 · Bảo vệ tài nguyên biển đảo",
+      "competency": "Đề xuất giải pháp phát triển bền vững vùng biển",
+      "level": 3,
+      "points": 1.5,
+      "stem": "Trình bày ba giải pháp quan trọng giúp phát triển bền vững kinh tế biển gắn với bảo vệ môi trường biển đảo Việt Nam.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Đánh bắt xa bờ hợp lí kết hợp bảo vệ nguồn lợi thủy sản, kiểm soát chất thải công nghiệp/du lịch ven bờ, phục hồi rạn san hô và rừng ngập mặn.",
+      "rubric": [
+        {
+          "text": "Giải pháp khai thác hợp lí, chuyển sang nuôi trồng công nghệ cao",
+          "points": 0.5
+        },
+        {
+          "text": "Giải pháp kiểm soát ô nhiễm từ đất liền và giao thông hàng hải",
+          "points": 0.5
+        },
+        {
+          "text": "Giải pháp bảo tồn đa dạng sinh học biển và thích ứng thiên tai",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "c3266d55-cf06-50ea-a1f5-62f9e2968efb",
+        "options": "e7c28b53-9355-5fde-9609-3cb20659e6bd",
+        "answer": "8e9514e5-21c5-5b80-8600-7c46ca9e587a",
+        "explanation": "8e362afe-4eea-57c1-a74e-9684033cd717",
+        "rubric": "0d8e456c-b6e6-5daf-88d4-edeab707b089",
+        "figure": "947f9d02-ba7a-5bb1-ac85-f7807698144d"
+      },
+      "source": {
+        "docId": "33807a8c-f437-57a5-aa7c-2cf667c2d03f",
+        "page": 1,
+        "location": "Nhánh Địa lí · Câu 24"
+      },
+      "sectionId": "nhanh-dia-li",
+      "choiceGroup": "Phân môn Địa lí"
+    }
+  ]
+}

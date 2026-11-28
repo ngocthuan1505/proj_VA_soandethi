@@ -1,0 +1,51 @@
+.matrix-chat-session{border-top:2px solid #256d55;margin:20px 0 8px;padding:16px 0;color:#29444d;font-size:13px;line-height:1.65}
+.matrix-chat-session summary{min-height:28px;display:list-item;align-content:center}
+.matrix-chat-session #matrix-stop:disabled,.matrix-chat-session #matrix-download:disabled,.matrix-chat-session #matrix-review-pack:disabled{display:none}
+.matrix-document-preview .matrix-review-question blockquote small{color:#536b5f;font-size:11px}
+.matrix-chat-session h3{font-size:16px;margin:0 0 10px;color:#205744}.matrix-chat-session p{margin:10px 0}.matrix-chat-session>p:first-of-type{font-size:13px;color:#53696c}
+.matrix-chat-session label{display:block;margin:12px 0 6px;font-size:13px}.matrix-chat-session label:has(input[type=checkbox]){display:flex;gap:8px;align-items:flex-start}.matrix-chat-session label[hidden]{display:none}
+.matrix-chat-session input:not([type=checkbox]),.matrix-chat-session textarea,.matrix-chat-session select{display:block;box-sizing:border-box;width:100%;max-width:100%;margin-top:5px;padding:9px;border:1px solid #cdded5;border-radius:7px;background:white;font:inherit;color:inherit}.matrix-chat-session textarea{resize:vertical;min-height:100px}
+.matrix-chat-session fieldset{border:0;border-bottom:1px solid #dce7e1;padding:0 0 12px;margin:0 0 14px;min-width:0}.matrix-chat-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.matrix-chat-counts label{font-size:12px}
+.matrix-chat-session button{font:inherit;padding:8px 10px;border-radius:7px;min-height:36px}.matrix-chat-session button:disabled{opacity:.55;cursor:not-allowed}.matrix-chat-session [data-remove-row]{border:0;background:none;color:#7c4c48;padding-left:0}.matrix-chat-error{color:#a33333}
+.matrix-chat-actions,.matrix-chat-session .toolbar-row{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.matrix-chat-session #matrix-confirm-save{background:#256d55;color:white;border:1px solid #256d55;margin:7px 4px 4px 0}.matrix-chat-session .matrix-discard{color:#9b3e36;background:white;border:1px solid #dfc2bc}
+.matrix-decisions{position:sticky;bottom:0;background:white;padding:7px 0;border-top:1px solid #d7e6dc;display:flex;flex-wrap:wrap;gap:5px;z-index:2}.matrix-chat-session #matrix-view-proposal{margin:10px 0;color:#256d55;background:#f1f7f3;border:1px solid #cadfd1}
+.matrix-chat-session #matrix-status{border-left:3px solid #8ab59d;background:#f2f7f3;padding:9px 11px;font-size:13px}.matrix-chat-session #matrix-metrics,.matrix-chat-session #matrix-audit{font-size:12px;color:#49665a;overflow-wrap:anywhere}
+.matrix-chat-session details{border-bottom:1px solid #e0e9e4;padding:9px 0}.matrix-chat-session summary{cursor:pointer;font-size:12px;font-weight:600}.matrix-chat-session .matrix-full{font-size:12px;table-layout:fixed;width:100%}.matrix-chat-session .matrix-full th,.matrix-chat-session .matrix-full td{padding:6px 3px;overflow-wrap:anywhere}.matrix-chat-session #matrix-trace{max-height:170px;overflow:auto;font-size:12px;scrollbar-width:thin}.matrix-chat-session #matrix-trace p{margin:8px 0;padding-left:8px;border-left:1px solid #ccded2}
+.matrix-preview-active>.paper{display:none!important}.matrix-document-preview{box-sizing:border-box;max-width:794px;margin:0 auto;background:white;border:1px solid #bbd3c5;box-shadow:0 4px 18px #173b3010;padding:30px clamp(20px,5vw,60px) 50px;color:#243930;font:17px/1.75 "Times New Roman",serif}.matrix-document-preview>header{text-align:center;margin:28px 0 32px}.matrix-document-preview h2{font-size:22px;line-height:1.4}.matrix-preview-banner{font:12px/1.6 "Segoe UI",sans-serif;color:#256d55;display:flex;flex-wrap:wrap;gap:5px 14px;padding:10px 0;border-bottom:1px solid #d4e5d9}.matrix-preview-banner b{font-weight:650}.matrix-document-preview #matrix-preview>h3{font:13px "Segoe UI",sans-serif;color:#58756a}
+.matrix-review-question{border-left:3px solid #c1decc;padding:0 0 8px 18px;margin:28px 0}.matrix-review-question>p:first-child{font-weight:bold}.matrix-review-question ol{list-style:upper-alpha;padding-left:24px}.matrix-review-question li{padding:3px 0}.matrix-review-question blockquote{font-size:14px;background:#f5f8f5;border-left:2px solid #b9cfc0;margin:14px 0;padding:12px;overflow-wrap:anywhere}.matrix-review-question blockquote small{font:10px/1.6 "Segoe UI",sans-serif;color:#6a8073}.matrix-review-question details{font:12px/1.6 "Segoe UI",sans-serif;padding:12px;border-top:1px solid #e0e9e4}.matrix-review-question summary{cursor:pointer;color:#32684d}.matrix-review-question form label{display:block;margin:9px 0}.matrix-review-question input:not([type=checkbox]),.matrix-review-question select{width:100%;box-sizing:border-box;padding:9px;font:inherit;margin:5px 0;border:1px solid #cdded5;border-radius:5px}.matrix-review-question output{display:block;margin-top:8px;color:#426b51}
+@media(max-width:760px){.matrix-document-preview{padding:18px;font-size:16px}.matrix-preview-banner{font-size:11px}.matrix-chat-session{font-size:13px}.matrix-chat-session button{min-height:42px}}
+.matrix-evidence-source blockquote{white-space:pre-wrap}
+@media print{.matrix-document-preview{display:none!important}.matrix-preview-active>.paper{display:block!important}}
+
+/* Tác vụ là một lượt hội thoại; điều khiển chỉ hiện theo pha hiện tại. */
+.mach .matrix-chat-session{border:0;margin:12px 0;padding:8px 0;font-size:14px;line-height:1.6}
+.mach .matrix-chat-session>h3{font-size:14px;margin:0 0 12px;color:#263d43;font-weight:600}
+.mach .matrix-chat-session #matrix-request-settings{border:1px solid #dce5e0;border-radius:10px;padding:10px 12px;background:#fafcfb}
+.mach .matrix-chat-session details{padding:6px 0;border-bottom:0}
+.mach .matrix-chat-session summary{font-size:13px;min-height:32px;color:#50645c;line-height:1.55}
+.mach .matrix-chat-session #matrix-status{border:0;background:none;padding:10px 0;margin:8px 0;font-size:14px;color:#304b40}
+.mach .matrix-chat-session[data-phase=running] #matrix-status{padding-left:18px;position:relative}
+.mach .matrix-chat-session[data-phase=running] #matrix-status:before{content:'';width:7px;height:7px;background:#397b60;border-radius:50%;position:absolute;left:0;top:18px;animation:chat-working 1.3s ease-in-out infinite}
+.mach .matrix-chat-session .matrix-start-actions,.mach .matrix-chat-session .matrix-utilities{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.mach .matrix-chat-session button{font-size:13px;min-height:36px;padding:7px 10px}
+.mach .matrix-chat-session #matrix-request-settings>p{font-size:12px;color:#5a6e65}
+.mach .matrix-chat-session #matrix-result-details{margin-top:4px}
+.mach .matrix-chat-session #matrix-trace{max-height:none;overflow:visible;font-size:12px}
+.mach .matrix-chat-session #matrix-metrics,.mach .matrix-chat-session #matrix-audit{font-size:12px}
+.mach .matrix-chat-session #matrix-progress{margin-top:8px}
+.mach .matrix-decision-dock{position:relative;flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;margin:0 12px 8px;padding:12px;background:#f5f8f6;border:1px solid #dce5df;border-radius:10px;z-index:1;color:#263d43}
+.mach .matrix-decision-dock .matrix-decision-title{font-size:13px;font-weight:600;min-width:0}
+.mach .matrix-decision-dock #matrix-view-proposal{margin:0;padding:3px 0;min-height:28px;font-size:12px;background:none;border:0;color:#285f49;text-decoration:underline;text-underline-offset:3px}
+.mach .matrix-decision-dock #matrix-confirm-save,.mach .matrix-decision-dock #matrix-discard{min-height:36px;padding:7px 12px;margin:0;border-radius:7px;font-size:13px;white-space:nowrap}
+.mach .matrix-decision-dock #matrix-confirm-save{background:#226653;border:1px solid #226653;color:white}
+.mach .matrix-decision-dock #matrix-confirm-save:disabled{background:#e1e7e3;color:#58665f;border-color:#d4dfd8;cursor:not-allowed}
+.mach .matrix-decision-dock #matrix-discard{border:1px solid #d4ded8;color:#53675b;background:white}
+.mach .matrix-decision-dock #matrix-review-summary{grid-column:1/-1;font-size:12px;line-height:1.5;color:#874e32;margin:0}
+.mach .matrix-decision-dock #matrix-review-summary:empty{display:none}
+.mach .matrix-chat-session [hidden],.mach .matrix-decision-dock[hidden]{display:none!important}
+@keyframes chat-working{50%{opacity:.3}}
+@media(prefers-reduced-motion:reduce){.mach .matrix-chat-session #matrix-status:before{animation:none}}
+
+.quick-exam-plan label{display:block;margin:10px 0}.quick-exam-plan input:not([type=checkbox]),.quick-exam-plan select,.quick-exam-plan textarea{box-sizing:border-box;width:100%;padding:10px;border:1px solid #cfddd6;border-radius:8px;font:inherit}.quick-exam-plan input[type=checkbox]{width:auto}.quick-plan-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.quick-plan-fields label:nth-child(3){grid-column:1/-1}.matrix-plan-overview h4{margin:12px 0}.matrix-overview-scroll{overflow:auto;max-height:350px;border:1px solid #dce5df;border-radius:8px}.matrix-overview-scroll table{border-collapse:collapse;width:100%;font-size:12px}.matrix-overview-scroll th,.matrix-overview-scroll td{padding:9px;border-bottom:1px solid #e6ece8;vertical-align:top;min-width:60px}.matrix-overview-scroll td:first-child{min-width:140px}.matrix-overview-scroll small{display:block;color:#5d7567}.matrix-plan-advanced{margin:12px 0}.matrix-plan-metadata{font-weight:600;color:#245e49}.matrix-chat-counts{grid-template-columns:repeat(4,minmax(0,1fr))}.matrix-chat-counts label{min-width:0}.matrix-chat-counts input{min-width:0}.matrix-chat-counts span{font-size:11px;display:block;margin-top:6px}
+
+.matrix-overview-scroll table{table-layout:fixed}.matrix-overview-scroll th,.matrix-overview-scroll td{min-width:0;width:14%;padding:8px 4px;overflow-wrap:anywhere;text-align:center}.matrix-overview-scroll th:first-child,.matrix-overview-scroll td:first-child{min-width:0;width:44%;text-align:left;padding-left:8px}.matrix-overview-scroll td small{font-size:10px}.matrix-overview-scroll thead{position:sticky;top:0;background:#f6faf7;z-index:1}

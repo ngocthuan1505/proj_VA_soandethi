@@ -2,6 +2,7 @@ services:
   app:
     build:
       context: ..
+      dockerfile: Dockerfile.legacy
     restart: unless-stopped
     init: true
     environment:

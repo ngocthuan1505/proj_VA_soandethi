@@ -34,6 +34,8 @@ Chuỗi 5 Whys cần làm sau quan sát: mất thời gian → bước cụ th�
 - Output: đề chỉnh được, gợi ý sửa có preview, đáp án/barem để giáo viên duyệt, Word/PDF theo lựa chọn giáo viên/học sinh.
 - Constraints: không mất công thức/ID/nội dung ngoài vùng; không lộ đề giữa tài khoản; không tự gọi dịch vụ trả phí; kết quả AI cần duyệt; backend/core Python; thiếu server thì dùng fixture rõ nhãn.
 
+> **Ranh giới hiện trạng kỹ thuật vs bằng chứng con người (`8d37a0f`, `codex/ban-thu-13`):** Phần ràng buộc kỹ thuật phía hệ thống (`[Hiện có / Đã chạy bằng Python]` — bảo toàn công thức/`richDoc`/`blockIds`, tách kho đa tài khoản, chặn sửa ngoài vùng/phiên bản cũ, xuất Word/PDF Học sinh không rò đáp án/chat khi tắt Node khỏi `PATH`, không fallback trả phí) đã có kiểm chứng trong [Đối chiếu Python](../testing/DOI_CHIEU_PYTHON.md), [Kiểm thử tích hợp](../testing/KIEM_THU_TICH_HOP.md), [Luồng màn hình](../design/luong-man-hinh.md) và [Hợp đồng tài liệu](../contracts/tai-lieu.md). Tuy nhiên, toàn bộ bảng phỏng vấn `GV-01`…`GV-03` và bảng baseline công cụ bên dưới **vẫn ở trạng thái chưa thu thập / chưa đo** (`[Chờ review nhóm / Thành viên xác nhận]`); không dùng kiểm thử kỹ thuật thay cho bằng chứng 3 người dùng thật của `CT-01` hoặc lịch lớp do `ngocthuan1505` xác nhận.
+
 ## Ưu tiên phiên bản của nhóm — cần review
 
 | Mức | Phạm vi dự kiến |

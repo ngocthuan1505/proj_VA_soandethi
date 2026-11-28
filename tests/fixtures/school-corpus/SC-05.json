@@ -1,0 +1,1217 @@
+{
+  "id": "e2519caf-b1cc-5712-a292-1f7c29291c0d",
+  "title": "Đề kiểm tra cuối học kì I — Hóa học 11",
+  "school": "TRƯỜNG THPT NGUYỄN DU (MẪU)",
+  "department": "Tổ Hóa – Sinh",
+  "subject": "Hoá học",
+  "grade": "11",
+  "minutes": 50,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Học sinh sử dụng Bảng nguyên tử khối đính kèm để giải các bài tập tính toán.",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 2
+  },
+  "blockIds": {
+    "heading": "bcadda18-df28-5f49-94d4-2d57ff06fac0",
+    "general": "d279e38e-5ef9-5c2c-bf65-13e18a6d89e2",
+    "marking": "0e52920b-0d18-5181-907e-998300c5c6ab"
+  },
+  "docs": [
+    {
+      "id": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+      "name": "Tu_lieu_Hoa_hoc_11.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "Tài liệu Hóa học 11 tự biên soạn: Cân bằng hóa học, Nitơ – Lưu huỳnh, Đại cương hữu cơ và Hiđrocacbon.\nCho biết nguyên tử khối: H=1, C=12, N=14, O=16, Na=23, S=32, Cl=35,5, Fe=56, Cu=64, Ag=108.",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Cân bằng hóa học",
+      "type": "mcq",
+      "targets": [
+        2,
+        2,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Nitrogen và Sulfur",
+      "type": "mcq",
+      "targets": [
+        4,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Đại cương hữu cơ",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Hiđrocacbon",
+      "type": "mcq",
+      "targets": [
+        1,
+        3,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Cân bằng hóa học",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Hiđrocacbon",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Cân bằng hóa học",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Nitrogen và Sulfur",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Đại cương hữu cơ",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Hiđrocacbon",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Nitrogen và Sulfur",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Hiđrocacbon",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "points": 1.0
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "eff0ead0-e610-5061-b00b-2781717accb9",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cân bằng hóa học",
+      "lesson": "Bài 1: Khái niệm cân bằng hóa học",
+      "competency": "Nhận biết trạng thái cân bằng động",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Trong một hệ phản ứng thuận nghịch đạt trạng thái cân bằng hóa học thì đặc điểm nào đúng?",
+      "options": [
+        "Tốc độ phản ứng thuận bằng tốc độ phản ứng nghịch",
+        "Phản ứng thuận và phản ứng nghịch dừng hẳn",
+        "Nồng độ chất đầu luôn bằng nồng độ sản phẩm",
+        "Áp suất hệ giảm về không"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Ở trạng thái cân bằng động, $v_{\\text{thuận}} = v_{\\text{nghịch}} \\ne 0$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "bf108792-238a-5870-8566-856656c649a8",
+        "options": "1516d392-b6ce-5e4f-8582-da6bd74862fd",
+        "answer": "de21f40d-2cb0-527a-9efc-75dfb421a438",
+        "explanation": "da35252a-1259-5c9b-badf-c4eb87fca491",
+        "rubric": "075204b6-eeca-5b6d-b324-17e84bf5a142",
+        "figure": "ee8d6ec0-8679-5a3b-b0b7-0bb77d32555e"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "tables": [
+        {
+          "rows": [
+            [
+              "Nguyên tố",
+              "H",
+              "C",
+              "N",
+              "O",
+              "Na",
+              "S",
+              "Cl",
+              "Fe",
+              "Cu"
+            ],
+            [
+              "Nguyên tử khối (amu)",
+              "1",
+              "12",
+              "14",
+              "16",
+              "23",
+              "32",
+              "35,5",
+              "56",
+              "64"
+            ]
+          ]
+        }
+      ],
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "5f0d88fd-ec33-5abd-9a1b-b8c088ea4dcf",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cân bằng hóa học",
+      "lesson": "Bài 2: Cân bằng trong dung dịch nước",
+      "competency": "Tính pH dung dịch axit mạnh",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Dung dịch $\\ce{HCl}$ có nồng độ $0{,}01\\text{ M}$ ở $25^\\circ\\text{C}$ có giá trị $\\text{pH}$ bằng bao nhiêu?",
+      "options": [
+        "$1$",
+        "$2$",
+        "$12$",
+        "$0{,}01$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "$[\\ce{H+}] = 10^{-2}\\text{ M} \\Rightarrow \\text{pH} = -\\log(10^{-2}) = 2$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "73dcabfa-69af-584c-bcec-767d76311195",
+        "options": "75340ee2-9f78-5c89-929b-2e39de82fe2a",
+        "answer": "9aa4b372-a031-5dd7-92fb-090256c27306",
+        "explanation": "54a75951-a713-569f-bfce-66d2e539a0b6",
+        "rubric": "18eafdb6-5feb-52e4-bf9a-d0ed27b97e7b",
+        "figure": "234af944-6a3f-50a8-b7a1-c8f8e0d0e2f0"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "5dea3228-9359-5a58-9c96-3ddedea4c9eb",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cân bằng hóa học",
+      "lesson": "Bài 2: Chất điện li",
+      "competency": "Phân biệt chất điện li mạnh và yếu",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Chất nào sau đây là chất điện li mạnh khi tan trong nước?",
+      "options": [
+        "$\\ce{C2H5OH}$",
+        "$\\ce{CH3COOH}$",
+        "$\\ce{NaCl}$",
+        "$\\ce{HF}$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "$\\ce{NaCl}$ là muối tan phân li hoàn toàn thành $\\ce{Na+}$ và $\\ce{Cl-}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5382c07b-c168-52f9-9d28-1a9271df8053",
+        "options": "8de6ff33-feb5-5913-a811-f109ff75fd4e",
+        "answer": "5cdbf7a9-e841-5c27-bc1e-10ddb305acca",
+        "explanation": "677f21e5-76a0-513e-af3d-5c691487f713",
+        "rubric": "6a543642-313d-56be-a628-0a5c210d5408",
+        "figure": "c797ffec-0be4-5d7e-9a34-836e3282497b"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "65f51f7a-7796-574f-b62c-f2732ba0b989",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cân bằng hóa học",
+      "lesson": "Bài 3: Nguyên lí Le Chatelier",
+      "competency": "Dự đoán chiều chuyển dịch cân bằng",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Cho cân bằng $\\ce{N2(g) + 3H2(g) <=> 2NH3(g)}$ ($\\Delta_r H^\\circ_{298} = -92\\text{ kJ}$). Khi tăng áp suất chung của hệ, cân bằng chuyển dịch theo chiều nào?",
+      "options": [
+        "Tăng tốc độ nghịch và dừng thuận",
+        "Chiều nghịch tạo thêm $\\ce{N2}$ và $\\ce{H2}$",
+        "Không chuyển dịch",
+        "Chiều thuận tạo thêm $\\ce{NH3}$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Tăng áp suất làm cân bằng chuyển dịch về phía giảm số mol khí ($4\\text{ mol} \\to 2\\text{ mol}$), tức chiều thuận.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3e667fc9-c457-59de-922c-99887a982b4e",
+        "options": "8be27769-9920-5631-b799-4939bdc6c5d1",
+        "answer": "185e421a-15af-522c-8a7d-9695ba7862d6",
+        "explanation": "0ea531e2-6df5-5767-b628-15d256bb7d99",
+        "rubric": "3a74c02a-0439-5468-ae51-c51aab40e0ba",
+        "figure": "a5a58b78-6154-593c-b73f-93f5b02ae68b"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "7bd7d24d-089d-59e6-96c1-628aa39f5896",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Nitrogen và Sulfur",
+      "lesson": "Bài 4: Đơn chất nitơ",
+      "competency": "Giải thích tính trơ của phân tử N2 ở nhiệt độ thường",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Ở điều kiện thường, phân tử $\\ce{N2}$ khá trơ về mặt hóa học là do nguyên nhân nào?",
+      "options": [
+        "Nguyên tử nitơ có bán kính lớn nhất chu kì 2",
+        "Chứa liên kết ba bền vững với năng lượng liên kết lớn",
+        "Độ âm điện của nitơ rất nhỏ",
+        "Phân tử $\\ce{N2}$ phân cực mạnh"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Liên kết ba $\\ce{N#N}$ có năng lượng liên kết tới $945\\text{ kJ/mol}$ rất khó bị phá vỡ ở nhiệt độ thường.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "f8876719-a075-5954-b15c-8d491664981f",
+        "options": "d93c271a-8aa6-5c5a-b3a3-c37ac3ad1847",
+        "answer": "5d614a04-6417-5027-89f9-e2b3b2c63d37",
+        "explanation": "dbee2ee0-bd2d-5697-9417-509d17720cb9",
+        "rubric": "1fcf857f-c5e6-553a-bf0b-b9614e366b8d",
+        "figure": "cd703754-fab0-5e74-b54c-2694285e42f2"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "d3294ec1-f56d-52ff-b551-08220ed9a857",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Nitrogen và Sulfur",
+      "lesson": "Bài 5: Amoniac và muối amoni",
+      "competency": "Nhận biết ion amoni bằng kiềm",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Nhỏ dung dịch $\\ce{NaOH}$ vào ống nghiệm chứa dung dịch $\\ce{NH4Cl}$ và đun nhẹ, hiện tượng thu được là?",
+      "options": [
+        "Có khí màu nâu đỏ thoát ra",
+        "Xuất hiện kết tủa trắng không tan",
+        "Dung dịch chuyển màu đỏ thẫm",
+        "Có khí mùi khai bay ra làm xanh giấy quỳ ẩm"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$\\ce{NH4+ + OH- -> NH3 ^ + H2O}$; khí $\\ce{NH3}$ có mùi khai đặc trưng và tính bazơ.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "d85724b3-ae54-5d75-855c-e5030281b9e5",
+        "options": "3f007300-d02f-55be-beeb-f49658ed89c8",
+        "answer": "01285618-e54a-5c8e-8dda-9ac42deb50f7",
+        "explanation": "cffda48f-531e-5f02-87c1-b33c608469c3",
+        "rubric": "1590e05c-937a-5bd1-b21d-613505523dd6",
+        "figure": "899b5801-ff27-5b25-aa51-347d7c67d6da"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "c48d8f77-54d3-5c38-b864-161c3eb89ed6",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Nitrogen và Sulfur",
+      "lesson": "Bài 6: Axit sunfuric",
+      "competency": "Nhận biết tính háo nước của H2SO4 đặc",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Cho đường mía ($\\ce{C12H22O11}$) tiếp xúc với $\\ce{H2SO4}$ đặc, đường hóa đen rồi sủi bọt trào ra khỏi cốc do $\\ce{H2SO4}$ đặc có tính chất nào?",
+      "options": [
+        "Tính oxi hóa mạnh và tính háo nước",
+        "Chỉ có tính axit yếu",
+        "Tính khử mạnh đối với cacbon",
+        "Khả năng tạo phức bền"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "$\\ce{H2SO4}$ đặc lấy nước tạo $\\ce{C}$ đen rồi oxi hóa một phần $\\ce{C}$ sinh khí $\\ce{CO2}, \\ce{SO2}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "b73b21bf-d7ab-537d-8d00-d9846f9b857c",
+        "options": "b9f03ff8-88f9-555d-93fc-1018e3aed115",
+        "answer": "07518d01-d569-5e8e-929f-746a7f9499d0",
+        "explanation": "5fd61415-61ce-5990-90bf-1ce19c2eaa33",
+        "rubric": "b85da144-d561-5094-9c48-deee039ba17a",
+        "figure": "8e3897ca-9b37-5566-b809-54b2204f1307"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "e0ef55f7-c977-5d81-965b-70c51bc4686c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Nitrogen và Sulfur",
+      "lesson": "Bài 7: Pha loãng axit sunfuric",
+      "competency": "Quy tắc an toàn phòng thí nghiệm",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Cách pha loãng dung dịch $\\ce{H2SO4}$ đặc an toàn trong phòng thí nghiệm là?",
+      "options": [
+        "Đun sôi axit đặc trước khi thêm nước",
+        "Rót nhanh nước cất vào axit đặc",
+        "Rót từ từ axit đặc vào nước và khuấy đều",
+        "Cho trực tiếp nước đá vào lọ axit đặc"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Rót từ từ axit nặng hơn vào nước giúp nhiệt tỏa ra được nước hấp thụ an toàn.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e4d4589f-9991-5105-9dbf-662439d72c0c",
+        "options": "3297f8a6-587b-5db6-ba1e-916205d9db73",
+        "answer": "0f4ac660-5f42-514f-9e18-6f09d578c6f9",
+        "explanation": "b1b23f37-8086-5ef1-95fb-80e8d5c26f71",
+        "rubric": "fa6d95db-b6f4-5789-b82b-684d87b98a2e",
+        "figure": "a8e5c4fc-65dc-54e8-98cc-23048a837d04"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "71f65832-3fc1-5403-b446-3c51407338d5",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Đại cương hữu cơ",
+      "lesson": "Bài 8: Nhóm chức và phổ hồng ngoại",
+      "competency": "Nhận biết nhóm chức hữu cơ qua nhóm nguyên tử",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Nhóm chức đặc trưng của hợp chất ancol no đơn chức mạch hở là nhóm nào?",
+      "options": [
+        "$\\ce{-COOH}$",
+        "$\\ce{-CHO}$",
+        "$\\ce{-OH}$ liên kết với nguyên tử C no",
+        "$\\ce{-COO-}$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Ancol có nhóm hiđroxyl $\\ce{-OH}$ gắn vào nguyên tử cacbon no.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "87017c88-6c56-5cc3-859b-43097cfda4c9",
+        "options": "d5fbc6b9-4f31-5b79-8b53-2525e26366c0",
+        "answer": "0a8d753b-3de0-5c5f-bc88-69c5de4c0d0c",
+        "explanation": "223eef5d-1155-51df-a57f-643857acb832",
+        "rubric": "3694dec1-dd39-59a3-8db6-1ad09959e666",
+        "figure": "de6b768c-91fe-55e8-b2ca-75d6b49362ef"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "153821ad-6578-55d6-9e02-bcdfa83cb5a5",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Đại cương hữu cơ",
+      "lesson": "Bài 9: Đồng phân và đồng đẳng",
+      "competency": "Nhận biết cặp chất đồng đẳng",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Cặp chất nào sau đây thuộc cùng dãy đồng đẳng ankan?",
+      "options": [
+        "$\\ce{CH4}$ và $\\ce{C3H8}$",
+        "$\\ce{C2H4}$ và $\\ce{C2H6}$",
+        "$\\ce{C2H2}$ và $\\ce{C4H6}$",
+        "$\\ce{C6H6}$ và $\\ce{C2H4}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "$\\ce{CH4}$ và $\\ce{C3H8}$ đều có công thức chung $\\ce{C_nH_{2n+2}}$, hơn kém nhau $2$ nhóm $\\ce{CH2}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "4177c16c-8581-541d-a90f-9daffaef68c4",
+        "options": "74dd5f9e-a9ec-5bd8-a46d-579b3c2d2aad",
+        "answer": "d9879b65-acbe-501d-8177-8d69cf93eb8e",
+        "explanation": "15a6d165-a7be-5292-bf47-d556ba3f3e91",
+        "rubric": "5532b9d3-95f7-5ba1-aff8-fc2de04ca5bd",
+        "figure": "b700fe38-da4b-5025-bd15-38c99762784c"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "36b0d09e-6562-568b-a8da-da05b61d2571",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hiđrocacbon",
+      "lesson": "Bài 10: Phản ứng thế của ankan",
+      "competency": "Viết công thức sản phẩm thế clo của metan",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Đốt nóng hỗn hợp khí metan và clo theo tỉ lệ mol $1:1$ ngoài ánh sáng thu được sản phẩm hữu cơ chính là?",
+      "options": [
+        "$\\ce{CH3OH}$",
+        "$\\ce{CCl4}$",
+        "$\\ce{CH2Cl2}$",
+        "$\\ce{CH3Cl}$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "$\\ce{CH4 + Cl2 ->[as] CH3Cl + HCl}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8d3d44af-10c3-5949-887a-3908e73391d9",
+        "options": "bcf2be22-583d-5768-964a-3598d78c6be0",
+        "answer": "8662418b-0406-56d9-a5b2-f7e77d7c1b71",
+        "explanation": "afd2e179-6fd2-508a-b549-ed0ca9fcb40a",
+        "rubric": "acaac20d-7e19-5c26-aeee-8e2c22079937",
+        "figure": "73d2b4b4-b750-56a5-b3ec-470289ce2d5a"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "cb688225-a261-55a8-a56a-92036cf3e4a2",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hiđrocacbon",
+      "lesson": "Bài 11: Anken và phản ứng cộng",
+      "competency": "Tính khối lượng brom phản ứng với etilen",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Dẫn $0{,}2\\text{ mol}$ khí etilen ($\\ce{C2H4}$) sục từ từ vào dung dịch $\\ce{Br2}$ dư. Số mol $\\ce{Br2}$ đã tham gia phản ứng cộng là?",
+      "options": [
+        "$0{,}4\\text{ mol}$",
+        "$0{,}2\\text{ mol}$",
+        "$0{,}1\\text{ mol}$",
+        "$0{,}3\\text{ mol}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "$\\ce{C2H4 + Br2 -> C2H4Br2}$ theo tỉ lệ mol $1:1$ nên $n_{\\ce{Br2}} = 0{,}2\\text{ mol}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2eda7556-c8c2-5a50-98c6-0908c59fa87d",
+        "options": "ba766fb3-8983-5c18-9f00-777b6b36fede",
+        "answer": "b82a79e9-cfdf-5a28-a8fa-b5a784fa4988",
+        "explanation": "5b86326f-7f0c-5a34-898b-1e09a39af18b",
+        "rubric": "78637136-9bd2-5193-9b42-ba0774d89594",
+        "figure": "9fca24af-1476-5fde-9160-0137f63bfd8f"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "3fd4cba9-5a4b-5b91-8fa1-84fb2640565d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hiđrocacbon",
+      "lesson": "Bài 12: Ankin và phản ứng thế kim loại",
+      "competency": "Nhận biết ank-1-in bằng thuốc thử Tollens",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Chất nào sau đây tác dụng với dung dịch $\\ce{AgNO3}$ trong $\\ce{NH3}$ tạo kết tủa vàng nhạt?",
+      "options": [
+        "$\\ce{CH3-CH3}$",
+        "$\\ce{CH2=CH2}$",
+        "$\\ce{CH3-C#C-CH3}$",
+        "$\\ce{CH#CH}$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Axetilen $\\ce{CH#CH}$ có nguyên tử H linh động gắn với C mang liên kết ba đầu mạch.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5f760f82-7144-5814-b337-32caa758d50b",
+        "options": "598975c2-44dd-565d-8b3d-ccaf038b7356",
+        "answer": "d0b63f7f-1578-5273-a1f6-54ed966d0a2c",
+        "explanation": "116246b4-2d67-5d74-8698-6fca3cf2cfb8",
+        "rubric": "02c6f7d4-1b8d-5b6b-bdc8-ca5faee4bdd5",
+        "figure": "e3327ace-cfc1-5a06-b8fc-f9e98144e8e5"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "26e2b46e-eebf-59d5-b337-5b1f16184643",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hiđrocacbon",
+      "lesson": "Bài 13: Aren – Benzen",
+      "competency": "Tính chất đặc trưng của vòng benzen",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Trong điều kiện có bột sắt xúc tác và đun nóng, benzen phản ứng với brom lỏng theo loại phản ứng nào?",
+      "options": [
+        "Phản ứng trùng hợp",
+        "Phản ứng cộng mở vòng hoàn toàn",
+        "Phản ứng thế nguyên tử H ở vòng thơm",
+        "Phản ứng tách hiđro"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "$\\ce{C6H6 + Br2 ->[FeBr3, t^o] C6H5Br + HBr}$ là phản ứng thế.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "6660696a-3333-537c-bab0-ebe27b626261",
+        "options": "5b8bf5d8-34c8-52f6-8f2c-fa7ee0f0cdcc",
+        "answer": "026f92f3-ee29-5e84-82cb-3815927f7467",
+        "explanation": "14109bb2-10a2-5170-a481-5bc55229d2f2",
+        "rubric": "98fda886-8d3d-5873-a1a0-ce46d39fc8e3",
+        "figure": "d9c5f10e-6152-50d8-867f-46d06b9b1ab4"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "dbdd16ee-1257-5042-bcf6-0bf4bb11c9af",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Nitrogen và Sulfur",
+      "lesson": "Bài 6: Muối sunfat",
+      "competency": "Nhận biết ion sunfat trong dung dịch",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Để phân biệt dung dịch $\\ce{Na2SO4}$ và $\\ce{NaNO3}$, thuốc thử thích hợp nhất là dung dịch nào?",
+      "options": [
+        "$\\ce{NaCl}$",
+        "$\\ce{BaCl2}$",
+        "$\\ce{HCl}$",
+        "$\\ce{KOH}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Ion $\\ce{Ba^2+}$ kết hợp $\\ce{SO4^2-}$ tạo kết tủa trắng $\\ce{BaSO4}$ bền trong axit.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3154cbc5-253e-5931-b92f-5e887a93acb7",
+        "options": "12a5c3a2-0e48-5f86-81b8-aa919b6709b9",
+        "answer": "5bc12d43-c31d-55e5-8e6c-192b548a18c9",
+        "explanation": "d008c661-028d-5638-ba2d-a05657a0dc6e",
+        "rubric": "461fe041-22ee-5a3e-a9c6-1fa96b5239e4",
+        "figure": "b7725962-4fd8-545e-9b46-e8692d4a92fb"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "000f7fdf-6a74-5376-83e4-4e6377e95c15",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Cân bằng hóa học",
+      "lesson": "Bài 2: Chuẩn độ axit-bazơ",
+      "competency": "Tính nồng độ dung dịch qua điểm tương đương",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Chuẩn độ $20{,}0\\text{ mL}$ dung dịch $\\ce{NaOH}$ cần vừa đủ $25{,}0\\text{ mL}$ dung dịch $\\ce{HCl}$ $0{,}10\\text{ M}$. Nồng độ mol của dung dịch $\\ce{NaOH}$ là?",
+      "options": [
+        "$0{,}125\\text{ M}$",
+        "$0{,}080\\text{ M}$",
+        "$0{,}100\\text{ M}$",
+        "$0{,}250\\text{ M}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "$C_{\\ce{NaOH}} = \\frac{25{,}0 \\cdot 0{,}10}{20{,}0} = 0{,}125\\text{ M}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "dd013629-8d69-5818-b49e-4ef38b170edd",
+        "options": "f7c445dd-6eb8-5af3-b43c-c2869f6801c7",
+        "answer": "c966337c-612f-5eeb-b050-57c028bde162",
+        "explanation": "21cde51f-b25f-5167-ad9e-0e323e85523a",
+        "rubric": "79f3af00-ff73-57f4-b54a-4eee1b4d4eed",
+        "figure": "ebfe8e2c-d6d8-50d3-9fda-24d8562c09c1"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "39a41281-9aa5-5eef-9e5f-826bd290fa05",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Cân bằng hóa học",
+      "lesson": "Bài 3: Hằng số cân bằng KC",
+      "competency": "Phân tích cân bằng tổng hợp khí NH3",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Xét phản ứng thuận nghịch trong bình kín dung tích không đổi: $\\ce{N2(g) + 3H2(g) <=> 2NH3(g)}$ ($\\Delta_r H^\\circ_{298} < 0$). Xét các phát biểu:",
+      "options": [
+        "a) Biểu thức hằng số cân bằng là $K_C = \\frac{[\\ce{NH3}]^2}{[\\ce{N2}][\\ce{H2}]^3}$.",
+        "b) Khi tăng nhiệt độ của bình phản ứng, cân bằng chuyển dịch theo chiều thuận.",
+        "c) Sử dụng chất xúc tác sắt làm tăng tốc độ cả phản ứng thuận và phản ứng nghịch.",
+        "d) Giá trị $K_C$ chỉ phụ thuộc vào nhiệt độ mà không phụ thuộc vào nồng độ ban đầu."
+      ],
+      "truthValues": [
+        true,
+        false,
+        true,
+        true
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, c, d) Đúng. b) Sai: phản ứng thuận tỏa nhiệt nên tăng nhiệt độ làm cân bằng dịch chuyển theo chiều nghịch.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "76e834d8-0366-5cf3-840a-e15e864a4197",
+        "options": "5d7b8646-297d-537d-9be8-dfcad6b65cf1",
+        "answer": "a8e3bacb-8e91-5ea8-b2cf-e69b9363718c",
+        "explanation": "b7cf2e53-2288-5ac0-a38d-67b627d6b6f2",
+        "rubric": "0a3d1d15-efd7-5df0-bd50-94b8470f0f4d",
+        "figure": "857f1566-d0b3-50ce-a280-1da44085b4d9"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần II · Câu 17"
+      },
+      "sectionId": "phan-2-tf"
+    },
+    {
+      "id": "dac6368c-30bd-5042-9a78-d90cbf28e8df",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Hiđrocacbon",
+      "lesson": "Bài 11: Đốt cháy hiđrocacbon",
+      "competency": "Biện luận dãy đồng đẳng qua số mol CO2 và H2O",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Đốt cháy hoàn toàn $0{,}1\\text{ mol}$ một hiđrocacbon mạch hở $X$, dẫn sản phẩm cháy thu được $0{,}3\\text{ mol}$ $\\ce{CO2}$ và $0{,}3\\text{ mol}$ $\\ce{H2O}$. Xét các khẳng định:",
+      "options": [
+        "a) Vì $n_{\\ce{CO2}} = n_{\\ce{H2O}}$ nên $X$ thuộc dãy đồng đẳng anken.",
+        "b) Công thức phân tử của $X$ là $\\ce{C3H6}$.",
+        "c) Có $0{,}45\\text{ mol}$ khí $\\ce{O2}$ đã tham gia phản ứng đốt cháy trên.",
+        "d) Chất $X$ không làm mất màu dung dịch nước brom ở điều kiện thường."
+      ],
+      "truthValues": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b, c) Đúng: $\\ce{C3H6 + \\frac{9}{2}O2 -> 3CO2 + 3H2O}$, $n_{\\ce{O2}} = 0{,}1 \\cdot 4{,}5 = 0{,}45\\text{ mol}$. d) Sai: anken mạch hở làm mất màu dung dịch $\\ce{Br2}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e42abbdb-3ca5-54d4-b2d7-bab7510a76a1",
+        "options": "6e0ce13d-b87c-5686-b31f-ac3b93ea67a5",
+        "answer": "6cc090ec-0bd3-59da-9897-2af4d8f0ebeb",
+        "explanation": "5d258d8e-5265-52d1-9d5a-835cc155afeb",
+        "rubric": "c698b8ca-a3fe-5c06-8273-1c4aa8aca284",
+        "figure": "d49a5fbe-7f07-5ce4-a935-622cb09721d2"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần II · Câu 18"
+      },
+      "sectionId": "phan-2-tf"
+    },
+    {
+      "id": "a1e96aad-5f9d-5f55-bfd7-075a8518b8da",
+      "v": 1,
+      "type": "short",
+      "topic": "Cân bằng hóa học",
+      "lesson": "Bài 2: Tính hằng số cân bằng",
+      "competency": "Tính KC tại trạng thái cân bằng",
+      "level": 2,
+      "points": 0.5,
+      "stem": "Trong bình $1{,}0\\text{ L}$ ở trạng thái cân bằng $\\ce{H2(g) + I2(g) <=> 2HI(g)}$, đo được $[\\ce{H2}] = 0{,}2\\text{ M}$, $[\\ce{I2}] = 0{,}2\\text{ M}$ và $[\\ce{HI}] = 1{,}6\\text{ M}$. Tính hằng số cân bằng $K_C$.",
+      "options": [],
+      "answer": null,
+      "answerText": "64",
+      "answerKnown": true,
+      "explanation": "$K_C = \\frac{1{,}6^2}{0{,}2 \\cdot 0{,}2} = \\frac{2{,}56}{0{,}04} = 64$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2cfaed70-d31e-57ec-b595-dce751912910",
+        "options": "68db9b2e-72a3-59f3-af7f-62898a3689bc",
+        "answer": "f8c4a233-eb2c-5383-97a3-591bad8009d4",
+        "explanation": "06cb47ef-6103-55ae-92f0-7a2d3e3b147c",
+        "rubric": "a253ead9-b866-56e1-8c15-58cad3205173",
+        "figure": "148197a3-c1c7-5654-ac3a-6c7460e70c31"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần III · Câu 19"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "bab55705-edf5-5599-b8fd-e2498db78738",
+      "v": 1,
+      "type": "short",
+      "topic": "Nitrogen và Sulfur",
+      "lesson": "Bài 6: Tính khối lượng đồng phản ứng HNO3",
+      "competency": "Bảo toàn electron với HNO3 đặc",
+      "level": 2,
+      "points": 0.5,
+      "stem": "Hòa tan hoàn toàn $6{,}4\\text{ g}$ bột $\\ce{Cu}$ trong dung dịch $\\ce{HNO3}$ đặc dư thu được khí $\\ce{NO2}$ duy nhất. Thể tích khí $\\ce{NO2}$ ở điều kiện chuẩn ($24{,}79\\text{ L/mol}$) bằng bao nhiêu lít (làm tròn hai chữ số thập phân)?",
+      "options": [],
+      "answer": null,
+      "answerText": "4,96",
+      "answerKnown": true,
+      "explanation": "$n_{\\ce{Cu}} = 0{,}1\\text{ mol} \\Rightarrow n_{\\ce{NO2}} = 0{,}2\\text{ mol} \\Rightarrow V = 0{,}2 \\cdot 24{,}79 = 4{,}958 \\approx 4{,}96\\text{ L}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "b1dca21b-95a2-5096-9e68-c64dcf3480ba",
+        "options": "cb97d239-e1a4-5a20-92f1-b48040d9a4b4",
+        "answer": "e69edcc0-0dd8-5da5-9240-a057e0404921",
+        "explanation": "294629c9-18cc-585d-ab9a-240bbce91d80",
+        "rubric": "be42a350-5ef2-5e31-b150-84b7baa37652",
+        "figure": "c7cefdd2-dfa1-57a1-a190-bcaf6dbddaaf"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần III · Câu 20"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "3d67ac5c-aa37-5d17-9f1d-c2e2b63f027b",
+      "v": 1,
+      "type": "short",
+      "topic": "Đại cương hữu cơ",
+      "lesson": "Bài 8: Tìm công thức phân tử hợp chất hữu cơ",
+      "competency": "Tính khối lượng phân tử từ dữ kiện đốt cháy",
+      "level": 2,
+      "points": 0.5,
+      "stem": "Đốt cháy hoàn toàn $0{,}2\\text{ mol}$ ankan $Y$ thu được $17{,}6\\text{ g}$ $\\ce{CO2}$. Số nguyên tử cacbon trong phân tử $Y$ là bao nhiêu?",
+      "options": [],
+      "answer": null,
+      "answerText": "2",
+      "answerKnown": true,
+      "explanation": "$n_{\\ce{CO2}} = \\frac{17{,}6}{44} = 0{,}4\\text{ mol} \\Rightarrow C = \\frac{0{,}4}{0{,}2} = 2$ ($\\ce{C2H6}$).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2f7fce5f-de71-5ded-80f5-0234db6a9762",
+        "options": "d45c475b-6016-51e9-bf83-1ebb744036cb",
+        "answer": "df967206-debc-5cec-b3d0-a57e34cdc6d2",
+        "explanation": "e3f19fda-4899-542e-8521-c46f79b8cb4c",
+        "rubric": "eb0b8cbd-98bb-550f-b7a5-69e0dbb87b15",
+        "figure": "74af3bad-456a-5a6e-afe4-0f52bc74bf47"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần III · Câu 21"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "f4c1dec0-723f-53e5-a2c0-e9090f94978c",
+      "v": 1,
+      "type": "short",
+      "topic": "Hiđrocacbon",
+      "lesson": "Bài 11: Phản ứng cộng hiđro của ankin",
+      "competency": "Tính lượng sản phẩm cộng hoàn toàn",
+      "level": 1,
+      "points": 0.5,
+      "stem": "Hiđro hóa hoàn toàn $0{,}15\\text{ mol}$ propin ($\\ce{C3H4}$) với xúc tác Ni đun nóng để thu được propan ($\\ce{C3H8}$). Số mol khí $\\ce{H2}$ đã phản ứng là bao nhiêu?",
+      "options": [],
+      "answer": null,
+      "answerText": "0,3",
+      "answerKnown": true,
+      "explanation": "$\\ce{C3H4 + 2H2 ->[Ni, t^o] C3H8} \\Rightarrow n_{\\ce{H2}} = 2 \\cdot 0{,}15 = 0{,}3\\text{ mol}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "24cf75bb-62cf-556f-be0c-f52180e6c818",
+        "options": "b30c4a30-00fd-5b69-90eb-266187fe3292",
+        "answer": "f7e378ab-3dae-573f-9d95-541634834ebe",
+        "explanation": "0b9798d4-18ca-5a33-8d61-4315383ce42c",
+        "rubric": "c0cffb6b-b8ca-5cbf-8cab-255a612f0ba9",
+        "figure": "22909c52-82e1-5d01-9f3d-99ef1084a77f"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần III · Câu 22"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "44ffb6f7-ba3d-5f16-ac26-1505920f8f49",
+      "v": 1,
+      "type": "essay",
+      "topic": "Nitrogen và Sulfur",
+      "lesson": "Bài 6: Cân bằng phản ứng oxi hóa khử và tính toán",
+      "competency": "Viết phương trình hóa học và tính nồng độ axit dư",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Cho $5{,}6\\text{ g}$ bột $\\ce{Fe}$ tác dụng hoàn toàn với $200\\text{ mL}$ dung dịch $\\ce{H2SO4}$ loãng nồng độ $1{,}0\\text{ M}$. Viết phương trình hóa học của phản ứng và tính nồng độ mol của muối $\\ce{FeSO4}$ sau phản ứng (coi thể tích dung dịch không đổi).",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "$\\ce{Fe + H2SO4 -> FeSO4 + H2}$. $n_{\\ce{Fe}} = 0{,}1\\text{ mol}$, $n_{\\ce{H2SO4}} = 0{,}2\\text{ mol}$ nên $\\ce{Fe}$ hết. $C_{\\ce{FeSO4}} = \\frac{0{,}1}{0{,}2} = 0{,}5\\text{ M}$.",
+      "rubric": [
+        {
+          "text": "Viết đúng phương trình $\\ce{Fe + H2SO4 -> FeSO4 + H2}$ và tính $n_{\\ce{Fe}} = 0{,}1\\text{ mol}, n_{\\ce{H2SO4}} = 0{,}2\\text{ mol}$",
+          "points": 0.5
+        },
+        {
+          "text": "Biện luận $\\ce{Fe}$ phản ứng hết, tính $C_M(\\ce{FeSO4}) = \\frac{0{,}1}{0{,}2} = 0{,}5\\text{ M}$",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "318b0876-4d79-5114-b96f-73098eeb7e9f",
+        "options": "3c7c98b3-406c-5cec-bf59-d29b68b9294e",
+        "answer": "d4e4288b-b643-58ca-ae9e-6dc595341a02",
+        "explanation": "8f62f820-78bd-54c5-8ba1-b2a91fc08a48",
+        "rubric": "6fa7f357-5711-55d1-8015-c15a07b5f8ca",
+        "figure": "deda943f-bc4a-5fb6-834d-445d1aa28baf"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần IV · Bài 23"
+      },
+      "tables": [
+        {
+          "rows": [
+            [
+              "Nguyên tố",
+              "H",
+              "C",
+              "N",
+              "O",
+              "Na",
+              "S",
+              "Cl",
+              "Fe",
+              "Cu"
+            ],
+            [
+              "Nguyên tử khối (amu)",
+              "1",
+              "12",
+              "14",
+              "16",
+              "23",
+              "32",
+              "35,5",
+              "56",
+              "64"
+            ]
+          ]
+        }
+      ],
+      "sectionId": "phan-4-essay"
+    },
+    {
+      "id": "f7a38a75-7f4e-5ec0-874b-56d071fa37f3",
+      "v": 1,
+      "type": "essay",
+      "topic": "Hiđrocacbon",
+      "lesson": "Bài 12: Xác định công thức và viết đồng phân",
+      "competency": "Lập công thức phân tử chất hữu cơ và viết đồng phân cấu tạo",
+      "level": 3,
+      "points": 1.0,
+      "stem": "Một hiđrocacbon $X$ có phần trăm khối lượng cacbon là $85{,}71\\%$ và có phân tử khối bằng $56\\text{ amu}$. Xác định công thức phân tử của $X$ và viết công thức cấu tạo các đồng phân anken mạch hở của $X$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Số nguyên tử C là $\\frac{56 \\cdot 0{,}8571}{12} = 4$; số nguyên tử H là $\\frac{56 - 48}{1} = 8 \\Rightarrow \\ce{C4H8}$. Ba đồng phân anken mạch hở: but-1-ene, but-2-ene (cis/trans) và 2-methylpropene.",
+      "rubric": [
+        {
+          "text": "Tính được công thức phân tử $X$ là $\\ce{C4H8}$",
+          "points": 0.5
+        },
+        {
+          "text": "Viết đúng công thức cấu tạo 3 đồng phân anken mạch hở: $\\ce{CH2=CH-CH2-CH3}$, $\\ce{CH3-CH=CH-CH3}$, $\\ce{CH2=C(CH3)2}$",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7a0ef994-ee75-5326-aba4-72f6bd4b3a58",
+        "options": "3a5953bd-9c83-58d0-922b-339e0ac8137f",
+        "answer": "54f1bf3b-eb53-53dd-9869-98be55158a55",
+        "explanation": "3ed7fd49-47b0-5b0e-aada-19ca52294fb4",
+        "rubric": "9f55c3e3-4622-52e5-96c5-9433455e6c05",
+        "figure": "3d482f58-75bd-5020-89fa-703fee6decf9"
+      },
+      "source": {
+        "docId": "1d2dd16e-644d-54bb-b805-c94c17c1f458",
+        "page": 1,
+        "location": "Phần IV · Bài 24"
+      },
+      "sectionId": "phan-4-essay"
+    }
+  ]
+}

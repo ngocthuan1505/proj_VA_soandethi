@@ -12,7 +12,7 @@ uv run uvicorn mach_backend.main:app --app-dir src --host 127.0.0.1 --port 8080 
 
 Mở **http://127.0.0.1:8080/docs** và **http://127.0.0.1:8080/api/health**. Không đổi lệnh sang 8080 rồi vẫn mở URL 8000. Ctrl+C dừng đúng server trong Terminal; không cần quyền admin hoặc mở firewall chỉ để dùng loopback.
 
-`/api/readiness` trả **503** và `ready:false` hiện là chủ ý: Python mới foundation, chưa có auth/DB/core/jobs/tài liệu. Nó không chứng minh cổng lỗi. Muốn xem demo editor hiện tại dùng `npm start` và cổng **4173**, chưa phải nền FastAPI.
+`/api/readiness` trả **503** và `ready:false` hiện là chủ ý: Python mới foundation, chưa có auth/DB/core/jobs/tài liệu. Nó không chứng minh cổng lỗi. Để mở bàn soạn FastAPI, dùng [hướng dẫn bản Python](../../HUONG_DAN_TEST_NHOM.md). Bản Node đối chiếu chạy bằng `npm run start:legacy` ở cổng 4173.
 
 ## Phân biệt lỗi bằng thông báo thật
 

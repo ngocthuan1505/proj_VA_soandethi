@@ -5,12 +5,16 @@ requires-python = ">=3.12"
 description = "Python-first exam authoring backend foundation for the course project"
 dependencies = [
     "fastapi>=0.162.0",
+    "httpx>=0.28.1",
+    "pillow>=13.0.0",
+    "pydantic>=2.9",
+    "pypdf>=7.1.0",
+    "python-docx>=1.2.0",
     "uvicorn>=0.54.0",
 ]
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
     "pytest>=9.2.0",
     "ruff>=0.17.3",
     "ty>=0.0.95",
@@ -19,6 +23,10 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+default = true
 
 [tool.ruff]
 target-version = "py312"

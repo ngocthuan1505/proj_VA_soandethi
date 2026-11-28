@@ -1,0 +1,1816 @@
+{
+  "id": "004e3764-b943-5e09-a477-42c206a928e6",
+  "title": "Đề thi thử tốt nghiệp THPT — Tin học 12 (GDPT 2018)",
+  "school": "TRƯỜNG THPT LÝ TỰ TRỌNG (MẪU)",
+  "department": "Tổ Tin học – Công nghệ",
+  "subject": "Tin học",
+  "grade": "12",
+  "minutes": 50,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Thí sinh làm bắt buộc 24 câu Phần chung (8,00 điểm) và chọn 01 trong 02 định hướng KHMT hoặc THUD (4 câu, 2,00 điểm). Tổng 28 câu hiệu lực.",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 2
+  },
+  "blockIds": {
+    "heading": "c20ef8ba-689a-57b6-b588-617ca863f3c8",
+    "general": "e3337747-5f90-531e-9fba-dd4487eaa1b7",
+    "marking": "131d9373-db90-5d24-8ee3-129a3eb944f8"
+  },
+  "docs": [
+    {
+      "id": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+      "name": "Tu_lieu_Tin_hoc_12.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "Tư liệu Tin học 12 tự biên soạn: Trí tuệ nhân tạo, Mạng máy tính, HTML/CSS, Python học máy cơ bản (KHMT) và CSDL SQL (THUD).",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Trí tuệ nhân tạo",
+      "type": "mcq",
+      "targets": [
+        2,
+        0,
+        0,
+        0
+      ],
+      "points": 0.2
+    },
+    {
+      "topic": "Mạng máy tính",
+      "type": "mcq",
+      "targets": [
+        2,
+        1,
+        0,
+        0
+      ],
+      "points": 0.2
+    },
+    {
+      "topic": "Đạo đức và pháp luật số",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "points": 0.2
+    },
+    {
+      "topic": "HTML và biểu mẫu",
+      "type": "mcq",
+      "targets": [
+        5,
+        1,
+        0,
+        0
+      ],
+      "points": 0.2
+    },
+    {
+      "topic": "Thiết kế CSS cơ bản",
+      "type": "mcq",
+      "targets": [
+        2,
+        1,
+        0,
+        0
+      ],
+      "points": 0.2
+    },
+    {
+      "topic": "Ưu tiên CSS nâng cao",
+      "type": "mcq",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.4
+    },
+    {
+      "topic": "Mạng và bảo mật nâng cao",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.4
+    },
+    {
+      "topic": "Đánh giá hệ thống AI",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.4
+    },
+    {
+      "topic": "Xử lí xung đột biểu mẫu web",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.4
+    },
+    {
+      "topic": "Kiến trúc trang web đáp ứng",
+      "type": "mcq",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.4
+    },
+    {
+      "topic": "Mạng máy tính",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "HTML và biểu mẫu",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Thiết kế CSS nâng cao",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Mạng máy tính",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Khoa học máy tính · Python",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "choiceGroup": "KHMT",
+      "points": 0.4
+    },
+    {
+      "topic": "Khoa học máy tính · Thuật toán",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "choiceGroup": "KHMT",
+      "points": 1.0
+    },
+    {
+      "topic": "Khoa học máy tính · Vòng lặp",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "choiceGroup": "KHMT",
+      "points": 0.2
+    },
+    {
+      "topic": "Khoa học máy tính · Phân tích thuật toán",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "choiceGroup": "KHMT",
+      "points": 0.4
+    },
+    {
+      "topic": "Tin học ứng dụng · CSDL SQL",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "choiceGroup": "THUD",
+      "points": 0.4
+    },
+    {
+      "topic": "Tin học ứng dụng · Thiết kế CSDL",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "choiceGroup": "THUD",
+      "points": 1.0
+    },
+    {
+      "topic": "Tin học ứng dụng · Bảng tính nâng cao",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "choiceGroup": "THUD",
+      "points": 0.2
+    },
+    {
+      "topic": "Tin học ứng dụng · Truy vấn SQL",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "choiceGroup": "THUD",
+      "points": 0.4
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "e1e6a084-a009-537f-9d6d-2ab1ac1258f1",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Trí tuệ nhân tạo",
+      "lesson": "Bài 1: Khái niệm AI",
+      "competency": "Nhận biết đặc trưng học từ dữ liệu của AI",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Khả năng nào sau đây thể hiện đặc trưng nổi bật của hệ thống Trí tuệ nhân tạo (AI)?",
+      "options": [
+        "Học từ dữ liệu, suy luận và tự điều chỉnh quyết định",
+        "Chỉ thực hiện phép cộng cố định không đổi",
+        "Không cần nguồn điện hoặc phần cứng tính toán",
+        "Hoàn toàn không sử dụng thuật toán"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "AI có khả năng học từ dữ liệu để nhận dạng mẫu, suy luận và giải quyết vấn đề.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "f6aa05ff-891e-5c2c-9660-bb27703d8941",
+        "options": "7f52f95e-abb1-50cc-9af3-8bfab6631647",
+        "answer": "fba1d740-0713-5ea9-8f0b-a19d372a2199",
+        "explanation": "187a1d28-ae67-5eae-ba4b-bcfdfe3d5536",
+        "rubric": "1f6cd3c9-da31-553e-b180-0b6b138ef84f",
+        "figure": "cf1e3b25-c727-5833-a534-14f195929f98"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "38157a81-03fb-5251-af38-3e8e7f027deb",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Trí tuệ nhân tạo",
+      "lesson": "Bài 2: AI và đạo đức số",
+      "competency": "Nhận biết nguyên tắc sử dụng AI có trách nhiệm",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Hành vi nào thể hiện việc sử dụng công cụ AI tạo sinh có trách nhiệm trong học tập?",
+      "options": [
+        "Nộp nguyên văn bài do AI viết mà không kiểm tra",
+        "Kiểm chứng lại thông tin bằng nguồn tin cậy và ghi rõ phần tham khảo",
+        "Dùng AI tạo ảnh giả mạo người khác",
+        "Nhập mật khẩu cá nhân vào mọi trang web lạ"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Người học cần kiểm chứng thông tin và tôn trọng tính trung thực học thuật.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7dc90abf-1e96-5764-86d5-5acfa5515e2a",
+        "options": "2ceb0b49-8ab0-5d86-8417-74a771875c30",
+        "answer": "336a06bb-8352-57ff-8737-560dd17cf02d",
+        "explanation": "085f338e-3b69-58dc-9568-7069a6c69b75",
+        "rubric": "496a710e-b8f6-5a88-afc3-2d209a43380a",
+        "figure": "966b8ded-0208-5c40-8b6f-bd29f665110e"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "d0d9f90b-4638-59bd-aa80-0fc5af6ab77c",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Mạng máy tính",
+      "lesson": "Bài 3: Thiết bị mạng cơ bản",
+      "competency": "Phân biệt chức năng Switch và Access Point",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Thiết bị nào dùng để kết nối các máy tính trong cùng mạng cục bộ LAN qua cáp xoắn đôi?",
+      "options": [
+        "Ổ cứng di động (SSD)",
+        "Máy quét ảnh (Scanner)",
+        "Switch (Bộ chuyển mạch)",
+        "Bàn phím cơ"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Switch chuyển tiếp khung dữ liệu đúng cổng đích trong mạng LAN.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "3e9bef5b-f8c2-5ece-bdeb-81ab138718cf",
+        "options": "e82c4ed5-7245-594a-8483-561f9781ef4d",
+        "answer": "4ff7e7f4-eec6-5053-9daa-72260b0d8c21",
+        "explanation": "7d6cecf6-31bc-5cb8-9943-cb367a49880e",
+        "rubric": "11526b61-de55-5798-aa22-2427ba775daa",
+        "figure": "f749c7f1-1712-5ea1-b52a-d345f5ac7eb4"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "e3f1e19d-5af0-50c3-afda-8d0169901e89",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Mạng máy tính",
+      "lesson": "Bài 4: Giao thức IP và DNS",
+      "competency": "Nhận biết vai trò hệ thống DNS",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Hệ thống phân giải tên miền (DNS) trên Internet thực hiện nhiệm vụ chính nào?",
+      "options": [
+        "Tăng tốc độ quay quạt tản nhiệt",
+        "Mã hóa toàn bộ ổ cứng máy trạm",
+        "Nén video trực tuyến thành âm thanh",
+        "Chuyển đổi tên miền dễ nhớ sang địa chỉ IP tương ứng"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "DNS ánh xạ tên miền sang địa chỉ IP để trình duyệt tìm đúng máy chủ.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "1107ca31-2744-5087-8fed-b1adb6c6c7d3",
+        "options": "3bc32379-7560-5864-b371-7ac26cf6ee47",
+        "answer": "7ec3e6c0-c158-5efe-8829-4a19475f2899",
+        "explanation": "541c432e-fa26-5d54-a912-835c694ada83",
+        "rubric": "e4d88815-3036-5a17-9105-f060db6b4ede",
+        "figure": "975b4c5f-d8f7-50db-96f5-1cdd26b59ebb"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "8c725b83-32c8-597b-bd1e-f41237d3bd7b",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Mạng máy tính",
+      "lesson": "Bài 4: Giao thức TCP/IP",
+      "competency": "Phân biệt vai trò TCP và IP",
+      "level": 1,
+      "points": 0.2,
+      "stem": "Trong bộ giao thức TCP/IP, giao thức TCP đảm bảo tính chất nào khi truyền gói tin?",
+      "options": [
+        "Cấp địa chỉ MAC cố định cho card mạng",
+        "Truyền dữ liệu tin cậy, đúng thứ tự và kiểm tra lỗi",
+        "Hiển thị hình ảnh lên màn hình trình chiếu",
+        "Xóa tệp tin cũ trên đĩa quang"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "TCP thiết lập kết nối và xác nhận gói tin để đảm bảo toàn vẹn thứ tự dữ liệu.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "9012aa0d-4f15-5e47-97a4-72e42a1c2ad2",
+        "options": "4830e047-9135-52df-9dcb-44521458d4fa",
+        "answer": "8568d055-d339-5260-ad05-908d952ccf5c",
+        "explanation": "9520fbd9-4741-52ed-8a0d-c1d37ac68c2d",
+        "rubric": "704db620-6774-571c-83b9-d0125f1f7a54",
+        "figure": "92cf77c3-7b8e-5ba6-a42a-3525424c7399"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "7493e6a4-e7a9-5a3e-992a-58c0f647a8d2",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Đạo đức và pháp luật số",
+      "lesson": "Bài 5: Giao tiếp văn minh trên không gian mạng",
+      "competency": "Nhận biết quy tắc ứng xử an toàn",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Khi nhận được liên kết rút gọn lạ kèm yêu cầu đăng nhập tài khoản ngân hàng để nhận thưởng, người dùng nên làm gì?",
+      "options": [
+        "Tắt phần mềm diệt virus rồi mở lại",
+        "Điền ngay thông tin thẻ để thử vận may",
+        "Chia sẻ liên kết lên nhóm lớp",
+        "Không nhấp liên kết và kiểm tra trực tiếp trên kênh chính thức"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Đây là dấu hiệu lừa đảo (phishing) đánh cắp thông tin đăng nhập.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "f5abc61a-76bc-5ec0-a4ee-a8080b2f22f6",
+        "options": "9ad1c7a5-9a7c-5a1d-9e7a-5aab962f94a5",
+        "answer": "89636c50-3fd7-5144-aaba-0eef7c755dd5",
+        "explanation": "01c76b31-71b3-5587-bb06-ddbe5b65e2b6",
+        "rubric": "e0c34bec-9a70-5331-a497-1cef9032ee45",
+        "figure": "0c94dfb4-a38f-5196-ae1f-d85e159772c4"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "514d2b6a-5e67-5fe6-ac0a-55c8b3572809",
+      "v": 1,
+      "type": "mcq",
+      "topic": "HTML và biểu mẫu",
+      "lesson": "Bài 6: Cấu trúc trang web HTML",
+      "competency": "Nhận biết cặp thẻ định nghĩa đoạn văn và tiêu đề",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Thẻ HTML ngữ nghĩa nào dùng để đánh dấu vùng nội dung điều hướng chính của trang web?",
+      "options": [
+        "`<nav>`",
+        "`<tfoot>`",
+        "`<br>`",
+        "`<style>`"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Thẻ `<nav>` bao bọc danh sách liên kết điều hướng.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "ce7bc5bf-0813-5749-8bd7-4e217b76415a",
+        "options": "c259a815-5789-5436-bf58-2320f7a5e78f",
+        "answer": "7a9d4e3b-b995-5972-bf24-ad9cc446ee94",
+        "explanation": "92e5e981-4926-5f82-8081-b1d9a4a5fba8",
+        "rubric": "e9a8558c-3f52-567f-a906-d7c66be2aa04",
+        "figure": "63147f76-5aac-579b-8f3f-c8dbf12b7b11"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "7d423831-ae98-585e-ae6f-b424fa3de900",
+      "v": 1,
+      "type": "mcq",
+      "topic": "HTML và biểu mẫu",
+      "lesson": "Bài 7: Danh sách và bảng HTML",
+      "competency": "Phân biệt thẻ hàng và ô dữ liệu trong bảng",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Trong bảng HTML (`<table>`), cặp thẻ nào tạo nên một hàng dữ liệu?",
+      "options": [
+        "`<ul>...</ul>`",
+        "`<td>...</td>`",
+        "`<tr>...</tr>`",
+        "`<li>...</li>`"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "`<tr>` (table row) tạo hàng; `<td>` tạo ô dữ liệu.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8e906358-9a8e-58ec-a3ea-0d3a22db610e",
+        "options": "2f3b5c33-1db6-595c-a1e4-936005cb5583",
+        "answer": "57047c92-9504-5bed-922d-59b0c0fee9c0",
+        "explanation": "54ad6311-4968-5735-b6c6-e22a6a29dd3d",
+        "rubric": "c2566a5a-219b-5f63-8ad2-6b90627b6e64",
+        "figure": "af4a5865-fc4c-5d31-9e68-d45ad30682a5"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "23310ea3-4fd4-506e-8b3a-a7610afa66f2",
+      "v": 1,
+      "type": "mcq",
+      "topic": "HTML và biểu mẫu",
+      "lesson": "Bài 8: Siêu liên kết và đa phương tiện",
+      "competency": "Chọn thuộc tính đúng của thẻ <a>",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Thuộc tính nào trong thẻ `<a>` dùng để chỉ định đường dẫn URL đích khi người dùng nhấp vào liên kết?",
+      "options": [
+        "`alt`",
+        "`src`",
+        "`href`",
+        "`cols`"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Thẻ `<a href=\"...\">` khai báo địa chỉ đích; `src` dùng cho ảnh/video.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "154f6d0f-e085-5459-89fd-3afaac7b8b7c",
+        "options": "f9ed8b3d-302c-5b02-8ec0-f1c67f7b70e4",
+        "answer": "df440239-fece-5be7-9c94-b1d67f855715",
+        "explanation": "d081b0ca-c8a7-5a4b-9e4e-3de9f1733287",
+        "rubric": "46416312-609b-50bb-b71a-c242050e47e4",
+        "figure": "4a351a4c-b237-504b-851f-24c9885181f3"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "13474a68-1a6c-580d-b881-940e6b98f67d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "HTML và biểu mẫu",
+      "lesson": "Bài 9: Biểu mẫu web <form>",
+      "competency": "Chọn kiểu input che ký tự mật khẩu",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Thuộc tính `type` nào của thẻ `<input>` giúp ẩn các ký tự mật khẩu khi người dùng gõ trên biểu mẫu?",
+      "options": [
+        "`type=\"password\"`",
+        "`type=\"text\"`",
+        "`type=\"hidden\"`",
+        "`type=\"checkbox\"`"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "`type=\"password\"` che dấu ký tự nhập vào trên màn hình.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8e34497e-3119-5b98-9fa0-bd2ab9a4d643",
+        "options": "4fc17491-1499-507e-89f0-1a2613b029aa",
+        "answer": "cbe3d236-d694-5168-b0c8-ed5d0ee6a1d9",
+        "explanation": "f7ce4676-b53f-5e69-a901-8f4b792793c1",
+        "rubric": "1dfd92bb-ebdf-5d50-9e7e-abbbcd875d56",
+        "figure": "082cff4b-67d2-5ce6-955c-99113444d474"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "22b1ba11-e967-5187-ace0-e262577a5b70",
+      "v": 1,
+      "type": "mcq",
+      "topic": "HTML và biểu mẫu",
+      "lesson": "Bài 9: Nhãn truy cập biểu mẫu",
+      "competency": "Gắn nhãn label đúng cho ô nhập liệu",
+      "level": 1,
+      "points": 0.2,
+      "stem": "Để khi nhấp chuột vào nhãn chữ thì con trỏ tự nhảy vào ô `<input id=\"ho-ten\">`, thẻ `<label>` cần khai báo thuộc tính nào?",
+      "options": [
+        "`value=\"ho-ten\"`",
+        "`name=\"ho-ten\"`",
+        "`class=\"ho-ten\"`",
+        "`for=\"ho-ten\"`"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "`for` trên `<label>` khớp với `id` của phần tử điều khiển.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "6b6d9a30-42e7-5c87-a0b1-33a9967929c6",
+        "options": "d7737aad-b4db-5d64-9221-83562635fd85",
+        "answer": "dc378204-0f7f-5d12-a68c-186e7e8b8301",
+        "explanation": "bc8a9fc1-a751-5a82-8a77-92e017f96401",
+        "rubric": "ddd9c751-79f2-5d3d-972d-45c4f8aeb957",
+        "figure": "6d21740e-0aad-5356-a022-20ce94e7382a"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "0b1b7aee-8e7a-5cd7-a918-70490bbf9d87",
+      "v": 1,
+      "type": "mcq",
+      "topic": "HTML và biểu mẫu",
+      "lesson": "Bài 6: Thuộc tính mô tả ảnh",
+      "competency": "Đảm bảo khả năng tiếp cận web cho thẻ <img>",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Thuộc tính `alt` trong thẻ `<img src=\"do-thi.png\" alt=\"...\">` có vai trò gì?",
+      "options": [
+        "Đổi định dạng ảnh sang PDF",
+        "Hiển thị văn bản thay thế khi ảnh lỗi và hỗ trợ trình đọc màn hình",
+        "Tự động căn giữa bảng tính",
+        "Khóa quyền tải trang web"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Thuộc tính `alt` tăng khả năng tiếp cận (accessibility) và dự phòng khi ảnh không tải được.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "2b348d50-fce9-58a7-ad8e-605062d12c79",
+        "options": "fe1ba11d-275e-521f-8b1a-510cc9066b4a",
+        "answer": "42127057-bec9-5e2e-9819-3b1a461dee0e",
+        "explanation": "ed712955-e27c-5e86-bf74-665be822c73e",
+        "rubric": "9adba278-7e88-5a0a-abcc-90aff161917a",
+        "figure": "2ad4c24d-d207-5e45-983e-b1db30cfd36b"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "276e8080-c728-5dba-a68d-bf79dfa6c18d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Thiết kế CSS cơ bản",
+      "lesson": "Bài 10: Cú pháp bộ chọn CSS",
+      "competency": "Nhận biết kí hiệu bộ chọn theo lớp (class)",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Trong tệp CSS, bộ chọn nào áp dụng định dạng cho tất cả các phần tử HTML có thuộc tính `class=\"card\"`?",
+      "options": [
+        "`*card`",
+        "`#card`",
+        "`card`",
+        "`.card`"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Dấu chấm `.` dùng cho bộ chọn lớp (`class`), dấu `#` dùng cho định danh (`id`).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "b5d3e4e5-2e56-5bf3-93e4-3ca1b05f36a2",
+        "options": "d3d51489-1cf1-5bf0-bca3-62ac63a30d71",
+        "answer": "12a1bb81-c7fc-5235-92d0-5b119034ce58",
+        "explanation": "7a08bf03-b3c1-5097-b380-ab9e901610fc",
+        "rubric": "8d51f051-c90e-5cb1-bfac-52defa9c2728",
+        "figure": "2d6c84e3-752c-59c1-a02e-d304969a882a"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "715f5796-2303-5d2e-8936-d8533552143b",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Thiết kế CSS cơ bản",
+      "lesson": "Bài 11: Mô hình hộp CSS",
+      "competency": "Phân biệt padding và margin",
+      "level": 1,
+      "points": 0.2,
+      "stem": "Trong mô hình hộp (Box Model) của CSS, vùng khoảng trống nằm giữa nội dung phần tử và đường viền `border` gọi là gì?",
+      "options": [
+        "`outline`",
+        "`margin`",
+        "`padding`",
+        "`z-index`"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Thứ tự từ trong ra ngoài: content -> padding -> border -> margin.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "eb1f694b-2f6d-556e-8a70-86f24219735f",
+        "options": "8dc9c696-ba8d-57af-a7a8-222a4a1d0687",
+        "answer": "40155e08-7693-5ad0-a710-b896357834d7",
+        "explanation": "c224125e-dbe0-5675-8452-c3c333e439ce",
+        "rubric": "2a991aaa-c1a9-5ff3-85d9-320acbe693e6",
+        "figure": "107addb6-5b81-50ef-83ec-e761df0cc53d"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "193071be-4ba5-52ae-97a2-963b28f34fc4",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Thiết kế CSS cơ bản",
+      "lesson": "Bài 12: Bố cục trang web",
+      "competency": "Nhận biết thuộc tính kích hoạt Flexbox",
+      "level": 0,
+      "points": 0.2,
+      "stem": "Khai báo CSS nào biến một phần tử chứa thành lưới co giãn theo hàng hoặc cột (Flexbox)?",
+      "options": [
+        "`position: fixed;`",
+        "`display: flex;`",
+        "`float: none;`",
+        "`overflow: hidden;`"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "`display: flex;` bật mô hình bố cục Flexbox cho phần tử cha.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7dde2a76-2a40-5997-b532-3ab680c156a7",
+        "options": "d6ee1545-64cb-52e8-9496-be105a1bfd82",
+        "answer": "37efdf3b-6667-57fb-a997-0e984562f7b2",
+        "explanation": "683b2009-1d3d-5d0a-9f74-a8ec5c63952c",
+        "rubric": "1c5b9021-35ce-5802-aecc-49e6930ac9e9",
+        "figure": "da075aca-91a9-5456-a626-b9c633045680"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · I"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "9a020c8a-64d8-53e1-8ec5-615656df8fe2",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Ưu tiên CSS nâng cao",
+      "lesson": "Bài 11: Độ đặc hiệu bộ chọn CSS",
+      "competency": "Tính độ ưu tiên giữa id, class và thẻ",
+      "level": 2,
+      "points": 0.4,
+      "stem": "Cho đoạn HTML `<p id=\"tieu-de\" class=\"noi-bat\">Xin chào</p>`. Nếu CSS đồng thời đặt `p { color: black; }`, `.noi-bat { color: blue; }`, `#tieu-de { color: teal; }`, chữ hiển thị màu gì?",
+      "options": [
+        "Màu xanh cổ vịt (teal)",
+        "Màu xanh dương (blue)",
+        "Màu đen (black)",
+        "Không hiển thị màu"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Độ đặc hiệu của `#id` (`100`) lớn hơn `.class` (`10`) và tên thẻ (`1`).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "f9daef69-e7e5-5842-8d7b-f93d721369d6",
+        "options": "b57dbf96-075d-58ab-a8e8-f11f43350cf8",
+        "answer": "14147c8e-ac5c-598c-b20e-52c4334f19a4",
+        "explanation": "d83f3e46-417f-5cbb-8168-21d7b8f786b3",
+        "rubric": "813d0ed9-a28f-5910-836e-fdd6b16b4421",
+        "figure": "7608580f-5145-5eb5-8819-54d964acdff2"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · II"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "37555fe1-a7f5-5fcf-ae1b-e26275a4088d",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Mạng và bảo mật nâng cao",
+      "lesson": "Bài 4: Chia dải mạng và HTTPS",
+      "competency": "Hiểu cơ chế mã hóa truyền tải HTTPS",
+      "level": 1,
+      "points": 0.4,
+      "stem": "Giao thức HTTPS bảo vệ dữ liệu trao đổi giữa trình duyệt và máy chủ web bằng cách nào?",
+      "options": [
+        "Mã hóa kênh truyền qua tầng TLS/SSL và xác thực chứng thư số",
+        "Ẩn hoàn toàn địa chỉ IP khỏi bộ định tuyến",
+        "Chuyển mọi tệp HTML thành ảnh PNG",
+        "Nén gói tin bỏ qua phần kiểm tra lỗi"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "HTTPS kết hợp HTTP với TLS để đảm bảo tính bí mật và toàn vẹn dữ liệu truyền.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "63c2f2b0-b85b-5d7b-8541-a69e64a79d2a",
+        "options": "cc7678df-2c74-543e-ade9-7f6f8d885692",
+        "answer": "6f91864d-d2fc-515c-ae9e-e5b3d0954c9b",
+        "explanation": "1785aeee-b5e3-5fac-b707-ddb745a1ee5e",
+        "rubric": "4522deaa-a1b0-5682-a1b8-82118900fa24",
+        "figure": "4e895782-b976-5efe-ad9a-61e2e5ed5974"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · II"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "0d5ba8f6-4400-527c-a280-cde9200a5731",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Đánh giá hệ thống AI",
+      "lesson": "Bài 2: Học có giám sát",
+      "competency": "Phân biệt tập huấn luyện và tập kiểm thử",
+      "level": 1,
+      "points": 0.4,
+      "stem": "Trong quy trình xây dựng mô hình phân loại ảnh bằng học có giám sát, tập dữ liệu kiểm thử (test set) dùng để làm gì?",
+      "options": [
+        "Gắn nhãn thủ công cho toàn bộ tệp gốc",
+        "Đánh giá độ chính xác tổng quát trên dữ liệu chưa từng thấy",
+        "Xóa bớt trọng số âm của mạng",
+        "Thay thế hoàn toàn bước thu thập dữ liệu"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Test set độc lập giúp phát hiện hiện tượng học vẹt (overfitting).",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "c7a25241-c0e1-5f67-a451-ef99ca221d99",
+        "options": "9641c0e5-460d-577c-a853-968e7f44018e",
+        "answer": "0210877f-a8a5-5fed-b8e0-a8837104de78",
+        "explanation": "7af375d1-70ca-5f4f-9c88-03348845855c",
+        "rubric": "d2bffdd5-4857-5903-b811-a3d313762c28",
+        "figure": "6d993467-38e0-56a6-b2f7-b1b484590ab6"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · II"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "1e20ff9e-8081-5c84-ae1f-6d835df344d8",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Xử lí xung đột biểu mẫu web",
+      "lesson": "Bài 9: Xác thực dữ liệu form",
+      "competency": "Chọn thuộc tính HTML5 kiểm tra bắt buộc",
+      "level": 1,
+      "points": 0.4,
+      "stem": "Để trình duyệt kiểm tra ô nhập email không được để trống và đúng định dạng trước khi gửi biểu mẫu, cặp thuộc tính chuẩn nào được dùng?",
+      "options": [
+        "`type=\"submit\" disabled`",
+        "`type=\"text\" readonly`",
+        "`type=\"email\" required`",
+        "`type=\"number\" checked`"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "`type=\"email\"` kiểm tra định dạng email và `required` bắt buộc nhập.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "725c092d-e97d-52b6-a334-c585b8694b3b",
+        "options": "b593496a-1cc2-595f-b74e-ad8d73c7e6e4",
+        "answer": "9ac824a6-5d05-5d6f-9408-402c870d1611",
+        "explanation": "427a5c98-ecc2-535f-b537-ede2c005bc21",
+        "rubric": "b86aabb4-87fe-5139-a939-e46771f5df4e",
+        "figure": "b8346b76-aa2c-5cd8-85ee-e448d39ae36d"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · II"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "eec0fb25-1349-58bf-af19-9a20672b7f17",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Kiến trúc trang web đáp ứng",
+      "lesson": "Bài 12: Media Query",
+      "competency": "Áp dụng CSS cho màn hình nhỏ hơn 600px",
+      "level": 2,
+      "points": 0.4,
+      "stem": "Quy tắc CSS `@media (max-width: 600px)` được kích hoạt trong điều kiện nào sau đây?",
+      "options": [
+        "Khi trang có hơn 600 thẻ div",
+        "Khi người dùng phóng to trang vượt 600%",
+        "Chỉ khi xuất bản in sang giấy khổ A0",
+        "Khi chiều rộng vùng hiển thị trình duyệt nhỏ hơn hoặc bằng 600px"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "`max-width: 600px` áp dụng cho các thiết bị màn hình hẹp tối đa 600px.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "4131ff41-5162-50bb-bee4-bb189ffb1c3b",
+        "options": "af20d452-6749-5993-8304-b7cdc4333afa",
+        "answer": "ded30f6c-a381-52a0-a93e-e26d17f9fa99",
+        "explanation": "3367d844-39aa-5c0c-9eeb-5a4c2447a23f",
+        "rubric": "08f2d842-0789-5c38-8ede-c77634e744ed",
+        "figure": "1887fa6b-6118-5c4f-a148-1c784cb0916a"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · II"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "c952a69b-3f65-5657-8b9c-498e8d0408fa",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Mạng máy tính",
+      "lesson": "Bài 4: Địa chỉ IPv4 và cổng dịch vụ",
+      "competency": "Phân tích cấu hình mạng cục bộ",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Một phòng máy trường học sử dụng dải địa chỉ IPv4 `192.168.10.0/24`, máy chủ nội bộ có địa chỉ `192.168.10.10` chạy dịch vụ web trên cổng `8000`. Xét các nhận định:",
+      "options": [
+        "a) Bốn cụm số của địa chỉ IPv4 được phân tách bằng dấu chấm, mỗi cụm từ 0 đến 255.",
+        "b) Địa chỉ `192.168.10.300` là một địa chỉ IPv4 hợp lệ trong mạng trên.",
+        "c) Máy trạm `192.168.10.25` nằm cùng lớp mạng `/24` với máy chủ `192.168.10.10`.",
+        "d) Hai máy cùng truy cập máy chủ trên phải dùng chung giao thức tầng vận chuyển TCP."
+      ],
+      "truthValues": [
+        true,
+        false,
+        true,
+        true
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, c, d) Đúng. b) Sai: mỗi octet tối đa là 255 nên `.300` không hợp lệ.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7a0984fb-249f-5ff8-ae7e-ea278556e13e",
+        "options": "ef7d3019-4779-5f8e-96c6-4c5aae78f752",
+        "answer": "d023ca97-24e9-5068-b384-ec0c2f48bcfd",
+        "explanation": "02df3be7-7691-5ce9-a6f2-5bbcbe8d9fad",
+        "rubric": "c5054832-d4c3-5ccd-b14e-8065f5752c0d",
+        "figure": "68e5922f-b15b-52c6-9eb0-7debfe19b8fe"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · Câu 21"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "2f0606a6-a6f2-598f-a8af-32af6d9d0cd4",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "HTML và biểu mẫu",
+      "lesson": "Bài 10: Phân tích đoạn mã HTML và CSS",
+      "competency": "Đọc hiểu kết quả hiển thị đoạn mã web",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Cho đoạn mã HTML: `<div class=\"box\"><p id=\"note\">Thông báo</p></div>` cùng quy tắc `.box p { font-size: 16px; }`. Xét các phát biểu:",
+      "options": [
+        "a) Bộ chọn `.box p` chọn các thẻ `<p>` là hậu duệ nằm bên trong phần tử có `class=\"box\"`.",
+        "b) Thuộc tính `id=\"note\"` nên là duy nhất trong một tài liệu HTML.",
+        "c) Nội dung chữ `Thông báo` được hiển thị với cỡ chữ 16 pixel.",
+        "d) Bộ chọn `.box > div` khớp với phần tử `<p id=\"note\">`."
+      ],
+      "truthValues": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b, c) Đúng. d) Sai: `.box > div` chọn thẻ con là `<div>`, không phải `<p>`.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "49ddbf28-57a6-5e75-ab6b-c1f1ee8105a0",
+        "options": "46f3e663-aec5-5511-97f5-ff38fc29fa62",
+        "answer": "030d25c4-de71-5a93-9190-be3029bb3f76",
+        "explanation": "dee747bf-7ee9-5084-b538-9ccc82866893",
+        "rubric": "00dee540-3f83-5c01-8b98-8c54c38b814c",
+        "figure": "23b8f886-e88c-5ec6-bbf3-f4f8ac147a4e"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · Câu 22"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "cdf33e3e-5386-5fad-b814-02e9cc2a4338",
+      "v": 1,
+      "type": "essay",
+      "topic": "Thiết kế CSS nâng cao",
+      "lesson": "Bài 11: Giải thích độ ưu tiên CSS",
+      "competency": "Phân tích kết quả áp dụng độ đặc hiệu CSS",
+      "level": 2,
+      "points": 0.5,
+      "stem": "Quan sát đoạn mã HTML và CSS sau và giải thích kết quả hiển thị màu chữ của hai đoạn văn:\n<div class=\"panel\">\n  <p class=\"lead\">Đoạn A</p>\n  <p>Đoạn B</p>\n</div>\n\n<style>\n  .panel p { color: #1f2937; }\n  p.lead { color: #0f766e; }\n</style>",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Cả hai bộ chọn .panel p và p.lead đều có độ đặc hiệu (0, 1, 1); theo thứ tự khai báo sau thắng trước, Đoạn A có màu #0f766e còn Đoạn B có màu #1f2937.",
+      "rubric": [
+        {
+          "text": "Nêu được cả hai bộ chọn .panel p và p.lead có cùng độ đặc hiệu (1 class + 1 tag)",
+          "points": 0.25
+        },
+        {
+          "text": "Kết luận đúng Đoạn A màu #0f766e (khai báo sau) và Đoạn B màu #1f2937",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "42416e6a-6953-5e3e-b34c-eaf29878ab95",
+        "options": "fe7c6cac-43f8-5b65-bcb2-a82485c08ead",
+        "answer": "e1a97e23-c0dc-532e-ad90-df97c1aff244",
+        "explanation": "f7db8db5-ceed-5772-8ec6-6a21ecc4680d",
+        "rubric": "29c962aa-e041-5b7b-adb8-3c601416a425",
+        "figure": "9965efea-58bd-558a-ac87-33c5acdf8620"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · Câu 23"
+      },
+      "richDoc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Quan sát đoạn mã HTML và CSS sau và giải thích kết quả hiển thị màu chữ của hai đoạn văn:"
+              }
+            ]
+          },
+          {
+            "type": "codeBlock",
+            "content": [
+              {
+                "type": "text",
+                "text": "<div class=\"panel\">\n  <p class=\"lead\">Đoạn A</p>\n  <p>Đoạn B</p>\n</div>\n\n<style>\n  .panel p { color: #1f2937; }\n  p.lead { color: #0f766e; }\n</style>"
+              }
+            ]
+          }
+        ]
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "5a5b10e3-e0a6-5865-9eb8-0530bea2a42e",
+      "v": 1,
+      "type": "essay",
+      "topic": "Mạng máy tính",
+      "lesson": "Bài 3: Thiết kế sơ đồ LAN trường học",
+      "competency": "Đề xuất giải pháp kết nối LAN an toàn cho phòng học",
+      "level": 2,
+      "points": 0.5,
+      "stem": "Một trường THPT muốn mở rộng mạng Wi-Fi cho 12 phòng học từ đường truyền cáp quang chính ở phòng máy chủ. Trình bày ngắn gọn hai thiết bị cần dùng và một biện pháp bảo mật Wi-Fi nội bộ.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Cần dùng Router cân bằng tải / Switch kết nối cáp mạng tới các Access Point đặt ở hành lang các tầng; bật chuẩn mã hóa WPA2/WPA3 và tách VLAN khách với VLAN giáo viên.",
+      "rubric": [
+        {
+          "text": "Nêu đúng vai trò Switch và Access Point (hoặc Router) trong việc phủ sóng và chia cổng",
+          "points": 0.25
+        },
+        {
+          "text": "Đề xuất biện pháp bảo mật phù hợp (chuẩn WPA2/WPA3 mạnh hoặc tách VLAN)",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "47959b24-33ae-5138-915b-289d6658ea18",
+        "options": "b15345db-a597-52f2-b5db-57764fae1ca0",
+        "answer": "3be68a1a-f442-5ed4-ac05-dcda9df74bc5",
+        "explanation": "74ac919d-e0b6-5e36-ae29-f92c02586e45",
+        "rubric": "da30b810-3ba0-55e4-a54c-6c25eb4184d5",
+        "figure": "a470c667-5414-55e9-9535-a36f81e6b3d6"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Phần chung · Câu 24"
+      },
+      "sectionId": "phan-chung"
+    },
+    {
+      "id": "997c157d-9af3-5598-8289-31a7a6022481",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Khoa học máy tính · Python",
+      "lesson": "KHMT · Hàm và danh sách Python",
+      "competency": "Đọc hiểu hàm xử lí danh sách",
+      "level": 1,
+      "points": 0.4,
+      "stem": "Cho đoạn mã Python xử lí danh sách điểm số sau:\ndef dem_dat(ds, nguong=5.0):\n    dem = 0\n    for x in ds:\n        if x >= nguong:\n            dem += 1\n    return dem\n\nprint(dem_dat([4.5, 5.0, 7.2, 3.8, 8.0]))\nGiá trị được in ra màn hình là bao nhiêu?",
+      "options": [
+        "4",
+        "2",
+        "3",
+        "5"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Các phần tử >= 5.0 gồm 5.0, 7.2, 8.0 nên hàm trả về 3.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "af5dd8b9-aa55-5b27-92d0-ce882daa867b",
+        "options": "93025c4d-7440-5e8c-98ad-99249abcccba",
+        "answer": "539d83fa-7af9-59bf-9203-f448a4a5f753",
+        "explanation": "f14c54b2-1b7e-584c-bc4d-4b7c7e0fd17c",
+        "rubric": "b3901646-f63b-50ae-b101-a3b58a87dc75",
+        "figure": "97431ff8-4d42-5252-bf35-124079953f66"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Nhánh KHMT · Câu 25"
+      },
+      "richDoc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Cho đoạn mã Python xử lí danh sách điểm số sau:"
+              }
+            ]
+          },
+          {
+            "type": "codeBlock",
+            "content": [
+              {
+                "type": "text",
+                "text": "def dem_dat(ds, nguong=5.0):\n    dem = 0\n    for x in ds:\n        if x >= nguong:\n            dem += 1\n    return dem\n\nprint(dem_dat([4.5, 5.0, 7.2, 3.8, 8.0]))"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Giá trị được in ra màn hình là bao nhiêu?"
+              }
+            ]
+          }
+        ]
+      },
+      "sectionId": "nhanh-khmt",
+      "choiceGroup": "KHMT"
+    },
+    {
+      "id": "1e0bcfa2-f51f-5c55-973e-8c404a2d2fda",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Khoa học máy tính · Thuật toán",
+      "lesson": "KHMT · Tìm kiếm nhị phân",
+      "competency": "Phân tích đúng/sai thuật toán tìm kiếm nhị phân",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Xét đoạn mã Python thực hiện thuật toán tìm kiếm nhị phân trên mảng đã sắp xếp tăng dần:\ndef binary_search(a, x):\n    left, right = 0, len(a) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if a[mid] == x:\n            return mid\n        elif a[mid] < x:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\nXét các nhận định về thuật toán trên:",
+      "options": [
+        "a) Thuật toán đòi hỏi mảng `a` phải được sắp xếp thứ tự trước khi tìm kiếm.",
+        "b) Khi gọi `binary_search([2, 5, 8, 12, 19], 12)`, giá trị trả về là `3`.",
+        "c) Độ phức tạp thời gian trường hợp xấu nhất là $O(n^2)$.",
+        "d) Nếu phần tử `x` không có trong `a`, hàm trả về `-1`."
+      ],
+      "truthValues": [
+        true,
+        true,
+        false,
+        true
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b, d) Đúng. c) Sai: độ phức tạp tìm kiếm nhị phân là $O(\\log_2 n)$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "1a2e7bee-477a-5be1-b611-4062bd3d5355",
+        "options": "da071d2b-41de-5bc0-8a9c-3f1c19c42f65",
+        "answer": "cd37b4e1-07e5-535c-9d40-462d24efdd4a",
+        "explanation": "1cade8fb-fd7f-53ce-9a23-d336f2b96618",
+        "rubric": "0fb4321e-a0dc-5b49-baa0-9bf72d5890bd",
+        "figure": "e5729702-b76b-549c-9c19-aa49a3ed6aff"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Nhánh KHMT · Câu 26"
+      },
+      "richDoc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Xét đoạn mã Python thực hiện thuật toán tìm kiếm nhị phân trên mảng đã sắp xếp tăng dần:"
+              }
+            ]
+          },
+          {
+            "type": "codeBlock",
+            "content": [
+              {
+                "type": "text",
+                "text": "def binary_search(a, x):\n    left, right = 0, len(a) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if a[mid] == x:\n            return mid\n        elif a[mid] < x:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Xét các nhận định về thuật toán trên:"
+              }
+            ]
+          }
+        ]
+      },
+      "sectionId": "nhanh-khmt",
+      "choiceGroup": "KHMT"
+    },
+    {
+      "id": "261fd374-903e-5f75-acd4-034aa3ed4c04",
+      "v": 1,
+      "type": "short",
+      "topic": "Khoa học máy tính · Vòng lặp",
+      "lesson": "KHMT · Theo dõi giá trị biến Python",
+      "competency": "Tính đầu ra vòng lặp có điều kiện",
+      "level": 2,
+      "points": 0.2,
+      "stem": "Cho đoạn mã Python tính tổng tích lũy sau:\ns = 0\nfor i in range(1, 6):\n    if i % 2 == 1:\n        s += i * i\nprint(s)\nKết quả in ra màn hình là số nguyên nào?",
+      "options": [],
+      "answer": null,
+      "answerText": "35",
+      "answerKnown": true,
+      "explanation": "Các số lẻ trong range(1, 6) là 1, 3, 5; tổng bình phương $1^2 + 3^2 + 5^2 = 1 + 9 + 25 = 35$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "eceb5200-f276-5701-bb40-80c32791d2a0",
+        "options": "4a3f4ffa-f48d-5ad0-872c-d3d773d7b33a",
+        "answer": "3b4f0af2-fe0a-5cd2-85db-7043561a5c19",
+        "explanation": "df1c8779-69bb-5189-81d2-82dd6fda03d7",
+        "rubric": "e7d7718c-04cb-5761-b5d8-90211b3d2ea5",
+        "figure": "d5876736-bcab-55e5-ba5b-e02a17d647a9"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Nhánh KHMT · Câu 27"
+      },
+      "richDoc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Cho đoạn mã Python tính tổng tích lũy sau:"
+              }
+            ]
+          },
+          {
+            "type": "codeBlock",
+            "content": [
+              {
+                "type": "text",
+                "text": "s = 0\nfor i in range(1, 6):\n    if i % 2 == 1:\n        s += i * i\nprint(s)"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Kết quả in ra màn hình là số nguyên nào?"
+              }
+            ]
+          }
+        ]
+      },
+      "sectionId": "nhanh-khmt",
+      "choiceGroup": "KHMT"
+    },
+    {
+      "id": "44de4b47-39b3-5779-86e3-c3dc2ea23ab8",
+      "v": 1,
+      "type": "essay",
+      "topic": "Khoa học máy tính · Phân tích thuật toán",
+      "lesson": "KHMT · Sắp xếp và độ phức tạp",
+      "competency": "So sánh độ phức tạp và viết hàm Python kiểm tra số nguyên tố",
+      "level": 3,
+      "points": 0.4,
+      "stem": "Viết hàm Python `la_nguyen_to(n)` trả về `True` nếu số nguyên `n` là số nguyên tố (ngược lại trả về `False`), với điều kiện vòng lặp chỉ kiểm tra tới $\\lfloor\\sqrt{n}\\rfloor$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Kiểm tra $n < 2$ trả `False`; duyệt `d` từ $2$ đến `int(n ** 0.5) + 1`, nếu `n % d == 0` trả `False`, hết vòng lặp trả `True`.",
+      "rubric": [
+        {
+          "text": "Xử lí đúng điều kiện biên `n < 2` trả về `False`",
+          "points": 0.2
+        },
+        {
+          "text": "Duyệt ước từ `2` tới `int(n ** 0.5) + 1` và kết luận chính xác",
+          "points": 0.2
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "aa4d77e8-7541-5dc5-9569-2acdec0dfb1b",
+        "options": "d1a10d58-6ed4-57e3-90b7-cedb76fff2e9",
+        "answer": "3faba273-3fdf-511d-99f8-18ee237ab56b",
+        "explanation": "b0dfe87a-6c54-5e9f-8057-a6d0caf03e26",
+        "rubric": "30d6b071-c2cb-5517-8233-9b83d16e96dc",
+        "figure": "ee7cbb95-d8c8-57f1-970a-b5e4f731ad53"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Nhánh KHMT · Câu 28"
+      },
+      "sectionId": "nhanh-khmt",
+      "choiceGroup": "KHMT"
+    },
+    {
+      "id": "5777c13f-8ad0-53ba-ac76-dc0276f2c894",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Tin học ứng dụng · CSDL SQL",
+      "lesson": "THUD · Truy vấn gom nhóm SQL",
+      "competency": "Đọc hiểu mệnh đề WHERE và GROUP BY",
+      "level": 1,
+      "points": 0.4,
+      "stem": "Cho câu lệnh SQL truy vấn dữ liệu trên bảng `HOC_SINH(MaHS, HoTen, Lop, DiemTB)`:\nSELECT Lop, COUNT(*) AS SiSo\nFROM HOC_SINH\nWHERE DiemTB >= 8.0\nGROUP BY Lop\nORDER BY SiSo DESC;\nCâu lệnh trên thực hiện công việc gì?",
+      "options": [
+        "Liệt kê tên từng học sinh theo thứ tự chữ cái",
+        "Tính điểm trung bình toàn trường rồi xóa các lớp điểm thấp",
+        "Cập nhật điểm TB tất cả học sinh thành 8,0",
+        "Đếm số học sinh có điểm TB từ 8,0 trở lên theo từng lớp và sắp giảm dần"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "`WHERE DiemTB >= 8.0` lọc trước khi `GROUP BY Lop` và `ORDER BY SiSo DESC`.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "c30ed861-0908-5b29-9ec8-21f799c952a4",
+        "options": "806e2331-e1e2-5721-b3f8-f24ff463e841",
+        "answer": "8de30ea3-4b71-5712-aa5f-f2435f1f3a85",
+        "explanation": "5237447b-3d5d-5e8e-9c95-2b1f3ca2046f",
+        "rubric": "5152af17-0405-534a-87d4-80012b25d88a",
+        "figure": "6ce4dea6-1b9c-51cd-8ef4-bcbf6d38627f"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Nhánh THUD · Câu 25"
+      },
+      "richDoc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Cho câu lệnh SQL truy vấn dữ liệu trên bảng `HOC_SINH(MaHS, HoTen, Lop, DiemTB)`:"
+              }
+            ]
+          },
+          {
+            "type": "codeBlock",
+            "content": [
+              {
+                "type": "text",
+                "text": "SELECT Lop, COUNT(*) AS SiSo\nFROM HOC_SINH\nWHERE DiemTB >= 8.0\nGROUP BY Lop\nORDER BY SiSo DESC;"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Câu lệnh trên thực hiện công việc gì?"
+              }
+            ]
+          }
+        ]
+      },
+      "sectionId": "nhanh-thud",
+      "choiceGroup": "THUD"
+    },
+    {
+      "id": "9255b238-dc3d-534b-94aa-c49571cd12d2",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Tin học ứng dụng · Thiết kế CSDL",
+      "lesson": "THUD · Khóa chính và khóa ngoại",
+      "competency": "Kiểm tra tính toàn vẹn tham chiếu CSDL",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Cho lược đồ cơ sở dữ liệu thư viện gồm hai bảng quan hệ sau:\nCREATE TABLE SACH (\n  MaSach VARCHAR(10) PRIMARY KEY,\n  TenSach VARCHAR(120) NOT NULL,\n  MaTL VARCHAR(6) REFERENCES THE_LOAI(MaTL)\n);\nCREATE TABLE MUON_TRA (\n  MaPhieu INT PRIMARY KEY,\n  MaSach VARCHAR(10) REFERENCES SACH(MaSach),\n  NgayMuon DATE\n);\nXét các nhận định về thiết kế cơ sở dữ liệu trên:",
+      "options": [
+        "a) `MaSach` là khóa chính của bảng `SACH` nên không được chứa giá trị trùng lặp hoặc NULL.",
+        "b) Cột `MaSach` trong bảng `MUON_TRA` đóng vai trò là khóa ngoại.",
+        "c) Có thể chèn bản ghi vào `MUON_TRA` với `MaSach` chưa từng tồn tại trong bảng `SACH`.",
+        "d) Hai bảng `SACH` và `MUON_TRA` liên kết với nhau theo quan hệ 1–nhiều."
+      ],
+      "truthValues": [
+        true,
+        true,
+        false,
+        true
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b, d) Đúng. c) Sai: ràng buộc toàn vẹn tham chiếu (FOREIGN KEY) chặn giá trị chưa có ở bảng cha.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "50e4fafc-0ca8-5350-a864-97e4f1cbfcdc",
+        "options": "111a196e-d1d6-5756-9562-60e212943e5d",
+        "answer": "c896d68c-e2de-5b51-9725-693209141b59",
+        "explanation": "d9c08dfd-5748-582f-8595-6e39afa72a47",
+        "rubric": "5c890b92-2535-578d-8453-01eae47a5f13",
+        "figure": "48e5a568-34b3-50c1-97a0-756770896636"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Nhánh THUD · Câu 26"
+      },
+      "richDoc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Cho lược đồ cơ sở dữ liệu thư viện gồm hai bảng quan hệ sau:"
+              }
+            ]
+          },
+          {
+            "type": "codeBlock",
+            "content": [
+              {
+                "type": "text",
+                "text": "CREATE TABLE SACH (\n  MaSach VARCHAR(10) PRIMARY KEY,\n  TenSach VARCHAR(120) NOT NULL,\n  MaTL VARCHAR(6) REFERENCES THE_LOAI(MaTL)\n);\nCREATE TABLE MUON_TRA (\n  MaPhieu INT PRIMARY KEY,\n  MaSach VARCHAR(10) REFERENCES SACH(MaSach),\n  NgayMuon DATE\n);"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Xét các nhận định về thiết kế cơ sở dữ liệu trên:"
+              }
+            ]
+          }
+        ]
+      },
+      "sectionId": "nhanh-thud",
+      "choiceGroup": "THUD"
+    },
+    {
+      "id": "1e3c7404-11af-58fa-b5d3-840c00d40643",
+      "v": 1,
+      "type": "short",
+      "topic": "Tin học ứng dụng · Bảng tính nâng cao",
+      "lesson": "THUD · Công thức SUMIF",
+      "competency": "Đọc kết quả hàm thống kê có điều kiện",
+      "level": 1,
+      "points": 0.2,
+      "stem": "Trong bảng tính Excel, vùng `B2:B6` chứa tên lớp `[\"9A\", \"9B\", \"9A\", \"9C\", \"9A\"]` và vùng `C2:C6` chứa số quyển sách quyên góp `[12, 8, 15, 10, 13]`. Công thức `=SUMIF(B2:B6, \"9A\", C2:C6)` trả về giá trị bao nhiêu?",
+      "options": [],
+      "answer": null,
+      "answerText": "40",
+      "answerKnown": true,
+      "explanation": "Các hàng có giá trị `\"9A\"` là hàng 2, 4, 6 tương ứng $12 + 15 + 13 = 40$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e9df4ced-5078-5bff-b132-40a5da0d1708",
+        "options": "cf659bf8-fe3b-531b-8c22-259d5c9defd5",
+        "answer": "7e17087f-ef44-5231-9333-94d6c4b4945d",
+        "explanation": "dd0acb4b-a788-5740-a46a-2745e2523d07",
+        "rubric": "7ddc12e4-6009-523a-b75c-a09c4f8cbff3",
+        "figure": "33a13e11-8243-51bf-93de-86939ad86df8"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Nhánh THUD · Câu 27"
+      },
+      "sectionId": "nhanh-thud",
+      "choiceGroup": "THUD"
+    },
+    {
+      "id": "7a070e68-3f1e-508b-9be2-a4fe9fb4c255",
+      "v": 1,
+      "type": "essay",
+      "topic": "Tin học ứng dụng · Truy vấn SQL",
+      "lesson": "THUD · Viết câu lệnh JOIN",
+      "competency": "Viết truy vấn SQL kết nối hai bảng và lọc điều kiện",
+      "level": 3,
+      "points": 0.4,
+      "stem": "Dựa trên hai bảng `SACH(MaSach, TenSach, MaTL)` và `MUON_TRA(MaPhieu, MaSach, NgayMuon)`, hãy viết câu lệnh SQL hiển thị mã phiếu, tên sách và ngày mượn đối với các lượt mượn từ ngày `'2026-10-01'` trở đi.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "`SELECT M.MaPhieu, S.TenSach, M.NgayMuon FROM MUON_TRA M INNER JOIN SACH S ON M.MaSach = S.MaSach WHERE M.NgayMuon >= '2026-10-01';`",
+      "rubric": [
+        {
+          "text": "Dùng đúng `INNER JOIN` (hoặc `JOIN`) qua khóa `M.MaSach = S.MaSach`",
+          "points": 0.2
+        },
+        {
+          "text": "Chọn đủ 3 cột và lọc đúng điều kiện `M.NgayMuon >= '2026-10-01'`",
+          "points": 0.2
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5617331d-d96a-5e76-beba-fc2a89df01f0",
+        "options": "c7686d2a-0f0a-5471-b309-7ab88d6701a9",
+        "answer": "07eb7173-74ab-5139-ac68-8f30389c5918",
+        "explanation": "35c8d4cf-87ea-54be-9b61-b99819bae79f",
+        "rubric": "9eadccea-3765-588e-8700-ee464205bd8e",
+        "figure": "c8be5c27-cabf-57aa-af0a-69ebfd9cb728"
+      },
+      "source": {
+        "docId": "b6677aa4-4174-57aa-9220-0dbdf7543b7e",
+        "page": 1,
+        "location": "Nhánh THUD · Câu 28"
+      },
+      "sectionId": "nhanh-thud",
+      "choiceGroup": "THUD"
+    }
+  ]
+}

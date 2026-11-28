@@ -1,0 +1,52 @@
+.shared-bar {
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  margin-bottom: 32px;
+  border-bottom: 1px solid #dbe6f2;
+  color: #1a2b3c;
+}
+.shared-bar > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.shared-bar b { font-weight: 650; color: #0f1e2e; }
+.shared-bar span { color: #4b6075; }
+.shared-bar a, .shared-bar button {
+  font: inherit;
+  border: 1px solid #b6d4f0;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: #0f4c81;
+  background: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1), border-color 150ms cubic-bezier(0.23, 1, 0.32, 1), transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.shared-bar a:hover, .shared-bar button:hover {
+  background: #e8f2fc;
+  border-color: #1e78c8;
+}
+.shared-bar button:active, .shared-bar a:active { transform: scale(0.98); }
+.shared-bar :focus-visible {
+  outline: 3px solid #1e78c8;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  body { padding: 0 16px; }
+  .shared-bar { align-items: flex-start; flex-direction: column; }
+  .shared-bar > div { gap: 8px; }
+  h1 { overflow-wrap: anywhere; }
+  table { font-size: 12pt; }
+}
+@media print { .shared-bar { display: none; } }
+body { overflow-wrap: anywhere; }
+table { table-layout: fixed; }
+td, th { overflow-wrap: anywhere; }
+.math { max-width: 100%; overflow-x: auto; }
+span.math { display: inline-block; vertical-align: middle; }

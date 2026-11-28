@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0F4C81">
+<link rel="icon" type="image/svg+xml" href="/assets/exam-icon.svg">
+<title>Đăng nhập · Soạn đề thi</title>
+<link rel="stylesheet" href="/assets/team-login.css">
+<main>
+  <a class="brand" href="/login"><img src="/assets/exam-icon.svg" alt="" width="24" height="24"> Soạn đề thi</a>
+  <h1>Mở bàn soạn của bạn</h1>
+  <p class="intro">Đề, nguồn tài liệu và hội thoại được lưu riêng theo tài khoản trên máy chạy app.</p>
+  <div class="tabs" role="group" aria-label="Tài khoản">
+    <button type="button" aria-pressed="true" data-mode="login">Đăng nhập</button>
+    <button type="button" aria-pressed="false" data-mode="register">Nhận lời mời</button>
+  </div>
+  <form id="team-login">
+    <label data-registration hidden>Họ tên<input name="name" autocomplete="name" maxlength="100" disabled required></label>
+    <label>Email<input name="email" type="email" autocomplete="username" maxlength="254" required></label>
+    <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" minlength="10" maxlength="200" required></label>
+    <label data-registration hidden>Mã mời<input name="inviteCode" autocomplete="off" minlength="20" maxlength="100" disabled required></label>
+    <p id="login-feedback" role="alert" aria-live="polite"></p>
+    <button class="primary" type="submit">Đăng nhập</button>
+  </form>
+  <p class="note">Đây là chế độ nhóm tại máy, chỉ mở tài khoản qua lời mời. Quên mật khẩu: liên hệ người quản lý máy chạy app. Không gửi mật khẩu hoặc khóa API vào chat nhóm.</p>
+</main>
+<script type="module" src="/assets/team-login.js"></script>
+</html>

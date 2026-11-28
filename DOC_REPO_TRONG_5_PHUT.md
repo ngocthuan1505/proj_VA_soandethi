@@ -6,7 +6,7 @@ Bản tóm tắt 06/11/2026 cho người mới. **Chỉ cần đọc file này t
 
 Soạn đề thi là trợ lý soạn đề cho giáo viên: tạo/mở đề, soạn trực tiếp, chèn công thức không cần nhớ LaTeX, dùng nguồn tài liệu, hỏi/sửa bằng AI có xem trước và xác nhận, lưu và xuất Word/PDF bản học sinh/giáo viên.
 
-**Đã có demo JS/Node khá đầy đủ để kế thừa.** Đồ án yêu cầu Python là ngôn ngữ chính nên nhóm đang chuẩn bị chuyển core/backend sang FastAPI theo từng phần, giữ JavaScript cho editor/trình duyệt. `backend/` hiện mới có health/readiness, chưa có toàn bộ nghiệp vụ. Không phải xây lại UI từ số 0 và cũng chưa được coi là đã chuyển Python xong.
+**Bản tích hợp 13 chạy FastAPI.** Python xử lý các luồng đã kiểm ở bản 13. JavaScript phục vụ editor và giao diện. [Bảng nghiệm thu](docs/testing/NGHIEM_THU_BAN_13.md) ghi phạm vi kiểm và việc còn thiếu.
 
 ## 2. Hiện có gì, còn thiếu gì?
 
@@ -23,26 +23,11 @@ Baseline ngày 05/11: 98 test Node, 80 bước UI fixture trong 7 bộ và 2 pyt
 
 ## 3. Mở app để hiểu trước khi đọc code
 
-Cần quyền repo Private, Git, Node.js 24+ kèm npm, Chrome/Edge:
+Tải gói [bản thử 13](https://github.com/ngocthuan1505/proj_VA_soandethi/releases/tag/ban-thu-13) rồi mở `BAT_DAU.md` trong gói, hoặc chạy source theo [hướng dẫn bản Python](HUONG_DAN_TEST_NHOM.md). Windows có `CHAY_THU_NHOM.cmd`. Nếu đã có npm và uv, lệnh `npm start` ở thư mục gốc sẽ mở FastAPI tại `http://127.0.0.1:4182/`.
 
-```sh
-git clone https://github.com/ngocthuan1505/proj_VA_soandethi.git
-cd proj_VA_soandethi
-npm ci
-npm start
-```
+Thử tạo đề → sửa chữ → chèn phân số/hệ → undo → reload → xuất file. Giữ Terminal chạy và nhấn Ctrl+C để dừng. Editor và thư viện mẫu không cần AI/GreenNode. AI thật cần kết nối được phép.
 
-Mở **http://127.0.0.1:4173/**. Thử tạo đề → sửa chữ → chèn phân số/hệ → undo → reload → xuất file. Giữ Terminal chạy, Ctrl+C để dừng. Editor và thư viện mẫu không cần key AI/GreenNode; clone không kèm dữ liệu/tài khoản của Thuận. AI thật cần kết nối được phép.
-
-Muốn xem nền Python, mở Terminal khác từ root repo:
-
-```sh
-cd backend
-uv sync --frozen --python 3.12
-uv run uvicorn mach_backend.main:app --app-dir src --host 127.0.0.1 --port 8080 --reload
-```
-
-Cần Python 3.12+ và uv. Mở **http://127.0.0.1:8080/docs**; health 200, readiness 503 là đúng foundation. **8080 là ví dụ cổng thay thế; 8000 cũng hợp lệ nếu máy cho bind.** Hai cổng không phải hai phiên bản app. Demo 4173 hiện chưa tự nối sang nền Python này. [Khi cổng 8000 bị lỗi](docs/team/LOI_CONG_API.md).
+Cần đối chiếu baseline? Chạy `npm ci`, `npm run start:legacy` rồi mở `http://127.0.0.1:4173/`. Xem [chẩn đoán lỗi cổng](docs/team/LOI_CONG_API.md).
 
 ## 4. Bản đồ source: tìm đúng phần cần đọc
 
@@ -56,7 +41,7 @@ Cần Python 3.12+ và uv. Mở **http://127.0.0.1:8080/docs**; health 200, read
 | `accounts.mjs`, `backend-store.mjs`, `storage.js` | Auth, SQLite/revision và lưu phía browser trong demo |
 | `ai.mjs`, `cloud-ai.mjs`, `greennode.mjs`, `ai-providers.js` | Routing/adapter/validation AI; code hỗ trợ provider không chứng minh có quota/model thật |
 | `importers.mjs`, `word-import.mjs`, `exports.mjs`, `math-word.mjs` | Nhập/OCR/nguồn và xuất tài liệu/công thức |
-| `backend/src/mach_backend/`, `backend/tests/` | Nơi triển khai backend/core Python mới và pytest; hiện mới foundation |
+| `backend/src/mach_backend/`, `backend/tests/` | Backend, nghiệp vụ Python và pytest của bản thử |
 | `tests/` | Unit/backend/contract/browser fixture; mở test của hành vi trước khi sửa |
 | `assets/`, `package*.json` | Asset browser và phụ thuộc khóa; không cần đọc bundle minify để hiểu app |
 | `docs/product`, `docs/architecture` | Mục tiêu/use case, hiện trạng và kế hoạch Python/dữ liệu |
@@ -64,7 +49,7 @@ Cần Python 3.12+ và uv. Mở **http://127.0.0.1:8080/docs**; health 200, read
 | `docs/course`, `docs/reports`, `docs/context` | Yêu cầu môn/hồ sơ đã có, báo cáo, bản bàn giao lý thuyết–thực hành |
 | `server-kit/`, `ops/greennode/`, `deploy/` | Worker/runbook/triển khai tham khảo; **chỉ Thuận thao tác GreenNode** |
 
-Luồng để hình dung: **giáo viên → UI/editor → API Node demo → kho dữ liệu / AI job / import-export**. Đích nhóm sẽ chuyển là **UI/editor → FastAPI → nghiệp vụ/repository/jobs/tài liệu Python**. Không dùng proxy Python gọi Node để giả hoàn thành core Python.
+Luồng bản 13 là **UI/editor → FastAPI → kho đề, AI/job và tài liệu Python**. Luồng Node dùng để đối chiếu baseline.
 
 ## 5. Mỗi người bắt đầu từ đâu?
 

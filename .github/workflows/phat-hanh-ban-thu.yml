@@ -28,7 +28,7 @@ concurrency:
 jobs:
   dong-goi:
     name: Kiểm commit và đóng ZIP
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event.repository.private
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.repository == 'ngocthuan1505/proj_VA_soandethi'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -72,6 +72,22 @@ jobs:
           python3 scripts/dong-goi-ban-thu.py --ung-vien "$SO_BAN"
           cd "outputs/ung-vien-$SO_BAN"
           sha256sum --strict --check "SoanDeThi-UngVien-$SO_BAN.sha256"
+          python3 - "SoanDeThi-UngVien-$SO_BAN.zip" <<'PY'
+          import sys, zipfile
+          forbidden_parts = {".data", ".runtime", "node_modules", ".venv", "ban_giao_qa", "outputs"}
+          forbidden_names = {".env", "private-runtime.json", "ngrok-auth.json", "ban_giao_antigravity.md", "goal_antigravity.txt"}
+          forbidden_exts = (".sqlite", ".sqlite3", ".db", ".pem", ".key", ".dpapi")
+          bad = []
+          with zipfile.ZipFile(sys.argv[1]) as zf:
+              for name in zf.namelist():
+                  norm = name.replace("\\", "/").strip("/")
+                  parts = [p.lower() for p in norm.split("/") if p]
+                  base = parts[-1] if parts else ""
+                  if any(p in forbidden_parts for p in parts) or base in forbidden_names or base.startswith(".env.") or base.endswith(forbidden_exts):
+                      bad.append(name)
+          if bad:
+              raise SystemExit(f"Forbidden entries in ZIP: {bad[:10]}")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: ban-thu-${{ steps.kiem.outputs.so_ban }}
@@ -103,7 +119,7 @@ jobs:
           COMMIT: ${{ inputs.commit }}
           GHI_CHU: ${{ inputs.ghi_chu }}
         run: |
-          gh api "repos/$GITHUB_REPOSITORY" --jq .private | grep -qx true
+          test "$GITHUB_REPOSITORY" = "ngocthuan1505/proj_VA_soandethi"
           tag="ban-thu-$SO_BAN"
           base="SoanDeThi-UngVien-$SO_BAN"
           refs=$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag")
@@ -136,7 +152,7 @@ jobs:
           PHAT_HANH: ${{ inputs.phat_hanh }}
         run: |
           test "$PHAT_HANH" = true
-          gh api "repos/$GITHUB_REPOSITORY" --jq .private | grep -qx true
+          test "$GITHUB_REPOSITORY" = "ngocthuan1505/proj_VA_soandethi"
           marker="<!-- ban-thu-$SO_BAN -->"
           comments=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/47/comments?per_page=100" \
             --jq '.[] | select(.user.login == "github-actions[bot]") | .body')

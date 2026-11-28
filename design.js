@@ -1,12 +1,82 @@
-import {esc} from './core.js';import {SUBJECTS,subjectId} from './authoring-catalog.js';
+import {subjectId} from './authoring-catalog.js';
 let ctx,initialized=false;const $=s=>document.querySelector(s),b=(a,t,attr='')=>`<button type="button" data-action="${a}" ${attr}>${t}</button>`;
-export function mountDesign(c){ctx=c;document.body.classList.add('mach');document.querySelector('.design-rail')?.remove();$('#app').insertAdjacentHTML('afterbegin',`<nav class="design-rail" aria-label="Không gian làm việc"><a class="mach-logo" href="/" title="Soạn đề thi · Bàn soạn thông minh" aria-label="Soạn đề thi · Bàn soạn">${c.icon('file')}</a><div class="rail-links">${b('new',c.icon('plus')+'<span>Đề mới</span>','aria-label="Tạo đề mới"')}${b('design-workspace',c.icon('edit')+'<span>Bàn soạn</span>','class="rail-active" aria-label="Bàn soạn"')}${b('library',c.icon('folder')+'<span>Kho đề</span>','aria-label="Mở kho đề"')}${b('import-doc',c.icon('paperclip')+'<span>Học liệu</span>','aria-label="Thêm học liệu"')}${b('design-templates',c.icon('grid')+'<span>Mẫu đề</span>','aria-label="Mở thư viện mẫu đề"')}</div><div class="rail-bottom">${b('design-command',c.icon('search')+'<span>Tìm nhanh</span>','aria-label="Tìm công cụ nhanh" title="Ctrl+K"')}${b('connections',c.icon('settings')+'<span>Kết nối</span>','aria-label="Kết nối AI"')}<span class="rail-version">SOẠN ĐỀ THI<br>6.0</span></div></nav>`);
- const documentBlock=$('.mvp-document');documentBlock.querySelector('.doc-emblem')?.remove();documentBlock.insertAdjacentHTML('afterbegin','<div class="design-breadcrumb"><span>KHÔNG GIAN BIÊN SOẠN</span><span class="breadcrumb-dot"></span><span class="design-subject-name"></span></div>');const actions=$('.header-actions');actions.querySelector('[data-action=library]')?.remove();actions.querySelector('[data-action=share]').setAttribute('aria-label','Chia sẻ đề');actions.querySelector('[data-action=share]').innerHTML=c.icon('link')+'<span>Chia sẻ</span>';actions.insertAdjacentHTML('afterbegin',b('design-focus',c.icon('eye')+'<span>Tập trung</span>','class="focus-button" aria-pressed="false"')+b('export',c.icon('download')+'<span>Xuất đề</span>','class="design-export"'));const ai=actions.querySelector('[data-action=toggle-ai]');ai.setAttribute('aria-label','Ẩn / hiện trợ lý');ai.innerHTML=c.icon('spark')+'<span>Trợ lý</span>';
- $('.sidebar-title').innerHTML=`Cấu trúc tài liệu ${b('collapse-outline','‹','aria-label="Thu gọn mục lục"')}`;$('.sidebar-top').insertAdjacentHTML('beforeend','<div class="design-doc-meta"></div>');$('.sidebar .tabs button[data-tab=outline]').textContent='Mục lục';$('.sidebar .tabs button[data-tab=templates]').textContent='Mẫu đề';$('.sidebar').insertAdjacentHTML('beforeend',`<div class="design-side-actions">${b('subject-library',c.icon('plus')+' Chèn nội dung theo môn','class="design-library-open"')}${b('studio-question','＋ Thêm câu hỏi','class="subtle"')}</div>`);
- const head=$('.assistant-head');head.querySelector('.assistant-title').innerHTML='<span class="assistant-badge">✦</span><div>Trợ lý biên soạn<small>Cùng bạn hoàn thiện từng câu</small></div>';head.insertAdjacentHTML('afterend',`<div class="design-assistant-tools">${b('subject-library','Thư viện theo môn '+c.icon('arrow'),'class="assistant-library"')}<div class="subject-shortcuts">${SUBJECTS.slice(0,6).map(s=>b('subject-library',s.name,`data-subject="${s.name}" title="${s.hint}"`)).join('')}</div></div>`);
- $('.editor-toolbar .formula-tool').innerHTML='<span class="formula-tool-symbol">ƒ</span>';$('.editor-toolbar .formula-tool').title='Công thức trực quan · chọn mẫu và điền ô';$('.editor-toolbar [data-action=chemistry]').title='Phản ứng, chất và ion · không cần mã';$('.document-bar').insertAdjacentHTML('afterbegin',`<div class="design-canvas-label"><span class="live-dot"></span> BẢN SOẠN</div>`);refreshDesign();if(!initialized){initialized=true;document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&$('#dialog').open&&$('#command-query')){ev.preventDefault();$('#dialog').close();return;}if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='k'&&!$('.composer-shell')){ev.preventDefault();showCommands();}});document.addEventListener('input',ev=>{if(ev.target.id==='command-query')paintCommands(ev.target.value);});}}
-export function refreshDesign(){if(!ctx)return;const e=ctx.exam();const meta=$('.design-doc-meta');if(meta)meta.innerHTML=`<span>${esc(e.subject)} ${esc(e.grade)}</span><span>${e.questions.length} câu</span><span>${e.minutes} phút</span>`;const name=$('.design-subject-name');if(name)name.textContent=e.subject+' · Lớp '+e.grade;document.querySelectorAll('.subject-shortcuts button').forEach(n=>n.classList.toggle('active',subjectId(n.dataset.subject)===subjectId(e.subject)));const welcome=$('.assistant-welcome');if(welcome&&!welcome.dataset.mach){welcome.dataset.mach='true';welcome.innerHTML='<span class="welcome-insignia">✦</span><span class="overline">BỚT THAO TÁC, THÊM THỜI GIAN DẠY</span><h2>Từ ý tưởng<br>đến một đề hay.</h2><p>Nói điều bạn muốn soạn, hoặc chọn một mẫu nội dung theo môn để bắt đầu.</p>';}}
-const commands=[['subject-library','Chèn nội dung theo môn','Công thức, phản ứng, ngữ liệu','ƒ'],['studio-find','Tìm và thay thế','Tìm nội dung trong đề và đáp án','⌕'],['import-doc','Nhập học liệu','Word, PDF, hình ảnh, tài liệu','↗'],['library','Mở kho đề','Tìm và tiếp tục các đề đã lưu','▤'],['export','Xuất Word / PDF','Bản học sinh và giáo viên','↓'],['metadata','Thông tin đề','Môn, lớp, thời gian và đầu đề','◷'],['connections','Kết nối AI','Mô hình cục bộ hoặc API','✦']];
-function showCommands(){ctx.modal('Bạn muốn làm gì?',`<input id="command-query" type="search" aria-label="Tìm thao tác" placeholder="Tìm công cụ, ví dụ: công thức, Word…" autofocus><div id="command-results"></div><p class="command-hint">Ctrl+K để mở nhanh · Esc để đóng</p>`);paintCommands('');$('#command-query').focus();}
-function paintCommands(query){const q=query.toLocaleLowerCase('vi-VN');$('#command-results').innerHTML=commands.filter(a=>a.join(' ').toLocaleLowerCase('vi-VN').includes(q)).map(([a,title,desc,symbol])=>b('design-execute',`<span>${symbol}</span><div><b>${title}</b><small>${desc}</small></div><i>↵</i>`,`data-command="${a}" class="command-result"`)).join('')||'<p>Chưa thấy công cụ. Thử từ khóa ngắn hơn.</p>';}
-export function handleDesignAction(action,node){if(!action.startsWith('design-'))return false;if(action==='design-focus'){const mode=$('.workspace').classList.toggle('focus-mode');node.setAttribute('aria-pressed',String(mode));node.querySelector('span').textContent=mode?'Thoát tập trung':'Tập trung';}else if(action==='design-command')showCommands();else if(action==='design-execute'){$('#dialog').close();ctx.act(node.dataset.command).catch(e=>ctx.toast(e.message));}else if(action==='design-new-subject'){document.getElementById('new-subject').value=node.dataset.subject;document.querySelectorAll('[data-action=design-new-subject]').forEach(n=>n.setAttribute('aria-pressed',String(n===node)));}else if(action==='design-templates'){ctx.setTab('templates');ctx.render();$('.sidebar')?.classList.add('open');$('.workspace')?.classList.remove('outline-collapsed');}else if(action==='design-workspace'){$('.workspace').classList.remove('focus-mode','outline-collapsed');ctx.setTab('outline');ctx.render();}return true;}
+
+export function mountDesign(c){
+ ctx=c;
+ document.body.classList.add('mach');
+ refreshDesign();
+ if(!initialized){
+  initialized=true;
+  document.addEventListener('keydown',ev=>{
+   if(ev.key==='Escape'&&$('#dialog').open&&$('#command-query')){ev.preventDefault();$('#dialog').close();return;}
+   if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='k'&&!$('.composer-shell')){ev.preventDefault();showCommands();}
+  });
+  document.addEventListener('input',ev=>{if(ev.target.id==='command-query')paintCommands(ev.target.value);});
+ }
+}
+
+export function refreshDesign(){
+ if(!ctx)return;
+ const e=ctx.exam();
+ document.querySelectorAll('.subject-shortcuts button').forEach(n=>n.classList.toggle('active',subjectId(n.dataset.subject)===subjectId(e.subject)));
+}
+
+const commands=[
+ ['design-home','Trang chủ Cá Voi Xanh','Tạo đề nhanh, chiến dịch nhiều đề và đề gần đây','⌂'],
+ ['question-bank','Ngân hàng câu hỏi','Tìm không dấu, lọc, lưu và chèn lại câu hỏi','★'],
+ ['exam-analytics','Phân tích chất lượng đề','Điểm sẵn sàng, mức độ nhận thức, trùng lặp','◔'],
+ ['exam-rooms','Phòng thi trực tuyến','Giao bài theo mã phòng/QR, chấm tự luận, xuất điểm','▤'],
+ ['subject-library','Chèn nội dung theo môn','Công thức, phản ứng, ngữ liệu','ƒ'],
+ ['studio-replace','Tìm và thay thế','Tìm nội dung trong đề và đáp án','⌕'],
+ ['import-doc','Nhập học liệu','Word, PDF, hình ảnh, tài liệu','↗'],
+ ['library','Mở kho đề','Tìm và tiếp tục các đề đã lưu','▤'],
+ ['export','Xuất Word / PDF','Bản học sinh, giáo viên và phiếu OMR','↓'],
+ ['metadata','Thông tin đề','Môn, lớp, thời gian và đầu đề','◷'],
+ ['connections','Kết nối AI','Mô hình cục bộ hoặc API','✦'],
+];
+
+function showCommands(){
+ ctx.modal('Bạn muốn làm gì?',`<input id="command-query" type="search" aria-label="Tìm thao tác" placeholder="Tìm công cụ, ví dụ: công thức, Word, phòng thi…" autofocus><div id="command-results"></div><p class="command-hint">Ctrl+K để mở nhanh · Esc để đóng</p>`);
+ paintCommands('');
+ $('#command-query').focus();
+}
+
+function paintCommands(query){
+ const q=query.toLocaleLowerCase('vi-VN');
+ $('#command-results').innerHTML=commands.filter(a=>a.join(' ').toLocaleLowerCase('vi-VN').includes(q)).map(([a,title,desc,symbol])=>b('design-execute',`<span>${symbol}</span><div><b>${title}</b><small>${desc}</small></div><i>↵</i>`,`data-command="${a}" class="command-result"`)).join('')||'<p>Chưa thấy công cụ. Thử từ khóa ngắn hơn.</p>';
+}
+
+export function setActiveWorkspaceNav(action='design-workspace'){
+ document.querySelectorAll('.design-rail button[data-action]').forEach(btn=>{
+  btn.classList.toggle('rail-active',btn.dataset.action===action);
+ });
+}
+
+export function handleDesignAction(action,node){
+ if(!action.startsWith('design-'))return false;
+ if(action==='design-focus'){
+  const mode=$('.workspace').classList.toggle('focus-mode');
+  node.setAttribute('aria-pressed',String(mode));
+  const span=node.querySelector('span');
+  if(span)span.textContent=mode?'Thoát tập trung':'Tập trung';
+ }else if(action==='design-command')showCommands();
+ else if(action==='design-execute'){$('#dialog').close();ctx.act(node.dataset.command).catch(e=>ctx.toast(e.message));}
+ else if(action==='design-new-subject'){
+  document.getElementById('new-subject').value=node.dataset.subject;
+  document.querySelectorAll('[data-action=design-new-subject]').forEach(n=>n.setAttribute('aria-pressed',String(n===node)));
+ }else if(action==='design-templates'){
+  ctx.setTab('templates');ctx.render();
+  $('.sidebar')?.classList.add('open');
+  $('.workspace')?.classList.remove('outline-collapsed');
+ }else if(action==='design-home'){
+  setActiveWorkspaceNav('design-home');
+  ctx.setViewMode?.('home');
+ }else if(action==='design-workspace'){
+  if(ctx.getViewMode?.()==='home')ctx.setViewMode?.('workspace');
+  $('.workspace')?.classList.remove('focus-mode','outline-collapsed','mobile-ai-view');
+  $('aside.assistant')?.classList.remove('open');
+  setActiveWorkspaceNav('design-workspace');
+  ctx.setTab('outline');ctx.render();
+ }
+ return true;
+}

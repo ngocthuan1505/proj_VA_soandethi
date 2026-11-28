@@ -1,0 +1,39 @@
+{
+  "jobId": "c237d350-58b4-4d7d-8182-7bd3c5f613b1",
+  "examId": "3f2378b0-9db3-40de-8f50-54258e732acd",
+  "baseRevision": 1,
+  "ownerId": "poc-local",
+  "subject": "Sinh học",
+  "grade": "THPT",
+  "requireEvidence": true,
+  "instructions": "Ngữ liệu tự biên soạn của nhóm, chưa được giáo viên duyệt. S1/S2/S3 là mã đoạn minh họa, không phải trang SGK. Sinh mới bốn câu theo ma trận; không chép bộ câu tham chiếu. Với bài toán thẩm thấu có số liệu, nêu đủ giả định cùng chất tan không phân li, không qua màng, cùng nhiệt độ và áp suất ban đầu bằng nhau; chỉ hỏi xu hướng ban đầu. Không suy luận nồng độ quyết định mọi trường hợp của tế bào thực vật.",
+  "sources": [
+    {
+      "sourceId": "652e7539-7c43-4879-a2bf-4420d581b901",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {"kind": "passage", "index": 1},
+      "text": "S1. Thẩm thấu là sự di chuyển ròng của nước qua màng bán thấm. Trong mô hình ban đầu có cùng nhiệt độ, áp suất hai bên bằng nhau và cùng một chất tan không phân li, không qua màng, nước đi từ nơi có nồng độ chất tan thấp sang nơi có nồng độ chất tan cao."
+    },
+    {
+      "sourceId": "652e7539-7c43-4879-a2bf-4420d581b902",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {"kind": "passage", "index": 2},
+      "text": "S2. Khi hệ đạt cân bằng, nước vẫn trao đổi qua màng theo hai chiều nhưng không có dòng nước ròng."
+    },
+    {
+      "sourceId": "652e7539-7c43-4879-a2bf-4420d581b903",
+      "sourceVersion": 1,
+      "ownerId": "poc-local",
+      "locator": {"kind": "passage", "index": 3},
+      "text": "S3. Thành tế bào thực vật giúp tế bào chống chịu áp lực khi nhận nước. Nước đi vào có thể làm tăng sức trương; mất nước làm giảm sức trương. Khi mất nhiều nước, tế bào có thể xảy ra co nguyên sinh."
+    }
+  ],
+  "slots": [
+    {"type": "mcq", "topic": "Nguyên lí thẩm thấu", "level": 0, "pointsQ4": 10},
+    {"type": "mcq", "topic": "Nguyên lí thẩm thấu", "level": 1, "pointsQ4": 10},
+    {"type": "mcq", "topic": "Tế bào thực vật và nước", "level": 0, "pointsQ4": 10},
+    {"type": "mcq", "topic": "Tế bào thực vật và nước", "level": 2, "pointsQ4": 10}
+  ]
+}

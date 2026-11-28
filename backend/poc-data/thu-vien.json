@@ -1,0 +1,48 @@
+{
+  "jobId": "108e80de-bd19-4084-b9e6-f84b33ee2038",
+  "examId": "02af8760-5bbd-43cc-8ceb-2310d7520c36",
+  "baseRevision": 1,
+  "ownerId": "poc-local",
+  "subject": "Ngữ văn",
+  "grade": "6",
+  "requireEvidence": true,
+  "instructions": "Ngữ liệu tự viết để thử, chưa được giáo viên duyệt.",
+  "sources": [
+    {
+      "sourceId": "cf5fe178-b52c-40d9-970b-965e32eedb1b",
+      "text": "Sáng thứ bảy, Mai và Nam đến thư viện của trường để chuẩn bị góc đọc sách cho lớp. Trời vừa mưa, nước từ ô cửa bị hở chảy xuống gần kệ sách. Mai lấy khăn lau nước, còn Nam chuyển các cuốn sách ở tầng thấp lên bàn khô. Hai bạn không tự ý sửa cửa mà báo với cô Loan phụ trách thư viện. Cô Loan nhờ nhân viên bảo trì kiểm tra rồi cùng hai bạn sắp xếp lại sách. Trước khi ra về, Mai viết một tờ nhắc mọi người đóng cửa sổ sau khi đọc. Nam đề nghị đặt sách cách nền nhà một khoảng để tránh bị ẩm. Tuần sau, dù trời tiếp tục mưa, những cuốn sách vẫn khô vì cửa đã được sửa và kệ sách được kê cao. Cô Loan cảm ơn hai bạn vì đã biết quan sát, giúp đỡ và tìm cách phòng tránh sự cố thay vì chỉ xử lý lúc sách bị ướt.",
+      "sourceVersion": 1,
+      "locator": {
+        "index": 1,
+        "kind": "passage"
+      },
+      "ownerId": "poc-local"
+    }
+  ],
+  "slots": [
+    {
+      "topic": "Chi tiết trong ngữ liệu",
+      "level": 0,
+      "pointsQ4": 10,
+      "type": "mcq"
+    },
+    {
+      "topic": "Chi tiết trong ngữ liệu",
+      "level": 1,
+      "pointsQ4": 10,
+      "type": "mcq"
+    },
+    {
+      "topic": "Ý nghĩa hành động",
+      "level": 0,
+      "pointsQ4": 10,
+      "type": "mcq"
+    },
+    {
+      "topic": "Ý nghĩa hành động",
+      "level": 1,
+      "pointsQ4": 10,
+      "type": "mcq"
+    }
+  ]
+}

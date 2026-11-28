@@ -1,0 +1,97 @@
+/* Hệ thống biến thiết kế dùng chung (tokens) — Blue Whale Academic Ocean. */
+:root {
+  /* Màu nền & bề mặt */
+  --bg-canvas: #f3f7fb;
+  --bg-surface: #ffffff;
+  --bg-subtle: #edf3fa;
+  --bg-elevated: #fafcff;
+  --bg-tint: #e5eff9;
+  --bg-hover: #edf3fa;
+
+  /* Chữ & độ tương phản */
+  --ink: #1a2b3c;
+  --ink-strong: #0f1e2e;
+  --ink-muted: #4b6075;
+  --ink-faint: #687c91;
+
+  /* Màu chủ đạo & ngữ nghĩa */
+  --brand: #0f4c81;
+  --brand-hover: #0b3a63;
+  --brand-deep: #093256;
+  --brand-soft: #e8f2fc;
+  --brand-border: #b6d4f0;
+  --brand-glow: rgba(15, 76, 129, 0.14);
+
+  --accent: #1e78c8;
+  --accent-soft: #edf6ff;
+  --accent-border: #bedbfd;
+
+  --ok: #15803d;
+  --ok-bg: #f0fdf4;
+  --ok-border: #bbf7d0;
+
+  --warn: #b45309;
+  --warn-bg: #fffbeb;
+  --warn-border: #f59e0b;
+
+  --danger: #b91c1c;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+
+  /* Đường viền & bóng đổ */
+  --line: #dbe6f2;
+  --line-soft: #ecf2f8;
+  --line-strong: #c2d4e8;
+  --shadow-xs: 0 1px 2px rgba(15, 30, 46, 0.05);
+  --shadow-sm: 0 2px 8px rgba(15, 30, 46, 0.07);
+  --shadow-md: 0 10px 28px rgba(15, 30, 46, 0.12);
+  --shadow-lg: 0 24px 64px rgba(15, 30, 46, 0.18);
+
+  /* Phông chữ & chuyển động */
+  --font-ui: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-paper: "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Kích thước khung làm việc */
+  --header-h: 56px;
+  --menubar-h: 30px;
+  --toolbar-h: 42px;
+  --ruler-h: 20px;
+  --footer-h: 34px;
+  --sidebar-w: 232px;
+  --assistant-w: 364px;
+  --touch-min: 44px;
+
+  /* Bo góc */
+  --radius-xs: 4px;
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  /* Tầng lớp hiển thị */
+  --z-sticky: 20;
+  --z-drawer: 40;
+  --z-floating: 60;
+  --z-composer: 100;
+  --z-toast: 140;
+
+  /* Tương thích biến cũ cho một số phần mở rộng */
+  --ui-accent: var(--brand);
+  --ui-line: var(--line);
+  --ui-muted: var(--ink-muted);
+  --green: var(--brand);
+  --muted: var(--ink-muted);
+  --mach-ink: var(--ink);
+  --mach-teal: var(--brand);
+  --mach-mint: var(--brand-soft);
+  --mach-canvas: var(--bg-canvas);
+  --mach-line: var(--line);
+  --mach-muted: var(--ink-muted);
+  --doc-font: "Times New Roman";
+  --doc-size: 15pt;
+  --doc-line-height: 1.5;
+  --chat-viewport-height: 100dvh;
+}

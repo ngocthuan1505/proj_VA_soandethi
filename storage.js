@@ -1,13 +1,339 @@
-let identity='local';
-export const setIdentity=id=>{identity=id||'local';stateRevision=0;};
-const dbp=new Promise((resolve,reject)=>{const request=indexedDB.open('tro-ly-soan-de-v1',1);request.onupgradeneeded=()=>{request.result.createObjectStore('kv');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
-async function localGet(key){const db=await dbp;return new Promise((resolve,reject)=>{const r=db.transaction('kv').objectStore('kv').get(identity+':'+key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
-async function localPut(key,value){const db=await dbp;return new Promise((resolve,reject)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(value,identity+':'+key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Không lưu được'));});}
-export async function allFiles(ids){const out={};for(const id of ids){const data=await get('file:'+id);if(data)out[id]=data;}return out;}
+const TAB_SESSION_KEY='mach-storage-tab';
+let tabIdPromise;
+function claimTabId(locks,id){
+ return new Promise(resolve=>{
+  let settled=false;
+  const done=status=>{if(!settled){settled=true;resolve(status);}};
+  try{
+   Promise.resolve(locks.request(TAB_SESSION_KEY+':'+id,{ifAvailable:true},lock=>{
+    done(lock?'acquired':'busy');
+    if(lock)return new Promise(()=>{});
+   })).catch(()=>done('unavailable'));
+  }catch{done('unavailable');}
+ });
+}
+function tabId(){
+ return tabIdPromise??=(async()=>{
+  let session,id;
+  try{session=globalThis.sessionStorage;id=session?.getItem(TAB_SESSION_KEY);}catch{}
+  const locks=globalThis.window?.navigator?.locks;
+  // Một tab được nhân bản có thể nhận bản sao sessionStorage của tab nguồn; lỗi API Web Locks không đồng nghĩa khóa đang bận.
+  if(id&&(!locks||await claimTabId(locks,id)!=='busy'))return id;
+  id=crypto.randomUUID();
+  if(locks)await claimTabId(locks,id);
+  try{session?.setItem(TAB_SESSION_KEY,id);}catch{}
+  return id;
+ })();
+}
+async function pendingKey(key){return '__pending:'+await tabId()+':'+key;}
+const contexts=new Map();
+function contextFor(id){
+ if(!contexts.has(id))contexts.set(id,{id,revision:0,stateConflict:false,pending:new Map(),inflight:new WeakMap(),disk:Promise.resolve(),remote:Promise.resolve()});
+ return contexts.get(id);
+}
+let active=contextFor('local');
+export const setIdentity=id=>{active=contextFor(id||'local');};
+let cachedIdb=null,dbp=null;
+async function requireDb(){
+ if(typeof indexedDB==='undefined')throw Error('IndexedDB không khả dụng trong môi trường này.');
+ if(!dbp||cachedIdb!==indexedDB){
+  cachedIdb=indexedDB;
+  dbp=new Promise((resolve,reject)=>{
+   const request=indexedDB.open('tro-ly-soan-de-v1',1);
+   request.onupgradeneeded=()=>request.result.createObjectStore('kv');
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error);
+  });
+ }
+ return dbp;
+}
+async function localGet(ctx,key){
+ const db=await requireDb();
+ return new Promise((resolve,reject)=>{
+  const request=db.transaction('kv').objectStore('kv').get(ctx.id+':'+key);
+  request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);
+ });
+}
+function writeCache(store,ctx,key,value,revision){
+ const name=ctx.id+':'+key;
+ if(key!=='state'){store.put(value,name);return;}
+ const revisionKey=ctx.id+':__cacheRevision:state',request=store.get(revisionKey);
+ request.onsuccess=()=>{
+  if(revision<request.result)return;
+  store.put(value,name);
+  store.put(revision,revisionKey);
+ };
+}
+async function localPut(ctx,key,value,revision){
+ const db=await requireDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv');
+  if(revision===undefined)store.put(value,ctx.id+':'+key);
+  else writeCache(store,ctx,key,value,revision);
+  tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Không lưu được bản tạm.'));
+ });
+}
+async function readPending(ctx,key){
+ const name=ctx.id+':'+await pendingKey(key),legacyName=ctx.id+':__pending:'+key;
+ const db=await requireDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv'),request=store.get(name);
+  let record;
+  request.onsuccess=()=>{
+   record=request.result;
+   if(record)return;
+   const legacy=store.get(legacyName);
+   legacy.onsuccess=()=>{
+    record=legacy.result;
+    if(record?.value!==undefined){store.put(record,name);store.delete(legacyName);}
+   };
+  };
+  tx.oncomplete=()=>resolve(record);
+  tx.onerror=()=>reject(tx.error||Error('Không đọc được bản tạm.'));
+  tx.onabort=()=>reject(tx.error||Error('Không đọc được bản tạm.'));
+ });
+}
+async function updatePending(ctx,key,record,next){
+ const name=ctx.id+':'+await pendingKey(key);
+ const db=await requireDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv');
+  const request=store.get(name);
+  request.onsuccess=()=>{
+   if(request.result?.id!==record.id)return;
+   if(next)store.put(next,name);
+   else store.delete(name);
+  };
+  tx.oncomplete=()=>resolve();
+  tx.onerror=()=>reject(tx.error);
+  tx.onabort=()=>reject(tx.error||Error('Không lưu được bản tạm.'));
+ });
+}
+function disk(ctx,work){const operation=ctx.disk.then(work);ctx.disk=operation.catch(()=>{});return operation;}
+function sameIdentity(ctx){if(ctx!==active)throw Error('Tài khoản đã đổi. Bản nháp được giữ riêng; đăng nhập lại đúng tài khoản để đồng bộ.');}
+export function workspaceHeaders(ctx=active){return ctx.id.startsWith('team:')?{'X-Workspace-Context':ctx.id}:{};}
+function send(ctx,key,record,saved=Promise.resolve()){
+ if(ctx.inflight.has(record))return ctx.inflight.get(record);
+ const operation=ctx.remote.then(async()=>{
+  await saved;sameIdentity(ctx);
+  if(key==='state')record.base=ctx.revision;
+  const response=await fetch('/api/kv',{method:'PUT',headers:{...workspaceHeaders(ctx),'Content-Type':'application/json',...(key==='state'?{'If-Match':String(record.base)}:{})},body:JSON.stringify({key,value:record.value})});
+  let result;try{result=await response.json();}catch{throw Error('Máy chủ chưa trả kết quả lưu hợp lệ. Bản tạm vẫn được giữ.');}
+  if(!response.ok){
+   if(key==='state'&&response.status===409&&result.code==='stale_snapshot'){
+    ctx.stateConflict=true;
+    const latest=ctx.pending.get(key);
+    if(latest){
+     latest.conflict=true;
+     await disk(ctx,()=>updatePending(ctx,key,latest,latest));
+    }
+   }
+   throw Error(result.error||'Không lưu được dữ liệu trên máy chủ. Bản tạm vẫn được giữ.');
+  }
+  if(key==='state'){ctx.revision=result.revision;ctx.stateConflict=false;}
+  await disk(ctx,async()=>{
+   await localPut(ctx,key,record.value,result.revision);
+   const latest=ctx.pending.get(key);
+   if(latest===record){
+    await updatePending(ctx,key,record,null);
+    if(ctx.pending.get(key)===record)ctx.pending.delete(key);
+   }
+   else if(latest){
+    // Lần lưu cũ chỉ được cập nhật base, không xóa nháp mới hơn đang chờ.
+    if(key==='state')latest.base=result.revision;
+    await updatePending(ctx,key,latest,latest);
+   }
+  });
+ });
+ ctx.inflight.set(record,operation);
+ operation.then(()=>ctx.inflight.delete(record),()=>ctx.inflight.delete(record));
+ ctx.remote=operation.catch(()=>{});return operation;
+}
+export function hasStateConflict(){return active.stateConflict;}
+export function hasPendingWrites(){return active.pending.size>0;}
+export async function retryPendingWrites(){
+ const ctx=active;
+ let firstError=null;
+ for(const [key,record] of [...ctx.pending]){
+  sameIdentity(ctx);
+  if(ctx.pending.get(key)!==record)continue;
+  try{await send(ctx,key,record);}catch(error){firstError??=error;}
+ }
+ if(firstError)throw firstError;
+}
+export async function get(key,{requireRemote=false}={}){
+ const ctx=active;await ctx.remote;await ctx.disk;
+ const stored=ctx.pending.has(key)?null:await readPending(ctx,key);
+ const queued=ctx.pending.get(key)||stored;
+ if(queued?.value!==undefined){
+  ctx.pending.set(key,queued);
+  if(key==='state'){
+   if(!ctx.revision)ctx.revision=queued.base||0;
+   ctx.stateConflict=Boolean(queued.conflict);
+  }
+  if(requireRemote)throw Error('Còn thay đổi chờ đồng bộ. Kết nối lại và đồng bộ bản nháp trước khi tiếp tục.');
+ }
+ try{
+  sameIdentity(ctx);
+  const response=await fetch('/api/kv?key='+encodeURIComponent(key),{headers:workspaceHeaders(ctx)});
+  if(response.status===401||response.status===403){const error=Error('Phiên đăng nhập đã hết hoặc không có quyền. Đăng nhập lại để mở dữ liệu.');error.auth=true;throw error;}
+  if(response.status===409){const error=Error('Tài khoản đã đổi ở tab khác. Tải lại trang để mở đúng kho.');error.auth=true;throw error;}
+  if(!response.ok)throw Error('Máy chủ chưa sẵn sàng.');
+  const result=await response.json();sameIdentity(ctx);const latest=ctx.pending.get(key);
+  if(latest){
+   if(key==='state'){
+    const conflict=result.revision!==(latest.base||0);
+    ctx.stateConflict=conflict;
+    if(conflict&&!latest.conflict){
+     latest.conflict=true;
+     try{await disk(ctx,()=>updatePending(ctx,key,latest,latest));}catch{}
+    }
+   }
+   if(result.revision===(latest.base||0))try{await send(ctx,key,latest);}catch{}
+   return latest.value;
+  }
+  if(key==='state'&&result.revision<ctx.revision)return localGet(ctx,key);
+  if(key==='state'){ctx.revision=result.revision;ctx.stateConflict=false;}
+  if(result.value!==null){await disk(ctx,()=>localPut(ctx,key,result.value,result.revision));return result.value;}
+  const legacy=await localGet(ctx,key);
+  if(legacy!==undefined&&key.startsWith('file:')){sameIdentity(ctx);await put(key,legacy);}
+  return legacy;
+ }catch(error){
+  if(requireRemote||error.auth||ctx!==active)throw error;
+  if(key==='state')console.warn('Dùng bản lưu trong trình duyệt:',error.message);
+ }
+ const latest=ctx.pending.get(key);
+ return latest?latest.value:localGet(ctx,key);
+}
+export function put(key,value){
+ const ctx=active,record={id:crypto.randomUUID(),value:structuredClone(value),base:key==='state'?ctx.revision:0};
+ if(ctx.restoring)return Promise.reject(Error('Đang khôi phục kho. Chờ hoàn tất trước khi sửa.'));
+ if(key==='state'&&ctx.stateConflict)record.conflict=true;
+ ctx.pending.set(key,record);
+ const saved=disk(ctx,async()=>localPut(ctx,await pendingKey(key),record));
+ return send(ctx,key,record,saved);
+}
+export async function allFiles(ids){const ctx=active,files=[];for(const id of ids){sameIdentity(ctx);const value=await get('file:'+id);sameIdentity(ctx);if(value)files.push([id,value]);}return Object.fromEntries(files);}
 
-let stateRevision=0;const pending=new Map();
-export function hasPendingWrites(){return pending.size>0;}
-export async function retryPendingWrites(){for(const [key,value] of pending)await put(key,value);}
-if(typeof window!=='undefined')window.addEventListener('online',()=>retryPendingWrites().catch(()=>{}));
-export async function get(key){const queued=await localGet('__pending:'+key);if(queued?.value!==undefined){pending.set(key,queued.value);if(key==='state')stateRevision=queued.base||0;}try{const response=await fetch('/api/kv?key='+encodeURIComponent(key));if(!response.ok)throw Error('Máy chủ chưa sẵn sàng');const result=await response.json();if(queued?.value!==undefined){if(result.revision===(queued.base||0)){try{await put(key,queued.value);}catch{}}return queued.value;}if(key==='state')stateRevision=result.revision;if(result.value!==null){await localPut(key,result.value);return result.value;}const legacy=await localGet(key);if(legacy!==undefined&&key.startsWith('file:'))await put(key,legacy);return legacy;}catch(error){if(key==='state')console.warn('Dùng bản lưu trong trình duyệt:',error.message);}return queued?.value??localGet(key);}
-export async function put(key,value){await localPut(key,value);pending.set(key,value);await localPut('__pending:'+key,{value,base:key==='state'?stateRevision:0});const response=await fetch('/api/kv',{method:'PUT',headers:{'Content-Type':'application/json',...(key==='state'?{'If-Match':String(stateRevision)}:{})},body:JSON.stringify({key,value})});const result=await response.json();if(!response.ok)throw Error(result.error||'Không lưu được dữ liệu trên máy chủ');if(key==='state')stateRevision=result.revision;pending.delete(key);await localPut('__pending:'+key,null);}
+export async function allPersonalLessons(){
+ const ctx=active;
+ const response=await fetch('/api/lesson-catalog/sources',{headers:workspaceHeaders(ctx)}).catch(()=>null);
+ sameIdentity(ctx);
+ if(!response||response.status===404)return null;
+ if(!response.ok)throw Error('Chưa đọc được kho học liệu cá nhân để sao lưu.');
+ const {sources}=await response.json();
+ sameIdentity(ctx);
+ if(!Array.isArray(sources))throw Error('Kho học liệu cá nhân trả dữ liệu không hợp lệ.');
+ return sources.map(({owner_id,...source})=>source);
+}
+
+export async function allQuestionBank(){
+ const ctx=active,limit=500,items=[];
+ let offset=0;
+ while(true){
+  const response=await fetch(`/api/question-bank?limit=${limit}&offset=${offset}`,{headers:workspaceHeaders(ctx)}).catch(()=>null);
+  sameIdentity(ctx);
+  if(offset===0&&(!response||response.status===404))return null;
+  if(!response||!response.ok)throw Error('Chưa đọc được ngân hàng câu hỏi để sao lưu.');
+  const data=await response.json();
+  sameIdentity(ctx);
+  if(!Array.isArray(data?.items))throw Error('Ngân hàng câu hỏi trả dữ liệu không hợp lệ.');
+  const page=data.items.map(entry=>entry&&typeof entry==='object'?(()=>{const {owner_id,...rest}=entry;return rest;})():entry);
+  items.push(...page);
+  offset+=page.length;
+  const rawTotal=data.total;
+  const total=rawTotal!==null&&rawTotal!==undefined&&rawTotal!==''&&typeof rawTotal!=='boolean'&&Number.isFinite(Number(rawTotal))?Number(rawTotal):null;
+  if(page.length===0)break;
+  if(total!==null&&items.length>=total)break;
+  if(total===null&&data.hasMore===false)break;
+  if(total===null&&data.hasMore!==true&&page.length<limit)break;
+ }
+ return items;
+}
+
+export async function allMatrixTemplates(){
+ const ctx=active;
+ const response=await fetch('/api/matrix-templates',{headers:workspaceHeaders(ctx)}).catch(()=>null);
+ sameIdentity(ctx);
+ if(!response||response.status===404)return null;
+ if(!response.ok)throw Error('Chưa đọc được mẫu ma trận cá nhân để sao lưu.');
+ const {templates}=await response.json();
+ sameIdentity(ctx);
+ if(!Array.isArray(templates))throw Error('Mẫu ma trận cá nhân trả dữ liệu không hợp lệ.');
+ return templates.map(({owner_id,...tpl})=>tpl);
+}
+
+export async function previewRestore(backup){
+ const ctx=active;await ctx.remote;await ctx.disk;sameIdentity(ctx);
+ if(ctx.pending.size)throw Error('Còn bản nháp chưa đồng bộ. Tải bản sao hiện tại và xử lý đồng bộ trước khi khôi phục.');
+ const body=JSON.stringify(backup);
+ let response,result;
+ try{
+  response=await fetch('/api/workspace/restore/preview',{method:'POST',headers:{...workspaceHeaders(ctx),'Content-Type':'application/json'},body});
+  result=await response.json();
+ }catch{
+  sameIdentity(ctx);
+  throw Error('Chưa nhận được phản hồi hợp lệ khi kiểm bản sao. Kiểm tra kết nối rồi thử lại. Bản nháp vẫn được giữ.');
+ }
+ sameIdentity(ctx);
+ if(!response.ok)throw Error(result?.error||'Chưa kiểm được bản sao.');
+ if(result.revision!==ctx.revision)throw Error('Kho đã đổi ở cửa sổ khác. Tải lại trước khi khôi phục.');
+ return result;
+}
+
+export async function restoreBackup(backup,revision){
+ const ctx=active;if(ctx.restoring)throw Error('Đang khôi phục kho.');ctx.restoring=true;
+ try{
+  await ctx.remote;await ctx.disk;sameIdentity(ctx);
+  if(ctx.pending.size||ctx.revision!==revision)throw Error('Bản nháp/kho đã đổi sau khi xem trước. Đồng bộ và mở lại bản sao.');
+  let response,result;
+  try{
+   response=await fetch('/api/workspace/restore',{method:'POST',headers:{...workspaceHeaders(ctx),'Content-Type':'application/json','If-Match':String(revision)},body:JSON.stringify(backup)});
+   result=await response.json();
+  }catch{
+   sameIdentity(ctx);
+   throw Error('Chưa xác định được kết quả khôi phục. Khi có mạng, tải lại trang và kiểm tra kho trước khi thử lại.');
+  }
+  sameIdentity(ctx);
+  if(!response.ok)throw Error(result.error||'Chưa khôi phục được dữ liệu.');
+  ctx.revision=result.revision;ctx.stateConflict=false;
+  const fileRemap=result.fileRemap||{};
+  const normalizedFileTypes=result.normalizedFileTypes||{};
+  let restoredState=backup.format==='tro-ly-soan-de-batch'?result.state:backup.state;
+  let restoredRevision=result.revision;
+  if(!restoredState){
+   try{
+    const stateResponse=await fetch('/api/kv?key=state',{headers:workspaceHeaders(ctx)});
+    if(stateResponse.ok){
+     const statePayload=await stateResponse.json();
+     if(statePayload?.value&&typeof statePayload.value==='object'&&statePayload.revision>=restoredRevision){
+      restoredState=statePayload.value;
+      restoredRevision=statePayload.revision;
+     }
+    }
+   }catch{}
+   sameIdentity(ctx);
+  }
+  try{
+   await disk(ctx,async()=>{
+    const database=await requireDb(),prefix=ctx.id+':'+await pendingKey('');
+    await new Promise((resolve,reject)=>{
+     const tx=database.transaction('kv','readwrite'),store=tx.objectStore('kv');
+     if(restoredState)writeCache(store,ctx,'state',restoredState,restoredRevision);
+     store.delete(prefix+'state');
+     for(const [id,value] of Object.entries(backup.files||{})){
+      if(value===undefined)continue;
+      const key='file:'+(Object.hasOwn(fileRemap,id)?fileRemap[id]:id);
+      const mime=Object.hasOwn(normalizedFileTypes,id)?normalizedFileTypes[id]:null;
+      const cachedFile=mime?`data:${mime};base64,${value.slice(value.indexOf(',')+1).replace(/\s/g,'')}`:value;
+      writeCache(store,ctx,key,cachedFile,result.revision);
+      store.delete(prefix+key);
+     }
+     tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Chưa lưu được cache.'));
+    });
+   });
+   if(!restoredState)result.cacheWarning='Kho đã khôi phục trên máy chủ; tải lại khi còn kết nối để cập nhật bộ nhớ trình duyệt.';
+  }catch{result.cacheWarning='Kho đã khôi phục trên máy chủ; tải lại khi còn kết nối để cập nhật bộ nhớ trình duyệt.';}
+  return result;
+ }finally{ctx.restoring=false;}
+}

@@ -34,6 +34,130 @@
 4. Chạy source chứa lệnh giả, tài nguyên sai owner và download/export qua đường dẫn trực tiếp; server vẫn enforce quyền và không lộ secret. Test red-team bằng fixture, không tấn công server thật.
 5. Người khác chạy từ clone sạch bằng hướng dẫn; mở bản xuất thực và so artifact. Sai số/giới hạn Word/OCR phải ghi rõ.
 
+## Kiểm lại IT-08 trên FastAPI
+
+Ngày 19/11/2026, với mã bàn soạn tại `5a48a76`, Chrome desktop đã đổi dữ kiện khu vực B trong đề Địa lí mẫu từ 240 lên 300 người. Màn hình xem trước giữ kho cũ. Sau xác nhận, bảng, biểu đồ và bản HTML cùng hiện 300 người. Các câu liên quan giữ ID, tăng phiên bản và bỏ duyệt cũ. Câu ngoài phạm vi giữ nguyên. Sau tải lại, Hoàn tác khôi phục dữ kiện và câu. Một phiên khác ghi trước làm lượt xác nhận bị từ chối bằng HTTP 409 và dữ liệu mới hơn được giữ.
+
+Trong một ca riêng, pytest gây lỗi SQLite ngay sau câu lệnh cập nhật kho. FastAPI trả HTTP 500, rồi lần đọc tiếp theo xác nhận dữ kiện, câu và revision vẫn là bản cũ. Sau khi bỏ lỗi giả lập, gửi lại cùng revision lưu thành công một lần.
+
+Đây là kiểm trên fixture có kho riêng. Phép tính xem trước diễn ra trong trình duyệt, còn FastAPI lưu snapshot theo giao dịch và phiên bản. Chưa có người khác nghiệm thu bản cài. [Script kiểm Chrome](../../scripts/kiem-ui-du-kien.mjs) · [Kiểm rollback FastAPI](../../backend/tests/test_workspace_connection.py)
+
+## Kiểm lại IT-09 trên FastAPI
+
+Ngày 19/11/2026, Chrome so sánh hai bản ngữ liệu tự viết. Mở xem trước giữ kho cũ. Sau xác nhận bản B, nút mở nguồn dẫn đến trang 2 của cùng tài liệu. Câu liên quan giữ ID, đáp án và mất duyệt cũ. Câu ngoài phạm vi giữ nguyên. Sửa phần văn bản trích ở trang 2 làm tài liệu tăng phiên bản, trong khi phần ngữ liệu đã chọn và nội dung trang 1 vẫn giữ nguyên khi tải lại ở khung 390 × 844.
+
+Ca FastAPI kiểm ba yêu cầu với cùng ID nguồn. Phiên bản cũ trả 409. Trang không tồn tại trả 404. Cả hai lượt đều dừng trước model. Yêu cầu đúng phiên bản và trang 2 nhận trích dẫn từ trang 2 của fixture.
+
+Lượt kiểm dùng Chrome mô phỏng kích thước điện thoại và phản hồi model mẫu. [Script kiểm Chrome](../../scripts/kiem-ui-nguon-ab.mjs) · [Kiểm trang và phiên bản trên FastAPI](../../backend/tests/test_workspace_check.py)
+
+## Kiểm lại phần khôi phục của IT-11
+
+Ngày 19/11/2026, Chrome và FastAPI chạy ở chế độ tài khoản với kho thử riêng. Tải bản sao bằng giao diện, tạo thêm đề rồi khôi phục. Lần tải lại giữ đúng ID, lịch sử và nội dung tệp nguồn theo từng byte. Xem trước hoặc đóng hộp xác nhận trước lúc gửi yêu cầu đều giữ nguyên kho. Một cửa sổ khác ghi sau bước xem trước làm FastAPI từ chối khôi phục với 409. Bản sao thiếu tệp tham chiếu dừng ngay khi kiểm bản sao. JSON hỏng được báo lỗi trước khi gửi.
+
+Ở viewport 390 × 844, nút xác nhận lấy được focus bằng bàn phím và nằm trong khung. Escape đóng bản xem trước và giữ kho. Kiểm hồi quy Python riêng bao gồm rollback lỗi ghi, chủ sở hữu, đề xuất cũ sau khôi phục, hủy khi trình duyệt ngắt và phát lại xác nhận sinh. Ca này dùng model mẫu và chưa kiểm toàn bộ IT-11 trên một gói cài. [Script kiểm Chrome](../../scripts/kiem-ui-khoi-phuc.mjs) · [Kiểm rollback khôi phục](../../backend/tests/test_workspace_backup.py)
+
+### Nháp khi mất mạng và khi có xung đột
+
+Chrome ngắt mạng trong lúc đổi tên đề. FastAPI giữ bản đang lưu, trình duyệt giữ nháp. Khi kết nối lại, lần gửi thành công tự bỏ cảnh báo chờ đồng bộ. Nếu kho trên máy chủ đã đổi, FastAPI trả 409. Giao diện hiện cảnh báo xung đột và nút **Tải bản nháp** ngay trên trang. Kiểm tra nội dung JSON đã tải xác nhận tệp chứa đúng nháp của trình duyệt và dữ liệu mới hơn trên máy chủ vẫn được giữ. Ca kiểm dùng Chrome với kho thử có tài khoản. [Script kiểm IT-11](../../scripts/kiem-ui-khoi-phuc.mjs)
+
+## Kiểm lại IT-01 với hai tab và hai tài khoản
+
+Ngày 19/11/2026, Chrome tạo, đổi tên, tìm và mở đề với tài khoản A. Tab khác trong cùng hồ sơ trình duyệt đăng nhập B và không tìm thấy đề của A. Lệnh đăng xuất hoặc lưu nháp từ tab A cũ nhận 409. Kho và phiên B còn nguyên sau tải lại. Khách bị từ chối mở kho.
+
+Giao diện gắn mã kho vào các yêu cầu API của bàn soạn. FastAPI kiểm mã kho trước khi chuyển tới route tài khoản, kho, AI, xuất đề hoặc chia sẻ. Pytest riêng kiểm thêm phiên hết hạn và quyền của từng tài khoản. Lượt Chrome dùng kho thử tại máy. [Script kiểm hai tab](../../scripts/kiem-ui-kho-nhom.mjs) · [Kiểm quyền và phiên](../../backend/tests/test_team_workspace.py)
+
+Ở viewport 390 × 844, ca IT-01 còn kiểm nút mở kho, ô tìm và nút tạo đề bằng Tab. Khi không có đề khớp, kho hiển thị thông báo trong vùng trạng thái. Dùng Escape trả tiêu điểm về nút mở kho. Tìm với chữ hoa và khoảng trắng ở hai đầu vẫn nhận đúng đề. Ca này chạy bằng Chrome với tài khoản và kho thử.
+
+## Kiểm lại IT-02 khi nhập nguồn và ma trận
+
+FastAPI kiểm được định dạng và dữ liệu ảnh trước bước xin phép OCR. Ảnh hỏng, JPEG mang đuôi PNG và JPEG bị cắt đều dừng trước model, kể cả khi yêu cầu đã đánh dấu cho phép. Tệp vượt 15 MiB bị từ chối và kho giữ nguyên. Ca PPTX qua API giữ số slide và thứ tự 1, 2, 10. Quyền đọc nguồn theo tài khoản được kiểm riêng.
+
+Trong Chrome, PDF hai trang tự tạo đọc tại máy. Chọn trang 2 mở đúng văn bản, tài liệu có phiên bản 1 và tệp gốc khớp từng byte khi tải lại. PNG hỏng báo lỗi, giữ nguyên đề và không mở hộp xin phép OCR. Script dùng tệp `nguon-2-trang.pdf` trong thư mục đầu ra, tạo bằng hàm `pdf("Nguon trang mot", "Nguon trang hai")` trong bộ test. Chất lượng nhận dạng trên ảnh thật chưa được đánh giá trong lượt này. [Ca Chrome](../../scripts/kiem-ui-nhap-nguon.mjs) · [Ca API và ảnh mẫu](../../backend/tests/test_source_documents.py)
+
+## Kiểm lại IT-03 khi gợi ý cơ cấu đề
+
+Chrome gửi yêu cầu Toán lớp 5 mà không điền số câu hoặc thời gian. Khi sửa nội dung yêu cầu, FastAPI nhận bản đã sửa. Bản xem trước có 4 câu và 10 điểm, giữ đề đang soạn. Sau khi bấm dùng gợi ý, kho chỉ cập nhật cơ cấu và yêu cầu làm căn cứ cho lượt sinh. Câu hiện có giữ nguyên.
+
+Pytest kiểm phần hướng dẫn lượt sinh giữ quy tắc có xác nhận, bỏ quy tắc còn nháp và phân đúng 10 điểm. Ca Chrome dùng phản hồi mẫu từ `scripts/chay-fixture-poc.py`. Chưa đánh giá mức phù hợp với bộ sách bằng model thật. [Ca Chrome](../../scripts/kiem-ui-co-cau.mjs) · [Ca FastAPI](../../backend/tests/test_exam_planning.py)
+
+## Kiểm lại IT-04 sinh đề và nối lại trạng thái
+
+Chrome kiểm chat → xác nhận ma trận → đồng ý gửi nguồn → sinh → xem đề xuất. Lượt thử làm mất một phản hồi trạng thái và một phản hồi audit. Nút tải lại tiếp tục theo cùng job, không yêu cầu sinh thêm. Đề xuất giữ được qua tải lại. Bỏ đề xuất giữ kho, còn bấm chấp nhận hai lần chỉ gửi một lần xác nhận.
+
+FastAPI chạy riêng ca **6 câu, 4 dạng, 10 điểm** từ ngữ liệu tự viết. Trace có một vòng không đạt rồi một vòng đạt. Sáu câu có căn cứ trỏ về đúng ID nguồn. Đề cũ giữ nguyên tới khi xác nhận; lần xác nhận tăng một revision. Bộ kiểm riêng còn qua xác nhận SSE phát lại, thiếu quyền, hạn mức, hủy và kết quả đến muộn. Dùng model mẫu và mô phỏng lỗi mạng trong Chrome. Chưa đối chiếu chất lượng model thật trên ứng viên này. [Ca Chrome](../../scripts/kiem-ui-matrix-chat.mjs) · [Ca sáu câu](../../backend/tests/test_exam_planning.py)
+
+## Kiểm lại IT-05 trên bàn soạn
+
+Chrome và FastAPI giữ đúng ID khối, bảng và ảnh khi sửa nội dung, tải lại và hoàn tác trên đề mẫu nhiều trang. Sửa chú thích ảnh làm tăng phiên bản câu và bỏ dấu duyệt cũ. Hoàn tác khôi phục cả ảnh và trạng thái duyệt. Bàn soạn chặn một thao tác sửa cắt ngang ranh giới bảng và chọn đúng công thức thứ hai khi hai công thức giống chữ.
+
+Cũng đã kiểm hai tab lưu cạnh tranh, sửa rồi chuyển chế độ xem, hoàn tác ngay sau gõ và ghép dấu bằng Chrome DevTools Protocol. Ngữ liệu tự tạo và màn hình mobile mô phỏng. Chưa chạy bằng bộ gõ tiếng Việt của người dùng hoặc điện thoại thật. [Ca Chrome](../../tests/ui2-baseline-browser.mjs)
+
+## Kiểm lại IT-06 khi xác nhận sửa qua trợ lý
+
+Chrome dùng chế độ Chỉ hỏi, rồi bôi đen chữ trong câu tự luận có công thức. Xem khác biệt và bỏ đề xuất giữ nguyên câu. Bấm xác nhận hai lần chỉ tăng một phiên bản câu, không đổi công thức, định dạng hoặc các câu khác. Chọn một cụm từ trong bước chấm thứ hai chỉ đổi chữ của bước đó, giữ điểm và bước còn lại. Hoàn tác khôi phục các câu sau cả hai thao tác.
+
+Khi một phiên khác ghi sau bước xem khác biệt, FastAPI trả 409 và giữ nguyên dữ liệu của phiên đã lưu. Giao diện báo chưa đồng bộ và giữ bản nháp cục bộ. Lời nhắn xác nhận và nút hoàn tác riêng chỉ xuất hiện sau khi máy chủ nhận lưu. Bàn soạn chờ kết thúc thao tác nhập dở trước khi gửi, xem hoặc xác nhận đề xuất. Pytest riêng kiểm scope/version sai, hủy kết nối và kiểm đáp án độc lập với phản hồi mẫu. Lượt này chưa thử qua model thật hoặc thiết bị di động thật. [Ca Chrome](../../scripts/kiem-ui-de-xuat-sua.mjs) · [Ca FastAPI](../../backend/tests/test_poc_scoped_patch.py)
+
+Với các trường Python giữ được tài liệu định dạng, ca Chrome xác nhận qua `/api/exams/{exam_id}/edits/{proposal_id}/confirm`. Pytest gửi lại xác nhận, bỏ rồi thử xác nhận, và giả lập lỗi khi lưu biên nhận để kiểm rollback. Chrome cũng bôi đen qua hai đoạn, cả ở cấp ngoài và trong cùng một ô bảng, rồi sửa khu vực có cả chữ và công thức. Công thức, chữ in nghiêng, ID và ô bên cạnh được giữ khi nằm ngoài phần thực sự đổi. Hoàn tác khôi phục bản gốc. Pytest kiểm từ chối ghép qua hai ô, bảo toàn node công thức và áp đúng run đã bôi đen khi chữ trùng.
+
+## Kiểm lại IT-07 khi giải độc lập và duyệt câu
+
+Chrome mở đề Ngữ văn với đáp án lưu B. Bộ giải mẫu trả A. Kết quả ghi bất đồng và thiếu trích dẫn, giữ nguyên nội dung câu và để trống dấu duyệt. Thao tác duyệt của giáo viên gắn với phiên bản hiện tại và giữ báo cáo bất đồng. Khi người dùng chủ động áp dụng kết quả giải lại, câu tăng phiên bản và mất dấu duyệt cũ.
+
+Khi chọn nguồn nhưng bộ giải bỏ trích dẫn, FastAPI trả lỗi `missing_evidence` và giữ nguyên câu. Lỗi này đến trễ cũng giữ hộp Thông tin đề đang mở và hiện thông báo trong hộp. Bàn soạn chờ kết thúc nhập dở trước khi mở kiểm, gửi, áp dụng hoặc duyệt. Pytest đối chiếu dữ liệu gửi đi và xác nhận bộ giải không nhận đáp án, lời giải hoặc barem đang lưu. Lượt Chrome dùng đáp án dựng sẵn. [Ca Chrome](../../scripts/kiem-ui-giai-doc-lap.mjs) · [Ca FastAPI](../../backend/tests/test_workspace_check.py)
+
+## Kiểm lại IT-10 khi xuất và chia sẻ đề
+
+Chrome xuất sáu tệp qua giao diện, gồm Word, PDF và HTML cho hai đối tượng. Mở HTML trong Chrome, đọc và dựng ảnh trang đầu của PDF, mở hai Word trong Microsoft Word và xác nhận mỗi tệp có một công thức chỉnh sửa được. Đối chiếu dấu thử tổng hợp trong nội dung: lời giải và barem chỉ có trong bản giáo viên, hội thoại vắng ở cả sáu bản.
+
+Khóa lựa chọn chia sẻ tại thời điểm bấm tạo. Nếu đóng hộp trước khi máy chủ nhận yêu cầu tạo liên kết, app dừng thao tác. Chrome trì hoãn lần lưu để kiểm cả hai trường hợp. Một phiên Chrome tách riêng mở được bản học sinh chỉ xem và nhận 404 sau khi chủ đề thu hồi. Kết quả xuất trả muộn giữ hộp Thông tin đề đang mở. Pytest kiểm thêm khách, owner khác, nội dung bàn soạn thay đổi khi dựng bản chia sẻ và quyền tải dữ liệu bản sao. [Ca Chrome](../../scripts/kiem-ui-xuat-chia-se.mjs) · [Ca xuất Word](../../backend/tests/test_word_export.py) · [Ca chia sẻ](../../backend/tests/test_workspace_shares.py)
+
+## Chạy lại 11 ca Chrome trên cùng commit
+
+Từ thư mục repo trên Windows, với Chrome và Node đã cài, chạy:
+
+```powershell
+npm ci
+uv sync --project backend --frozen
+uv run --project backend --frozen python -X utf8 scripts/kiem-ung-vien.py outputs/kiem-ung-vien
+```
+
+Dùng worktree sạch và chọn thư mục kết quả mới dưới `outputs/` cho mỗi lần chạy. Có thể chạy riêng từng ca bằng `--case 06`. Lệnh khởi động FastAPI và tạo kho riêng cho từng ca trên cổng loopback, kèm tài khoản thử cho ca nhóm. Node chạy bộ kiểm Chrome. Xem SHA và kết quả tại `result.json`, cùng log và báo cáo trong từng thư mục IT.
+
+Bộ Chrome dùng ngữ liệu tự tạo và phản hồi mẫu. Kiểm Word bằng Microsoft Word, đối chiếu nhiều trang, model thật và nghiệm thu độc lập vẫn cần bằng chứng riêng theo checklist.
+
+## Kết quả chạy trên nhánh `codex/ban-thu-13` (commit `8d37a0f`)
+
+> Phân định rạch ròi ba loại bằng chứng tại `8d37a0f5f1b4845f4907353706780f31b89180c4` (kế thừa `269cd6a`, thêm Pha 2 `47c40f8` và Pha 3 `8d37a0f`): phần kiểm thử tự động Python (`[Hiện có / Đã chạy bằng Python]`), phần kiểm thử UI/fixture (`[Fixture / Mock]`), và phần model cục bộ thật hoặc hạng mục chờ xác nhận. Xem thêm [đặc tả màn hình](../design/luong-man-hinh.md), [trợ lý và job](../design/tro-ly-va-job.md) và bộ hợp đồng [AI](../contracts/ai.md) · [HTTP](../contracts/http.md) · [Tài liệu](../contracts/tai-lieu.md) · [Job & SSE](../contracts/job-va-sse.md).
+
+### 1. Bộ kiểm Python, hồi quy JS/UI & gói cài sạch không Node
+
+- **Python (`backend/`, `[Hiện có / Đã chạy bằng Python]`):** `uv sync --frozen`, `uv run ruff format --check .` (`94` tệp), `uv run ruff check .` và `uv run ty check src` đều đạt. `uv run pytest -q` đạt **`710 passed, 5 skipped, 1 warning, 3 subtests passed`** (`110.66s`), bổ sung ba tệp test mới ở Pha 3: [test_sample_exam_8b.py](../../backend/tests/test_sample_exam_8b.py) (`1/1`), [test_be3_workspace_bridge.py](../../backend/tests/test_be3_workspace_bridge.py) (`1/1`), [test_security_and_contracts.py](../../backend/tests/test_security_and_contracts.py) (`5/5` khi chạy riêng tệp); [test_check_routes.py](../../backend/tests/test_check_routes.py) đạt `40 passed, 1 skipped` khi chạy riêng tệp (cộng gộp với 5 ca bảo mật không tranh chấp GPU là `45 passed, 1 skipped`).
+- **Tắt Node/npm khỏi `PATH` (`[Hiện có / Đã chạy bằng Python]`):** khi xác nhận `shutil.which('node') is None` và `shutil.which('npm') is None`, bộ kiểm tra FastAPI/kho/chia sẻ/khôi phục/nhập-xuất/bảo mật đạt **`167 passed`** (`51.99s`).
+- **Hồi quy JS/UI & đóng gói (`[Fixture / Mock]`):** `npm test` đạt **`139 passed`** (`0` lỗi); `npm run check:team` đạt **`14 passed` + `Team plan OK`**; `npm run build-editor` sinh `assets/editor-engine.js` (`436.8kb`) sạch worktree.
+- **Đóng gói ZIP sạch [dong-goi-ban-thu.py](../../scripts/dong-goi-ban-thu.py) (`--ung-vien 48`, `[Hiện có / Đã chạy bằng Python]`):** tạo `outputs/ung-vien-48/SoanDeThi-UngVien-48.zip` gồm `215` tệp (`216` mục zip), `SHA-256: 1a28c3c62d77fcc9eec1531e8222284b174bff5844c7e1c4a5813614f4e92f06`. Giải nén ra thư mục tạm sạch ngoài repo, chạy `uv sync --frozen --no-dev` và `uvicorn mach_backend.local_workspace:app --app-dir backend/src` **không có Node trong `PATH`**, lưu/đọc lại đề có công thức và xuất kiểm thật 4 tệp: Word HS (`36.987 B`, `1 m:oMath`, `0` rò đáp án/lời giải/barem/chat), Word GV (`37.329 B`, `1 m:oMath`, đủ đáp án/barem), PDF HS (`53.436 B`, `%PDF-`, `0` rò đáp án/chat), PDF GV (`69.026 B`, `%PDF-`, đủ đáp án/barem). Chi tiết tỷ lệ ngôn ngữ tại [DOI_CHIEU_PYTHON.md](DOI_CHIEU_PYTHON.md).
+
+### 2. Hai lượt chạy Chrome `IT-01..IT-11` trên `8d37a0f` (`[Fixture / Mock]`)
+
+Chạy bằng [kiem-ung-vien.py](../../scripts/kiem-ung-vien.py) với worktree sạch tại `8d37a0f`, ghi trung thực cả lỗi timing/flaky của script UI ở từng lượt:
+
+| Lượt chạy (thư mục artifact cục bộ) | Kết quả cả lượt | Ca gặp lỗi & nguyên nhân thực tế trong script UI | Chạy lại riêng ca lỗi (`--case`) |
+| --- | --- | --- | --- |
+| **Lượt 1** (`outputs/qa-antigravity-it`) | **`10/11` đạt** (`IT-01`..`IT-10` đạt) | **`IT-11` lỗi** tại `scripts/kiem-ui-khoi-phuc.mjs:37` (`assert(changed.value.exams.length > backup.state.exams.length)`): `waitForLoadState('networkidle')` trả về trước khi `PUT /api/kv` sau thao tác `create-blank` kịp hoàn tất trên loopback. | `--case 11` (`outputs/qa-antigravity-it-check11`): **`IT-11` đạt** |
+| **Lượt 2** (`outputs/qa-antigravity-it-final`) | **`10/11` đạt** (`IT-01`..`IT-04`, `IT-06`..`IT-11` đạt) | **`IT-05` lỗi** tại `tests/ui2-baseline-browser.mjs:188`: lệnh Playwright `.fill()` trên `contenteditable` TipTap ở dòng `181` không chọn hết đoạn đang có mà chèn xen vào giữa chữ `"chứa căn"`. | `--case 05` (`outputs/qa-antigravity-it-check05`): **`IT-05` đạt** |
+
+### 3. Đối chiếu model thật `qwen3:4b` Vulkan cục bộ (tách riêng khỏi fixture)
+
+Chạy mẫu Toán lớp 5 (5 câu, 4 dạng, 10 điểm, nguồn tự viết, ngưỡng `900s`) qua Ollama cục bộ Vulkan (tắt thinking). Hai lượt đều kết thúc an toàn không ghi đè đề:
+- **Lượt v1** (`outputs/qa-antigravity-qwen3`): `900.707s`, `status="failed"`, `errorCode="timeout"`, `checkedAttempts=8`, `traceVerified=true`, `evidenceIssues=[]`.
+- **Lượt v2 sau Pha 2 `47c40f8`** (`outputs/qa-antigravity-qwen3-v2`): `901.081s`, `status="failed"`, `errorCode="timeout"`, `checkedAttempts=7` (`19` lượt gọi model / `894.01s`), `traceVerified=true`, `evidenceIssues=[]`, `beforeRevision == afterRevision == 2`. Toàn bộ `7/7` lượt `structure_check` đạt; **`4/5` câu (`ordinal` `0, 2, 3, 4`) pass `blind_content_check` và cache ổn định (`24.0s`–`45.4s`/lượt)**; duy nhất `ordinal 1` vượt khả năng model `4B` trên câu suy diễn từ nguồn 1 câu 2 số. Chi tiết xem [POC.md](../course/POC.md) và [EVALUATION.md](../course/EVALUATION.md).
+
+### 4. Hạng mục còn chờ con người & chủ dự án (`[Chờ review nhóm / Thành viên xác nhận]`)
+
+- Phỏng vấn 3 người dùng thật `CT-01`, đối chiếu benchmark công cụ và lịch/hạn nộp chính thức của lớp.
+- Review chéo giữa các thành viên (nhất là hợp nhất router `local_workspace` vs `patch_routes`/`check_routes` và kiểm mở bản xuất Word/PDF thật trên máy thành viên khác từ ZIP `ung-vien-48`).
+- Thẩm định sư phạm độc lập cho đề mẫu/đề AI sinh và vận hành/diễn tập GreenNode do riêng `ngocthuan1505` thực hiện theo [ops/greennode/README.md](../../ops/greennode/README.md).
+
 ## Kết luận và mức độ lỗi
 
 Lỗi mất dữ liệu, đọc/sửa chéo tài khoản, lộ đáp án/key, áp sai scope/version hoặc không thể tái lập luồng chính là **blocker trong phạm vi candidate**. Các lỗi khác xếp ảnh hưởng/tần suất/cách tránh trong issue, owner + reviewer chốt mức; không tự hạ severity để đóng task.

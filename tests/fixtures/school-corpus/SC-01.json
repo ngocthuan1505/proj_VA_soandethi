@@ -1,0 +1,1246 @@
+{
+  "id": "b76c5ac2-328b-5845-842b-1f20c4f7ad7b",
+  "title": "Đề kiểm tra cuối học kì I — Toán 9 (CV 7991)",
+  "school": "TRƯỜNG THCS BÌNH MINH",
+  "department": "Tổ Toán – Tin học",
+  "subject": "Toán",
+  "grade": "9",
+  "minutes": 90,
+  "workflowStatus": "reviewed",
+  "revision": 1,
+  "updated": 1795500000000,
+  "sample": false,
+  "fullExam": false,
+  "instructions": "Học sinh làm bài 22 câu gồm 4 phần theo định hướng Công văn 7991. Không sử dụng tài liệu.",
+  "layout": {
+    "font": "Times New Roman",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "mcqColumns": 2
+  },
+  "blockIds": {
+    "heading": "80e24dc0-05ce-568d-b3ee-e30e7df09174",
+    "general": "8f6a7367-4e74-542e-96d5-0d523200d0be",
+    "marking": "52555bca-3e54-57d8-82ee-fdb37192e644"
+  },
+  "docs": [
+    {
+      "id": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+      "name": "Tai_lieu_on_tap_Toan_9_HK1.txt",
+      "kind": "text",
+      "version": 1,
+      "needsReview": false,
+      "pages": [
+        {
+          "number": 1,
+          "text": "Tư liệu Toán 9 tự biên soạn: Căn bậc hai, Hệ phương trình bậc nhất hai ẩn, Hệ thức lượng tam giác vuông, Đường tròn tâm O và Bảng tần số ghép nhóm.",
+          "uncertain": false,
+          "needsReview": false
+        }
+      ]
+    }
+  ],
+  "data": [],
+  "quote": {
+    "text": "",
+    "chosen": null,
+    "versions": []
+  },
+  "matrix": [
+    {
+      "topic": "Căn thức bậc hai",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Phương trình và hệ phương trình",
+      "type": "mcq",
+      "targets": [
+        2,
+        0,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Bất đẳng thức và bất phương trình",
+      "type": "mcq",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Hệ thức lượng trong tam giác vuông",
+      "type": "mcq",
+      "targets": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Đường tròn và cung tròn",
+      "type": "mcq",
+      "targets": [
+        1,
+        2,
+        0,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Thống kê và xác suất",
+      "type": "mcq",
+      "targets": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "points": 0.25
+    },
+    {
+      "topic": "Bất đẳng thức và bất phương trình",
+      "type": "truefalse",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Đường tròn và cung tròn",
+      "type": "truefalse",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Căn thức bậc hai",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Phương trình và hệ phương trình",
+      "type": "short",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Hệ thức lượng trong tam giác vuông",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Thống kê và xác suất",
+      "type": "short",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Căn thức bậc hai",
+      "type": "essay",
+      "targets": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "points": 0.5
+    },
+    {
+      "topic": "Phương trình và hệ phương trình",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 0.75
+    },
+    {
+      "topic": "Đường tròn và cung tròn",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "points": 1.0
+    },
+    {
+      "topic": "Bất đẳng thức và bất phương trình",
+      "type": "essay",
+      "targets": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "points": 0.75
+    }
+  ],
+  "matrixConfirmed": true,
+  "appliedPrefs": [],
+  "chat": [],
+  "history": [],
+  "undo": [],
+  "redo": [],
+  "questions": [
+    {
+      "id": "bec466bf-55c0-59c2-b8d9-3f85d03211a3",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Căn thức bậc hai",
+      "lesson": "Bài 1: Căn bậc hai",
+      "competency": "Nhận biết điều kiện xác định của căn thức",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Biểu thức $\\sqrt{2x - 6}$ xác định trên $\\mathbb{R}$ khi nào?",
+      "options": [
+        "$x \\ge 3$",
+        "$x > 3$",
+        "$x \\le 3$",
+        "$x \\ge -3$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Biểu thức dưới dấu căn không âm khi $2x - 6 \\ge 0 \\Leftrightarrow x \\ge 3$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "a12d3aca-9773-5316-aca4-9fe54996bbfd",
+        "options": "9a8805fd-8b88-5805-a50f-da8b6dd7c621",
+        "answer": "c520bde8-f729-5a69-a7c0-dc8952283b2a",
+        "explanation": "c7faeb85-12bb-588e-9183-bdc7d55bdc0d",
+        "rubric": "1fb0d277-cc22-5957-9764-78c9241b0722",
+        "figure": "f23a7ca3-9248-5ce2-9e0a-aaa5f477df6d"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "d343e9c6-50bd-5993-94d9-b13ab89c5793",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Căn thức bậc hai",
+      "lesson": "Bài 2: Hằng đẳng thức căn",
+      "competency": "Rút gọn biểu thức chứa căn bậc hai số học",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Rút gọn biểu thức $A = \\sqrt{(3 - \\sqrt{11})^2} - \\sqrt{11}$ ta được kết quả nào?",
+      "options": [
+        "$3$",
+        "$-3$",
+        "$2\\sqrt{11} - 3$",
+        "$3 - 2\\sqrt{11}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Do $\\sqrt{11} > 3$ nên $\\sqrt{(3-\\sqrt{11})^2} = \\sqrt{11} - 3$. Do đó $A = \\sqrt{11} - 3 - \\sqrt{11} = -3$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8009f4c2-3e91-5483-8a75-207eec349536",
+        "options": "2325f43f-957c-53f9-92fc-782e6fbe4a0e",
+        "answer": "98345833-1d36-5cad-9953-c5843e8fafe4",
+        "explanation": "607d7464-5fc3-550b-b26c-5831a66d86e0",
+        "rubric": "976b4479-e29a-5d24-894e-d1bfe544d97d",
+        "figure": "a5304fcb-682a-5413-8d98-6b5336f084b8"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "eb4579a2-30f9-5cbc-a9f5-2b13dfce2266",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Phương trình và hệ phương trình",
+      "lesson": "Bài 3: Phương trình quy về bậc nhất",
+      "competency": "Giải phương trình tích cơ bản",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Phương trình $(x - 4)(2x + 5) = 0$ có tổng các nghiệm bằng bao nhiêu?",
+      "options": [
+        "$\\frac{13}{2}$",
+        "$-\\frac{3}{2}$",
+        "$\\frac{3}{2}$",
+        "$4$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Nghiệm là $x = 4$ và $x = -\\frac{5}{2}$, tổng $4 - \\frac{5}{2} = \\frac{3}{2}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "99a84efc-1648-5b7f-aea5-888c938806d0",
+        "options": "4e00a2f3-f745-5d0a-bb64-b3d4b6a0f688",
+        "answer": "f34085d3-63d1-512a-a711-6cf5e18f887d",
+        "explanation": "bbe9a379-ba46-5cdf-94ea-9800df1368bd",
+        "rubric": "19e5b992-50a6-5a11-bc47-fda7e110f508",
+        "figure": "3bfc6689-e525-5b76-a1ac-1bebf60e68b5"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "e312fa1d-a8ab-5e4f-9ae5-75889fea6e30",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Phương trình và hệ phương trình",
+      "lesson": "Bài 4: Hệ phương trình bậc nhất hai ẩn",
+      "competency": "Kiểm tra cặp nghiệm của hệ phương trình",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Cặp số $(x; y)$ nào sau đây là nghiệm của hệ $\\begin{cases}2x + y = 7\\\\ x - y = 2\\end{cases}$?",
+      "options": [
+        "$(4; -1)$",
+        "$(1; 3)$",
+        "$(2; 3)$",
+        "$(3; 1)$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Cộng hai phương trình theo vế: $3x = 9 \\Rightarrow x = 3$, suy ra $y = 1$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "6c0a5c8e-1c1e-53ae-b9a8-1c5b90c540b3",
+        "options": "c57eb15f-5280-53b2-ab06-ea26d993dab3",
+        "answer": "a899533b-fc49-586c-81a5-4ab6376d51be",
+        "explanation": "09f73a7c-7cf4-50b6-99bd-ca186f754780",
+        "rubric": "5f87bc3a-8791-53d1-932b-f57b693f17e5",
+        "figure": "b1ac0fe1-9df9-52b7-b641-9bbdca5ce1df"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "aac2200e-e207-5979-84df-5e2fff176e78",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Bất đẳng thức và bất phương trình",
+      "lesson": "Bài 5: Bất phương trình bậc nhất một ẩn",
+      "competency": "Tìm nghiệm nguyên của bất phương trình",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Bất phương trình $5 - 3x \\le 14$ có tập nghiệm là gì?",
+      "options": [
+        "$x \\le -3$",
+        "$x \\ge -3$",
+        "$x > -3$",
+        "$x \\le 3$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Chuyển vế $-3x \\le 9$; chia hai vế cho $-3$ và đổi chiều được $x \\ge -3$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "8ea8254e-312e-5725-a9e8-fdfb319a316d",
+        "options": "aee942fb-c8ec-5ac6-a879-35483ae5fa67",
+        "answer": "4ef15b5a-e224-53da-a612-e6f2feb134a7",
+        "explanation": "794c7be4-e764-5804-9f9c-18a93ddd7260",
+        "rubric": "ba39fa71-e9db-5dc1-af5a-b413d63285b0",
+        "figure": "ef94c64b-a0e8-5212-ae78-33e18daec027"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "5aa6dce6-a435-530b-bb78-9ee60b90161f",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hệ thức lượng trong tam giác vuông",
+      "lesson": "Bài 6: Tỉ số lượng giác góc nhọn",
+      "competency": "Tính giá trị lượng giác trong tam giác vuông",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Cho $\\triangle ABC$ vuông tại $A$ có $AB = 6\\text{ cm}$, $AC = 8\\text{ cm}$. Giá trị $\\sin C$ bằng bao nhiêu?",
+      "options": [
+        "$\\frac{4}{3}$",
+        "$\\frac{4}{5}$",
+        "$\\frac{3}{4}$",
+        "$\\frac{3}{5}$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Cạnh huyền $BC = \\sqrt{6^2 + 8^2} = 10\\text{ cm}$, nên $\\sin C = \\frac{AB}{BC} = \\frac{6}{10} = \\frac{3}{5}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "4aa60991-78bb-57eb-b068-a7b185da2a05",
+        "options": "966f21bf-6e9d-5997-9051-6567f291ff5d",
+        "answer": "0d7cd725-8397-5609-bded-476f6bce7a04",
+        "explanation": "9d1aca74-5604-585b-8e1e-f13dbc5c44f2",
+        "rubric": "b2c10cf7-e0f1-516c-930f-3af237e04587",
+        "figure": "227cc320-11fc-566f-9403-b064e7fc908c"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "ab1208e5-09da-50f3-b5f9-d3bb390a4096",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Hệ thức lượng trong tam giác vuông",
+      "lesson": "Bài 7: Ứng dụng đo chiều cao",
+      "competency": "Tính chiều cao vật thể bằng tang góc nâng",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Một cột điện đổ bóng dài $12\\text{ m}$ trên mặt đất phẳng khi tia nắng tạo với mặt đất góc $45^\\circ$. Chiều cao cột điện là?",
+      "options": [
+        "$12\\text{ m}$",
+        "$6\\sqrt{2}\\text{ m}$",
+        "$12\\sqrt{3}\\text{ m}$",
+        "$24\\text{ m}$"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Chiều cao $h = 12 \\cdot \\tan 45^\\circ = 12\\text{ m}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "6e7b7712-4b4d-533c-9d56-daf65269ba25",
+        "options": "8f0b8e02-7a3b-52fd-8145-e7c3ba604e28",
+        "answer": "796c7565-ccc9-5569-aede-668557a4c256",
+        "explanation": "78577641-6119-5213-b521-52b7aa328bc1",
+        "rubric": "08ad1107-3d1e-5f8b-865d-b2429c3e8d42",
+        "figure": "a78adc88-9715-59f2-8e67-24098a815711"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "acb9f2cb-0633-5ac5-9da9-68af974ba2f5",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Đường tròn và cung tròn",
+      "lesson": "Bài 8: Góc ở tâm và độ dài cung",
+      "competency": "Tính độ dài cung tròn theo góc ở tâm",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Trên đường tròn bán kính $R = 9\\text{ cm}$, cung có số đo $60^\\circ$ có độ dài là bao nhiêu?",
+      "options": [
+        "$\\frac{3\\pi}{2}\\text{ cm}$",
+        "$6\\pi\\text{ cm}$",
+        "$3\\pi\\text{ cm}$",
+        "$9\\pi\\text{ cm}$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Độ dài cung $l = \\frac{\\pi R n}{180} = \\frac{\\pi \\cdot 9 \\cdot 60}{180} = 3\\pi\\text{ cm}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "7aac70e5-8b67-5030-945d-d0a880c93269",
+        "options": "4634be02-0fe3-5e13-8517-224bae3251fa",
+        "answer": "cd3829cf-504c-5310-b6d9-a1667edda132",
+        "explanation": "87f2e06e-5703-5f72-91c1-94598d7a6dd0",
+        "rubric": "3988d015-d14b-52cc-9682-f3f7d3c9548d",
+        "figure": "b2011190-18b5-52ec-a14c-30d183cc5287"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "b3d46c41-bee4-5361-beb4-c5560ab14f35",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Đường tròn và cung tròn",
+      "lesson": "Bài 9: Diện tích hình quạt tròn",
+      "competency": "Tính diện tích hình quạt tròn biết bán kính và góc",
+      "level": 1,
+      "points": 0.25,
+      "stem": "Diện tích hình quạt tròn bán kính $R = 6\\text{ cm}$ ứng với cung $90^\\circ$ là bao nhiêu?",
+      "options": [
+        "$3\\pi\\text{ cm}^2$",
+        "$18\\pi\\text{ cm}^2$",
+        "$9\\pi\\text{ cm}^2$",
+        "$36\\pi\\text{ cm}^2$"
+      ],
+      "answer": 2,
+      "answerKnown": true,
+      "explanation": "Diện tích quạt $S_q = \\frac{\\pi R^2 n}{360} = \\frac{\\pi \\cdot 36 \\cdot 90}{360} = 9\\pi\\text{ cm}^2$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "bac98e68-c820-5a66-9c1e-a9f0a5807e14",
+        "options": "f1d752b1-2fcc-5788-a783-d3c53df63674",
+        "answer": "d8acfa70-d641-5fd6-8e7f-87d2e53200fe",
+        "explanation": "fc369d9c-911b-5fd0-b690-d1bd823a2a0c",
+        "rubric": "145792d8-b6b2-5c4a-895a-9d7b5b649631",
+        "figure": "9d48ec21-319c-5f46-8bbb-9b657cdfa6df"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "d639ef74-07e9-5dcf-99c8-171a7a3a6084",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Đường tròn và cung tròn",
+      "lesson": "Bài 10: Vị trí tương đối hai đường tròn",
+      "competency": "Xác định vị trí tương đối qua khoảng cách tâm",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Hai đường tròn $(O; 7\\text{ cm})$ và $(I; 3\\text{ cm})$ có khoảng cách hai tâm $OI = 4\\text{ cm}$. Vị trí tương đối của chúng là?",
+      "options": [
+        "Tiếp xúc trong",
+        "Tiếp xúc ngoài",
+        "Cắt nhau",
+        "Đựng nhau không đồng tâm"
+      ],
+      "answer": 0,
+      "answerKnown": true,
+      "explanation": "Vì $OI = 7 - 3 = 4\\text{ cm}$ bằng hiệu hai bán kính nên hai đường tròn tiếp xúc trong.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "f91ba566-e5e5-53c3-8557-0d2745bd57c0",
+        "options": "2f9d0bab-1331-50a1-af9d-21785343fc99",
+        "answer": "61522a33-0394-58c3-af5b-f84b01f80f46",
+        "explanation": "f14f22ac-42c5-54c8-a2ee-8d50d23dd1e5",
+        "rubric": "999b180f-5715-5846-a511-3e85bb24e9de",
+        "figure": "c3409883-ee1c-5d9b-8ac0-4a068c6acbb6"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "a1b30b93-968c-553b-89cb-91723835bcab",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Thống kê và xác suất",
+      "lesson": "Bài 11: Bảng tần số tương đối",
+      "competency": "Tính tần số tương đối từ cỡ mẫu và tần số",
+      "level": 0,
+      "points": 0.25,
+      "stem": "Khảo sát $40$ học sinh lớp 9 về thời gian tự học buổi tối, có $10$ em học trên $2$ giờ. Tần số tương đối của nhóm này là?",
+      "options": [
+        "$40\\%$",
+        "$20\\%$",
+        "$30\\%$",
+        "$25\\%$"
+      ],
+      "answer": 3,
+      "answerKnown": true,
+      "explanation": "Tần số tương đối $f = \\frac{10}{40} \\cdot 100\\% = 25\\%$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "d35b000b-b9eb-58b9-b337-ca82a023f485",
+        "options": "800c0d45-9428-50b2-9bca-57de4949fdac",
+        "answer": "cbf004fc-cb75-537b-a143-4c6011c3001d",
+        "explanation": "8bb35f43-3ffb-5fba-b777-84af44fa1736",
+        "rubric": "5349017d-c55a-51d8-83a7-3d32768b6f31",
+        "figure": "4a0e9345-d1dc-521e-9f80-b85a6cad70ce"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "01ca77f4-075f-59f8-8384-79995e813fa9",
+      "v": 1,
+      "type": "mcq",
+      "topic": "Thống kê và xác suất",
+      "lesson": "Bài 12: Xác suất thực nghiệm và cổ điển",
+      "competency": "Tính xác suất khi rút ngẫu nhiên một thẻ",
+      "level": 2,
+      "points": 0.25,
+      "stem": "Một hộp đựng $12$ thẻ đánh số từ $1$ đến $12$. Rút ngẫu nhiên một thẻ, xác suất rút được thẻ mang số chia hết cho $3$ là?",
+      "options": [
+        "$\\frac{1}{4}$",
+        "$\\frac{1}{3}$",
+        "$\\frac{1}{2}$",
+        "$\\frac{5}{12}$"
+      ],
+      "answer": 1,
+      "answerKnown": true,
+      "explanation": "Các số chia hết cho $3$ gồm $\\{3; 6; 9; 12\\}$ có $4$ kết quả thuận lợi, xác suất là $\\frac{4}{12} = \\frac{1}{3}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "b5658c40-e4ab-56ab-a13e-550257cafff0",
+        "options": "a4fa8acd-a833-591f-a8a4-4fd372b8359c",
+        "answer": "457cac84-55b4-5508-a770-c7e06d8958ca",
+        "explanation": "b4232505-be7a-51e3-92a6-e75bc84021c1",
+        "rubric": "8351cee8-b2a8-5ab3-8471-7db0de490f57",
+        "figure": "c939d05f-7693-5ccf-b239-b4c227f2927a"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần I · Trắc nghiệm"
+      },
+      "sectionId": "phan-1-mcq"
+    },
+    {
+      "id": "b5495339-6ca6-5e57-b3a1-1bc710082251",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Bất đẳng thức và bất phương trình",
+      "lesson": "Bài 5: Hệ thống bất phương trình thực tế",
+      "competency": "Đánh giá tính đúng sai của các mệnh đề về chi phí gửi hàng",
+      "level": 1,
+      "points": 1.0,
+      "stem": "Một cửa hàng thuê xe giao hàng với phí cố định $150$ nghìn đồng và thêm $12$ nghìn đồng mỗi ki-lô-mét (kí hiệu quãng đường là $x > 0$, đơn vị km). Xét các khẳng định sau:",
+      "options": [
+        "a) Tổng chi phí thuê xe theo $x$ là $150 + 12x$ (nghìn đồng).",
+        "b) Để tổng chi phí không vượt quá $390$ nghìn đồng thì $150 + 12x < 390$.",
+        "c) Với ngân sách tối đa $390$ nghìn đồng, quãng đường giao hàng lớn nhất là $20\\text{ km}$.",
+        "d) Nếu quãng đường là $15\\text{ km}$ thì tổng chi phí bằng $320$ nghìn đồng."
+      ],
+      "truthValues": [
+        true,
+        false,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a) Đúng: chi phí gồm phần cố định và biến đổi. b) Sai: 'không vượt quá' là dấu $\\le 390$. c) Đúng: $12x \\le 240 \\Rightarrow x \\le 20\\text{ km}$. d) Sai: $150 + 12 \\cdot 15 = 330$ nghìn đồng.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "62896278-334b-5e0b-849e-f5e3e0be8de2",
+        "options": "0bab49f6-6cf4-5ee1-9ee5-33c614114903",
+        "answer": "2e6fa8e8-8faf-5b56-b237-05500d0c7567",
+        "explanation": "e85bdd5c-952d-5623-9650-9d03f457c391",
+        "rubric": "06c502dd-bfdb-5677-9a81-2938b5c3c0bb",
+        "figure": "7f4de8c7-7b6a-50bd-b623-7b5cdad3ff21"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần II · Câu 13"
+      },
+      "sectionId": "phan-2-tf"
+    },
+    {
+      "id": "9df90b15-0afc-57dc-a58c-73adb2d98082",
+      "v": 1,
+      "type": "truefalse",
+      "topic": "Đường tròn và cung tròn",
+      "lesson": "Bài 10: Tiếp tuyến và dây cung",
+      "competency": "Phân tích tính chất tiếp tuyến cắt nhau của đường tròn",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Cho đường tròn $(O; 5\\text{ cm})$ và điểm $M$ nằm ngoài đường tròn sao cho $OM = 13\\text{ cm}$. Kẻ hai tiếp tuyến $MA, MB$ với $(O)$ ($A, B$ là tiếp điểm). Xét các mệnh đề:",
+      "options": [
+        "a) Tam giác $OAM$ vuông tại $A$.",
+        "b) Độ dài đoạn tiếp tuyến $MA = 12\\text{ cm}$.",
+        "c) Đường thẳng $OM$ vuông góc với dây cung $AB$ tại trung điểm của $AB$.",
+        "d) Tứ giác $OAMB$ có diện tích bằng $120\\text{ cm}^2$."
+      ],
+      "truthValues": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "a, b, c) Đúng theo định lí Pythagore ($MA = \\sqrt{13^2 - 5^2} = 12\\text{ cm}$) và tính chất hai tiếp tuyến cắt nhau. d) Sai: $S_{OAMB} = 2 \\cdot \\frac{1}{2} \\cdot 5 \\cdot 12 = 60\\text{ cm}^2$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e1c78465-8776-51b7-9c96-a3e696943e6c",
+        "options": "39c92b4b-71d9-5ced-80f4-eae6c52d0398",
+        "answer": "72239d73-d3e1-5dec-974f-4780a4ae82df",
+        "explanation": "bd365d54-942b-5470-9760-75fad5e695d7",
+        "rubric": "542ba0a5-07f3-59a8-9e20-d455e154349f",
+        "figure": "a532ad10-baa3-5fb5-a5ef-657fc681a5bd"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần II · Câu 14"
+      },
+      "sectionId": "phan-2-tf"
+    },
+    {
+      "id": "7d0e183c-addb-508f-a744-622b322a0454",
+      "v": 1,
+      "type": "short",
+      "topic": "Căn thức bậc hai",
+      "lesson": "Bài 2: Tính giá trị biểu thức căn",
+      "competency": "Tính chính xác giá trị biểu thức chứa căn",
+      "level": 1,
+      "points": 0.5,
+      "stem": "Tính giá trị của biểu thức $P = \\sqrt{48} + \\sqrt{27} - 7\\sqrt{3}$ (nhập số nguyên).",
+      "options": [],
+      "answer": null,
+      "answerText": "0",
+      "answerKnown": true,
+      "explanation": "$P = 4\\sqrt{3} + 3\\sqrt{3} - 7\\sqrt{3} = 0$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "e6367073-e10e-5ba4-9728-799d4f4ae18f",
+        "options": "13c46d4d-304e-5260-bea9-e919dcee0c00",
+        "answer": "e6c1580b-7693-5829-a205-ef44a5ad696f",
+        "explanation": "7ce3eb0a-92fe-5d5f-bf42-597838ae04e9",
+        "rubric": "152e6780-9880-5ad4-ab38-a70bc5b8bc17",
+        "figure": "20e7b6ec-4759-5f5e-9885-86e87545c04c"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần III · Câu 15"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "8443f1c1-ef5e-565e-ab9d-998bdfa08539",
+      "v": 1,
+      "type": "short",
+      "topic": "Phương trình và hệ phương trình",
+      "lesson": "Bài 4: Giải hệ hai ẩn",
+      "competency": "Tìm nghiệm của hệ bằng phương pháp cộng đại số",
+      "level": 1,
+      "points": 0.5,
+      "stem": "Cho hệ phương trình $\\begin{cases}3x + 2y = 16\\\\ x - 2y = 0\\end{cases}$. Giá trị biểu thức $x + y$ bằng bao nhiêu?",
+      "options": [],
+      "answer": null,
+      "answerText": "6",
+      "answerKnown": true,
+      "explanation": "Cộng hai phương trình được $4x = 16 \\Rightarrow x = 4$, suy ra $y = 2$, nên $x + y = 6$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "d0180ad1-c2ac-5aec-a8c2-85faa8e8c399",
+        "options": "e02d9d33-2caf-56ab-80d2-fca352342266",
+        "answer": "7b7d4339-dfd8-54d4-b267-50b1d753baea",
+        "explanation": "7c143a38-2cec-56b1-a45e-db1f8531f13d",
+        "rubric": "20ebab49-2929-5bac-998a-9e88385d6d45",
+        "figure": "5cd404da-76d2-557b-99d2-7beb42daf9fe"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần III · Câu 16"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "6e632821-c15a-5758-bb27-708c495755da",
+      "v": 1,
+      "type": "short",
+      "topic": "Hệ thức lượng trong tam giác vuông",
+      "lesson": "Bài 6: Tính cạnh tam giác vuông",
+      "competency": "Vận dụng tỉ số lượng giác để tính độ dài",
+      "level": 2,
+      "points": 0.5,
+      "stem": "Cho $\\triangle DEF$ vuông tại $D$ có $DE = 9\\text{ cm}$ và $\\tan F = \\frac{3}{4}$. Tính độ dài cạnh huyền $EF$ theo đơn vị cm.",
+      "options": [],
+      "answer": null,
+      "answerText": "15",
+      "answerKnown": true,
+      "explanation": "$\\tan F = \\frac{DE}{DF} = \\frac{3}{4} \\Rightarrow DF = 12\\text{ cm}$, nên $EF = \\sqrt{9^2 + 12^2} = 15\\text{ cm}$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "0a77dfbd-cae4-5ed8-b80f-9046e17b9525",
+        "options": "1f2befee-2a1d-5c16-9d8b-6425dea62b37",
+        "answer": "bdbdf487-89f6-5d06-bb03-2fc5adc1b788",
+        "explanation": "d6e8edaa-c2c6-5e85-a64b-eda0c47b5c64",
+        "rubric": "d719ad68-9bfb-58a8-8533-789e07c37def",
+        "figure": "8182ac77-4dd0-5a28-9e8b-1bda03bdf78d"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần III · Câu 17"
+      },
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "9d7c7ffd-b8d9-5965-b61c-4051f08fe7ac",
+      "v": 1,
+      "type": "short",
+      "topic": "Thống kê và xác suất",
+      "lesson": "Bài 11: Bảng tần số ghép nhóm",
+      "competency": "Đọc bảng số liệu ghép nhóm để tính tỉ lệ",
+      "level": 2,
+      "points": 0.5,
+      "stem": "Kết quả đo chiều cao (cm) của $50$ cây giống sau $30$ ngày gieo trồng được cho ở bảng dưới đây. Có bao nhiêu phần trăm số cây cao từ $20\\text{ cm}$ trở lên?",
+      "options": [],
+      "answer": null,
+      "answerText": "64",
+      "answerKnown": true,
+      "explanation": "Số cây cao từ $20\\text{ cm}$ trở lên là $18 + 14 = 32$ cây. Tỉ lệ phần trăm là $\\frac{32}{50} \\cdot 100\\% = 64\\%$.",
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "5ec3277d-b023-5a46-835e-af028a4fffd4",
+        "options": "a98f78e5-01b2-52e3-97ec-1b66ed639834",
+        "answer": "9e0517e4-e431-5ba4-94e3-0cd8b8fe165f",
+        "explanation": "97f53aaf-a925-51fa-b41a-871a0027de04",
+        "rubric": "d6345b2d-6333-5767-b1f6-ba3964e544b9",
+        "figure": "2722892a-497a-5f8b-ba0f-9d00632105bc"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần III · Câu 18"
+      },
+      "tables": [
+        {
+          "rows": [
+            [
+              "Chiều cao (cm)",
+              "[10; 15)",
+              "[15; 20)",
+              "[20; 25)",
+              "[25; 30)"
+            ],
+            [
+              "Số cây",
+              "6",
+              "12",
+              "18",
+              "14"
+            ]
+          ]
+        }
+      ],
+      "sectionId": "phan-3-short"
+    },
+    {
+      "id": "c3dc4d9d-5690-5cf9-bbb1-ba17d8505445",
+      "v": 1,
+      "type": "essay",
+      "topic": "Căn thức bậc hai",
+      "lesson": "Bài 2: Biến đổi biểu thức chứa căn",
+      "competency": "Rút gọn biểu thức chứa căn thức bậc hai có điều kiện xác định",
+      "level": 1,
+      "points": 0.5,
+      "stem": "Rút gọn biểu thức $Q = \\left(\\frac{1}{\\sqrt{x} - 2} + \\frac{1}{\\sqrt{x} + 2}\\right) \\cdot \\frac{x - 4}{\\sqrt{x}}$ với $x > 0, x \\ne 4$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Quy đồng trong ngoặc $\\frac{2\\sqrt{x}}{x - 4}$, nhân với $\\frac{x - 4}{\\sqrt{x}}$ được $Q = 2$.",
+      "rubric": [
+        {
+          "text": "Quy đồng mẫu thức trong ngoặc thành $\\frac{2\\sqrt{x}}{(\\sqrt{x}-2)(\\sqrt{x}+2)}$",
+          "points": 0.25
+        },
+        {
+          "text": "Rút gọn đúng kết quả cuối cùng $Q = 2$",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "27487fa7-69a2-5a6d-b3c1-408fc1c84a14",
+        "options": "dd6c4eb0-3b88-5246-a003-c98492bfa5a7",
+        "answer": "1c2d23ba-092b-5808-ab83-4788d7976b9b",
+        "explanation": "06b5de0f-d285-552d-a6b1-d8da9cfc94df",
+        "rubric": "d1514752-757e-5e59-bff5-e57180097c8c",
+        "figure": "1449fda5-b3b0-569e-a0f4-c11eb64aeaf0"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần IV · Bài 19"
+      },
+      "richDoc": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Rút gọn biểu thức "
+              },
+              {
+                "type": "mathInline",
+                "attrs": {
+                  "latex": "Q = \\left(\\frac{1}{\\sqrt{x} - 2} + \\frac{1}{\\sqrt{x} + 2}\\right) \\cdot \\frac{x - 4}{\\sqrt{x}}",
+                  "display": false
+                }
+              },
+              {
+                "type": "text",
+                "text": " với "
+              },
+              {
+                "type": "mathInline",
+                "attrs": {
+                  "latex": "x > 0, x \\ne 4",
+                  "display": false
+                }
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      "sectionId": "phan-4-essay"
+    },
+    {
+      "id": "e4995e86-65b8-5193-b5ad-043ae15aebb0",
+      "v": 1,
+      "type": "essay",
+      "topic": "Phương trình và hệ phương trình",
+      "lesson": "Bài 4: Giải bài toán thực tế bằng lập hệ",
+      "competency": "Thiết lập hệ phương trình từ bài toán năng suất làm việc",
+      "level": 2,
+      "points": 0.75,
+      "stem": "Hai đội công nhân cùng sửa một đoạn đường trong $6$ ngày thì xong. Nếu đội một làm riêng trong $4$ ngày rồi đội hai làm tiếp trong $9$ ngày thì cũng vừa xong đoạn đường đó. Hỏi nếu làm riêng thì mỗi đội hoàn thành công việc trong bao nhiêu ngày?",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Đặt ẩn $x, y > 6$ (ngày). Hệ phương trình $\\frac{1}{x} + \\frac{1}{y} = \\frac{1}{6}$ và $\\frac{4}{x} + \\frac{9}{y} = 1$. Suy ra $\\frac{5}{y} = 1 - \\frac{4}{6} = \\frac{1}{3} \\Rightarrow y = 15$, từ đó $x = 10$ ngày.",
+      "rubric": [
+        {
+          "text": "Chọn ẩn $x, y > 6$ (ngày) và viết phương trình $\\frac{1}{x} + \\frac{1}{y} = \\frac{1}{6}$",
+          "points": 0.25
+        },
+        {
+          "text": "Lập đúng phương trình thứ hai $\\frac{4}{x} + \\frac{9}{y} = 1$ và giải hệ tìm $x, y$",
+          "points": 0.25
+        },
+        {
+          "text": "Đối chiếu điều kiện và kết luận hai đội làm riêng lần lượt $10$ ngày và $15$ ngày",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "380f4113-4b16-5374-9d07-e6a5e8eddb13",
+        "options": "d293874f-15ac-5a60-9231-fac22b91962d",
+        "answer": "5299be7b-135b-5009-9e7a-7f0fcd87b43e",
+        "explanation": "1fb4f2e8-6174-5bb9-ad57-54fb534db67a",
+        "rubric": "455ae5de-872a-5f35-a446-0f5bcfa751b7",
+        "figure": "a0b42746-cd36-50ef-b612-3d94f1c41d7d"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần IV · Bài 20"
+      },
+      "sectionId": "phan-4-essay"
+    },
+    {
+      "id": "5379f0f1-bbb5-57eb-93a5-aedba56ce7ec",
+      "v": 1,
+      "type": "essay",
+      "topic": "Đường tròn và cung tròn",
+      "lesson": "Bài 9: Hình học tổng hợp đường tròn",
+      "competency": "Chứng minh tứ giác nội tiếp và đẳng thức tích đoạn thẳng",
+      "level": 2,
+      "points": 1.0,
+      "stem": "Cho tam giác nhọn $ABC$ ($AB < AC$) nội tiếp đường tròn tâm $O$, hai đường cao $AD$ và $BE$. Chứng minh bốn điểm $A, B, D, E$ cùng nằm trên một đường tròn và $AD \\cdot BC = BE \\cdot AC$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Vì $\\widehat{ADB} = \\widehat{AEB} = 90^\\circ$ nên $D, E$ cùng nằm trên đường tròn đường kính $AB$. Mặt khác $2S_{ABC} = AD \\cdot BC = BE \\cdot AC$.",
+      "rubric": [
+        {
+          "text": "Chứng minh $\\widehat{ADB} = \\widehat{AEB} = 90^\\circ$, suy ra $A, B, D, E$ cùng thuộc đường tròn đường kính $AB$",
+          "points": 0.5
+        },
+        {
+          "text": "Xét cặp tam giác đồng dạng $\\triangle ADC \\sim \\triangle BEC$ hoặc công thức diện tích để suy ra $AD \\cdot BC = BE \\cdot AC$",
+          "points": 0.5
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "db3e89d2-1d43-572a-9d31-a76bb020f5c9",
+        "options": "1cb9ad9d-cd1c-5782-bdf9-02dabb8f921c",
+        "answer": "41bd4119-f8f0-5bb9-96f8-29b2a32dbf5d",
+        "explanation": "e7f81f0c-9b86-5ca5-a7cf-a2fa470290fe",
+        "rubric": "0ba0506b-c7a3-5d4e-84d9-7d09d9877eae",
+        "figure": "6513685d-ce69-551c-85f4-1a24633ae57b"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần IV · Bài 21"
+      },
+      "figure": {
+        "points": {
+          "A": "free",
+          "B": "free",
+          "C": "free"
+        },
+        "constraints": [
+          "D=foot(A,B,C)",
+          "E=foot(B,A,C)",
+          "O=circumcenter(A,B,C)"
+        ],
+        "objects": [
+          "segment(A,B)",
+          "segment(A,C)",
+          "segment(B,C)",
+          {
+            "type": "segment",
+            "points": [
+              "A",
+              "D"
+            ],
+            "dashed": true
+          },
+          {
+            "type": "segment",
+            "points": [
+              "B",
+              "E"
+            ],
+            "dashed": true
+          },
+          "circle(O,A)",
+          "rightAngle(A,D,B)"
+        ],
+        "conditions": [
+          "AB<AC",
+          "acute(A,B,C)"
+        ],
+        "labels": {
+          "A": "above",
+          "B": "left",
+          "C": "right",
+          "D": "below",
+          "E": "right",
+          "O": "left"
+        },
+        "caption": "Tam giác nhọn ABC nội tiếp (O) với đường cao AD, BE",
+        "width": 480,
+        "align": "center"
+      },
+      "sectionId": "phan-4-essay"
+    },
+    {
+      "id": "7370f8e6-48c0-51ca-9955-b9eb4b2d1961",
+      "v": 1,
+      "type": "essay",
+      "topic": "Bất đẳng thức và bất phương trình",
+      "lesson": "Bài 5: Cực trị bất đẳng thức",
+      "competency": "Tìm giá trị nhỏ nhất của biểu thức đại số hai biến dương",
+      "level": 3,
+      "points": 0.75,
+      "stem": "Cho hai số thực dương $x, y$ thỏa mãn $x + y = 6$. Tìm giá trị nhỏ nhất của biểu thức $M = \\frac{1}{x} + \\frac{4}{y}$.",
+      "options": [],
+      "answer": null,
+      "answerKnown": true,
+      "explanation": "Áp dụng bất đẳng thức Cauchy–Schwarz dạng Engel: $M = \\frac{1^2}{x} + \\frac{2^2}{y} \\ge \\frac{(1+2)^2}{x+y} = \\frac{9}{6} = \\frac{3}{2}$. Dấu bằng khi $\\frac{1}{x} = \\frac{2}{y}$ và $x + y = 6 \\Rightarrow x = 2, y = 4$.",
+      "rubric": [
+        {
+          "text": "Biến đổi $M = \\left(\\frac{1}{x} + \\frac{x}{4}\\right) + \\left(\\frac{4}{y} + \\frac{y}{4}\\right) - \\frac{x + y}{4}$",
+          "points": 0.25
+        },
+        {
+          "text": "Áp dụng bất đẳng thức Cô-si chứng minh $M \\ge 1 + 2 - \\frac{6}{4} = \\frac{3}{2}$",
+          "points": 0.25
+        },
+        {
+          "text": "Chỉ ra dấu bằng đạt tại $x = 2, y = 4$ và kết luận",
+          "points": 0.25
+        }
+      ],
+      "approved": true,
+      "approval": {
+        "version": 1,
+        "status": "approved",
+        "method": "Giáo viên duyệt thủ công"
+      },
+      "blockIds": {
+        "stem": "716c9ff6-4384-51e3-b035-3463ad11cb35",
+        "options": "754e2cb9-524b-5308-9168-9f8c1ec6071e",
+        "answer": "cbb72490-c7a8-5745-a5be-7338990ce538",
+        "explanation": "23b943da-daf0-5099-bcb7-4839672de4fc",
+        "rubric": "1e40796f-fc39-5175-80cb-69919bb78dd5",
+        "figure": "ec7b311e-085e-5a21-97d9-85d632e2ba52"
+      },
+      "source": {
+        "docId": "9cb89bd9-72ed-596f-860e-46f03b352c64",
+        "page": 1,
+        "location": "Phần IV · Bài 22"
+      },
+      "sectionId": "phan-4-essay",
+      "lockPosition": true
+    }
+  ]
+}
