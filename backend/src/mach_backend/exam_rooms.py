@@ -3058,6 +3058,21 @@ def install_exam_rooms(
                     p100 = _to_p100(upd.points)
                     if p100 is None:
                         raise HTTPException(422, f"Điểm câu '{qid}' không hợp lệ.")
+                    if qtype == "essay":
+                        highest_awarded = db.execute(
+                            """
+                            SELECT MAX(a.earned_points_p100)
+                            FROM room_attempts r JOIN attempt_answers a ON a.attempt_id = r.id
+                            WHERE r.room_id = ? AND a.question_id = ?
+                            """,
+                            (room_id, qid),
+                        ).fetchone()[0]
+                        if highest_awarded is not None and p100 < highest_awarded:
+                            raise HTTPException(
+                                409,
+                                f"Câu '{qid}' đã có bài được chấm {highest_awarded / 100:g} điểm. "
+                                "Hãy kiểm tra lại điểm đã chấm trước khi hạ barem.",
+                            )
                     target_q["points"] = upd.points
                     target_q["_maxPointsP100"] = p100
                 if qtype == "mcq" and upd.answer is not None:

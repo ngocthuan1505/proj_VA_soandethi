@@ -611,6 +611,62 @@ def test_essay_grading_queue_and_atomic_score_updates(tmp_path: Path) -> None:
     assert len(essay_item["rubric"]) == 2
 
 
+def test_regrade_preserves_awarded_essay_points_across_attempts(tmp_path: Path) -> None:
+    harness = _build_test_harness(tmp_path)
+    client: TestClient = harness["client"]
+    exam = harness["exams"]["teacher-a"]["exam-demo-1"]
+    essay = next(q for q in exam["questions"] if q["type"] == "essay")
+    essay["points"] = 5
+    essay["rubric"] = [{"text": "Lập luận đầy đủ", "points": 5}]
+    room = client.post(
+        "/api/rooms",
+        headers=_teacher_headers(),
+        json={"examId": exam["id"], "resultPolicy": "score_and_answers"},
+    ).json()
+    room_url = f"/api/rooms/{room['id']}"
+    attempts = []
+    for name, score in (("An", 200), ("Bình", 500)):
+        joined = client.post(
+            f"/api/rooms/public/{room['roomCode']}/join", json={"studentName": name}
+        ).json()
+        aid = joined["attemptId"]
+        headers = _student_headers(joined["attemptToken"])
+        public_url = f"/api/rooms/public/attempts/{aid}"
+        client.post(
+            f"{public_url}/submit", headers=headers, json={"answers": {essay["id"]: "Bài làm"}}
+        ).raise_for_status()
+        grade_url = f"{room_url}/attempts/{aid}/grades/{essay['id']}"
+        client.put(
+            grade_url, headers=_teacher_headers(), json={"earnedPointsP100": score}
+        ).raise_for_status()
+        result_url = f"{public_url}/result"
+        attempts.append((result_url, headers, client.get(result_url, headers=headers).json()))
+
+    updates = {
+        "questions": [
+            {"questionId": "q-mcq-1", "answer": 0},
+            {"questionId": essay["id"], "points": 2},
+        ]
+    }
+    rejected = client.post(f"{room_url}/regrade", headers=_teacher_headers(), json=updates)
+    assert rejected.status_code == 409
+    assert essay["id"] in rejected.json()["detail"]
+    for url, headers, before in attempts:
+        assert client.get(url, headers=headers).json() == before
+
+    # Khi cả hai điểm đã chấm đều vừa barem mới, giáo viên có thể thử lại.
+    client.put(
+        grade_url, headers=_teacher_headers(), json={"earnedPointsP100": 200}
+    ).raise_for_status()
+    accepted = client.post(f"{room_url}/regrade", headers=_teacher_headers(), json=updates)
+    assert accepted.status_code == 200
+    assert accepted.json()["regradedCount"] == 2
+    for url, headers, _ in attempts:
+        result = client.get(url, headers=headers).json()
+        item = next(q for q in result["questions"] if q["questionId"] == essay["id"])
+        assert item["earnedPointsP100"] == item["maxPointsP100"] == 200
+
+
 def test_anti_cheat_auto_lock_and_teacher_lock(tmp_path: Path) -> None:
     harness = _build_test_harness(tmp_path)
     client: TestClient = harness["client"]
