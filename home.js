@@ -494,6 +494,9 @@ export function renderProactiveCardsHTML(digest, state = null) {
 
   for (const dl of digest.urgentDeadlines || []) {
     const isRem = dl.source === 'reminder';
+    const campaignId = isRem
+      ? (dl.targetType === 'campaign' ? String(dl.targetId || '').trim() : '')
+      : dl.id;
     const attachedExamId =
       isRem && (dl.targetType === 'exam' || (!dl.targetType && dl.targetId))
         ? String(dl.targetId || '').trim()
@@ -516,12 +519,13 @@ export function renderProactiveCardsHTML(digest, state = null) {
             : ''
         }
         <div class="buttons">
+          ${campaignId ? `<button type="button" class="tiny-btn" data-action="home-open-campaign" data-id="${esc(campaignId)}">Mở chiến dịch</button>` : ''}
           ${
             isRem
               ? `${attachedExamId ? `<button type="button" class="tiny-btn primary" data-action="home-open-exam" data-id="${esc(attachedExamId)}">Mở đề</button>` : ''}
                  <button type="button" class="tiny-btn" data-action="proactive-done-reminder" data-id="${esc(dl.id)}">Đã xong</button>
                  <button type="button" class="tiny-btn ghost" data-action="proactive-snooze-reminder" data-id="${esc(dl.id)}" data-hours="4">Hoãn 4 giờ</button>`
-              : `<button type="button" class="tiny-btn" data-action="home-open-campaign" data-id="${esc(dl.id)}">Mở chiến dịch</button>`
+              : ''
           }
         </div>
       </article>
@@ -907,23 +911,20 @@ export async function handleHomeAction(action, node, ctx) {
     const headers = ctx.workspaceHeaders?.() || {};
     const digest = await fetchProactiveDigest(headers);
     let campaign = digest.activeCampaigns?.find((item) => item.id === cid) || null;
-    let networkFailed = false;
     if (!campaign && cid) {
       try {
-        const res = await fetch(`/api/campaigns/${encodeURIComponent(cid)}`, {headers});
-        if (res.ok) {
-          const data = await res.json().catch(() => null);
-          campaign = data?.campaign || (data?.id ? data : null);
-        }
+        const res = await fetch('/api/campaigns', {headers});
+        if (!res.ok) throw new Error(String(res.status));
+        const {campaigns} = await res.json();
+        campaign = campaigns.find((item) => item.id === cid);
       } catch {
-        networkFailed = true;
+        ctx.toast?.('Không tải được danh sách chiến dịch. Vui lòng thử lại.');
+        return true;
       }
     }
     if (campaign) {
       ensureHomeStyles();
       ctx.modal('Chi tiết chiến dịch', renderProactiveCardsHTML({activeCampaigns: [campaign]}, ctx.getState?.()));
-    } else if (networkFailed) {
-      ctx.toast?.('Không thể kết nối máy chủ để tải chi tiết chiến dịch. Vui lòng thử lại.');
     } else {
       ctx.toast?.('Không tìm thấy chiến dịch tương ứng. Vui lòng mở Trung tâm Trợ lý Chủ động để làm mới.');
     }

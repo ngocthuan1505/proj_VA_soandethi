@@ -310,6 +310,52 @@ async function pdfInspect(bytes) {
   };
 }
 
+async function checkCampaignReminder(page, baseUrl) {
+  const api = page.request;
+  const headers = {Origin: baseUrl};
+  const targetRes = await api.post(`${baseUrl}/api/campaigns`, {
+    headers, data: {title: 'Ôn tập học kỳ I'},
+  });
+  assert.equal(targetRes.status(), 201);
+  const {campaign: target} = await targetRes.json();
+  const archived = await api.patch(`${baseUrl}/api/campaigns/${target.id}`, {
+    headers, data: {status: 'archived'},
+  });
+  assert.equal(archived.status(), 200);
+  // Chiến dịch mới hơn đứng đầu danh sách và xuất hiện trong digest.
+  const other = await api.post(`${baseUrl}/api/campaigns`, {
+    headers, data: {title: 'Ôn tập học kỳ II'},
+  });
+  assert.equal(other.status(), 201);
+  const reminderRes = await api.post(`${baseUrl}/api/reminders`, {
+    headers, data: {title: 'Xem lại chiến dịch học kỳ I', targetType: 'campaign', targetId: target.id},
+  });
+  assert.equal(reminderRes.status(), 201);
+  const {reminder} = await reminderRes.json();
+
+  for (const [width, height] of [[1440, 900], [1280, 720], [390, 844]]) {
+    await page.setViewportSize({width, height});
+    await page.goto(`${baseUrl}/?view=home`, {waitUntil: 'networkidle'});
+    const card = page.locator(`#home-view [data-deadline-id="${reminder.id}"]`);
+    const open = card.getByRole('button', {name: 'Mở chiến dịch', exact: true});
+    await open.waitFor();
+    assert.equal(await page.locator(`#home-view [data-campaign-id="${target.id}"]`).count(), 0);
+    for (let i = 0; i < 100 && !(await open.evaluate(el => el.matches(':focus'))); i++) {
+      await page.keyboard.press('Tab');
+    }
+    assert.ok(await open.evaluate(el => el.matches(':focus')), `Tab chưa tới nút mở chiến dịch ở ${width}px`);
+    const [list] = await Promise.all([
+      page.waitForResponse(res => res.url() === `${baseUrl}/api/campaigns` && res.request().method() === 'GET'),
+      page.keyboard.press('Enter'),
+    ]);
+    assert.equal(list.status(), 200);
+    const detail = page.locator(`#dialog[open] [data-campaign-id="${target.id}"]`);
+    await detail.getByRole('heading', {name: target.title, exact: true}).waitFor();
+    await page.keyboard.press('Escape');
+    await page.locator('#dialog').waitFor({state: 'hidden'});
+  }
+}
+
 async function main() {
   fs.mkdirSync(SCREENSHOT_DIR, {recursive: true});
   const tmpDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiem-ui-redesign-data-'));
@@ -1537,6 +1583,11 @@ async function main() {
       recordFail('Pillar 6 (Xuất Word/PDF HS & GV, A4 ngang & Gói khóa QR)', err);
     }
 
+    try {
+      await checkCampaignReminder(page, baseUrl);
+    } catch (err) {
+      recordFail('Mở chiến dịch từ nhắc hạn bằng bàn phím', err);
+    }
     await context.close();
   } finally {
     if (browser) await browser.close();
