@@ -1389,9 +1389,11 @@ test('t4 Phòng thi · điều hướng tab bằng phím mũi tên, dừng polli
     assert.equal(dom.fakeDoc.activeElement.id, 'er-tab-monitor');
 
     dom.getShell().dispatchEvent({ type: 'keydown', key: 'End', target: dom.getTab('monitor') });
+    assert.match(dom.modalBody.innerHTML, /role="tabpanel"[^>]*aria-busy="true"/);
     await new Promise((r) => setTimeout(r, 15));
     assert.equal(dom.getTab('keys').getAttribute('aria-selected'), 'true');
     assert.equal(dom.fakeDoc.activeElement.id, 'er-tab-keys');
+    assert.doesNotMatch(dom.modalBody.innerHTML, /aria-busy="true"/);
 
     dom.getShell().dispatchEvent({ type: 'keydown', key: 'Home', target: dom.getTab('keys') });
     await new Promise((r) => setTimeout(r, 15));

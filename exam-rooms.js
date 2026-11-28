@@ -1613,8 +1613,10 @@ function buildShellHTML(c) {
                 { id: 'keys', label: 'Đáp án & Chấm lại' },
               ];
               const activeTabId = VALID_TABS.includes(state.activeTab) ? state.activeTab : 'share';
-              const panelHTML =
-                activeTabId === 'share'
+              const loading = state.loadingTab === activeTabId;
+              const panelHTML = loading
+                ? '<div class="er-empty" role="status">Đang tải dữ liệu phòng thi…</div>'
+                : activeTabId === 'share'
                   ? buildShareTabHTML(active)
                   : activeTabId === 'monitor'
                     ? buildMonitorTabHTML(active)
@@ -1632,7 +1634,7 @@ function buildShellHTML(c) {
                     })
                     .join('')}
                 </div>
-                <div id="er-tabpanel-${activeTabId}" class="er-tabpanel" role="tabpanel" aria-labelledby="er-tab-${activeTabId}">
+                <div id="er-tabpanel-${activeTabId}" class="er-tabpanel" role="tabpanel" aria-labelledby="er-tab-${activeTabId}"${loading ? ' aria-busy="true"' : ''}>
                   ${panelHTML}
                 </div>
               </div>`;
