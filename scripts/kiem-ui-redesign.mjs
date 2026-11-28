@@ -477,8 +477,55 @@ async function checkLessonPickerKeyboard390(page, baseUrl) {
   const overflowX = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   assert.equal(overflowX, false, 'Kho SGK ở 390x844 không được tràn ngang');
 
+  // 5. Tab tới nút Hủy rồi bấm Enter ở 390px phải đóng modal về Trang chủ, không mở assistant-sources và trả focus về nút SGK
+  const clearSelectionBtn = page.locator('dialog[open] #lesson-picker [data-sgk-clear]');
+  await clearSelectionBtn.focus();
+  await page.keyboard.press('Tab');
+  const focusedCancel = await page.evaluate(() => ({
+    tag: document.activeElement?.tagName || null,
+    text: (document.activeElement?.textContent || '').trim(),
+    action: document.activeElement?.getAttribute('data-action') || null,
+  }));
+  assert.equal(focusedCancel.tag, 'BUTTON', 'Tab từ Bỏ chọn bài phải tới nút Hủy');
+  assert.equal(focusedCancel.text, 'Hủy', 'Nút đang focus phải là Hủy');
+  assert.equal(focusedCancel.action, 'close', 'Nút Hủy khi mở từ Trang chủ phải dùng action close, không mở assistant-sources');
+
+  await page.keyboard.press('Enter');
+  await page.locator('dialog[open]').waitFor({state: 'hidden', timeout: 5000});
+  const afterCancelHome = await page.evaluate(() => {
+    const homeView = document.getElementById('home-view');
+    const firstSgkBtn = homeView?.querySelector('[data-action="home-go-lessons"]') || null;
+    return {
+      anyOpenDialog: Boolean(document.querySelector('dialog[open]')),
+      assistantSourceOpened: Boolean(document.querySelector('#assistant-source-form')),
+      homeVisible: Boolean(homeView && !homeView.hidden && homeView.offsetParent !== null),
+      url: location.pathname + location.search + location.hash,
+      focusedAction: document.activeElement?.getAttribute?.('data-action') || null,
+      focusedIsFirstSgkBtn: Boolean(firstSgkBtn && document.activeElement === firstSgkBtn),
+    };
+  });
+  assert.equal(afterCancelHome.anyOpenDialog, false, 'Nhấn Enter vào Hủy phải đóng hẳn modal');
+  assert.equal(afterCancelHome.assistantSourceOpened, false, 'Nhấn Hủy từ Trang chủ không được mở assistant-sources');
+  assert.equal(afterCancelHome.homeVisible, true, 'Nhấn Hủy phải quay về Trang chủ');
+  assert.match(afterCancelHome.url, /view=home/, 'URL phải giữ nguyên Trang chủ sau khi Hủy');
+  assert.equal(afterCancelHome.focusedAction, 'home-go-lessons', 'Focus phải trả về nút mở Kho SGK trên Trang chủ');
+  assert.equal(afterCancelHome.focusedIsFirstSgkBtn, true, 'Focus phải trả về đúng nút SGK đã mở modal');
+
+  // 6. Mở lại bằng Enter trên nút SGK đang có focus rồi nhấn Escape cũng phải quay về Trang chủ và trả focus về nút SGK
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('dialog[open] #lesson-picker', {timeout: 8000});
   await page.keyboard.press('Escape');
   await page.locator('dialog[open]').waitFor({state: 'hidden', timeout: 5000});
+  const afterEscapeHome = await page.evaluate(() => {
+    const homeView = document.getElementById('home-view');
+    const firstSgkBtn = homeView?.querySelector('[data-action="home-go-lessons"]') || null;
+    return {
+      homeVisible: Boolean(homeView && !homeView.hidden && homeView.offsetParent !== null),
+      focusedIsFirstSgkBtn: Boolean(firstSgkBtn && document.activeElement === firstSgkBtn),
+    };
+  });
+  assert.equal(afterEscapeHome.homeVisible, true, 'Nhấn Escape phải giữ Trang chủ');
+  assert.equal(afterEscapeHome.focusedIsFirstSgkBtn, true, 'Nhấn Escape phải trả focus về đúng nút SGK');
 }
 
 async function main() {

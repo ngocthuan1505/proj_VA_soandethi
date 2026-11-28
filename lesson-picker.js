@@ -78,6 +78,7 @@ export async function openLessonPicker(context) {
  const baseDialog=document.querySelector('#dialog');
  const returnFocusEl=document.activeElement instanceof HTMLElement?document.activeElement:null;
  const origin=baseDialog?.open&&baseDialog.querySelector('#assistant-source-form');
+ const openedFromHome=!origin&&context.getViewMode?.()==='home';
  const useLayer2=Boolean(origin&&document.querySelector('#dialog-layer2'));
  const dialog=useLayer2?document.querySelector('#dialog-layer2'):baseDialog;
  const headers=workspaceHeaders();
@@ -172,7 +173,7 @@ export async function openLessonPicker(context) {
      </div>
      <div class="sgk-footer-actions">
       <button type="button" data-sgk-clear>Bỏ chọn bài</button>
-      <button type="button" data-action="${useLayer2?'close-top-modal':'assistant-sources'}">Hủy</button>
+      <button type="button" data-action="${useLayer2?'close-top-modal':(origin?'assistant-sources':'close')}">Hủy</button>
       <button type="button" data-sgk-quick-compose>Soạn đề nhanh từ bài này</button>
       <button type="submit" class="primary">Dùng bài đã chọn</button>
      </div>
@@ -607,6 +608,7 @@ export async function openLessonPicker(context) {
   });
   mergeAssistantSourceDraft(examId,[id],{[id]:[1]},[]);
   dialog.close();
+  if(openedFromHome)context.setViewMode?.('workspace');
   context.toast(`Đã đính kèm "${name}" làm nguồn tham khảo.`);
  }
 
@@ -922,6 +924,7 @@ export async function openLessonPicker(context) {
   commitSelectedToExam();
   dialog.close();
   if(useLayer2)await context.act('assistant-sources');
+  else if(openedFromHome)context.setViewMode?.('workspace');
  });
  render();
  form.elements.query?.focus();

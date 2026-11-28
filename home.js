@@ -902,8 +902,9 @@ export async function handleHomeAction(action, node, ctx) {
     return true;
   }
   if (action === 'home-go-lessons') {
-    ctx.setViewMode?.('workspace');
-    await ctx.act('lesson-sources');
+    if (node instanceof HTMLElement && node.isConnected) node.focus?.();
+    const {openLessonPicker} = await import('./lesson-picker.js');
+    await openLessonPicker(ctx);
     return true;
   }
   if (action === 'home-open-campaign') {

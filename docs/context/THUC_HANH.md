@@ -4,6 +4,11 @@ Cập nhật: 28/11/2026.
 
 ## Hiện trạng đã kiểm
 
+### 28/11/2026 · Vá nút Hủy Kho SGK từ Trang chủ quay về Trang chủ, trả focus về nút SGK và thêm ca Tab/Enter 390px (t6 vòng 2)
+
+- **Sửa [`home.js`](../../home.js) và [`lesson-picker.js`](../../lesson-picker.js):** Mở Kho SGK từ Trang chủ (`home-go-lessons`) giữ nguyên `#home-view`, giữ focus trên nút kích hoạt và gọi trực tiếp `openLessonPicker(ctx)` (không chuyển sớm sang `workspace` hay phụ thuộc `mountReference`). Nút **Hủy** trong `lesson-picker.js` dùng `data-action="close"` khi không mở từ `#assistant-source-form` (thay vì mở `assistant-sources`), nên nhấn Hủy hoặc Escape đóng hộp thoại quay về Trang chủ và trả focus về đúng nút SGK; chọn **Dùng bài đã chọn** hoặc **Dùng làm nguồn tham khảo** mới chuyển sang `workspace`. Không sửa `app.js`, `mvp.js`, `assets/layout.css` hay vùng Soạn đề của Tú.
+- **Kiểm chứng (thiếu skill `webapp-testing`/`frontend-design`/`emil-design-eng`/`web-design-guidelines`, kiểm Chrome trực tiếp bằng `playwright-core`):** Bổ sung ca test trong [`tests/t6-nav-a11y.test.mjs`](../../tests/t6-nav-a11y.test.mjs) (`6/6` đạt) và ca Tab tới nút **Hủy** → `Enter` (kèm mở lại → `Escape`) ở `390×844` trong [`scripts/kiem-ui-redesign.mjs`](../../scripts/kiem-ui-redesign.mjs). Kết quả: `node --test "tests/*.test.mjs"` **`265/265`**, `check:team` **`14/14` + `Team plan OK`**, `node scripts/kiem-ui-redesign.mjs` **`ok: true`** (`0` bugs/failures/consoleErrors/pageErrors/unexpectedHttpErrors) trên cả 3 kích thước (`1440×900`, `1280×720`, `390×844`). Tác động: giữ nhất quán luồng bàn phím Trang chủ ↔ Kho SGK; cần đóng lại ZIP Workshop ở t10 để gom bản vá này.
+
 ### 28/11/2026 · Vá `normalizedFileTypes` khi khôi phục JSON toàn kho có WAV MIME chung (t5 vòng 2)
 
 - **Sửa [`workspace_backup.py`](../../backend/src/mach_backend/workspace_backup.py):** Hàm `restore()` trả thêm `normalizedFileTypes` ở cả nhánh khôi phục toàn kho (`tro-ly-soan-de`) giống nhánh ghép lô (`tro-ly-soan-de-batch`), để [`storage.js`](../../storage.js) chuẩn hóa MIME (ví dụ `application/octet-stream` → `audio/wav`) trước khi lưu vào IndexedDB và [`app.js`](../../app.js) nạp phát WAV bình thường khi reload ngoại tuyến. Không chạm vùng Soạn đề của Tú.

@@ -64,3 +64,10 @@ test('t6 · Kho SGK cho phép thu gọn kết quả khi tìm kiếm, trả focus
     true,
   );
 });
+
+test('t6 · Mở Kho SGK từ Trang chủ rồi nhấn Hủy quay về Trang chủ và không mở assistant-sources', () => {
+  const homeSrc = read('home.js');
+  const pickerSrc = read('lesson-picker.js');
+  assert.match(homeSrc, /if \(action === 'home-go-lessons'\)\s*\{\s*if \(node instanceof HTMLElement && node\.isConnected\) node\.focus\?\.\(\);\s*const \{openLessonPicker\} = await import\('\.\/lesson-picker\.js'\);\s*await openLessonPicker\(ctx\);\s*return true;\s*\}/);
+  assert.match(pickerSrc, /data-action="\$\{useLayer2\?'close-top-modal':\(origin\?'assistant-sources':'close'\)\}">Hủy<\/button>/);
+});
