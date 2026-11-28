@@ -32,6 +32,7 @@ let pollTimer = null;
 let pollRequest = null;
 let tabLoadEpoch = 0;
 let detailLoadEpoch = 0;
+let roomSwitchEpoch = 0;
 let deleteInFlight = false;
 let visibilityHandler = null;
 let qrObjectUrl = '';
@@ -49,6 +50,7 @@ let state = {
   autoRefresh: true,
   loading: false,
   loadingTab: '',
+  switchingRoom: false,
   pendingDeleteRoomId: '',
   confirmDeleteRoomId: '',
   error: '',
@@ -1037,7 +1039,7 @@ function buildShareTabHTML(room) {
             <label class="er-check"><input type="checkbox" name="allowLan" ${room.allowLan ? 'checked' : ''}> Mở qua mạng nội bộ (LAN)</label>
           </div>
           <div class="er-btn-row" style="justify-content:space-between;">
-            <button type="button" class="er-btn er-btn-danger er-btn-sm" data-er-action="delete-room">Xóa phòng này</button>
+            <button type="button" class="er-btn er-btn-danger er-btn-sm" data-er-action="delete-room" data-room-id="${esc(room.id)}" ${state.switchingRoom ? 'disabled aria-disabled="true"' : ''}>Xóa phòng này</button>
             <button type="submit" class="er-btn er-btn-primary">Lưu thay đổi phòng</button>
           </div>
         </form>
@@ -1842,14 +1844,17 @@ function renderShell(c, options = {}) {
 }
 
 async function refreshQrImage(c) {
-  const room = selectedRoom();
+  const room = selectedRoom(c);
   if (!room) return;
+  const session = state;
+  const roomId = room.id;
   const baseUrl = state.qrBaseOrigin || (typeof location !== 'undefined' ? location.origin : '');
   try {
     const blob = await fetchAuthBlob(
       c,
-      `/api/rooms/${encodeURIComponent(room.id)}/qr.svg?baseUrl=${encodeURIComponent(baseUrl)}`,
+      `/api/rooms/${encodeURIComponent(roomId)}/qr.svg?baseUrl=${encodeURIComponent(baseUrl)}`,
     );
+    if (state !== session || state.selectedRoomId !== roomId) return;
     revokeQrUrl();
     qrObjectUrl = URL.createObjectURL(blob);
     const box = document.getElementById('er-qr-box');
@@ -2320,6 +2325,15 @@ async function executeDeleteRoom(c, roomId, triggerBtn) {
   }
 }
 
+function setDeleteRoomButtonsDisabled(shell, disabled) {
+  if (!shell || typeof shell.querySelectorAll !== 'function') return;
+  shell.querySelectorAll('[data-er-action="delete-room"]').forEach((el) => {
+    el.disabled = Boolean(disabled);
+    if (disabled) el.setAttribute?.('aria-disabled', 'true');
+    else el.removeAttribute?.('aria-disabled');
+  });
+}
+
 function bindShellEvents(c) {
   const shell = document.getElementById('exam-rooms-shell');
   if (!shell) return;
@@ -2390,27 +2404,50 @@ function bindShellEvents(c) {
         state.confirmDeleteRoomId = '';
         const visible = getVisibleRooms(c);
         if (!visible.some((r) => r.id === state.selectedRoomId)) {
+          const epoch = ++roomSwitchEpoch;
+          const session = state;
+          stopPolling();
+          state.switchingRoom = true;
+          setDeleteRoomButtonsDisabled(shell, true);
           state.selectedRoomId = visible[0]?.id || '';
           state.roomDetail = null;
           state.gradingQueue = null;
           state.analytics = null;
-          if (state.selectedRoomId) {
-            await loadActiveTabData(c);
+          try {
+            if (state.selectedRoomId) {
+              await loadActiveTabData(c);
+            }
+          } finally {
+            if (epoch === roomSwitchEpoch && state === session) {
+              state.switchingRoom = false;
+            }
           }
+          if (epoch !== roomSwitchEpoch || state !== session) return;
         }
         renderShell(c);
         syncPolling(c);
         return;
       }
       if (action === 'select-room') {
+        const epoch = ++roomSwitchEpoch;
+        const session = state;
         stopPolling();
+        state.switchingRoom = true;
+        setDeleteRoomButtonsDisabled(shell, true);
         state.selectedRoomId = btn.dataset.roomId || '';
         state.confirmDeleteRoomId = '';
         state.roomDetail = null;
         state.gradingQueue = null;
         state.analytics = null;
         state.qrBaseOrigin = typeof location !== 'undefined' ? location.origin : '';
-        await loadActiveTabData(c);
+        try {
+          await loadActiveTabData(c);
+        } finally {
+          if (epoch === roomSwitchEpoch && state === session) {
+            state.switchingRoom = false;
+          }
+        }
+        if (epoch !== roomSwitchEpoch || state !== session) return;
         renderShell(c, { resetScroll: true });
         syncPolling(c);
         return;
@@ -2462,8 +2499,10 @@ function bindShellEvents(c) {
         return;
       }
       if (action === 'delete-room') {
-        const room = selectedRoom();
+        if (state.switchingRoom || btn.disabled) return;
+        const room = selectedRoom(c);
         if (!room) return;
+        if (btn.dataset.roomId && btn.dataset.roomId !== room.id) return;
         openDeleteRoomConfirmDialog(c, room, btn);
         return;
       }
@@ -2726,6 +2765,7 @@ export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate =
   if (c) activeCtx = c;
   injectStyles();
   tabLoadEpoch += 1;
+  roomSwitchEpoch += 1;
   stopPolling();
   detachVisibilityListener();
   revokeQrUrl();
@@ -2744,6 +2784,7 @@ export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate =
     autoRefresh: true,
     loading: true,
     loadingTab: '',
+    switchingRoom: false,
     pendingDeleteRoomId: '',
     confirmDeleteRoomId: '',
     error: '',
@@ -2763,6 +2804,7 @@ export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate =
     }
     dialogCloseHandler = () => {
       tabLoadEpoch += 1;
+      roomSwitchEpoch += 1;
       stopPolling();
       detachVisibilityListener();
       revokeQrUrl();

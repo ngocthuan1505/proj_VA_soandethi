@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright-core';
 
 import {
   appState,
@@ -1632,5 +1634,237 @@ test('t4 Phòng thi · hai đề: xóa phòng cuối của đề A không chọn
     globalThis.fetch = origFetch;
     URL.createObjectURL = origCreateObj;
     URL.revokeObjectURL = origRevokeObj;
+  }
+});
+
+function findChromeExecutable() {
+  const candidates = [
+    process.env.BROWSER_PATH,
+    process.env.CHROME_PATH,
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return '';
+}
+
+async function launchChromeForTest() {
+  const args = ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'];
+  const envPath = process.env.BROWSER_PATH || process.env.CHROME_PATH || '';
+  if (envPath && fs.existsSync(envPath)) {
+    try {
+      return await chromium.launch({ headless: true, executablePath: envPath, args });
+    } catch {
+      // Fall through to channel launch on Windows Chrome 136+
+    }
+  }
+  try {
+    return await chromium.launch({ headless: true, channel: 'chrome', args });
+  } catch {
+    const chromePath = findChromeExecutable();
+    if (!chromePath) return null;
+    return chromium.launch({ headless: true, executablePath: chromePath, args });
+  }
+}
+
+test('t4 Phòng thi · Chrome: vô hiệu hóa nút Xóa phòng này trong lúc chuyển phòng QR chậm và mở đúng xác nhận sau khi tải xong', async (t) => {
+  let browser = await launchChromeForTest();
+  if (!browser) {
+    t.skip('Không tìm thấy Chrome/Chromium trên máy kiểm thử');
+    return;
+  }
+
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const rooms = [
+    {
+      id: 'room-a',
+      examId: 'ex-1',
+      roomCode: 'AAA111',
+      title: 'Phòng A',
+      status: 'open',
+      mode: 'exam',
+      joinPath: '/exam-room.html?code=AAA111',
+      attemptCount: 0,
+      needsManualCount: 0,
+      questionCount: 1,
+      totalPointsP100: 1000,
+    },
+    {
+      id: 'room-b',
+      examId: 'ex-1',
+      roomCode: 'BBB222',
+      title: 'Phòng B',
+      status: 'open',
+      mode: 'exam',
+      joinPath: '/exam-room.html?code=BBB222',
+      attemptCount: 0,
+      needsManualCount: 0,
+      questionCount: 1,
+      totalPointsP100: 1000,
+    },
+  ];
+
+  let releaseRoomBQr = null;
+  let roomBQrStartedResolve = null;
+  const roomBQrStarted = new Promise((resolve) => {
+    roomBQrStartedResolve = resolve;
+  });
+
+  const harnessHtml = `<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>t4 switch room test</title></head>
+<body>
+  <dialog id="dialog"><div class="modal-head"><h2></h2></div><div class="modal-body"></div></dialog>
+  <dialog id="dialog-layer2"><div class="modal-head"><h2></h2></div><div class="modal-body"></div></dialog>
+  <script type="module">
+    import { openExamRooms, handleExamRoomAction } from '/exam-rooms.js';
+    const ctx = {
+      exam: () => ({ id: 'ex-1', title: 'Đề Toán 9', subject: 'Toán', grade: '9', minutes: 45, questions: [{}] }),
+      workspaceHeaders: () => ({}),
+      toast: () => {},
+      modal: (title, body, _subtitle, opts) => {
+        const dlg = document.getElementById(opts?.layer === 2 ? 'dialog-layer2' : 'dialog');
+        dlg.querySelector('h2').textContent = title;
+        dlg.querySelector('.modal-body').innerHTML = body;
+        if (!dlg.open) dlg.showModal();
+      },
+    };
+    document.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'close-top-modal') {
+        document.getElementById('dialog-layer2')?.close();
+        return;
+      }
+      void handleExamRoomAction(btn.dataset.action, btn, ctx);
+    });
+    window.__roomsReady = openExamRooms(ctx, { tab: 'share' });
+  </script>
+</body>
+</html>`;
+
+  const server = http.createServer((req, res) => {
+    const reqUrl = new URL(req.url || '/', 'http://127.0.0.1');
+    const pathname = reqUrl.pathname;
+
+    if (pathname === '/__t4-harness.html') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(harnessHtml);
+      return;
+    }
+    if (pathname === '/api/rooms') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ rooms }));
+      return;
+    }
+    if (pathname === '/api/exports/preflight') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ready: true, blockingIssues: [] }));
+      return;
+    }
+    if (pathname === '/api/rooms/room-a/qr.svg') {
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+      res.end('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>');
+      return;
+    }
+    if (pathname === '/api/rooms/room-b/qr.svg') {
+      roomBQrStartedResolve();
+      new Promise((resolve) => {
+        releaseRoomBQr = resolve;
+      }).then(() => {
+        if (!res.writableEnded) {
+          res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+          res.end('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>');
+        }
+      });
+      return;
+    }
+
+    const rel = pathname.replace(/^\/+/, '');
+    const fullPath = path.resolve(repoRoot, rel);
+    if (
+      rel &&
+      fullPath.startsWith(repoRoot) &&
+      fs.existsSync(fullPath) &&
+      fs.statSync(fullPath).isFile()
+    ) {
+      const ext = path.extname(fullPath).toLowerCase();
+      const contentType =
+        ext === '.js' || ext === '.mjs'
+          ? 'application/javascript; charset=utf-8'
+          : ext === '.css'
+            ? 'text/css; charset=utf-8'
+            : 'application/octet-stream';
+      res.writeHead(200, { 'Content-Type': contentType });
+      fs.createReadStream(fullPath).pipe(res);
+      return;
+    }
+
+    res.writeHead(404);
+    res.end('Not found');
+  });
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const addr = server.address();
+  const baseUrl = `http://127.0.0.1:${addr.port}`;
+
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const pageErrors = [];
+    page.on('pageerror', (err) => pageErrors.push(err.message));
+
+    await page.goto(`${baseUrl}/__t4-harness.html`, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => window.__roomsReady);
+
+    const deleteBtn = page.locator('[data-er-action="delete-room"]');
+    await deleteBtn.waitFor({ state: 'visible' });
+    assert.equal(await deleteBtn.isDisabled(), false);
+    assert.equal(await deleteBtn.getAttribute('data-room-id'), 'room-a');
+
+    // Chuyển từ phòng A sang phòng B khi QR của phòng B trả chậm
+    await page.locator('[data-er-action="select-room"][data-room-id="room-b"]').click();
+    await roomBQrStarted;
+
+    // Trong lúc chờ QR phòng B: giao diện vẫn đang ở phòng A nhưng nút Xóa phải bị vô hiệu hóa
+    assert.equal(await deleteBtn.isDisabled(), true, 'Nút Xóa phòng này phải bị vô hiệu hóa trong lúc chuyển phòng');
+    assert.equal(await deleteBtn.getAttribute('aria-disabled'), 'true');
+    assert.equal(await page.locator('#er-u-title').inputValue(), 'Phòng A');
+
+    // Kể cả khi kích hoạt click cưỡng bức lúc đang chuyển phòng, không được mở xác nhận xóa phòng B
+    await deleteBtn.click({ force: true });
+    assert.equal(
+      await page.evaluate(() => document.getElementById('dialog-layer2').open),
+      false,
+      'Không được mở hộp thoại xác nhận xóa phòng B khi giao diện vẫn đang hiển thị phòng A',
+    );
+
+    // Cho phép QR phòng B hoàn tất -> giao diện chuyển sang phòng B và bật lại nút Xóa cho đúng phòng B
+    releaseRoomBQr();
+    await page.waitForFunction(
+      () => document.querySelector('#er-u-title')?.value === 'Phòng B',
+    );
+    assert.equal(await deleteBtn.isDisabled(), false);
+    assert.equal(await deleteBtn.getAttribute('data-room-id'), 'room-b');
+
+    await deleteBtn.click();
+    await page.waitForFunction(() => document.getElementById('dialog-layer2')?.open === true);
+    const confirmText = await page.locator('#er-delete-confirm-desc').textContent();
+    assert.ok(confirmText.includes('BBB222'), 'Sau khi chuyển xong phải mở đúng xác nhận xóa phòng B');
+    assert.equal(
+      await page.evaluate(() => document.activeElement?.id),
+      'er-cancel-delete-btn',
+    );
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    if (releaseRoomBQr) releaseRoomBQr();
+    if (browser) await browser.close();
+    await new Promise((resolve) => server.close(resolve));
   }
 });
