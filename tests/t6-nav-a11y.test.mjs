@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {lessonMatchesSearch, normalizeLessonSearch} from '../lesson-picker.js';
+import {expandLessonSearchVariants, lessonMatchesSearch, normalizeLessonSearch} from '../lesson-picker.js';
 
 const ROOT = process.cwd();
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -70,4 +70,51 @@ test('t6 · Mở Kho SGK từ Trang chủ rồi nhấn Hủy quay về Trang ch�
   const pickerSrc = read('lesson-picker.js');
   assert.match(homeSrc, /if \(action === 'home-go-lessons'\)\s*\{\s*if \(node instanceof HTMLElement && node\.isConnected\) node\.focus\?\.\(\);\s*const \{openLessonPicker\} = await import\('\.\/lesson-picker\.js'\);\s*await openLessonPicker\(ctx\);\s*return true;\s*\}/);
   assert.match(pickerSrc, /data-action="\$\{useLayer2\?'close-top-modal':\(origin\?'assistant-sources':'close'\)\}">Hủy<\/button>/);
+});
+
+test('t6 · Tìm giải hệ phương trình giữ từ khóa phương pháp, loại Bài 11 Tỉ số lượng giác lớp 9 khi tìm Gauss', () => {
+  const query = 'giải hệ phương trình bằng phương pháp Gauss';
+  const variants = expandLessonSearchVariants(query);
+  assert.ok(variants.includes('giai he phuong trinh bang phuong phap gauss'));
+  assert.ok(variants.includes('giai he bang phuong phap gauss'));
+  assert.ok(!variants.includes('giai he'));
+  assert.ok(variants.every((v) => v.includes('gauss')));
+
+  const kntt9 = {
+    name: 'Toán 9 - Tập 1 (Kết nối tri thức)',
+    subject: 'Toán',
+    series: 'Kết nối tri thức với cuộc sống',
+    volume: 'Tập 1',
+  };
+  const bai11 = {
+    chapter: 'Chương IV: Hệ thức lượng trong tam giác vuông',
+    title: 'Bài 11: Tỉ số lượng giác của góc nhọn',
+    summary: 'Tỉ số lượng giác của góc nhọn trong tam giác vuông.',
+    learningOutcomes: [
+      'Tính được tỉ số lượng giác và hệ thức cạnh - góc trong tam giác vuông.',
+      'Ứng dụng giải bài toán đo chiều cao, khoảng cách thực tế.',
+    ],
+  };
+  const bai2 = {
+    chapter: 'Chương I: Phương trình và hệ hai phương trình bậc nhất hai ẩn',
+    title: 'Bài 2: Giải hệ hai phương trình bậc nhất hai ẩn',
+    summary: 'Giải hệ hai phương trình bậc nhất hai ẩn bằng phương pháp thế, cộng đại số và giải bài toán thực tế.',
+  };
+  const gauss10 = {
+    chapter: 'Chuyên đề 1: Hệ phương trình bậc nhất ba ẩn',
+    title: 'Bài 1: Hệ phương trình bậc nhất ba ẩn',
+    summary: 'Giải hệ phương trình bậc nhất ba ẩn bằng phương pháp Gauss và vận dụng giải bài toán vật lí, hóa học, kinh tế.',
+  };
+
+  assert.equal(lessonMatchesSearch(kntt9, bai11, query), false);
+  assert.equal(lessonMatchesSearch(kntt9, bai2, query), false);
+  assert.equal(lessonMatchesSearch({name: 'Chuyên đề Toán 10', subject: 'Toán'}, gauss10, query), true);
+  assert.equal(
+    lessonMatchesSearch(
+      kntt9,
+      {chapter: 'Phương trình và hệ phương trình', title: 'Giải hệ bằng phép thế', text: ''},
+      'giải hệ phương trình bằng phương pháp thế',
+    ),
+    true,
+  );
 });

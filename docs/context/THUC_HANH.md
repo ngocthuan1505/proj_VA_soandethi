@@ -4,6 +4,11 @@ Cập nhật: 28/11/2026.
 
 ## Hiện trạng đã kiểm
 
+### 28/11/2026 · Giữ từ khóa phương pháp khi mở rộng truy vấn `giải hệ phương trình` trong Kho SGK (t6 vòng 2)
+
+- **Sửa [`lesson-picker.js`](../../lesson-picker.js):** Trong `expandLessonSearchVariants`, thay `out.add('giai he')` bằng `out.add(item.replace(/\bgiai he phuong trinh\b/g, 'giai he'))` (chạy sau bước đổi `phep the`/`phuong phap the`) để giữ nguyên phần còn lại của truy vấn như `Gauss` thay vì rút toàn bộ truy vấn thành `giai he`. Không chạm vùng Soạn đề của Tú.
+- **Kiểm chứng (thiếu skill `webapp-testing`/`frontend-design`/`emil-design-eng`/`web-design-guidelines`):** Bổ sung ca test trong [`tests/t6-nav-a11y.test.mjs`](../../tests/t6-nav-a11y.test.mjs) xác nhận tìm `"giải hệ phương trình bằng phương pháp Gauss"` giữ `"gauss"` ở mọi biến thể, loại `"Bài 11: Tỉ số lượng giác của góc nhọn"` và `"Bài 2: Giải hệ hai phương trình bậc nhất hai ẩn"` ở KNTT lớp 9 nhưng vẫn khớp bài Gauss lớp 10 và phép thế. Đối chiếu danh mục thật `lesson_catalog()` (`177` tập): `KNTT9_HITS = []`, `ALL_HITS = [Bài 1: Hệ phương trình bậc nhất ba ẩn và ứng dụng (Toán 10 Chuyên đề)]`. Kết quả: `tests/t6-nav-a11y.test.mjs` + `tests/reference.test.mjs` **`21/21`**, toàn bộ JS `tests/*.test.mjs` **`268/268`**, `check:team` **`14/14` + `Team plan OK`**. Tác động: cần đóng lại ZIP Workshop ở t10 để gom bản vá này.
+
 ### 28/11/2026 · Vá khóa nút Đóng/Mở & form Lưu phòng thi khi chuyển phòng QR chậm và đối chiếu `roomId` trước `PATCH` (t4 vòng 2)
 
 - **Sửa [`exam-rooms.js`](../../exam-rooms.js):** Mở rộng khóa điều khiển khi `state.switchingRoom` (`setRoomMutationControlsDisabled`) để vô hiệu hóa đồng thời nút `Xóa phòng này`, nút `Đóng/Mở phòng` (`toggle-room-status`) và toàn bộ trường + nút `Lưu thay đổi phòng` trong `#er-update-form` (kèm `aria-disabled="true"`, `aria-busy="true"`, `data-room-id`). Ở cả hai nhánh `PATCH /api/rooms/{id}` (`toggle-room-status` và submit `#er-update-form`), chặn thao tác khi đang chuyển phòng hoặc `data-room-id` không khớp `selectedRoom(c).id`. Không chạm vùng Soạn đề của Tú.

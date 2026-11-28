@@ -25,9 +25,11 @@ export function expandLessonSearchVariants(query){
    out.add(item.replace(/\bphep the\b/g,'phuong phap the'));
   }
   if(/\bphuong phap the\b/.test(item))out.add(item.replace(/\bphuong phap the\b/g,'phep the'));
-  if(/\bgiai he phuong trinh\b/.test(item))out.add('giai he');
   if(/\bti so\b/.test(item))out.add(item.replace(/\bti so\b/g,'ti le'));
   if(/\bti le\b/.test(item))out.add(item.replace(/\bti le\b/g,'ti so'));
+ }
+ for(const item of [...out]){
+  if(/\bgiai he phuong trinh\b/.test(item))out.add(item.replace(/\bgiai he phuong trinh\b/g,'giai he'));
  }
  return [...out].filter(Boolean);
 }
