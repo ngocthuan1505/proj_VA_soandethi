@@ -4,6 +4,11 @@ Cập nhật: 28/11/2026.
 
 ## Hiện trạng đã kiểm
 
+### 28/11/2026 · Vá điều hướng bàn phím Kho SGK và E2E 390px (t6 vòng 2)
+
+- **Sửa [`lesson-picker.js`](../../lesson-picker.js):** Tách `searchCollapsedChapters` theo `lastSearchQuery` để khi có từ khóa tìm kiếm vẫn bấm thu gọn/mở rộng chương được (tự mở lại khi đổi từ khóa); trả focus về đúng nút tập `.sgk-vol-pill[data-sgk-volume]` kèm `aria-pressed` sau khi chọn bằng `Enter`. Không chạm vùng Soạn đề của Tú.
+- **Kiểm chứng (thiếu skill `webapp-testing`/`frontend-design`/`emil-design-eng`/`web-design-guidelines`, kiểm trực tiếp bằng `playwright-core`):** Bổ sung ca hành vi trong [`tests/t6-nav-a11y.test.mjs`](../../tests/t6-nav-a11y.test.mjs) (`5/5` đạt) và `checkLessonPickerKeyboard390` trong [`scripts/kiem-ui-redesign.mjs`](../../scripts/kiem-ui-redesign.mjs) kiểm `tablist` phím mũi tên, chọn tập bằng `Enter` giữ focus, thu gọn/mở rộng chương kết quả tìm kiếm bằng `Enter` và `0` tràn ngang ở `390×844`. Kết quả: `node --test "tests/*.test.mjs"` `262/262`, `check:team` `14/14` + `Team plan OK`, `node scripts/kiem-ui-redesign.mjs` `ok: true` (`0` bugs/failures/consoleErrors/pageErrors). Bên thuyết trình có thể dùng bằng chứng E2E bàn phím `390×844` này; ZIP Workshop cần đóng lại ở t10 sau khi gộp các bản vá vòng 2.
+
 ### 28/11/2026 · Đóng gói, kiểm định ZIP Workshop cuối và phát hành (t10 vòng 2 trên `a51656b`)
 
 - **Đóng gói & toàn vẹn ZIP:** Đóng mới `outputs/workshop-2026-12-01/SoanDeThi-Workshop-2026-12-01.zip` (`3.096.875 B`, `SHA-256: af8ac62128a2ff372b1f0e5808a68af52b279b654540abaa624dfd4ae97446a3`, khớp tệp `.sha256`) từ cây sạch `a51656b2fd4e4891cd5f4854412264dfba90ce10` (bao gồm trọn vẹn các bản sửa đã nghiệm thu ở vòng 2: t4 `cf23844`/`aad96e9`, t5 `626d46a`/`e397097`/`648ab5e`, t6 `cc27a04`, bằng chứng OCR PDF 390px `14b0ae7`, và nghiệm thu t9 `82ed32e`). Kiểm tra `testzip()` đạt, `252` mục (`251` tệp + `MANIFEST.json`), `251/251` tệp khớp từng byte với manifest và nguồn Git, `0` tệp cấm (`.env`/`.data`/`.runtime`/`node_modules`/`__pycache__`/`ModuleAnalysisCache`), `0` chuỗi khóa/secret, và xác nhận `exam-rooms.js` trong ZIP không còn `window.confirm` và đã có `document.hidden`.

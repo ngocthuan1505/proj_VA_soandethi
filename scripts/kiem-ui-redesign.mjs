@@ -356,6 +356,131 @@ async function checkCampaignReminder(page, baseUrl) {
   }
 }
 
+async function checkLessonPickerKeyboard390(page, baseUrl) {
+  await page.setViewportSize({width: 390, height: 844});
+  await page.goto(`${baseUrl}/?view=home`, {waitUntil: 'networkidle'});
+
+  const openLessonsBtn = page.locator('#home-view [data-action="home-go-lessons"]').first();
+  await openLessonsBtn.waitFor({state: 'visible', timeout: 8000});
+  await openLessonsBtn.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('dialog[open] #lesson-picker', {timeout: 8000});
+
+  // 1. Điều hướng WAI-ARIA tablist bằng phím mũi tên ở 390px
+  const tabLibrary = page.locator('dialog[open] #sgk-tab-library');
+  await tabLibrary.focus();
+  await page.keyboard.press('ArrowRight');
+  const afterArrowRight = await page.evaluate(() => ({
+    id: document.activeElement?.id || null,
+    selected: document.activeElement?.getAttribute('aria-selected'),
+  }));
+  assert.equal(afterArrowRight.id, 'sgk-tab-sgk', 'ArrowRight phải chuyển focus sang tab Sách giáo khoa ở 390px');
+  assert.equal(afterArrowRight.selected, 'true', 'Tab Sách giáo khoa phải có aria-selected="true"');
+
+  await page.keyboard.press('End');
+  const afterEnd = await page.evaluate(() => document.activeElement?.id || null);
+  assert.equal(afterEnd, 'sgk-tab-my-matrices', 'Phím End phải chuyển focus sang tab cuối cùng');
+
+  await page.keyboard.press('Home');
+  const afterHome = await page.evaluate(() => document.activeElement?.id || null);
+  assert.equal(afterHome, 'sgk-tab-library', 'Phím Home phải đưa focus về tab Kho tài liệu');
+
+  // Bỏ lọc lớp/môn để có nhiều tập và nhiều bài
+  await page.locator('#lesson-picker select[name="subject"]').selectOption({value: ''});
+  await page.locator('#lesson-picker select[name="grade"]').selectOption({value: ''});
+  await page.waitForTimeout(150);
+
+  // 2. Chọn tập bằng Enter phải trả focus về đúng nút tập vừa chọn
+  const specificPill = page.locator('#lesson-picker .sgk-vol-pill[data-sgk-volume]:not([data-sgk-volume=""])').first();
+  await specificPill.waitFor({state: 'visible', timeout: 5000});
+  const targetVol = await specificPill.getAttribute('data-sgk-volume');
+  await specificPill.focus();
+  await page.keyboard.press('Enter');
+  const focusAfterVolEnter = await page.evaluate(() => {
+    const ae = document.activeElement;
+    return {
+      tag: ae?.tagName || null,
+      vol: ae?.dataset?.sgkVolume ?? null,
+      active: ae?.classList?.contains('is-active') || false,
+      pressed: ae?.getAttribute('aria-pressed'),
+    };
+  });
+  assert.equal(focusAfterVolEnter.tag, 'BUTTON', 'Chọn tập bằng Enter không được làm mất focus về BODY');
+  assert.equal(focusAfterVolEnter.vol, targetVol, `Focus phải quay về đúng nút tập "${targetVol}"`);
+  assert.equal(focusAfterVolEnter.active, true, 'Nút tập vừa chọn phải có class is-active');
+  assert.equal(focusAfterVolEnter.pressed, 'true', 'Nút tập vừa chọn phải có aria-pressed="true"');
+
+  // Chọn lại "Tất cả" bằng Enter cũng giữ focus
+  const allVolPill = page.locator('#lesson-picker .sgk-vol-pill[data-sgk-volume=""]').first();
+  await allVolPill.focus();
+  await page.keyboard.press('Enter');
+  const focusAfterAllVol = await page.evaluate(() => ({
+    tag: document.activeElement?.tagName || null,
+    vol: document.activeElement?.dataset?.sgkVolume ?? null,
+  }));
+  assert.equal(focusAfterAllVol.tag, 'BUTTON');
+  assert.equal(focusAfterAllVol.vol, '');
+
+  // 3. Khi có từ khóa tìm kiếm, bấm Enter trên nút "Thu gọn chương" phải thu gọn được kết quả và giữ focus
+  const firstTitle = await page.locator('#lesson-picker .sgk-lesson-title').first().textContent();
+  const keyword = String(firstTitle || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(' ');
+  assert.ok(keyword.length >= 2, 'Phải lấy được từ khóa mẫu từ tiêu đề bài học');
+  await page.locator('#lesson-picker input[name="query"]').fill(keyword);
+  await page.waitForTimeout(150);
+
+  const toggleBtn = page.locator('#lesson-picker [data-sgk-toggle-chapter]').first();
+  await toggleBtn.waitFor({state: 'visible', timeout: 5000});
+  const chKey = await toggleBtn.getAttribute('data-sgk-toggle-chapter');
+  assert.equal(await toggleBtn.getAttribute('aria-expanded'), 'true', 'Kết quả tìm kiếm mới phải mở sẵn');
+
+  await toggleBtn.focus();
+  await page.keyboard.press('Enter');
+  const collapsedState = await page.evaluate((key) => {
+    const btn = document.querySelector(`#lesson-picker [data-sgk-toggle-chapter="${CSS.escape(key)}"]`);
+    const body = btn?.closest('fieldset')?.querySelector('.sgk-chapter-body');
+    return {
+      expanded: btn?.getAttribute('aria-expanded'),
+      label: btn?.getAttribute('aria-label') || '',
+      bodyHidden: Boolean(body?.hidden),
+      focused: document.activeElement === btn,
+    };
+  }, chKey);
+  assert.equal(collapsedState.expanded, 'false', 'Khi đang có từ khóa, Enter trên nút Thu gọn chương phải thu gọn chương');
+  assert.equal(collapsedState.bodyHidden, true, 'Thân chương kết quả tìm kiếm phải bị ẩn khi thu gọn');
+  assert.equal(collapsedState.focused, true, 'Focus phải giữ trên nút thu gọn chương sau Enter');
+  assert.match(collapsedState.label, /^Mở rộng chương /);
+
+  // Mở rộng lại bằng Enter
+  await page.keyboard.press('Enter');
+  const reopenedState = await page.evaluate((key) => {
+    const btn = document.querySelector(`#lesson-picker [data-sgk-toggle-chapter="${CSS.escape(key)}"]`);
+    const body = btn?.closest('fieldset')?.querySelector('.sgk-chapter-body');
+    return {
+      expanded: btn?.getAttribute('aria-expanded'),
+      bodyHidden: Boolean(body?.hidden),
+      focused: document.activeElement === btn,
+    };
+  }, chKey);
+  assert.equal(reopenedState.expanded, 'true', 'Bấm Enter lần hai phải mở rộng lại chương');
+  assert.equal(reopenedState.bodyHidden, false, 'Thân chương phải hiện lại khi mở rộng');
+  assert.equal(reopenedState.focused, true, 'Focus phải giữ trên nút sau khi mở rộng lại');
+
+  // 4. Không tràn ngang ở 390px
+  const overflowX = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  assert.equal(overflowX, false, 'Kho SGK ở 390x844 không được tràn ngang');
+
+  await page.keyboard.press('Escape');
+  await page.locator('dialog[open]').waitFor({state: 'hidden', timeout: 5000});
+}
+
 async function main() {
   fs.mkdirSync(SCREENSHOT_DIR, {recursive: true});
   const tmpDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiem-ui-redesign-data-'));
@@ -1587,6 +1712,11 @@ async function main() {
       await checkCampaignReminder(page, baseUrl);
     } catch (err) {
       recordFail('Mở chiến dịch từ nhắc hạn bằng bàn phím', err);
+    }
+    try {
+      await checkLessonPickerKeyboard390(page, baseUrl);
+    } catch (err) {
+      recordFail('Kho SGK bàn phím ở 390px (tablist, giữ focus tập, thu gọn chương khi tìm kiếm)', err);
     }
     await context.close();
   } finally {

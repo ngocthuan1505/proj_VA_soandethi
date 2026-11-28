@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import {lessonMatchesSearch, normalizeLessonSearch} from '../lesson-picker.js';
 
 const ROOT = process.cwd();
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -45,4 +46,21 @@ test('t6 · CSS bảo đảm tương phản >= 4.5:1 cho SGK/Ngân hàng/Phân t
   assert.match(css, /\.qbank-badge-type\s*\{[^}]*color:\s*#0f4c81/);
   assert.match(css, /\.analytics-jump\s*\{[^}]*color:\s*#0f4c81/);
   assert.match(css, /\.mach-logo\s*\{\s*width:\s*40px;\s*height:\s*40px;\s*\}/);
+});
+
+test('t6 · Kho SGK cho phép thu gọn kết quả khi tìm kiếm, trả focus về nút tập và tìm không dấu đúng', () => {
+  const src = read('lesson-picker.js');
+  assert.match(src, /searchCollapsedChapters/);
+  assert.match(src, /hasSearch\?searchCollapsedChapters\.has\(chKey\):collapsedChapters\.has\(chKey\)/);
+  assert.match(src, /aria-pressed="\$\{selectedVolume===v\?'true':'false'\}"/);
+  assert.match(src, /volumePillsHost\?\.querySelector\(`\[data-sgk-volume="\$\{CSS\.escape\(volValue\)\}"\]`\)/);
+  assert.equal(normalizeLessonSearch('Phương pháp thế — Hệ phương trình!'), 'phuong phap the he phuong trinh');
+  assert.equal(
+    lessonMatchesSearch(
+      {name: 'Toán 9 Tập 1', subject: 'Toán', volume: 'Tập 1'},
+      {chapter: 'Chương I', title: 'Giải hệ phương trình bằng phương pháp thế', text: ''},
+      'phep the',
+    ),
+    true,
+  );
 });

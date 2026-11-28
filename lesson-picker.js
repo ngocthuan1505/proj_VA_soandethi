@@ -194,6 +194,8 @@ export async function openLessonPicker(context) {
  let activeTab='library';
  let activePreview=null; // {collectionId, lessonNumber}
  const collapsedChapters=new Set();
+ const searchCollapsedChapters=new Set();
+ let lastSearchQuery='';
  const fileInput=personalForm?.querySelector('[data-lesson-file]');
  const preview=personalForm?.querySelector('[data-lesson-preview]');
  const pageSelect=preview?.querySelector('select'),previewText=preview?.querySelector('textarea');
@@ -453,8 +455,8 @@ export async function openLessonPicker(context) {
   }
   const totalLessons=books.reduce((s,c)=>s+c.lessons.length,0);
   const pills=[
-   `<button type="button" class="sgk-vol-pill${!selectedVolume?' is-active':''}" data-sgk-volume="">Tất cả · ${totalLessons}</button>`,
-   ...volumes.map(v=>`<button type="button" class="sgk-vol-pill${selectedVolume===v?' is-active':''}" data-sgk-volume="${esc(v)}">${esc(v)} · ${counts.get(v)}</button>`),
+   `<button type="button" class="sgk-vol-pill${!selectedVolume?' is-active':''}" data-sgk-volume="" aria-pressed="${!selectedVolume?'true':'false'}">Tất cả · ${totalLessons}</button>`,
+   ...volumes.map(v=>`<button type="button" class="sgk-vol-pill${selectedVolume===v?' is-active':''}" data-sgk-volume="${esc(v)}" aria-pressed="${selectedVolume===v?'true':'false'}">${esc(v)} · ${counts.get(v)}</button>`),
   ];
   volumePillsHost.innerHTML=pills.join('');
  }
@@ -474,6 +476,10 @@ export async function openLessonPicker(context) {
   const rawQuery=query.value.trim();
   const hasSearch=Boolean(normalizeLessonSearch(rawQuery));
   const queryNorm=hasSearch?foldVietnameseOrthography(normalizeLessonSearch(rawQuery)):'';
+  if(queryNorm!==lastSearchQuery){
+   searchCollapsedChapters.clear();
+   lastSearchQuery=queryNorm;
+  }
   const matchScore=l=>{
    if(!queryNorm)return 0;
    const titleNorm=foldVietnameseOrthography(normalizeLessonSearch(l.title));
@@ -512,7 +518,7 @@ export async function openLessonPicker(context) {
     <label class="consent sgk-select-all"><input type="checkbox" name="collection"> Chọn cả tập (${c.lessons.length} bài)</label>
     ${[...chapters].map(([chapter,rows])=>{
      const chKey=`${c.id}::${chapter}`;
-     const isCollapsed=collapsedChapters.has(chKey)&&!hasSearch;
+     const isCollapsed=hasSearch?searchCollapsedChapters.has(chKey):collapsedChapters.has(chKey);
      const pickedInChapter=rows.filter(r=>choices.get(c.id).has(r.number)).length;
      const chRange=chapterPageLabel(rows);
      return `<fieldset data-lesson-chapter class="sgk-chapter${isCollapsed?' is-collapsed':''}" data-chapter-key="${esc(chKey)}">
@@ -769,8 +775,12 @@ export async function openLessonPicker(context) {
  form.addEventListener('click',event=>{
   const volPill=event.target.closest('[data-sgk-volume]');
   if(volPill){
-   form.elements.volume.value=volPill.dataset.sgkVolume;
+   const volValue=volPill.dataset.sgkVolume;
+   form.elements.volume.value=volValue;
    render();
+   const nextPill=volumePillsHost?.querySelector(`[data-sgk-volume="${CSS.escape(volValue)}"]`)
+    ||volumePillsHost?.querySelector('[data-sgk-volume]');
+   nextPill?.focus();
    return;
   }
   const resetBtn=event.target.closest('[data-sgk-reset-filters]');
@@ -794,8 +804,10 @@ export async function openLessonPicker(context) {
   const toggleBtn=event.target.closest('[data-sgk-toggle-chapter]');
   if(toggleBtn){
    const key=toggleBtn.dataset.sgkToggleChapter;
-   if(collapsedChapters.has(key))collapsedChapters.delete(key);
-   else collapsedChapters.add(key);
+   const hasSearchNow=Boolean(normalizeLessonSearch(form.elements.query.value.trim()));
+   const targetCollapsed=hasSearchNow?searchCollapsedChapters:collapsedChapters;
+   if(targetCollapsed.has(key))targetCollapsed.delete(key);
+   else targetCollapsed.add(key);
    render();
    const nextToggle=list.querySelector(`[data-sgk-toggle-chapter="${CSS.escape(key)}"]`);
    nextToggle?.focus();
