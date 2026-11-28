@@ -4,6 +4,15 @@ Cập nhật: 24/11/2026.
 
 ## Hiện trạng đã kiểm
 
+### 28/11/2026 · Nghiệm thu tích hợp vòng 2 (t9) trên `82ed32e`
+
+- **Ranh giới Tú (`ba9da49..82ed32e`) & bản vá t4:** Đối chiếu `git diff --name-status ba9da49..82ed32e` xác nhận **0 tệp** trong vùng Soạn đề của Tú (`editor.js`, `studio.js`, `rich-document.js`, `math-content.js`, `workbench.js`, `matrix-chat.js`, `matrix-synthesis.js`, `reference.js`, `assets/usability.js`) bị sửa. Hai tệp t4 (`exam-rooms.js`, `tests/uv64-rooms-proactive.test.mjs`) đã nằm trong lịch sử commit (`cf23844`, `aad96e9`): đã bỏ `window.confirm`, thêm modal xác nhận xóa, kiểm `document.hidden` giữ focus khi polling và gắn `role="tablist"`/`role="tab"` kèm phím mũi tên.
+- **Kết quả kiểm thử toàn diện trên `82ed32e` (log lưu tại `outputs/t9-cycle2-82ed32e/`):**
+  - Python (`backend/`): `uv run ruff check .`, `uv run ruff format --check .` (`145` tệp), `uv run ty check src` đều đạt (`exit 0`); `uv run pytest -q -rs` đạt **`1098 passed, 5 skipped, 1 warning, 3 subtests passed`** (`203,28s`). Giải trình 5 ca skip: cả 5 ca (`test_check_routes.py:535`, `test_generation_confirmation.py:287`, `test_generation_submission.py:378`, `test_patch_confirmation.py:955`, `test_patch_confirmation.py:1008`) chỉ chạy khi bật `--smoke-ollama-model`.
+  - JavaScript & nhóm (Node `v24.22.3`): `node --test "tests/*.test.mjs"` đạt **`259 passed, 0 failed`** (`5,69s`); `check:team` đạt **`14 passed, 0 failed`** + `Team plan OK`.
+  - Chrome E2E 3 kích thước (`1440×900`, `1280×720`, `390×844`): `node scripts/kiem-ui-redesign.mjs` đạt **`exit 0`**, `0` bugs/failures/consoleErrors/pageErrors/unexpectedHttpErrors; `scripts/kiem-ung-vien.py` đạt **`11/11` (`IT-01..IT-11`)** trong một lượt trên worktree sạch `82ed32e01ac9cc629a3149cb630fbc766fcfa4c4`. (Thiếu skill `webapp-testing`/`frontend-design`/`emil-design-eng`/`web-design-guidelines`/`ponytail-review`, kiểm trực tiếp bằng `playwright-core`.)
+- **Đối chiếu ZIP Workshop:** `outputs/workshop-2026-12-01/SoanDeThi-Workshop-2026-12-01.zip` (`3.096.603 B`, `SHA-256: ebb7d6bd71a0f2404a5a741c38774639df23ee6655c5569f60baac26ecca27a4`, `252` mục / `251` tệp + `MANIFEST.json`) đạt kiểm tra CRC, `0` tệp cấm, khớp nội dung với `82ed32e` (chỉ khác LF/CRLF ở `lesson_catalog.py` do đóng từ `git archive`) và đã chạy sạch không Node/npm trên 3 viewport ở `t4-cycle2-648ab5e/t4-review-final-chrome.json`.
+
 ### 28/11/2026 · Kiểm Phòng thi và Chấm điểm trên ZIP Workshop (t4)
 
 Hai commit `cf23844` và `aad96e9` đã chứa cả [mã Phòng thi](../../exam-rooms.js) và [test hồi quy](../../tests/uv64-rooms-proactive.test.mjs). Đã kiểm bản giải nén từ `15e2c41`, sau đó đóng lại từ `648ab5e` để lấy thay đổi Kho đề của t5. Bản sau có 251 tệp khớp từng byte với Git theo manifest, đạt kiểm tra CRC và rà các mẫu khóa. ZIP ở `outputs/workshop-2026-12-01/SoanDeThi-Workshop-2026-12-01.zip`, SHA-256 `ebb7d6bd71a0f2404a5a741c38774639df23ee6655c5569f60baac26ecca27a4`. FastAPI chạy từ bản giải nén với PATH thiếu cả Node và npm.
