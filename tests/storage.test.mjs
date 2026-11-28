@@ -1,5 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright-core';
 
 // Mô phỏng callback/transaction IndexedDB, không thay logic storage cần kiểm.
 function testBrowser(){
@@ -605,5 +610,249 @@ test('sharing.js ẩn đáp án khi sao cộng đồng, bảo toàn render khi H
  }finally{
   if(prevDoc===undefined)delete globalThis.document;else globalThis.document=prevDoc;
   h.restore();
+ }
+});
+
+function findChromeExecutable(){
+ const candidates=[
+  process.env.BROWSER_PATH,
+  process.env.CHROME_PATH,
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+ ].filter(Boolean);
+ for(const candidate of candidates){
+  if(fs.existsSync(candidate))return candidate;
+ }
+ return '';
+}
+
+async function launchChromeForTest(){
+ const args=['--no-sandbox','--disable-gpu','--disable-dev-shm-usage'];
+ const envPath=process.env.BROWSER_PATH||process.env.CHROME_PATH||'';
+ if(envPath&&fs.existsSync(envPath)){
+  try{
+   return await chromium.launch({headless:true,executablePath:envPath,args});
+  }catch{
+   // Fall through to channel launch on Windows Chrome 136+
+  }
+ }
+ try{
+  return await chromium.launch({headless:true,channel:'chrome',args});
+ }catch{
+  const chromePath=findChromeExecutable();
+  if(!chromePath)return null;
+  return chromium.launch({headless:true,executablePath:chromePath,args});
+ }
+}
+
+test('t5 Kho đề · Chrome: xác nhận nhập JSON lô hiện Ghép đề vào kho hiện tại và khôi phục toàn kho hiện cảnh báo thay kho',async t=>{
+ let browser=await launchChromeForTest();
+ if(!browser){
+  t.skip('Không tìm thấy Chrome/Chromium trên máy kiểm thử');
+  return;
+ }
+
+ const repoRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+ const now=Date.now();
+ const initialState={
+  exams:[
+   {
+    id:'exam-origin-1',
+    title:'Đề gốc',
+    subject:'Toán',
+    grade:'9',
+    minutes:45,
+    revision:1,
+    updated:now,
+    questions:[{id:'q-1',v:1,type:'choice',stem:'1 + 1 = ?',options:['1','2','3','4'],answer:1,answerKnown:true,points:1}],
+    docs:[],
+    chat:[],
+    history:[],
+   },
+  ],
+  current:'exam-origin-1',
+  prefs:[],
+  trash:[],
+ };
+ const previewModes=[];
+
+ const server=http.createServer((req,res)=>{
+  const reqUrl=new URL(req.url||'/','http://127.0.0.1');
+  const pathname=reqUrl.pathname;
+
+  if(pathname==='/api/config'){
+   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
+   res.end(JSON.stringify({mode:'local',aiReady:false,sharedSnapshots:false}));
+   return;
+  }
+  if(pathname==='/api/kv'&&req.method==='GET'){
+   const key=reqUrl.searchParams.get('key');
+   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
+   if(key==='state'){
+    res.end(JSON.stringify({value:initialState,revision:1}));
+    return;
+   }
+   res.end(JSON.stringify({value:null,revision:1}));
+   return;
+  }
+  if(pathname==='/api/kv'&&req.method==='PUT'){
+   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
+   res.end(JSON.stringify({revision:1}));
+   return;
+  }
+  if(pathname==='/api/workspace/restore/preview'&&req.method==='POST'){
+   const chunks=[];
+   req.on('data',chunk=>chunks.push(chunk));
+   req.on('end',()=>{
+    const body=JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}');
+    if(body.format==='tro-ly-soan-de-batch'){
+     previewModes.push('merge_batch');
+     res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
+     res.end(JSON.stringify({
+      revision:1,
+      mode:'merge_batch',
+      examCount:2,
+      fileCount:1,
+      duplicateTitles:['Đề gốc'],
+     }));
+     return;
+    }
+    previewModes.push('full_restore');
+    res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
+    res.end(JSON.stringify({
+     revision:1,
+     exams:3,
+     files:2,
+     prefs:4,
+     questionBank:5,
+    }));
+   });
+   return;
+  }
+  if(pathname.startsWith('/api/')){
+   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
+   if(pathname==='/api/proactive/digest'){
+    res.end(JSON.stringify({campaigns:[],reminders:[],overdueCount:0,upcomingCount:0}));
+    return;
+   }
+   if(pathname==='/api/matrix-templates'){
+    res.end(JSON.stringify({templates:[]}));
+    return;
+   }
+   if(pathname==='/api/question-bank'){
+    res.end(JSON.stringify({items:[],total:0,hasMore:false}));
+    return;
+   }
+   if(pathname==='/api/lesson-catalog'){
+    res.end(JSON.stringify({books:[],sources:[]}));
+    return;
+   }
+   res.end(JSON.stringify({ok:true}));
+   return;
+  }
+
+  const rel=(pathname==='/'?'index.html':pathname.replace(/^\/+/,''));
+  const fullPath=path.resolve(repoRoot,rel);
+  if(fullPath.startsWith(repoRoot)&&fs.existsSync(fullPath)&&fs.statSync(fullPath).isFile()){
+   const ext=path.extname(fullPath).toLowerCase();
+   const contentType=
+    ext==='.html'?'text/html; charset=utf-8':
+    ext==='.js'||ext==='.mjs'?'application/javascript; charset=utf-8':
+    ext==='.css'?'text/css; charset=utf-8':
+    ext==='.svg'?'image/svg+xml':
+    ext==='.woff2'?'font/woff2':
+    ext==='.woff'?'font/woff':
+    ext==='.ttf'?'font/ttf':
+    'application/octet-stream';
+   res.writeHead(200,{'Content-Type':contentType});
+   fs.createReadStream(fullPath).pipe(res);
+   return;
+  }
+  res.writeHead(404);
+  res.end('Not found');
+ });
+
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const {port}=server.address();
+ const baseUrl=`http://127.0.0.1:${port}`;
+
+ try{
+  const page=await browser.newPage({viewport:{width:1280,height:720}});
+  const pageErrors=[];
+  page.on('pageerror',err=>pageErrors.push(err.message));
+
+  await page.goto(`${baseUrl}/#home`,{waitUntil:'domcontentloaded'});
+  await page.locator('[data-action="library"]').first().waitFor({state:'visible',timeout:15000});
+
+  const openLibraryAndChooseBackup=async(fileName,payloadObj)=>{
+   await page.locator('[data-action="library"]').first().click();
+   const importBtn=page.locator('#dialog [data-action="import-backup"]');
+   await importBtn.waitFor({state:'visible',timeout:10000});
+   const chooserPromise=page.waitForEvent('filechooser');
+   await importBtn.click();
+   const chooser=await chooserPromise;
+   await chooser.setFiles({
+    name:fileName,
+    mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(payloadObj),'utf8'),
+   });
+   await page.locator('#dialog [data-action="confirm-backup"]').waitFor({state:'visible',timeout:10000});
+  };
+
+  // 1. Nhập JSON lô (preview.mode === 'merge_batch')
+  await openLibraryAndChooseBackup('lo-de.json',{
+   format:'tro-ly-soan-de-batch',
+   version:1,
+   exams:[
+    {id:'batch-1',title:'Đề gốc',questions:[]},
+    {id:'batch-2',title:'Đề lô mới',questions:[]},
+   ],
+   files:{'f-1':'data:text/plain;base64,QQ=='},
+  });
+
+  const batchTitle=await page.locator('#dialog-title').textContent();
+  const batchBody=await page.locator('#dialog .modal-body').textContent();
+  const batchAlert=await page.locator('#dialog .alert').textContent();
+  const batchConfirm=await page.locator('#dialog [data-action="confirm-backup"]').textContent();
+
+  assert.equal(batchTitle.trim(),'Ghép đề vào kho hiện tại');
+  assert.ok(batchBody.includes('Đã kiểm tệp lô: 2 đề và 1 tệp đính kèm.'));
+  assert.ok(batchBody.includes('Có 1 đề trùng tên sẽ được ghép thêm thành bản riêng trong kho hiện tại.'));
+  assert.ok(batchAlert.includes('Ghép đề vào kho hiện tại'));
+  assert.ok(!batchAlert.includes('Thay các đề trong tài khoản hiện tại'));
+  assert.equal(batchConfirm.trim(),'Ghép đề vào kho hiện tại');
+
+  await page.locator('#dialog [data-action="close"]').first().click();
+  await page.waitForFunction(()=>!document.getElementById('dialog')?.open);
+
+  // 2. Khôi phục toàn kho (full workspace backup)
+  await openLibraryAndChooseBackup('toan-kho.json',{
+   format:'tro-ly-soan-de-backup',
+   version:1,
+   state:{exams:[{id:'restored-1',title:'Đề bản sao',questions:[]}],current:'restored-1',prefs:[]},
+   files:{},
+  });
+
+  const fullTitle=await page.locator('#dialog-title').textContent();
+  const fullBody=await page.locator('#dialog .modal-body').textContent();
+  const fullAlert=await page.locator('#dialog .alert').textContent();
+  const fullConfirm=await page.locator('#dialog [data-action="confirm-backup"]').textContent();
+
+  assert.equal(fullTitle.trim(),'Khôi phục bản sao dữ liệu');
+  assert.ok(fullBody.includes('Đã kiểm bản sao: 3 đề, 2 tệp và 4 yêu cầu đã xác nhận.'));
+  assert.ok(fullBody.includes('Có 5 câu hỏi trong Ngân hàng câu hỏi.'));
+  assert.ok(fullAlert.includes('Thay các đề trong tài khoản hiện tại bằng bản sao này'));
+  assert.equal(fullConfirm.trim(),'Khôi phục kho này');
+
+  assert.deepEqual(previewModes,['merge_batch','full_restore']);
+  assert.deepEqual(pageErrors,[]);
+ }finally{
+  if(browser)await browser.close();
+  await new Promise(resolve=>server.close(resolve));
  }
 });

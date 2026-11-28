@@ -699,7 +699,19 @@ async function handleAction(a,n){
    await saveChain;
    const preview=await db.previewRestore(backup);
    pending={type:'backup',data:backup,revision:preview.revision};
-   modal('Khôi phục bản sao dữ liệu',`<p>Đã kiểm bản sao: ${preview.exams??preview.examCount??0} đề, ${preview.files??preview.fileCount??0} tệp và ${preview.prefs??0} yêu cầu đã xác nhận.</p>${preview.questionBank?`<p>Có ${preview.questionBank} câu hỏi trong Ngân hàng câu hỏi.</p>`:''}${preview.curriculumSources?`<p>Có ${preview.curriculumSources} học liệu cá nhân. Học liệu mới trong kho đích cần được xác nhận lại quyền trước khi dùng cho AI.</p>`:''}${preview.matrixTemplates?`<p>Có ${preview.matrixTemplates} mẫu ma trận cá nhân.</p>`:''}<div class="alert">Thay các đề trong tài khoản hiện tại bằng bản sao này, gồm lịch sử và hoàn tác. Hãy tải bản sao hiện tại nếu cần giữ lại. Khóa AI, tài khoản, liên kết chia sẻ và tác vụ AI cũ không được khôi phục từ JSON.</div>${foot(button('backup','Tải bản sao hiện tại')+button('confirm-backup','Khôi phục kho này','primary'))}`);
+   const isMergeBatch=preview.mode==='merge_batch';
+   const examCount=preview.examCount??preview.exams??0;
+   const fileCount=preview.fileCount??preview.files??0;
+   const duplicateNote=isMergeBatch&&Array.isArray(preview.duplicateTitles)&&preview.duplicateTitles.length?`<p>Có ${preview.duplicateTitles.length} đề trùng tên sẽ được ghép thêm thành bản riêng trong kho hiện tại.</p>`:'';
+   const modalTitle=isMergeBatch?'Ghép đề vào kho hiện tại':'Khôi phục bản sao dữ liệu';
+   const summaryHTML=isMergeBatch
+    ?`<p>Đã kiểm tệp lô: ${examCount} đề và ${fileCount} tệp đính kèm.</p>${duplicateNote}`
+    :`<p>Đã kiểm bản sao: ${preview.exams??preview.examCount??0} đề, ${preview.files??preview.fileCount??0} tệp và ${preview.prefs??0} yêu cầu đã xác nhận.</p>`;
+   const alertHTML=isMergeBatch
+    ?`<div class="alert">Ghép đề vào kho hiện tại và giữ nguyên các đề đang có. Khóa AI, tài khoản, liên kết chia sẻ và tác vụ AI cũ không bị thay đổi.</div>`
+    :`<div class="alert">Thay các đề trong tài khoản hiện tại bằng bản sao này, gồm lịch sử và hoàn tác. Hãy tải bản sao hiện tại nếu cần giữ lại. Khóa AI, tài khoản, liên kết chia sẻ và tác vụ AI cũ không được khôi phục từ JSON.</div>`;
+   const confirmLabel=isMergeBatch?'Ghép đề vào kho hiện tại':'Khôi phục kho này';
+   modal(modalTitle,`${summaryHTML}${preview.questionBank?`<p>Có ${preview.questionBank} câu hỏi trong Ngân hàng câu hỏi.</p>`:''}${preview.curriculumSources?`<p>Có ${preview.curriculumSources} học liệu cá nhân. Học liệu mới trong kho đích cần được xác nhận lại quyền trước khi dùng cho AI.</p>`:''}${preview.matrixTemplates?`<p>Có ${preview.matrixTemplates} mẫu ma trận cá nhân.</p>`:''}${alertHTML}${foot(button('backup','Tải bản sao hiện tại')+button('confirm-backup',confirmLabel,'primary'))}`);
   });
   break;
  case 'confirm-backup':{
