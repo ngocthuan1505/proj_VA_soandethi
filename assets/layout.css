@@ -74,7 +74,7 @@ textarea {
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
 [hidden] { display: none !important; }
-dialog details:not([open]) > :not(summary) { display: none; }
+dialog:has(#export-preflight-panel) details:not([open]) > :not(summary) { display: none; }
 .row { display: flex; align-items: center; gap: 8px; }
 .row.space { justify-content: space-between; }
 .grow { flex: 1 1 auto; min-width: 0; }
@@ -152,10 +152,9 @@ header.top {
   font-size: 14px;
   font-weight: 600;
   color: var(--ink-strong);
-  flex: 1 1 140px;
-  width: auto;
-  min-width: 72px;
-  max-width: 220px;
+  width: clamp(120px, 15vw, 230px);
+  min-width: 90px;
+  max-width: 100%;
   border-radius: 6px;
   text-overflow: ellipsis;
 }
@@ -190,7 +189,7 @@ header.top {
 }
 .workflow-status-select[data-wf="reviewed"] { background: #edf6ff; border-color: var(--accent-border); color: #0f4c81; }
 .workflow-status-select[data-wf="approved"] { background: var(--brand-soft); border-color: var(--brand-border); color: var(--brand); }
-.workflow-status-select[data-wf="printed"] { background: var(--accent-soft); border-color: var(--accent-border); color: var(--brand); }
+.workflow-status-select[data-wf="printed"] { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); }
 
 /* 5 không gian làm việc trong header */
 .design-rail {
@@ -215,7 +214,7 @@ header.top {
 }
 .design-rail button:hover { background: var(--bg-subtle); color: var(--ink-strong); }
 .design-rail button.rail-active,
-.design-rail button.rail-active:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); border-color: var(--brand-border); font-weight: 600; }
+.home-top .design-rail button.rail-active:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); border-color: var(--brand-border); font-weight: 600; }
 .design-rail button.rail-icon-only { padding: 4px; width: 32px; }
 .design-rail .ico { width: 15px; height: 15px; }
 
@@ -2441,14 +2440,13 @@ dialog#dialog:has(.er-shell) .modal-body { background: var(--bg-canvas); }
 [data-channel="sgk"].source-channel-badge, .source-tab-link[data-channel="sgk"],
 [data-channel="sample"].source-channel-badge { background: var(--brand-soft); color: var(--brand); border-color: var(--brand-border); }
 [data-channel="personal"].source-channel-badge { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
-[data-channel="exam"].source-channel-badge { background: var(--accent-soft); color: var(--brand); border-color: var(--accent-border); }
+[data-channel="exam"].source-channel-badge { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
 [data-channel="community"].source-channel-badge, .source-tab-link[data-channel="community"] { background: #fef3da; color: #7e4e0a; border-color: #edd099; }
 [data-channel="file"].source-channel-badge { background: var(--bg-subtle); color: var(--ink); border-color: var(--line-strong); }
 .ux-source-summary .source-channel-badge { font-size: 9px; padding: 1px 4px; }
 
 .source-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
-.source-tabs button.active,
-.source-tabs button.active:hover:not(:disabled) { background: var(--brand); border-color: var(--brand); color: #ffffff; }
+.source-tabs button.active { background: var(--brand); border-color: var(--brand); color: #ffffff; }
 .source-group-card { display: grid; gap: 6px; }
 .source-group-card.is-attached { border-color: var(--brand-border); background: var(--brand-soft); }
 .source-page-image { width: 100%; height: auto; max-height: 620px; object-fit: contain; object-position: top; border: 1px solid var(--line); border-radius: var(--radius-sm); }
@@ -3505,14 +3503,14 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
 
 /* ==================== RESPONSIVE: 1480 / 1380 / 1120 / 760 / 390 ==================== */
 @media (max-width: 1480px) {
-  header.top { gap: 6px; padding: 0 10px; }
-  .header-title { max-width: 170px; font-size: 13px; }
-  .design-rail button { padding: 4px 7px; font-size: 12px; gap: 4px; }
-  .header-actions { gap: 4px; }
-  .header-actions button { padding: 4px 8px; font-size: 12px; }
-  .header-actions .quiet:not(.proactive-bell-btn) > span,
-  .account-control .studio-account-text { display: none; }
-  .account-control { padding-left: 5px; margin-left: 1px; }
+  header.top.home-top { gap: 6px; padding: 0 10px; }
+  .home-top .header-title { flex: 1 1 140px; width: auto; min-width: 72px; max-width: 170px; font-size: 13px; }
+  .home-top .design-rail button { padding: 4px 7px; font-size: 12px; gap: 4px; }
+  .home-top .header-actions { gap: 4px; }
+  .home-top .header-actions button { padding: 4px 8px; font-size: 12px; }
+  .home-top .header-actions .quiet:not(.proactive-bell-btn) > span,
+  .home-top .account-control .studio-account-text { display: none; }
+  .home-top .account-control { padding-left: 5px; margin-left: 1px; }
   .footer-legacy-meta { display: none; }
   .main-footer { padding: 0 10px; gap: 6px; }
   .workflow-strip { gap: 6px; }
@@ -3561,12 +3559,15 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
     gap: 6px;
   }
   .mvp-document { order: 1; flex: 1 1 auto; min-width: 0; }
-  .mach-logo { width: 40px; height: 40px; }
-  .header-title { width: auto; min-width: 80px; min-height: 40px; flex: 1 1 auto; font-size: 13.5px; padding: 6px 8px; }
-  .header-actions { order: 2; gap: 4px; flex-wrap: wrap; }
+  .header-title { width: auto; min-width: 80px; flex: 1 1 auto; font-size: 13.5px; }
+  .header-actions { order: 2; gap: 4px; }
   .header-actions button { min-height: var(--touch-min); min-width: var(--touch-min); padding: 6px 10px; }
-  .header-actions .quiet:not(.proactive-bell-btn) > span { display: none; }
-  .header-actions .quiet:not(.proactive-bell-btn) { padding: 6px; }
+  .header-actions .quiet:not(.proactive-bell-btn) { display: none; }
+  .home-top .mach-logo { width: 40px; height: 40px; }
+  .home-top .header-title { min-width: 80px; min-height: 40px; flex: 1 1 auto; font-size: 13.5px; padding: 6px 8px; }
+  .home-top .header-actions { flex-wrap: wrap; }
+  .home-top .header-actions button { padding: 6px 10px; }
+  .home-top .header-actions .quiet:not(.proactive-bell-btn) { display: inline-flex; padding: 6px; }
   .header-actions .header-new-btn span,
   .header-actions .ai-button span { display: none; }
   .header-actions .header-export-btn { padding: 6px 12px; }
@@ -3733,7 +3734,7 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
   dialog#dialog:has(.wb-library) .modal-foot { position: static; margin: 12px 0 0; padding: 12px 0 0; }
   .modal-head button.icon { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
   .modal-body input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
-  .modal-body select,
+  .modal-body select { min-height: 40px; }
   .modal-body .sgk-filters select,
   .modal-body .sgk-filters input[type="search"],
   .modal-body .sgk-filters input[type="text"],
@@ -3742,13 +3743,13 @@ math-field#visual-math-input:focus-within { border-color: var(--brand); box-shad
   .sgk-vol-pill,
   .sgk-pill { min-height: 40px; height: auto; padding: 6px 12px; }
   .sgk-chapter-toggle { min-width: 40px; min-height: 40px; width: 40px; height: 40px; }
-  .modal-body summary { min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 6px 4px; }
+  .sgk-modal summary,
+  dialog:has(#export-preflight-panel) .modal-body summary { min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 6px 4px; }
   .modal-body .sgk-lesson-label,
   .modal-body .sgk-chapter-body > label.consent,
   .modal-body .sgk-select-all,
-  .modal-body label.consent { min-height: 40px; padding: 6px 4px; }
-  dialog .modal-body input[type="checkbox"],
-  dialog .modal-body input[type="radio"] { width: 20px; height: 20px; accent-color: var(--brand); }
+  dialog:has(#export-preflight-panel) .modal-body label.consent { min-height: 40px; padding: 6px 4px; }
+  :is(.sgk-modal, dialog:has(#export-preflight-panel) .modal-body) input:is([type="checkbox"], [type="radio"]) { width: 20px; height: 20px; accent-color: var(--brand); }
   .poc-key-link, .saved-export-link, .shared-link-row a { min-height: 40px; display: inline-flex; align-items: center; }
   dialog#dialog:has(#matrix-form) .modal-body { padding: 12px 14px; min-width: 0; overflow-x: hidden; }
   dialog#dialog:has(.sgk-modal),

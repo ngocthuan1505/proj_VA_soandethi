@@ -242,7 +242,7 @@ function render(){const e=ensureBlocks(exam());if(!['outline','templates'].inclu
  ].map(([act,ic,lbl,aria])=>`<button type="button" data-action="${act}" class="${activeRailNav===act?'rail-active':''}" aria-label="${esc(aria)}" title="${esc(aria)}">${icon(ic)}<span class="rail-label">${esc(lbl)}</span></button>`).join('')
  +`<button type="button" data-action="design-command" class="rail-icon-only" aria-label="Tìm nhanh công cụ (Ctrl+K)" title="Tìm nhanh công cụ (Ctrl+K)">${icon('search')}</button>`;
  const summaryText=examFooterSummaryText(e);
- const headerHTML=`<header class="top" data-unified-header="1">
+ const headerHTML=`<header class="top${viewMode==='home'?' home-top':''}" data-unified-header="1">
   <div class="mvp-document">
    <a class="mach-logo" href="#home" data-action="design-home" aria-label="Soạn đề thi · Bàn soạn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13c0-4.2 3.8-7 8.8-7 3.6 0 6.2 1.8 6.8 4.4l2.9-1.7c.3-.2.7.1.6.4-.5 2-1.4 3.4-2.8 4.2-.8 2.4-3.7 3.7-7.7 3.7C6.6 17 3 15.6 3 13z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="7.5" cy="11.8" r="1" fill="currentColor"/><path d="M4 19.2c2.2 1.1 4.4 1.1 6.6 0s4.4-1.1 6.6 0c1.1.5 2 .7 2.8.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
    <input class="header-title" maxLength="180" value="${esc(e.title)}" data-exam-field="title" aria-label="Tên tài liệu">
@@ -350,11 +350,9 @@ function mountMatrixTemplates(e){
    showMatrix();toast('Đã nạp mẫu “'+tpl.name+'”. Hãy kiểm và xác nhận trước khi sinh.');
   });
   list.querySelectorAll('[data-delete-template]').forEach(btn=>btn.onclick=async()=>{
-   try{
-    const res=await fetch('/api/matrix-templates/'+encodeURIComponent(btn.dataset.deleteTemplate),{method:'DELETE',headers:db.workspaceHeaders()});
-    if(!res.ok){const err=await res.json().catch(()=>({}));throw Error(err.detail||err.error||'Chưa xóa được mẫu ma trận.');}
-    await renderList();toast('Đã xóa mẫu ma trận.');
-   }catch(error){toast(error?.message||'Chưa xóa được mẫu ma trận.');}
+   const res=await fetch('/api/matrix-templates/'+encodeURIComponent(btn.dataset.deleteTemplate),{method:'DELETE',headers:db.workspaceHeaders()});
+   if(!res.ok)throw Error('Chưa xóa được mẫu ma trận.');
+   await renderList();toast('Đã xóa mẫu ma trận.');
   });
  };
  saveBtn.onclick=async()=>{
@@ -523,7 +521,7 @@ async function handleAction(a,n){
   }
   render();
  }
- if(await handleStudioAction(a,n))return;if(a!=='menu'&&!n?.closest?.('.floating-panel:not(.document-menu),.inline-math-panel,.composer-shell'))closeFloating();if(await handleVipAction(a,n,mvpContext)){if(a==='jump-issue-question'){modalReturnFocus=null;assistantOpen=false;$('.workspace')?.classList.remove('mobile-ai-view');$('aside.assistant')?.classList.remove('open');const jumped=selected?document.getElementById('q-'+selected):null;if(jumped){jumped.scrollIntoView?.({block:'center',behavior:'smooth'});setTimeout(()=>{const ft=jumped.querySelector('.tiptap, textarea.stem, button, [tabindex]')||jumped;ft?.focus?.();},40);}}return;}if(await handleExamRoomAction(a,n,mvpContext))return;if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
+ if(await handleStudioAction(a,n))return;if(a!=='menu'&&!n?.closest?.('.floating-panel:not(.document-menu),.inline-math-panel,.composer-shell'))closeFloating();if(await handleVipAction(a,n,mvpContext))return;if(await handleExamRoomAction(a,n,mvpContext))return;if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
  case 'close':dialog.close();break;
  case 'close-top-modal':closeTopModal();break;
  case 'new':showNew();break;
@@ -638,7 +636,7 @@ async function handleAction(a,n){
  case 'redo':if(redo(e)){selection=null;persist().catch(()=>{});render();toast('Đã làm lại thay đổi');}break;
  case 'source':await showSource(n.dataset.doc,n.dataset.id);break;
  case 'import-doc':showImport();break;
- case 'download-original':{const d=e.docs.find(d=>d.id===n.dataset.doc);if(!d?.fileId)return toast('Tài liệu này chưa có tệp gốc để tải.');const url=await db.get('file:'+d.fileId);if(!url)return toast('Tài liệu gốc không còn trong bộ nhớ trình duyệt này.');const link=document.createElement('a');link.href=url;link.download=d.name||'tai-lieu';link.click();break;}
+ case 'download-original':{const d=e.docs.find(d=>d.id===n.dataset.doc),url=await db.get('file:'+d.fileId);const link=document.createElement('a');link.href=url;link.download=d.name;link.click();break;}
  case 'memory':showMemory();break;
  case 'delete-pref':state.prefs=state.prefs.filter(p=>p.id!==n.dataset.id);persist();render();showMemory();break;
  case 'edit-pref':{const p=state.prefs.find(p=>p.id===n.dataset.id);const st=p?.scopeType||'all';modal('Xem và xác nhận yêu cầu',`<form id="pref-edit-form" data-id="${p.id}"><label>Nội dung yêu cầu</label><textarea name="text" rows="4" required maxlength="500">${esc(p.text)}</textarea><div class="grid3"><div><label>Phạm vi</label><select name="scopeType"><option value="all" ${st==='all'?'selected':''}>Mọi môn &amp; mọi lớp</option><option value="subject" ${st==='subject'?'selected':''}>Theo môn</option><option value="subject_grade" ${st==='subject_grade'?'selected':''}>Đúng môn &amp; lớp</option></select></div><div><label>Môn</label><input name="subject" value="${esc(p.subject||e.subject||'')}" maxlength="80"></div><div><label>Lớp</label><input name="grade" value="${esc(p.grade||e.grade||'')}" maxlength="40"></div></div><p class="hint">Áp dụng đúng phạm vi môn/lớp cho các đề tạo sau.</p>${foot('<button type="submit" class="primary">Xác nhận yêu cầu mới</button>')}</form>`);break;}
@@ -781,36 +779,11 @@ function trapModalFocus(event,dlg){
  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
 }
-function handleDialogTablistKeydown(event,dlg){
- if(!dlg?.open||event.defaultPrevented)return;
- const key=event.key;
- if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(key))return;
- const currentTab=event.target?.closest?.('[role="tab"]');
- const tablist=currentTab?.closest?.('[role="tablist"]');
- if(!currentTab||!tablist)return;
- const tabs=[...tablist.querySelectorAll('[role="tab"]:not([disabled])')].filter(el=>el.offsetParent!==null||el.getClientRects().length);
- const idx=tabs.indexOf(currentTab);
- if(idx<0||tabs.length<2)return;
- event.preventDefault();
- const nextIdx=key==='Home'?0:key==='End'?tabs.length-1:(key==='ArrowRight'||key==='ArrowDown')?(idx+1)%tabs.length:(idx-1+tabs.length)%tabs.length;
- const nextTab=tabs[nextIdx];
- if(!nextTab)return;
- const matchKey=nextTab.dataset.sgkTab?`[data-sgk-tab="${CSS.escape(nextTab.dataset.sgkTab)}"]`:nextTab.dataset.tab?`[data-tab="${CSS.escape(nextTab.dataset.tab)}"]`:nextTab.dataset.srcTab?`[data-src-tab="${CSS.escape(nextTab.dataset.srcTab)}"]`:'';
- nextTab.click();
- nextTab.focus();
- if(matchKey){
-  setTimeout(()=>{
-   if(!dlg.open)return;
-   const refreshed=dlg.querySelector(`[role="tablist"] ${matchKey}`);
-   if(refreshed&&document.activeElement!==refreshed)refreshed.focus();
-  },0);
- }
-}
 for(const [dlg,getFocus,clearFocus] of [[dialog,()=>modalReturnFocus,()=>{modalReturnFocus=null;}],[dialogLayer2,()=>layer2ReturnFocus,()=>{layer2ReturnFocus=null;}]]){
  if(!dlg)continue;
  dlg.addEventListener('click',event=>{if(event.target===dlg){const r=dlg.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dlg.close();}});
  dlg.addEventListener('close',()=>{if(viewMode==='home'){activeRailNav='design-home';setActiveWorkspaceNav('design-home');}const el=getFocus();clearFocus();if(el?.isConnected)el.focus();else if(viewMode==='home')document.querySelector('.design-rail button.rail-active, .design-rail button')?.focus();});
- dlg.addEventListener('keydown',event=>{if(dlg.open&&event.key==='Enter'&&event.target?.id==='command-query'){const first=dlg.querySelector('#command-results .command-result');if(first){event.preventDefault();first.click();return;}}handleDialogTablistKeydown(event,dlg);trapModalFocus(event,dlg);});
+ dlg.addEventListener('keydown',event=>{if(viewMode==='home'&&dlg.open&&event.key==='Enter'&&event.target?.id==='command-query'){const first=dlg.querySelector('#command-results .command-result');if(first){event.preventDefault();first.click();return;}}trapModalFocus(event,dlg);});
 }
 window.addEventListener('keydown',event=>{if(event.key==='Escape'&&dialogLayer2?.open){event.preventDefault();event.stopPropagation();dialogLayer2.close();return;}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'&&!event.isComposing){event.preventDefault();if(!flushEditor())return;document.activeElement?.blur();persist().then(()=>toast('Đã lưu đề trên máy')).catch(err=>toast(friendlyClientMessage(err)));}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='y'&&!event.shiftKey&&!event.isComposing&&!event.target.closest('.tiptap,input,textarea,math-field,.composer-shell')){event.preventDefault();void handleAction('redo');}},true);
 window.addEventListener('hashchange',()=>{const next=detectInitialViewMode();if(next!==viewMode){viewMode=next;activeRailNav=viewMode==='home'?'design-home':'design-workspace';if(state)render();}});
