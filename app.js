@@ -8,7 +8,7 @@ import {referenceSide,referenceChat,rubricHTML,refreshReferenceScope,closeFloati
 import {mountMVP,initMVP,handleMVPAction,handleMVPSubmit,WORKFLOW_STATUS_LABELS,normalizeWorkflowStatus} from './mvp.js';
 import {mountVipTools,handleVipAction} from './vip-tools.js';
 import {mountExamRooms,handleExamRoomAction,handleExamRoomSubmit} from './exam-rooms.js';
-import {setActiveWorkspaceNav} from './design.js';
+import {mountDesign,setActiveWorkspaceNav} from './design.js';
 import {renderHomeViewHTML,mountHomeView,refreshProactiveUI,handleHomeAction,handleHomeSubmit} from './home.js';
 import {mountVoiceButton} from './voice-input.js';
 import {citationContextHTML} from './citation-context.js';
@@ -20,6 +20,7 @@ const $=s=>document.querySelector(s);
 let inlineTimer;
 let state,tab='outline',selected=null,selection=null,teacher=false,assistantOpen=false,sidebarOpen=false,saveChain=Promise.resolve(),pending=null,toastTimer,activeRailNav='design-workspace',viewMode='workspace',lastDigestFetchAt=0;
 function detectInitialViewMode(){const p=location.pathname.replace(/\/+$/,''),q=new URLSearchParams(location.search);return p==='/home'||q.get('view')==='home'||location.hash==='#home'?'home':'workspace';}
+function syncHomeUrl(mode){if(typeof location==='undefined'||!location?.href||typeof history?.replaceState!=='function')return;const url=new URL(location.href);if(mode==='home'){url.hash='home';}else{if(url.pathname.replace(/\/+$/,'')==='/home')url.pathname='/';if(url.searchParams.get('view')==='home')url.searchParams.delete('view');if(url.hash==='#home')url.hash='';}const next=url.pathname+url.search+url.hash;if(next!==location.pathname+location.search+location.hash)history.replaceState({},'',next);}
 function ensureWorkspaceVoiceButton(){
  const form=$('#chat-form'),bottom=form?.querySelector('.compose-bottom'),input=$('#chat-input');
  if(!bottom||!input)return;
@@ -106,7 +107,7 @@ function modal(title,body,subtitle='',opts={}){
 const foot=html=>`<div class="modal-foot">${html}</div>`;
 const button=(action,label,cls='',attrs='')=>`<button type="button" data-action="${action}" class="${cls}" ${attrs}>${label}</button>`;
 const empty=message=>`<div class="empty">${message}</div>`;
-const mvpContext={onManualChange:q=>scheduleAutoReconcile(q),act:(a,n)=>handleAction(a,n||document.createElement('button')),exam,qget,getState:()=>state,workspaceHeaders:()=>db.workspaceHeaders(),getViewMode:()=>viewMode,setViewMode:mode=>{viewMode=mode==='home'?'home':'workspace';activeRailNav=viewMode==='home'?'design-home':'design-workspace';render();},openExamInWorkspace:id=>{if(!state.exams.some(x=>x.id===id))return;state.current=id;selected=null;selection=null;viewMode='workspace';activeRailNav='design-workspace';dialog.close();persist();render();},createBlankExamForHome:({subject,grade,title}={})=>{const e=blank(subject||'Toán',state.prefs,state.teacherProfile);if(grade)e.grade=String(grade);if(title)e.title=String(title);state.exams.push(e);state.current=e.id;selected=null;selection=null;teacher=false;persist();return e;},onAutoCreateExam:({prompt,examId,campaignId,subject,grade,durationMinutes,consentGiven,saveWorkspaceConsent}={})=>{if(examId&&state.exams.some(x=>x.id===examId))state.current=examId;viewMode='workspace';activeRailNav='design-workspace';assistantOpen=true;dialog.close();if(dialogLayer2?.open)dialogLayer2.close();render();setTimeout(()=>{if(!prompt)return;const cur=exam();const resolvedConsent=consentGiven!==undefined?Boolean(consentGiven):Boolean(cur?.aiConsent);window.dispatchEvent(new CustomEvent('mach:auto-create-exam',{detail:{prompt,examId:cur?.id||examId,campaignId:campaignId||null,subject:subject||cur?.subject||'',grade:grade||cur?.grade||'',durationMinutes:durationMinutes||cur?.minutes||null,consentGiven:resolvedConsent,saveWorkspaceConsent:saveWorkspaceConsent===true}}));},40);},setTab:value=>{tab=['outline','templates'].includes(value)?value:'outline';},getSelected:()=>selected,setSelected:id=>{const changed=selected!==id;selected=id;document.querySelectorAll('.question').forEach(n=>n.classList.toggle('selected',n.dataset.q===id));if(changed)refreshWorkbench();},setSelection:s=>{selection=s;},isTeacher:()=>teacher,change,persist,render,modal,toast,icon,refreshInline,currentScope,showSource,showQuotes,showMatrix,chooseFile,importDroppedFile:file=>importFile(file),addChat};
+const mvpContext={onManualChange:q=>scheduleAutoReconcile(q),act:(a,n)=>handleAction(a,n||document.createElement('button')),exam,qget,getState:()=>state,workspaceHeaders:()=>db.workspaceHeaders(),getViewMode:()=>viewMode,setViewMode:mode=>{viewMode=mode==='home'?'home':'workspace';activeRailNav=viewMode==='home'?'design-home':'design-workspace';syncHomeUrl(viewMode);render();},openExamInWorkspace:id=>{if(!state.exams.some(x=>x.id===id))return;state.current=id;selected=null;selection=null;viewMode='workspace';activeRailNav='design-workspace';syncHomeUrl('workspace');dialog.close();persist();render();},createBlankExamForHome:({subject,grade,title}={})=>{const e=blank(subject||'Toán',state.prefs,state.teacherProfile);if(grade)e.grade=String(grade);if(title)e.title=String(title);state.exams.push(e);state.current=e.id;selected=null;selection=null;teacher=false;persist();return e;},onAutoCreateExam:({prompt,examId,campaignId,subject,grade,durationMinutes,consentGiven,saveWorkspaceConsent}={})=>{if(examId&&state.exams.some(x=>x.id===examId))state.current=examId;viewMode='workspace';activeRailNav='design-workspace';syncHomeUrl('workspace');assistantOpen=true;dialog.close();if(dialogLayer2?.open)dialogLayer2.close();render();setTimeout(()=>{if(!prompt)return;const cur=exam();const resolvedConsent=consentGiven!==undefined?Boolean(consentGiven):Boolean(cur?.aiConsent);window.dispatchEvent(new CustomEvent('mach:auto-create-exam',{detail:{prompt,examId:cur?.id||examId,campaignId:campaignId||null,subject:subject||cur?.subject||'',grade:grade||cur?.grade||'',durationMinutes:durationMinutes||cur?.minutes||null,consentGiven:resolvedConsent,saveWorkspaceConsent:saveWorkspaceConsent===true}}));},40);},setTab:value=>{tab=['outline','templates'].includes(value)?value:'outline';},getSelected:()=>selected,setSelected:id=>{const changed=selected!==id;selected=id;document.querySelectorAll('.question').forEach(n=>n.classList.toggle('selected',n.dataset.q===id));if(changed)refreshWorkbench();},setSelection:s=>{selection=s;},isTeacher:()=>teacher,change,persist,render,modal,toast,icon,refreshInline,currentScope,showSource,showQuotes,showMatrix,chooseFile,importDroppedFile:file=>importFile(file),addChat};
 async function hydratePaperAudioPlayers(){
  const players=[...document.querySelectorAll('audio[data-audio-file-id]')];
  for(const el of players){
@@ -253,6 +254,7 @@ function render(){const e=ensureBlocks(exam());if(!['outline','templates'].inclu
  </header>`;
  if(viewMode==='home'){
   app.innerHTML=headerHTML+renderHomeViewHTML(state);
+  mountDesign(mvpContext);
   setActiveWorkspaceNav('design-home');
   mountHomeView(mvpContext);
   document.querySelectorAll('[data-save-status]').forEach(n=>n.textContent=saveLabel);
@@ -307,7 +309,7 @@ function addChat(role,text){exam().chat.push({role,text,at:Date.now()});persist(
 function currentScope(){const q=qget(selected);if(!q)return null;if(selection?.id===q.id)return clone(selection);return questionScope(q);}
 function showNew(){modal('Tạo đề mới',`<p class="hint">Chọn môn học. Thầy cô có thể nhập nội dung, dùng mẫu hoặc nhờ trợ lý soạn sau đó.</p><div class="new-subject-grid">${[['Toán','ƒ','Biểu thức và hình học'],['Vật lí','Ω','Công thức và đại lượng'],['Hoá học','H₂','Chất và phản ứng'],['Sinh học','Aa','Di truyền và tế bào'],['Ngữ văn','“','Ngữ liệu và câu hỏi'],['Tiếng Anh','En','Reading và bài tập']].map(([name,symbol,hint])=>`<button type="button" data-action="design-new-subject" data-subject="${name}" aria-pressed="${exam().subject===name}"><span>${symbol}</span><b>${name}</b><small>${hint}</small></button>`).join('')}</div><label for="new-subject">Môn học (có thể nhập môn khác)</label><input id="new-subject" value="${esc(exam().subject)}" maxlength="80"><p class="hint">Các yêu cầu soạn đề đã lưu sẽ được áp dụng cho đề mới.</p><details class="new-examples"><summary>Hoặc mở đề minh họa có sẵn</summary><div class="buttons">${button('essay-sample','Toán · 5 bài tự luận')}${button('create-sample','Địa lí · Bảng số liệu','','data-subject="Địa lí"')}${button('create-sample','Ngữ văn · Đọc hiểu','','data-subject="Ngữ văn"')}</div></details>${foot(button('create-blank',icon('plus')+'Tạo đề mới','primary'))}`);}
 
-function createExam(subject,isSample){tab='outline';viewMode='workspace';activeRailNav='design-workspace';const e=isSample?sample(subject,state.prefs):blank(subject,state.prefs,state.teacherProfile);if(isSample)e.questions.forEach(q=>check(e,q));state.exams.push(e);state.current=e.id;selected=null;selection=null;teacher=false;dialog.close();persist();render();toast('Đã tạo đề riêng · '+e.appliedPrefs.length+' yêu cầu được áp dụng');}
+function createExam(subject,isSample){tab='outline';viewMode='workspace';activeRailNav='design-workspace';syncHomeUrl('workspace');const e=isSample?sample(subject,state.prefs):blank(subject,state.prefs,state.teacherProfile);if(isSample)e.questions.forEach(q=>check(e,q));state.exams.push(e);state.current=e.id;selected=null;selection=null;teacher=false;dialog.close();persist();render();toast('Đã tạo đề riêng · '+e.appliedPrefs.length+' yêu cầu được áp dụng');}
 function showLibrary(){modal('Đề của tôi',`${state.exams.map(e=>`<div class="small-card library-meta"><div><b>${esc(e.title)}</b><p>${esc(e.subject)} · ${e.questions.length} câu · ${date(e.updated)}${e.sample?' · Mẫu':''}</p></div><div class="buttons">${button('open-exam',e.id===state.current?'Đang mở':'Mở đề',e.id===state.current?'ghost':'',`data-id="${e.id}"`)}${button('delete-exam',icon('trash'),'icon danger',`data-id="${e.id}" aria-label="Xóa đề ${esc(e.title)}"`)}</div></div>`).join('')}<p class="hint">Đề và hội thoại được lưu trong trình duyệt này. Xuất bản sao JSON để giữ một bản ngoài trình duyệt.</p>${foot(button('import-backup','Nhập bản sao JSON')+button('backup','Tải bản sao toàn bộ')+button('new','Tạo đề mới','primary'))}`);}
 function readMatrixFormRows(form){
  const ptField=val=>{
@@ -348,9 +350,11 @@ function mountMatrixTemplates(e){
    showMatrix();toast('Đã nạp mẫu “'+tpl.name+'”. Hãy kiểm và xác nhận trước khi sinh.');
   });
   list.querySelectorAll('[data-delete-template]').forEach(btn=>btn.onclick=async()=>{
-   const res=await fetch('/api/matrix-templates/'+encodeURIComponent(btn.dataset.deleteTemplate),{method:'DELETE',headers:db.workspaceHeaders()});
-   if(!res.ok)throw Error('Chưa xóa được mẫu ma trận.');
-   await renderList();toast('Đã xóa mẫu ma trận.');
+   try{
+    const res=await fetch('/api/matrix-templates/'+encodeURIComponent(btn.dataset.deleteTemplate),{method:'DELETE',headers:db.workspaceHeaders()});
+    if(!res.ok){const err=await res.json().catch(()=>({}));throw Error(err.detail||err.error||'Chưa xóa được mẫu ma trận.');}
+    await renderList();toast('Đã xóa mẫu ma trận.');
+   }catch(error){toast(error?.message||'Chưa xóa được mẫu ma trận.');}
   });
  };
  saveBtn.onclick=async()=>{
@@ -501,12 +505,13 @@ const commitBeforeAction=new Set(['ai-check','approve-question','toggle-approve-
 async function handleAction(a,n){
  if(commitBeforeAction.has(a)&&!flushEditor()){toast('Gõ xong chữ đang nhập rồi thử lại.');return;}
  if(['design-home','design-workspace','library','question-bank','exam-rooms','exam-analytics'].includes(a)){activeRailNav=a;setActiveWorkspaceNav(a);}
- if(a==='design-home'){viewMode='home';activeRailNav='design-home';render();return;}
- if(a==='design-workspace'){viewMode='workspace';activeRailNav='design-workspace';assistantOpen=false;render();$('.workspace')?.classList.remove('focus-mode','outline-collapsed','mobile-ai-view');$('aside.assistant')?.classList.remove('open');return;}
+ if(a==='design-home'){viewMode='home';activeRailNav='design-home';syncHomeUrl('home');render();return;}
+ if(a==='design-workspace'){viewMode='workspace';activeRailNav='design-workspace';syncHomeUrl('workspace');assistantOpen=false;render();$('.workspace')?.classList.remove('focus-mode','outline-collapsed','mobile-ai-view');$('aside.assistant')?.classList.remove('open');return;}
  if(await handleHomeAction(a,n,mvpContext))return;
- const stayHome=new Set(['close','close-top-modal','open-proactive-center','open-new-campaign','open-new-reminder','library','library-tab','library-select-all','library-batch-duplicate','library-batch-export','library-batch-delete','library-batch-restore','library-batch-purge','delete-exam','confirm-delete-exam','restore-trashed-exam','purge-trashed-exam','duplicate-exam','clone-exam-target','question-bank','save-to-bank','save-all-to-bank','delete-bank-item','load-more-bank','reset-bank-filters','exam-rooms','exam-analytics','design-command','new','backup','backup-local','import-backup','confirm-backup','community-exams','community-clone','community-source']);
+ const stayHome=new Set(['close','close-top-modal','open-proactive-center','open-new-campaign','open-new-reminder','library','library-tab','library-select-all','library-batch-duplicate','library-batch-export','library-batch-delete','library-batch-restore','library-batch-purge','delete-exam','confirm-delete-exam','restore-trashed-exam','purge-trashed-exam','duplicate-exam','clone-exam-target','question-bank','save-to-bank','save-all-to-bank','delete-bank-item','load-more-bank','reset-bank-filters','exam-rooms','exam-analytics','design-command','design-execute','new','backup','backup-local','import-backup','confirm-backup','community-exams','community-clone','community-source','share','copy-share','revoke-share','connections','refresh-providers-health','test-single-provider','pick-ollama-model','export','export-file','export-extended','export-tnmaker','export-pack','preview-variant','export-omr-student','export-omr-teacher','export-omr-pdf']);
  if(viewMode==='home'&&!stayHome.has(a)&&!a.startsWith('home-')&&!a.startsWith('proactive-')&&!a.startsWith('er-')){
   viewMode='workspace';
+  syncHomeUrl('workspace');
   if(activeRailNav==='design-home')activeRailNav='design-workspace';
   if(a==='toggle-ai'||a==='toggle-chat'){
    assistantOpen=true;
@@ -518,14 +523,14 @@ async function handleAction(a,n){
   }
   render();
  }
- if(await handleStudioAction(a,n))return;if(a!=='menu'&&!n?.closest?.('.floating-panel:not(.document-menu),.inline-math-panel,.composer-shell'))closeFloating();if(await handleVipAction(a,n,mvpContext))return;if(await handleExamRoomAction(a,n,mvpContext))return;if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
+ if(await handleStudioAction(a,n))return;if(a!=='menu'&&!n?.closest?.('.floating-panel:not(.document-menu),.inline-math-panel,.composer-shell'))closeFloating();if(await handleVipAction(a,n,mvpContext)){if(a==='jump-issue-question'){modalReturnFocus=null;assistantOpen=false;$('.workspace')?.classList.remove('mobile-ai-view');$('aside.assistant')?.classList.remove('open');const jumped=selected?document.getElementById('q-'+selected):null;if(jumped){jumped.scrollIntoView?.({block:'center',behavior:'smooth'});setTimeout(()=>{const ft=jumped.querySelector('.tiptap, textarea.stem, button, [tabindex]')||jumped;ft?.focus?.();},40);}}return;}if(await handleExamRoomAction(a,n,mvpContext))return;if(await handleWorkbenchAction(a,n))return;if(await handleMVPAction(a,n))return;const e=exam();switch(a){
  case 'close':dialog.close();break;
  case 'close-top-modal':closeTopModal();break;
  case 'new':showNew();break;
  case 'create-sample':createExam(n.dataset.subject,true);break;
  case 'create-blank':{const s=$('#new-subject').value.trim();if(!s)return toast('Nhập môn học.');createExam(s,false);break;}
  case 'library':showLibrary();break;
- case 'open-exam':state.current=n.dataset.id;selected=null;selection=null;viewMode='workspace';activeRailNav='design-workspace';dialog.close();persist();render();break;
+ case 'open-exam':state.current=n.dataset.id;selected=null;selection=null;viewMode='workspace';activeRailNav='design-workspace';syncHomeUrl('workspace');dialog.close();persist();render();break;
  case 'delete-exam':{const target=state.exams.find(x=>x.id===n.dataset.id);modal('Chuyển đề vào thùng rác?',`<p>${esc(target.title)}</p><p class="hint">Đề sẽ nằm trong Thùng rác để khôi phục nếu cần. Thầy cô cũng có thể tải bản sao JSON trước.</p>${foot(button('backup','Tải bản sao')+button('confirm-delete-exam','Chuyển vào thùng rác','danger',`data-id="${target.id}"`))}`);break;}
  case 'confirm-delete-exam':{const victim=state.exams.find(x=>x.id===n.dataset.id);if(victim){state.trash=Array.isArray(state.trash)?state.trash:[];state.trash.unshift({...clone(victim),deletedAt:Date.now()});}state.exams=state.exams.filter(x=>x.id!==n.dataset.id);if(!state.exams.length)state.exams.push(blank('Lịch sử',state.prefs,state.teacherProfile));if(!state.exams.some(x=>x.id===state.current))state.current=state.exams[0].id;persist();render();await handleAction('library',n);break;}
  case 'tab':tab=['outline','templates'].includes(n.dataset.tab)?n.dataset.tab:'outline';render();break;
@@ -633,7 +638,7 @@ async function handleAction(a,n){
  case 'redo':if(redo(e)){selection=null;persist().catch(()=>{});render();toast('Đã làm lại thay đổi');}break;
  case 'source':await showSource(n.dataset.doc,n.dataset.id);break;
  case 'import-doc':showImport();break;
- case 'download-original':{const d=e.docs.find(d=>d.id===n.dataset.doc),url=await db.get('file:'+d.fileId);const link=document.createElement('a');link.href=url;link.download=d.name;link.click();break;}
+ case 'download-original':{const d=e.docs.find(d=>d.id===n.dataset.doc);if(!d?.fileId)return toast('Tài liệu này chưa có tệp gốc để tải.');const url=await db.get('file:'+d.fileId);if(!url)return toast('Tài liệu gốc không còn trong bộ nhớ trình duyệt này.');const link=document.createElement('a');link.href=url;link.download=d.name||'tai-lieu';link.click();break;}
  case 'memory':showMemory();break;
  case 'delete-pref':state.prefs=state.prefs.filter(p=>p.id!==n.dataset.id);persist();render();showMemory();break;
  case 'edit-pref':{const p=state.prefs.find(p=>p.id===n.dataset.id);const st=p?.scopeType||'all';modal('Xem và xác nhận yêu cầu',`<form id="pref-edit-form" data-id="${p.id}"><label>Nội dung yêu cầu</label><textarea name="text" rows="4" required maxlength="500">${esc(p.text)}</textarea><div class="grid3"><div><label>Phạm vi</label><select name="scopeType"><option value="all" ${st==='all'?'selected':''}>Mọi môn &amp; mọi lớp</option><option value="subject" ${st==='subject'?'selected':''}>Theo môn</option><option value="subject_grade" ${st==='subject_grade'?'selected':''}>Đúng môn &amp; lớp</option></select></div><div><label>Môn</label><input name="subject" value="${esc(p.subject||e.subject||'')}" maxlength="80"></div><div><label>Lớp</label><input name="grade" value="${esc(p.grade||e.grade||'')}" maxlength="40"></div></div><p class="hint">Áp dụng đúng phạm vi môn/lớp cho các đề tạo sau.</p>${foot('<button type="submit" class="primary">Xác nhận yêu cầu mới</button>')}</form>`);break;}
@@ -776,11 +781,36 @@ function trapModalFocus(event,dlg){
  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
 }
+function handleDialogTablistKeydown(event,dlg){
+ if(!dlg?.open||event.defaultPrevented)return;
+ const key=event.key;
+ if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(key))return;
+ const currentTab=event.target?.closest?.('[role="tab"]');
+ const tablist=currentTab?.closest?.('[role="tablist"]');
+ if(!currentTab||!tablist)return;
+ const tabs=[...tablist.querySelectorAll('[role="tab"]:not([disabled])')].filter(el=>el.offsetParent!==null||el.getClientRects().length);
+ const idx=tabs.indexOf(currentTab);
+ if(idx<0||tabs.length<2)return;
+ event.preventDefault();
+ const nextIdx=key==='Home'?0:key==='End'?tabs.length-1:(key==='ArrowRight'||key==='ArrowDown')?(idx+1)%tabs.length:(idx-1+tabs.length)%tabs.length;
+ const nextTab=tabs[nextIdx];
+ if(!nextTab)return;
+ const matchKey=nextTab.dataset.sgkTab?`[data-sgk-tab="${CSS.escape(nextTab.dataset.sgkTab)}"]`:nextTab.dataset.tab?`[data-tab="${CSS.escape(nextTab.dataset.tab)}"]`:nextTab.dataset.srcTab?`[data-src-tab="${CSS.escape(nextTab.dataset.srcTab)}"]`:'';
+ nextTab.click();
+ nextTab.focus();
+ if(matchKey){
+  setTimeout(()=>{
+   if(!dlg.open)return;
+   const refreshed=dlg.querySelector(`[role="tablist"] ${matchKey}`);
+   if(refreshed&&document.activeElement!==refreshed)refreshed.focus();
+  },0);
+ }
+}
 for(const [dlg,getFocus,clearFocus] of [[dialog,()=>modalReturnFocus,()=>{modalReturnFocus=null;}],[dialogLayer2,()=>layer2ReturnFocus,()=>{layer2ReturnFocus=null;}]]){
  if(!dlg)continue;
  dlg.addEventListener('click',event=>{if(event.target===dlg){const r=dlg.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dlg.close();}});
- dlg.addEventListener('close',()=>{if(viewMode==='home'){activeRailNav='design-home';setActiveWorkspaceNav('design-home');}const el=getFocus();clearFocus();if(el?.isConnected)el.focus();});
- dlg.addEventListener('keydown',event=>trapModalFocus(event,dlg));
+ dlg.addEventListener('close',()=>{if(viewMode==='home'){activeRailNav='design-home';setActiveWorkspaceNav('design-home');}const el=getFocus();clearFocus();if(el?.isConnected)el.focus();else if(viewMode==='home')document.querySelector('.design-rail button.rail-active, .design-rail button')?.focus();});
+ dlg.addEventListener('keydown',event=>{if(dlg.open&&event.key==='Enter'&&event.target?.id==='command-query'){const first=dlg.querySelector('#command-results .command-result');if(first){event.preventDefault();first.click();return;}}handleDialogTablistKeydown(event,dlg);trapModalFocus(event,dlg);});
 }
 window.addEventListener('keydown',event=>{if(event.key==='Escape'&&dialogLayer2?.open){event.preventDefault();event.stopPropagation();dialogLayer2.close();return;}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'&&!event.isComposing){event.preventDefault();if(!flushEditor())return;document.activeElement?.blur();persist().then(()=>toast('Đã lưu đề trên máy')).catch(err=>toast(friendlyClientMessage(err)));}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='y'&&!event.shiftKey&&!event.isComposing&&!event.target.closest('.tiptap,input,textarea,math-field,.composer-shell')){event.preventDefault();void handleAction('redo');}},true);
 window.addEventListener('hashchange',()=>{const next=detectInitialViewMode();if(next!==viewMode){viewMode=next;activeRailNav=viewMode==='home'?'design-home':'design-workspace';if(state)render();}});

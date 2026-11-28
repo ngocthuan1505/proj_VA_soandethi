@@ -112,13 +112,13 @@ export async function openLessonPicker(context) {
  context.modal('Kho học liệu & SGK theo bài',`
  <div class="sgk-modal">
   <div class="sgk-tabs" role="tablist" aria-label="Nguồn học liệu">
-   <button type="button" role="tab" class="sgk-tab is-active" aria-selected="true" data-sgk-tab="library">Kho tài liệu</button>
-   <button type="button" role="tab" class="sgk-tab" aria-selected="false" data-sgk-tab="sgk">Sách giáo khoa</button>
-   <button type="button" role="tab" class="sgk-tab" aria-selected="false" data-sgk-tab="community">Đề cộng đồng</button>
-   <button type="button" role="tab" class="sgk-tab" aria-selected="false" data-sgk-tab="my-exams">Đề của tôi</button>
-   <button type="button" role="tab" class="sgk-tab" aria-selected="false" data-sgk-tab="my-matrices">Ma trận của tôi</button>
+   <button type="button" role="tab" id="sgk-tab-library" class="sgk-tab is-active" aria-selected="true" aria-controls="sgk-panel-catalog" tabindex="0" data-sgk-tab="library">Kho tài liệu</button>
+   <button type="button" role="tab" id="sgk-tab-sgk" class="sgk-tab" aria-selected="false" aria-controls="sgk-panel-catalog" tabindex="-1" data-sgk-tab="sgk">Sách giáo khoa</button>
+   <button type="button" role="tab" id="sgk-tab-community" class="sgk-tab" aria-selected="false" aria-controls="sgk-panel-community" tabindex="-1" data-sgk-tab="community">Đề cộng đồng</button>
+   <button type="button" role="tab" id="sgk-tab-my-exams" class="sgk-tab" aria-selected="false" aria-controls="sgk-panel-my-exams" tabindex="-1" data-sgk-tab="my-exams">Đề của tôi</button>
+   <button type="button" role="tab" id="sgk-tab-my-matrices" class="sgk-tab" aria-selected="false" aria-controls="sgk-panel-my-matrices" tabindex="-1" data-sgk-tab="my-matrices">Ma trận của tôi</button>
   </div>
-  <div data-sgk-panel="catalog">
+  <div id="sgk-panel-catalog" data-sgk-panel="catalog" role="tabpanel" aria-labelledby="sgk-tab-library">
    ${personal?`<details data-personal-editor class="sgk-personal-box"><summary>Thêm học liệu cá nhân</summary>
    <form id="personal-lesson-form">
    <div class="grid2">
@@ -179,9 +179,9 @@ export async function openLessonPicker(context) {
     </div>
    </form>
   </div>
-  <div data-sgk-panel="community" class="sgk-aux-panel" hidden></div>
-  <div data-sgk-panel="my-exams" class="sgk-aux-panel" hidden></div>
-  <div data-sgk-panel="my-matrices" class="sgk-aux-panel" hidden></div>
+  <div id="sgk-panel-community" data-sgk-panel="community" role="tabpanel" aria-labelledby="sgk-tab-community" class="sgk-aux-panel" hidden></div>
+  <div id="sgk-panel-my-exams" data-sgk-panel="my-exams" role="tabpanel" aria-labelledby="sgk-tab-my-exams" class="sgk-aux-panel" hidden></div>
+  <div id="sgk-panel-my-matrices" data-sgk-panel="my-matrices" role="tabpanel" aria-labelledby="sgk-tab-my-matrices" class="sgk-aux-panel" hidden></div>
  </div>`,'',{layer:useLayer2?2:1});
 
  const modalRoot=dialog.querySelector('.sgk-modal');
@@ -517,7 +517,7 @@ export async function openLessonPicker(context) {
      const chRange=chapterPageLabel(rows);
      return `<fieldset data-lesson-chapter class="sgk-chapter${isCollapsed?' is-collapsed':''}" data-chapter-key="${esc(chKey)}">
       <legend>
-       <button type="button" class="sgk-chapter-toggle" data-sgk-toggle-chapter="${esc(chKey)}" aria-expanded="${isCollapsed?'false':'true'}">${isCollapsed?'▸':'▾'}</button>
+       <button type="button" class="sgk-chapter-toggle" data-sgk-toggle-chapter="${esc(chKey)}" aria-expanded="${isCollapsed?'false':'true'}" aria-label="${esc((isCollapsed?'Mở rộng chương ':'Thu gọn chương ')+chapter)}">${isCollapsed?'▸':'▾'}</button>
        <span class="sgk-chapter-title">${esc(chapter)}</span>
        <span class="sgk-chapter-meta">
         <span class="sgk-chapter-count" data-chapter-count>${pickedInChapter}/${rows.length}</span>
@@ -534,7 +534,7 @@ export async function openLessonPicker(context) {
      </fieldset>`;
     }).join('')}
    </section>`;
-  }).join('')||'<p class="hint sgk-empty-state">Chưa có bài phù hợp với bộ lọc.</p>';
+  }).join('')||`<div class="sgk-empty-state"><p class="hint">Chưa có bài phù hợp với bộ lọc.</p>${(grade.value||subject.value||book.value||volume.value||library.value||rawQuery)?`<div class="sgk-empty-actions">${(grade.value||subject.value||book.value||volume.value||library.value)?'<button type="button" class="tiny-btn" data-sgk-reset-filters>Tìm trên tất cả lớp &amp; môn</button>':''}${rawQuery?'<button type="button" class="tiny-btn" data-sgk-clear-query>Xóa từ khóa</button>':''}</div>`:''}</div>`;
 
   const stillVisible=activePreview&&visibleItems.some(i=>i.collectionId===activePreview.collectionId&&i.lessonNumber===activePreview.lessonNumber);
   if(!stillVisible)activePreview=visibleItems[0]||null;
@@ -605,11 +605,11 @@ export async function openLessonPicker(context) {
  }
 
  async function loadCommunityTab(panel){
-  panel.innerHTML='<p class="hint">Đang tải danh sách đề cộng đồng…</p>';
+  panel.innerHTML='<p class="hint" role="status">Đang tải danh sách đề cộng đồng…</p>';
   const res=await fetch('/api/community-exams',{headers}).catch(()=>null);
   if(!panel.isConnected)return;
   if(!res||!res.ok){
-   panel.innerHTML='<p class="hint">Chưa có đề cộng đồng công khai hoặc chưa thể tải lúc này.</p>';
+   panel.innerHTML=`<div class="alert" role="alert">Chưa thể tải đề cộng đồng lúc này (${res?res.status:'lỗi kết nối'}).</div><button type="button" class="tiny-btn" data-sgk-retry-tab="community">Thử tải lại</button>`;
    return;
   }
   const data=await res.json().catch(()=>({items:[]}));
@@ -645,10 +645,14 @@ export async function openLessonPicker(context) {
  }
 
  async function loadMyMatricesTab(panel){
-  panel.innerHTML='<p class="hint">Đang tải mẫu ma trận đã lưu…</p>';
+  panel.innerHTML='<p class="hint" role="status">Đang tải mẫu ma trận đã lưu…</p>';
   const res=await fetch('/api/matrix-templates',{headers}).catch(()=>null);
   if(!panel.isConnected)return;
-  const data=res&&res.ok?await res.json().catch(()=>({templates:[]})):{templates:[]};
+  if(!res||!res.ok){
+   panel.innerHTML=`<div class="alert" role="alert">Chưa thể tải mẫu ma trận đã lưu (${res?res.status:'lỗi kết nối'}).</div><button type="button" class="tiny-btn" data-sgk-retry-tab="my-matrices">Thử tải lại</button>`;
+   return;
+  }
+  const data=await res.json().catch(()=>({templates:[]}));
   const templates=data.templates||[];
   if(!templates.length){
    panel.innerHTML='<p class="hint">Chưa có mẫu ma trận cá nhân nào. Bạn có thể lưu mẫu trong hộp thoại Ma trận đề.</p>';
@@ -668,39 +672,73 @@ export async function openLessonPicker(context) {
   }).join('')}</div>`;
  }
 
+ async function activateSgkTab(tabBtn,{focusTab=false}={}){
+  if(!tabBtn)return;
+  const nextTab=tabBtn.dataset.sgkTab;
+  activeTab=nextTab;
+  for(const btn of modalRoot.querySelectorAll('[data-sgk-tab]')){
+   const on=btn.dataset.sgkTab===nextTab;
+   btn.classList.toggle('is-active',on);
+   btn.setAttribute('aria-selected',on?'true':'false');
+   btn.setAttribute('tabindex',on?'0':'-1');
+  }
+  const showCatalog=nextTab==='library'||nextTab==='sgk';
+  const catalogPanel=modalRoot.querySelector('[data-sgk-panel="catalog"]');
+  if(catalogPanel){
+   catalogPanel.hidden=!showCatalog;
+   if(showCatalog&&tabBtn.id)catalogPanel.setAttribute('aria-labelledby',tabBtn.id);
+  }
+  modalRoot.querySelector('[data-sgk-panel="community"]').hidden=nextTab!=='community';
+  modalRoot.querySelector('[data-sgk-panel="my-exams"]').hidden=nextTab!=='my-exams';
+  modalRoot.querySelector('[data-sgk-panel="my-matrices"]').hidden=nextTab!=='my-matrices';
+  if(focusTab)tabBtn.focus();
+  if(nextTab==='sgk'){
+   form.elements.library.value='sample';
+   render();
+   if([...form.elements.book.options].some(o=>o.value===KNTT_SERIES)){
+    form.elements.book.value=KNTT_SERIES;
+    render();
+   }
+  }else if(nextTab==='library'){
+   form.elements.library.value='';
+   form.elements.book.value='';
+   render();
+  }else if(nextTab==='community'){
+   await loadCommunityTab(modalRoot.querySelector('[data-sgk-panel="community"]'));
+  }else if(nextTab==='my-exams'){
+   loadMyExamsTab(modalRoot.querySelector('[data-sgk-panel="my-exams"]'));
+  }else if(nextTab==='my-matrices'){
+   await loadMyMatricesTab(modalRoot.querySelector('[data-sgk-panel="my-matrices"]'));
+  }
+ }
+
+ const tabListEl=modalRoot.querySelector('.sgk-tabs');
+ tabListEl?.addEventListener('keydown',event=>{
+  const tabs=[...tabListEl.querySelectorAll('[role="tab"][data-sgk-tab]')];
+  if(!tabs.length)return;
+  const current=event.target.closest?.('[role="tab"][data-sgk-tab]');
+  const idx=Math.max(0,tabs.indexOf(current));
+  let targetIdx=-1;
+  if(event.key==='ArrowRight'||event.key==='ArrowDown')targetIdx=(idx+1)%tabs.length;
+  else if(event.key==='ArrowLeft'||event.key==='ArrowUp')targetIdx=(idx-1+tabs.length)%tabs.length;
+  else if(event.key==='Home')targetIdx=0;
+  else if(event.key==='End')targetIdx=tabs.length-1;
+  if(targetIdx<0)return;
+  event.preventDefault();
+  void activateSgkTab(tabs[targetIdx],{focusTab:true});
+ });
+
  modalRoot.addEventListener('click',async event=>{
+  const retryBtn=event.target.closest('[data-sgk-retry-tab]');
+  if(retryBtn){
+   const retryTab=retryBtn.dataset.sgkRetryTab;
+   if(retryTab==='community')await loadCommunityTab(modalRoot.querySelector('[data-sgk-panel="community"]'));
+   else if(retryTab==='my-matrices')await loadMyMatricesTab(modalRoot.querySelector('[data-sgk-panel="my-matrices"]'));
+   return;
+  }
   const tabBtn=event.target.closest('[data-sgk-tab]');
   if(tabBtn){
-   const nextTab=tabBtn.dataset.sgkTab;
-   activeTab=nextTab;
-   for(const btn of modalRoot.querySelectorAll('[data-sgk-tab]')){
-    const on=btn.dataset.sgkTab===nextTab;
-    btn.classList.toggle('is-active',on);
-    btn.setAttribute('aria-selected',on?'true':'false');
-   }
-   const showCatalog=nextTab==='library'||nextTab==='sgk';
-   modalRoot.querySelector('[data-sgk-panel="catalog"]').hidden=!showCatalog;
-   modalRoot.querySelector('[data-sgk-panel="community"]').hidden=nextTab!=='community';
-   modalRoot.querySelector('[data-sgk-panel="my-exams"]').hidden=nextTab!=='my-exams';
-   modalRoot.querySelector('[data-sgk-panel="my-matrices"]').hidden=nextTab!=='my-matrices';
-   if(nextTab==='sgk'){
-    form.elements.library.value='sample';
-    render();
-    if([...form.elements.book.options].some(o=>o.value===KNTT_SERIES)){
-     form.elements.book.value=KNTT_SERIES;
-     render();
-    }
-   }else if(nextTab==='library'){
-    form.elements.library.value='';
-    form.elements.book.value='';
-    render();
-   }else if(nextTab==='community'){
-    await loadCommunityTab(modalRoot.querySelector('[data-sgk-panel="community"]'));
-   }else if(nextTab==='my-exams'){
-    loadMyExamsTab(modalRoot.querySelector('[data-sgk-panel="my-exams"]'));
-   }else if(nextTab==='my-matrices'){
-    await loadMyMatricesTab(modalRoot.querySelector('[data-sgk-panel="my-matrices"]'));
-   }
+   await activateSgkTab(tabBtn);
    return;
   }
   const useCommunity=event.target.closest('[data-use-community]');
@@ -735,12 +773,32 @@ export async function openLessonPicker(context) {
    render();
    return;
   }
+  const resetBtn=event.target.closest('[data-sgk-reset-filters]');
+  if(resetBtn){
+   form.elements.grade.value='';
+   form.elements.subject.value='';
+   form.elements.book.value='';
+   form.elements.volume.value='';
+   form.elements.library.value='';
+   render();
+   form.elements.query.focus();
+   return;
+  }
+  const clearQueryBtn=event.target.closest('[data-sgk-clear-query]');
+  if(clearQueryBtn){
+   form.elements.query.value='';
+   render();
+   form.elements.query.focus();
+   return;
+  }
   const toggleBtn=event.target.closest('[data-sgk-toggle-chapter]');
   if(toggleBtn){
    const key=toggleBtn.dataset.sgkToggleChapter;
    if(collapsedChapters.has(key))collapsedChapters.delete(key);
    else collapsedChapters.add(key);
    render();
+   const nextToggle=list.querySelector(`[data-sgk-toggle-chapter="${CSS.escape(key)}"]`);
+   nextToggle?.focus();
    return;
   }
   const clearBtn=event.target.closest('[data-sgk-clear]');
@@ -755,6 +813,12 @@ export async function openLessonPicker(context) {
   const quickBtn=event.target.closest('[data-sgk-quick-compose]');
   if(quickBtn){
    if(context.exam().id!==examId)return;
+   const hasPickedLessons=[...choices.values()].some(set=>set.size>0);
+   if(!activePreview&&!hasPickedLessons){
+    context.toast('Vui lòng chọn ít nhất một bài học SGK trước khi soạn đề nhanh.');
+    form.elements.query.focus();
+    return;
+   }
    if(activePreview){
     const set=choices.get(activePreview.collectionId);
     if(set&&!set.has(activePreview.lessonNumber)){
@@ -783,6 +847,8 @@ export async function openLessonPicker(context) {
    const cb=list.querySelector(`[data-lesson-collection="${CSS.escape(colId)}"] [name="lesson"][value="${num}"]`);
    if(cb)cb.checked=false;
    updateCheckboxes();
+   const fallbackFocus=form.querySelector('[data-unselect-lesson]')||form.querySelector('[data-sgk-clear]')||form.elements.query;
+   fallbackFocus?.focus();
    return;
   }
   const button=event.target.closest('[data-edit-personal]');
@@ -799,6 +865,15 @@ export async function openLessonPicker(context) {
    updateRowHighlight();
    renderDetailPane();
   }
+ });
+ list.addEventListener('focusin',event=>{
+  const row=event.target.closest?.('.sgk-lesson-row');
+  if(!row)return;
+  const colId=row.dataset.collectionId,num=Number(row.dataset.lessonNumber);
+  if(activePreview?.collectionId===colId&&activePreview?.lessonNumber===num)return;
+  activePreview={collectionId:colId,lessonNumber:num};
+  updateRowHighlight();
+  renderDetailPane();
  });
  form.addEventListener('input',event=>{if(event.target.type==='search')render();});
  form.addEventListener('change',event=>{

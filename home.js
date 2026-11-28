@@ -411,11 +411,25 @@ function ensureHomeStyles() {
       .home-hero { grid-template-columns: 1fr; }
       .home-recent-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
+    @media (max-width: 760px) {
+      .header-actions .proactive-bell-btn {
+        min-width: var(--touch-min, 44px);
+        min-height: var(--touch-min, 44px);
+        padding: 6px;
+      }
+      .home-prompt-right-actions .voice-mic-btn {
+        min-width: 40px;
+        min-height: 40px;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+      }
+    }
     @media (max-width: 640px) {
       .home-view { padding: 14px 12px 32px; }
       .home-recent-grid { grid-template-columns: 1fr; }
       .home-cta-row button, .home-tools-strip button, .home-prompt-bar button, .home-section-head button, .proactive-card .buttons button { min-height: 40px; }
-      .home-prompt-chip { min-height: 36px; }
+      .home-prompt-chip { min-height: 40px; }
     }
   `;
   document.head.appendChild(style);
@@ -572,6 +586,7 @@ export function renderHomeViewHTML(state, digest = getCachedProactiveDigest()) {
             </div>
             <div class="home-tools-strip" aria-label="Lối tắt công cụ">
               <button type="button" data-action="home-go-lessons">SGK Kết nối tri thức</button>
+              <button type="button" data-action="home-go-extract">Rút trích PDF / OCR</button>
               <button type="button" data-action="exam-rooms">Phòng thi online</button>
               <button type="button" data-action="question-bank">Ngân hàng câu hỏi</button>
               <button type="button" data-action="open-new-campaign">Chiến dịch nhiều đề</button>
@@ -655,6 +670,17 @@ export function mountHomeView(ctx) {
       onNotify: (msg) => ctx.toast?.(msg),
     });
   }
+  if (input && !input.dataset?.ctrlEnterBound) {
+    if (input.dataset) input.dataset.ctrlEnterBound = '1';
+    input.addEventListener?.('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !event.isComposing) {
+        event.preventDefault();
+        const form = input.form || document.getElementById('home-prompt-form');
+        if (typeof form?.requestSubmit === 'function') form.requestSubmit();
+        else form?.dispatchEvent?.(new Event('submit', {bubbles: true, cancelable: true}));
+      }
+    });
+  }
   void refreshProactiveUI(ctx);
 }
 
@@ -662,17 +688,34 @@ export async function refreshProactiveUI(ctx) {
   const digest = await fetchProactiveDigest(ctx?.workspaceHeaders?.() || {});
   if (typeof document === 'undefined') return digest;
   const body = document.getElementById('home-proactive-body');
-  if (body) body.innerHTML = renderProactiveCardsHTML(digest, ctx?.getState?.());
+  if (body) {
+    const active = document.activeElement;
+    const focusedAction = active && body.contains?.(active) ? active.dataset?.action : '';
+    const focusedId = active && body.contains?.(active) ? active.dataset?.id : '';
+    body.innerHTML = renderProactiveCardsHTML(digest, ctx?.getState?.());
+    if (focusedAction) {
+      const target = [...body.querySelectorAll?.('[data-action]') || []].find(
+        (el) => el.dataset?.action === focusedAction && (!focusedId || el.dataset?.id === focusedId),
+      );
+      if (typeof target?.focus === 'function') target.focus();
+    }
+  }
   const bell = document.querySelector('[data-action="open-proactive-center"]');
   if (bell) {
     let badge = bell.querySelector('.proactive-bell-badge');
-    if (digest.badgeCount > 0) {
+    const count = Number(digest.badgeCount || 0);
+    bell.setAttribute(
+      'aria-label',
+      count > 0 ? `Thông báo Trợ lý Chủ động (${count} mục cần chú ý)` : 'Thông báo Trợ lý Chủ động',
+    );
+    if (count > 0) {
       if (!badge) {
         badge = document.createElement('span');
         badge.className = 'proactive-bell-badge';
+        badge.setAttribute('aria-hidden', 'true');
         bell.appendChild(badge);
       }
-      badge.textContent = digest.badgeCount > 99 ? '99+' : String(digest.badgeCount);
+      badge.textContent = count > 99 ? '99+' : String(count);
       badge.hidden = false;
     } else if (badge) {
       badge.hidden = true;
@@ -860,13 +903,29 @@ export async function handleHomeAction(action, node, ctx) {
     return true;
   }
   if (action === 'home-open-campaign') {
-    const digest = await fetchProactiveDigest(ctx.workspaceHeaders?.() || {});
-    const campaign = digest.activeCampaigns?.find((item) => item.id === node.dataset.id);
+    const cid = node?.dataset?.id || '';
+    const headers = ctx.workspaceHeaders?.() || {};
+    const digest = await fetchProactiveDigest(headers);
+    let campaign = digest.activeCampaigns?.find((item) => item.id === cid) || null;
+    let networkFailed = false;
+    if (!campaign && cid) {
+      try {
+        const res = await fetch(`/api/campaigns/${encodeURIComponent(cid)}`, {headers});
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          campaign = data?.campaign || (data?.id ? data : null);
+        }
+      } catch {
+        networkFailed = true;
+      }
+    }
     if (campaign) {
       ensureHomeStyles();
-      ctx.modal('Chi tiết chiến dịch', renderProactiveCardsHTML({activeCampaigns: [campaign]}));
+      ctx.modal('Chi tiết chiến dịch', renderProactiveCardsHTML({activeCampaigns: [campaign]}, ctx.getState?.()));
+    } else if (networkFailed) {
+      ctx.toast?.('Không thể kết nối máy chủ để tải chi tiết chiến dịch. Vui lòng thử lại.');
     } else {
-      ctx.toast?.('Không tìm thấy chiến dịch đang hoạt động. Vui lòng làm mới và thử lại.');
+      ctx.toast?.('Không tìm thấy chiến dịch tương ứng. Vui lòng mở Trung tâm Trợ lý Chủ động để làm mới.');
     }
     return true;
   }
@@ -980,19 +1039,32 @@ export async function handleHomeSubmit(form, ctx) {
     if (!title) throw Error('Nhập tên chiến dịch.');
     const dueStr = String(fd.get('dueAtLocal') || '').trim();
     const dueAt = dueStr ? new Date(dueStr).getTime() : null;
-    const res = await fetch('/api/campaigns', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', ...(ctx.workspaceHeaders?.() || {})},
-      body: JSON.stringify({
-        title,
-        subject: String(fd.get('subject') || '').trim(),
-        grade: String(fd.get('grade') || '').trim(),
-        targetCount: Math.max(1, Number(fd.get('targetCount') || 5)),
-        dueAt: Number.isFinite(dueAt) ? dueAt : null,
-        note: String(fd.get('note') || '').trim(),
-      }),
-    });
-    if (!res.ok) throw Error('Chưa tạo được chiến dịch mới.');
+    if (dueStr && !Number.isFinite(dueAt)) throw Error('Thời điểm hạn hoàn thành chưa hợp lệ.');
+    let res;
+    try {
+      res = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', ...(ctx.workspaceHeaders?.() || {})},
+        body: JSON.stringify({
+          title,
+          subject: String(fd.get('subject') || '').trim(),
+          grade: String(fd.get('grade') || '').trim(),
+          targetCount: Math.max(1, Number(fd.get('targetCount') || 5)),
+          dueAt: Number.isFinite(dueAt) ? dueAt : null,
+          note: String(fd.get('note') || '').trim(),
+        }),
+      });
+    } catch {
+      throw Error('Không thể kết nối máy chủ để tạo chiến dịch mới. Vui lòng thử lại.');
+    }
+    if (!res.ok) {
+      let detailMsg = '';
+      try {
+        const errData = await res.json();
+        detailMsg = errData?.detail || errData?.error || '';
+      } catch {}
+      throw Error(detailMsg ? `Chưa tạo được chiến dịch (${res.status}): ${detailMsg}` : `Chưa tạo được chiến dịch mới (lỗi ${res.status}).`);
+    }
     document.getElementById('dialog')?.close();
     await refreshProactiveUI(ctx);
     ctx.toast?.('Đã tạo chiến dịch soạn đề mới.');
@@ -1005,20 +1077,33 @@ export async function handleHomeSubmit(form, ctx) {
     if (!title) throw Error('Nhập nội dung nhắc lịch.');
     const remindStr = String(fd.get('remindAtLocal') || '').trim();
     const remindAt = remindStr ? new Date(remindStr).getTime() : Date.now() + 24 * 3600 * 1000;
+    if (remindStr && !Number.isFinite(remindAt)) throw Error('Thời điểm nhắc chưa hợp lệ.');
     const targetId = String(fd.get('targetId') || '').trim();
     const targetType = targetId ? String(fd.get('targetType') || 'exam').trim() || 'exam' : '';
-    const res = await fetch('/api/reminders', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', ...(ctx.workspaceHeaders?.() || {})},
-      body: JSON.stringify({
-        title,
-        kind: String(fd.get('kind') || 'general'),
-        targetType,
-        targetId,
-        remindAt: Number.isFinite(remindAt) ? remindAt : null,
-      }),
-    });
-    if (!res.ok) throw Error('Chưa lưu được nhắc lịch.');
+    let res;
+    try {
+      res = await fetch('/api/reminders', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', ...(ctx.workspaceHeaders?.() || {})},
+        body: JSON.stringify({
+          title,
+          kind: String(fd.get('kind') || 'general'),
+          targetType,
+          targetId,
+          remindAt: Number.isFinite(remindAt) ? remindAt : null,
+        }),
+      });
+    } catch {
+      throw Error('Không thể kết nối máy chủ để lưu nhắc lịch. Vui lòng thử lại.');
+    }
+    if (!res.ok) {
+      let detailMsg = '';
+      try {
+        const errData = await res.json();
+        detailMsg = errData?.detail || errData?.error || '';
+      } catch {}
+      throw Error(detailMsg ? `Chưa lưu được nhắc lịch (${res.status}): ${detailMsg}` : `Chưa lưu được nhắc lịch (lỗi ${res.status}).`);
+    }
     document.getElementById('dialog')?.close();
     await refreshProactiveUI(ctx);
     ctx.toast?.('Đã lưu nhắc lịch giáo viên.');
