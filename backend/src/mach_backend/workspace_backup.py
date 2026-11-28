@@ -637,6 +637,8 @@ def restore(store, backup, base_revision):
                     imported_files += 1
                 elif existing_file != value:
                     new_key = f"{key[:90]}-{uuid4().hex[:8]}"
+                    while new_key in files or store.get("file:" + new_key, db)["value"] is not None:
+                        new_key = f"{key[:90]}-{uuid4().hex[:8]}"
                     file_remap[key] = new_key
                     store.put("file:" + new_key, value, db=db)
                     imported_files += 1
@@ -679,6 +681,12 @@ def restore(store, backup, base_revision):
             "importedExams": imported_exams,
             "skippedExams": skipped_exams,
             "importedFiles": imported_files,
+            "fileRemap": file_remap,
+            "normalizedFileTypes": {
+                key: value.split(";", 1)[0][5:]
+                for key, value in files.items()
+                if value != backup["files"][key]
+            },
             "examExportsMigrated": False,
             "examExportsWarning": EXAM_EXPORTS_NOTICE,
         }

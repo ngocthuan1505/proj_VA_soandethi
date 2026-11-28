@@ -425,16 +425,23 @@ test('restoreBackup giữ UUID, công thức, richDoc, audio và không ghi đè
   assert.equal(h.data.get('local:file:aud_q1'),files.aud_q1);
 
   // Batch restore (format tro-ly-soan-de-batch) không có backup.state -> lấy state đã ghép từ server, không ghi undefined vào cache.
-  const mergedServerState={...fullState,exams:[...fullState.exams,{id:'8a2e1111-1111-4111-8111-111111111111',title:'Đề ghép thêm'}]};
+  const incomingExam={id:'8a2e1111-1111-4111-8111-111111111111',title:'Đề ghép thêm',audio:fullState.exams[0].audio};
+  const remapped='aud_exam-moi';
+  const mergedExam={...incomingExam,audio:{...incomingExam.audio,fileId:remapped}};
+  const mergedServerState={...fullState,exams:[...fullState.exams,mergedExam]};
   globalThis.fetch=async(url)=>{
-   if(String(url)==='/api/workspace/restore')return {ok:true,status:200,json:async()=>({revision:4,mergedExams:1})};
+   if(String(url)==='/api/workspace/restore')return {ok:true,status:200,json:async()=>({revision:4,importedExams:1,fileRemap:{aud_exam:remapped},normalizedFileTypes:{aud_exam:'audio/wav'}})};
    if(String(url).startsWith('/api/kv?key=state'))return {ok:true,status:200,json:async()=>({value:mergedServerState,revision:4})};
    return {ok:true,status:200,json:async()=>({value:null,revision:0})};
   };
-  const batchRes=await h.storage.restoreBackup({format:'tro-ly-soan-de-batch',exams:[mergedServerState.exams[1]],files:{}},3);
+  const batchRes=await h.storage.restoreBackup({format:'tro-ly-soan-de-batch',exams:[incomingExam],files:{aud_exam:'data:application/octet-stream;base64,UklG RgE='}},3);
   assert.equal(batchRes.revision,4);
   assert.equal(batchRes.cacheWarning,undefined);
-  assert.equal(h.data.get('local:state').exams.length,2);
+  globalThis.fetch=async()=>{throw Error('Mất mạng');};
+  const {storage:reloaded}=await h.open(h.session);
+  assert.deepEqual(await reloaded.get('state'),mergedServerState);
+  assert.equal(await reloaded.get('file:aud_exam'),files.aud_exam);
+  assert.equal(await reloaded.get('file:'+remapped),'data:audio/wav;base64,UklGRgE=');
  }finally{h.restore();}
 });
 

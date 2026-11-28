@@ -1,5 +1,6 @@
 // Chỉ dùng hai tài khoản QA đã tạo trên app fixture4183; không gọi AI.
 import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {chromium} from 'playwright-core';
@@ -11,13 +12,122 @@ const browser=await chromium.launch({executablePath:process.env.BROWSER_PATH||'C
 const context=await browser.newContext({viewport:{width:1366,height:900},acceptDownloads:true});
 const page=await context.newPage(),errors=[],results=[];
 page.on('pageerror',e=>errors.push(e.message));
-const state=async()=>{const r=await page.request.get(base+'/api/kv?key=state');assert(r.ok());return r.json();};
-const choose=async(buffer)=>{
- const chooser=page.waitForEvent('filechooser');
- await page.locator('[data-action="import-backup"]:visible').click();
+const state=async(tab=page)=>{const r=await tab.request.get(base+'/api/kv?key=state');assert(r.ok());return r.json();};
+const choose=async(buffer,tab=page)=>{
+ const chooser=tab.waitForEvent('filechooser');
+ await tab.locator('[data-action="import-backup"]:visible').click();
  await(await chooser).setFiles({name:'Ban-sao-QA.json',mimeType:'application/json',buffer});
 };
 const fileMenu=async()=>{await page.getByRole('button',{name:'Tệp',exact:true}).click();};
+
+function wavData(sample){
+ const bytes=Buffer.alloc(844,sample);
+ Buffer.from('524946464403000057415645666d74201000000001000100401f0000401f0000010008006461746120030000','hex').copy(bytes);
+ return 'data:audio/wav;base64,'+bytes.toString('base64');
+}
+
+async function verifyBatchAudio(template){
+ const tab=await context.newPage();
+ tab.on('pageerror',e=>errors.push(e.message));
+ try{
+  const fileId='qa-audio-trung',historyId='qa-audio-lich-su';
+  const originalWav=wavData(48),incomingWav=wavData(160);
+  const incoming={...structuredClone(template),id:randomUUID(),title:'Đề audio nhập từ JSON',docs:[]};
+  incoming.audio={fileId,filename:'nghe.wav',mimeType:'audio/wav',maxPlays:2};
+  incoming.undo=[{label:'Audio trước',state:{audio:{...incoming.audio,fileId:historyId}}}];
+  Object.assign(incoming.questions[0],{
+   audio:{...incoming.audio},
+   stem:'Tính $\\frac{1}{2}$.',
+   richDoc:{type:'doc',content:[{type:'paragraph',attrs:{id:randomUUID()},content:[
+    {type:'text',text:'Tính ',marks:[{type:'bold'}]},
+    {type:'mathInline',attrs:{id:randomUUID(),latex:'\\frac{1}{2}',display:false}},
+    {type:'text',text:'.'},
+   ]}]},
+  });
+  const original={...structuredClone(incoming),id:randomUUID(),title:'Đề audio có sẵn',undo:[]};
+  const put=async(key,value)=>{
+   const headers={Origin:base};
+   if(key==='state')headers['If-Match']=String((await state(tab)).revision);
+   const response=await tab.request.put(base+'/api/kv',{headers,data:{key,value}});
+   assert(response.ok(),await response.text());
+  };
+  const useExams=async(current,exams)=>put('state',{version:1,current,exams,prefs:[]});
+  const openLibrary=()=>tab.getByRole('button',{name:'Mở kho đề',exact:true}).click();
+  const player=id=>tab.locator(`audio[data-audio-file-id="${id}"]`).first();
+  const checkAudio=async(id,data)=>{
+   await player(id).waitFor({state:'attached'});
+   await tab.waitForFunction(({id,data})=>{
+    const audio=document.querySelector(`audio[data-audio-file-id="${id}"]`);
+    return audio?.getAttribute('src')===data&&audio.duration>0;
+   },{id,data});
+  };
+  await put('file:'+fileId,incomingWav);
+  await put('file:'+historyId,originalWav);
+  await useExams(incoming.id,[incoming,template]);
+  await tab.goto(base+'/#workspace');await tab.waitForLoadState('networkidle');
+  await openLibrary();
+  await tab.getByRole('checkbox',{name:'Chọn đề '+incoming.title,exact:true}).check();
+  const filter=tab.locator('#library-filter');
+  await filter.fill('Không khớp đề nào');
+  assert.equal(await tab.locator('.wb-library-select').count(),0);
+  const download=tab.waitForEvent('download');
+  await tab.getByRole('button',{name:'Tải JSON bộ đã chọn',exact:true}).click();
+  const bytes=await fs.readFile(await(await download).path());
+  const batch=JSON.parse(bytes);
+  assert.equal(await filter.inputValue(),'Không khớp đề nào');
+  assert.deepEqual(batch.exams.map(exam=>exam.id),[incoming.id]);
+  assert.deepEqual(batch.files,{[fileId]:incomingWav,[historyId]:originalWav});
+  assert.equal(batch.exams[0].questions[0].stem,incoming.questions[0].stem);
+  assert.deepEqual(batch.exams[0].questions[0].richDoc,incoming.questions[0].richDoc);
+
+  await put('file:'+fileId,originalWav);
+  await useExams(original.id,[original]);
+  await tab.reload();await tab.waitForLoadState('networkidle');
+  await checkAudio(fileId,originalWav); // Lưu audio cũ vào IndexedDB trước khi ghép lô.
+  await openLibrary();await choose(bytes,tab);
+  const confirm=tab.locator('[data-action="confirm-backup"]');
+  await confirm.waitFor();
+  // Giữ vỏ ứng dụng để reload. Chỉ cho đọc state đúng một lần để ghi cache sau POST.
+  let readMergedState=false,blockedReads=0;
+  await tab.route(url=>url.pathname==='/api/kv',async route=>{
+   const request=route.request();
+   if(!readMergedState&&request.method()==='GET'&&new URL(request.url()).searchParams.get('key')==='state'){
+    readMergedState=true;
+    return route.continue();
+   }
+   if(request.method()==='GET')blockedReads++;
+   await route.abort('internetdisconnected');
+  });
+  const applied=tab.waitForResponse(r=>r.url()===base+'/api/workspace/restore'&&r.request().method()==='POST');
+  await Promise.all([tab.waitForEvent('load'),confirm.click()]);
+  assert.equal((await applied).status(),200);
+  const merged=(await state(tab)).value;
+  const imported=merged.exams.find(exam=>exam.id===incoming.id);
+  const importedId=imported?.audio?.fileId;
+  assert(importedId&&importedId!==fileId);
+  await checkAudio(fileId,originalWav);
+  const cachedAudio=await tab.evaluate(async examId=>{
+   const {get}=await import('/storage.js');
+   const {exams}=await get('state');
+   const exam=exams.find(item=>item.id===examId);
+   const data=await get('file:'+exam.audio.fileId);
+   if(!data)return null;
+   const audio=new Audio(data);
+   await new Promise((resolve,reject)=>{
+    audio.addEventListener('loadedmetadata',resolve,{once:true});
+    audio.addEventListener('error',()=>reject(Error('Chrome chưa đọc được audio khôi phục.')),{once:true});
+   });
+   return {data,duration:audio.duration};
+  },incoming.id);
+  assert.equal(cachedAudio?.data,incomingWav);
+  assert(cachedAudio.duration>0);
+  assert.equal(imported.questions[0].audio.fileId,importedId);
+  assert.equal(imported.questions[0].stem,incoming.questions[0].stem);
+  assert.deepEqual(imported.questions[0].richDoc,batch.exams[0].questions[0].richDoc);
+  assert(blockedReads>=4,'Reload và cả hai lượt đọc audio phải thiếu kết nối KV.');
+ }finally{await tab.close();}
+}
+
 try{
  await page.goto(base+'/login');await page.waitForLoadState('networkidle');
  await page.locator('#team-login [name=email]').fill('restore-admin@example.test');
@@ -151,6 +261,8 @@ try{
  assert.equal(current({value:recoveredDraft.state}).title,'Nháp cục bộ khi xung đột');
  assert.equal(current(await state()).title,'Bản mới trên máy chủ');
  results.push({case:'Mất mạng và xung đột: giữ bản máy chủ, nút tải xuất đúng nháp cục bộ',passed:true});
+ await verifyBatchAudio(backup.state.exams[0]);
+ results.push({case:'Kho đề tải JSON kèm audio và tệp hoàn tác. Ghép tệp trùng ID, reload khi API KV mất kết nối vẫn phát đúng audio của cả hai đề',passed:true});
  assert.deepEqual(errors,[]);
  await fs.writeFile(path.join(out,'result.json'),JSON.stringify({results,pageErrors:errors,fixture:true,realAI:false},null,2));
  console.log(JSON.stringify({results,pageErrors:errors}));

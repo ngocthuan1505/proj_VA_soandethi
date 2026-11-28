@@ -209,7 +209,7 @@ export function put(key,value){
  const saved=disk(ctx,async()=>localPut(ctx,await pendingKey(key),record));
  return send(ctx,key,record,saved);
 }
-export async function allFiles(ids){const ctx=active,files={};for(const id of ids){sameIdentity(ctx);const value=await get('file:'+id);sameIdentity(ctx);if(value)files[id]=value;}return files;}
+export async function allFiles(ids){const ctx=active,files=[];for(const id of ids){sameIdentity(ctx);const value=await get('file:'+id);sameIdentity(ctx);if(value)files.push([id,value]);}return Object.fromEntries(files);}
 
 export async function allPersonalLessons(){
  const ctx=active;
@@ -293,13 +293,19 @@ export async function restoreBackup(backup,revision){
   sameIdentity(ctx);
   if(!response.ok)throw Error(result.error||'Chưa khôi phục được dữ liệu.');
   ctx.revision=result.revision;ctx.stateConflict=false;
+  const fileRemap=result.fileRemap||{};
+  const normalizedFileTypes=result.normalizedFileTypes||{};
   let restoredState=backup?.state&&typeof backup.state==='object'?backup.state:null;
+  let restoredRevision=result.revision;
   if(!restoredState){
    try{
     const stateResponse=await fetch('/api/kv?key=state',{headers:workspaceHeaders(ctx)});
     if(stateResponse.ok){
      const statePayload=await stateResponse.json();
-     if(statePayload?.value&&typeof statePayload.value==='object')restoredState=statePayload.value;
+     if(statePayload?.value&&typeof statePayload.value==='object'&&statePayload.revision>=restoredRevision){
+      restoredState=statePayload.value;
+      restoredRevision=statePayload.revision;
+     }
     }
    }catch{}
    sameIdentity(ctx);
@@ -309,12 +315,14 @@ export async function restoreBackup(backup,revision){
     const database=await requireDb(),prefix=ctx.id+':'+await pendingKey('');
     await new Promise((resolve,reject)=>{
      const tx=database.transaction('kv','readwrite'),store=tx.objectStore('kv');
-     if(restoredState)writeCache(store,ctx,'state',restoredState,result.revision);
+     if(restoredState)writeCache(store,ctx,'state',restoredState,restoredRevision);
      store.delete(prefix+'state');
      for(const [id,value] of Object.entries(backup.files||{})){
       if(value===undefined)continue;
-      const key='file:'+id;
-      writeCache(store,ctx,key,value,result.revision);
+      const key='file:'+(Object.hasOwn(fileRemap,id)?fileRemap[id]:id);
+      const mime=Object.hasOwn(normalizedFileTypes,id)?normalizedFileTypes[id]:null;
+      const cachedFile=mime?`data:${mime};base64,${value.slice(value.indexOf(',')+1).replace(/\s/g,'')}`:value;
+      writeCache(store,ctx,key,cachedFile,result.revision);
       store.delete(prefix+key);
      }
      tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Chưa lưu được cache.'));

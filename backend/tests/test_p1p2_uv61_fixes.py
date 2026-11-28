@@ -1084,7 +1084,7 @@ def test_whitespace_title_rejected_and_batch_backup_merge_restore(tmp_path):
                 "questions": [],
             },
         ],
-        "files": {"img-shared": png_new},
+        "files": {"img-shared": png_new.replace("image/png", "application/octet-stream")},
     }
 
     with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
@@ -1129,6 +1129,8 @@ def test_whitespace_title_rejected_and_batch_backup_merge_restore(tmp_path):
         assert client.get("/api/kv?key=file:img-shared").json()["value"] == png_old
         remapped_id = state_after["exams"][1]["docs"][0]["fileId"]
         assert remapped_id != "img-shared"
+        assert ajson["fileRemap"] == {"img-shared": remapped_id}
+        assert ajson["normalizedFileTypes"] == {"img-shared": "image/png"}
         assert client.get(f"/api/kv?key=file:{remapped_id}").json()["value"] == png_new
 
         # Tùy chọn skipExisting=True: bỏ qua đề trùng ID
