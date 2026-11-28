@@ -507,7 +507,7 @@ export function renderProactiveCardsHTML(digest, state = null) {
               ? `${attachedExamId ? `<button type="button" class="tiny-btn primary" data-action="home-open-exam" data-id="${esc(attachedExamId)}">Mở đề</button>` : ''}
                  <button type="button" class="tiny-btn" data-action="proactive-done-reminder" data-id="${esc(dl.id)}">Đã xong</button>
                  <button type="button" class="tiny-btn ghost" data-action="proactive-snooze-reminder" data-id="${esc(dl.id)}" data-hours="4">Hoãn 4 giờ</button>`
-              : `<button type="button" class="tiny-btn" data-action="home-continue-campaign" data-id="${esc(dl.id)}" data-title="${esc(dl.title)}">Mở chiến dịch</button>`
+              : `<button type="button" class="tiny-btn" data-action="home-open-campaign" data-id="${esc(dl.id)}">Mở chiến dịch</button>`
           }
         </div>
       </article>
@@ -857,6 +857,17 @@ export async function handleHomeAction(action, node, ctx) {
   if (action === 'home-go-lessons') {
     ctx.setViewMode?.('workspace');
     await ctx.act('lesson-sources');
+    return true;
+  }
+  if (action === 'home-open-campaign') {
+    const digest = await fetchProactiveDigest(ctx.workspaceHeaders?.() || {});
+    const campaign = digest.activeCampaigns?.find((item) => item.id === node.dataset.id);
+    if (campaign) {
+      ensureHomeStyles();
+      ctx.modal('Chi tiết chiến dịch', renderProactiveCardsHTML({activeCampaigns: [campaign]}));
+    } else {
+      ctx.toast?.('Không tìm thấy chiến dịch đang hoạt động. Vui lòng làm mới và thử lại.');
+    }
     return true;
   }
   if (action === 'home-continue-campaign') {

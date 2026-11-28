@@ -645,6 +645,46 @@ test('Gói 1 Phòng thi: Audio lease retry khi đứt mạng giữa đường, �
   }
 });
 
+test('t5 Mở chiến dịch sắp đến hạn hiển thị đúng chi tiết và giữ nguyên kho đề', async (t) => {
+  const campaign = {
+    id: 'anh-8',
+    title: 'Bộ đề Tiếng Anh 8',
+    subject: 'Tiếng Anh',
+    grade: '8',
+    completedCount: 2,
+    targetCount: 4,
+    nextOrdinal: 3,
+    dueAt: Date.now() + 3_600_000,
+  };
+  const digest = {
+    activeCampaigns: [{...campaign, id: 'toan-10', title: 'Bộ đề Toán 10', subject: 'Toán', grade: '10'}, campaign],
+    urgentDeadlines: [{id: campaign.id, source: 'campaign', title: campaign.title, dueAt: campaign.dueAt}],
+  };
+  const html = renderProactiveCardsHTML(digest);
+  const [, action, id] = html.match(/data-action="([^"]+)" data-id="([^"]+)"[^>]*>Mở chiến dịch<\/button>/);
+  const fetchMock = t.mock.method(globalThis, 'fetch', async () => ({ok: true, json: async () => digest}));
+  const ctx = {
+    modal: t.mock.fn(),
+    createBlankExamForHome: t.mock.fn(() => ({id: 'unexpected-draft'})),
+    onAutoCreateExam: t.mock.fn(),
+  };
+
+  assert.equal(await handleHomeAction(action, {dataset: {id, title: campaign.title}}, ctx), true);
+  assert.equal(ctx.createBlankExamForHome.mock.callCount(), 0);
+  assert.equal(ctx.onAutoCreateExam.mock.callCount(), 0);
+  assert.deepEqual(fetchMock.mock.calls.map(({arguments: [url, init]}) => [url, init?.method ?? 'GET']), [
+    ['/api/proactive/digest', 'GET'],
+  ]);
+  assert.equal(ctx.modal.mock.callCount(), 1);
+  const body = ctx.modal.mock.calls[0].arguments[1];
+  assert.match(body, /Bộ đề Tiếng Anh 8/);
+  assert.match(body, /Tiếng Anh · Lớp 8/);
+  assert.match(body, /2\/4 đề/);
+  assert.match(body, /Hạn:/);
+  assert.match(body, /Soạn tiếp đề 3/);
+  assert.doesNotMatch(body, /Bộ đề Toán 10/);
+});
+
 test('t5 Trang chủ & Trợ lý Chủ động: hoàn thành/lưu trữ chiến dịch gọi PATCH /api/campaigns/{id} và không dùng !important trong home.js', async () => {
   const homeSrc = fs.readFileSync(
     path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../home.js'),
