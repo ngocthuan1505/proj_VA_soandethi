@@ -62,6 +62,8 @@ jobs:
           test -n "$browser_path"
           "$browser_path" --version
           echo "BROWSER_PATH=$browser_path" >> "$GITHUB_ENV"
-      - run: npm test
-      - run: npm run check:team
+      - name: Chạy mọi suite tests/*.test.mjs
+        run: npm test
+      - name: Kiểm tra kế hoạch nhóm
+        run: node scripts/check-team.mjs
       - run: npm run build-editor

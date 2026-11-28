@@ -823,3 +823,9 @@ uv run --frozen python benchmark_fastapi.py
 
 - **Nghiệm thu t2.** p95 đọc tăng 1,97× ở lượt gốc và 1,80× ở lượt lặp. JSON thống kê lưu cục bộ tại `outputs/t2-fastapi-baseline.json` và `outputs/t2-fastapi-repeat.json`. `uv sync --frozen`, Ruff check/format và ty đạt. Pytest đạt 1.090 ca, bỏ qua 5 ca, có một cảnh báo deprecation của Starlette TestClient. Đã dùng modern-python, python-testing-patterns, python-performance-optimization và ponytail-review. Graphify chưa có đồ thị.
 - **Bàn giao cho bên lý thuyết và bước tối ưu.** Các số đo mô tả burst đọc danh mục và công việc PDF cục bộ với adapter giả lập. Lượt sau có thể dùng cùng script để so sánh trước/sau. Để đánh giá riêng ảnh hưởng của đoạn `pdf_pages` đồng bộ trong coroutine, cần đo thêm từng tác vụ riêng và đối chiếu bản thử `asyncio.to_thread`. Mức tăng p95 ở đây phản ánh tải gộp.
+
+## 28/11/2026 — t3 · Khép khoảng trống CI JavaScript
+
+- [`npm test`](../../package.json) dùng glob `tests/*.test.mjs` của Node 24. Sáu suite trước đây bị bỏ sót gồm `chat-overhaul`, `uv63-frontend`, `uv64-editor-mobile`, `uv64-exports-matrix`, `uv64-rooms-proactive` và `uv64-sources-citation`. [CI](../../.github/workflows/ci.yml) chạy toàn bộ suite rồi chạy `scripts/check-team.mjs`. Lệnh `npm run check:team` vẫn chạy riêng được với ba suite của nhóm.
+- Trên Windows với Node 24.22.3 và Chrome, `npm ci` thành công. Đối chiếu sự kiện `test:summary` theo tệp cho thấy đủ 27/27 suite, 247/247 ca đạt. Tạo một suite tạm cố ý thất bại, `npm test` tự chạy thành 248 ca và trả mã 1. Đã xóa suite tạm. `npm run check:team` đạt 14/14 ca và xác thực kế hoạch nhóm thành công.
+- Bên lý thuyết có thể dùng phép đối chiếu trên làm bằng chứng CI thu đủ suite JavaScript hiện có. Kết quả trên được đo cục bộ. Chờ lượt GitHub Actions theo trigger hiện hành để xác nhận trên Ubuntu.
