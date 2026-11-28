@@ -9,6 +9,9 @@ from xml.sax.saxutils import escape
 
 import httpx
 import pytest
+from docx import Document
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -84,6 +87,51 @@ def test_upload_table_is_local_preview_without_ai_or_state_change(tmp_path, ext)
         assert response.json()["matrix"][0]["targets"] == [2, 1, 0]
         assert not response.json()["sentToAI"] and response.json()["requiresConfirmation"]
         assert client.get("/api/kv?key=state").json()["value"] is None
+
+
+def test_docx_matrix_reads_visible_cell_value_and_multiline_header(tmp_path):
+    doc = Document()
+    table = doc.add_table(rows=3, cols=4)
+    for row, values in zip(table.rows, ROWS, strict=True):
+        for cell, value in zip(row.cells, values, strict=True):
+            cell.text = value
+    table.cell(0, 1).text = "Nhận\nbiết"
+    table.cell(1, 1).text = ""
+    paragraph = table.cell(1, 1).paragraphs[0]
+    # Mã trường của Word đứng trước giá trị hiển thị đã lưu trong ô.
+    for kind in ("begin", "separate", "end"):
+        if kind == "end":
+            paragraph.add_run("2")
+        field_char = OxmlElement("w:fldChar")
+        field_char.set(qn("w:fldCharType"), kind)
+        paragraph.add_run()._r.append(field_char)
+        if kind == "begin":
+            field = OxmlElement("w:instrText")
+            field.text = " = 1+1 "
+            paragraph.add_run()._r.append(field)
+    buffer = io.BytesIO()
+    doc.save(buffer)
+
+    async def forbidden(*_):
+        pytest.fail("Bảng rõ không được gửi AI")
+
+    with TestClient(
+        create_app(tmp_path, agent_call=forbidden), headers={"Origin": "http://testserver"}
+    ) as client:
+        result = (
+            client.post(
+                "/api/ai/matrix", json={"name": "matrix.docx", "data": encoded(buffer.getvalue())}
+            )
+            .raise_for_status()
+            .json()
+        )
+
+    assert result["sentToAI"] is False
+    assert result["count"] == 5
+    assert [(row["topic"], row["targets"]) for row in result["matrix"]] == [
+        ("Thẩm thấu", [2, 1, 0]),
+        ("Tế bào", [1, 0, 1]),
+    ]
 
 
 def test_status_matches_maximum_matrix_accepted_without_ai(tmp_path):

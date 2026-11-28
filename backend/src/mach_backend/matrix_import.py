@@ -23,6 +23,7 @@ from mach_backend.ai_questions import MAX_MATRIX_QUESTIONS, ExamSlot, QuestionTy
 MAX_FILE = 15 * 1024 * 1024
 MAX_TEXT = 40000
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+M = "{http://schemas.openxmlformats.org/officeDocument/2006/math}"
 X = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
@@ -1391,6 +1392,16 @@ def _iter_top_tables(root: ET.Element) -> list[ET.Element]:
     return found
 
 
+def _docx_paragraph_text(paragraph: ET.Element) -> str:
+    parts = []
+    for node in paragraph.iter():
+        if node.tag in (W + "t", M + "t"):
+            parts.append(node.text or "")
+        elif node.tag in (W + "br", W + "cr", W + "tab"):
+            parts.append(" ")
+    return "".join(parts)
+
+
 def _parse_docx_tables(xml: ET.Element) -> ParsedGrid:
     all_rows: list[list[str]] = []
     all_merges: list[dict[str, Any]] = []
@@ -1422,7 +1433,7 @@ def _parse_docx_tables(xml: ET.Element) -> ParsedGrid:
                     if vmerge_el is not None
                     else None
                 )
-                cell_text = " ".join("".join(p.itertext()) for p in tc.iter(W + "p"))
+                cell_text = " ".join(_docx_paragraph_text(p) for p in tc.iter(W + "p"))
                 if vmerge_mode == "continue":
                     for c_idx in range(col, col + colspan):
                         anchor = active_vmerge.get(c_idx)
@@ -1686,7 +1697,7 @@ def decode_file(name, data_url):
                     rows = _parse_docx_tables(xml)
                     text = "\n".join("\t".join(r) for r in rows)
                     if not text.strip():
-                        text = "\n".join("".join(p.itertext()) for p in xml.iter(W + "p"))
+                        text = "\n".join(_docx_paragraph_text(p) for p in xml.iter(W + "p"))
                 else:
                     rows = _parse_xlsx_sheets(z)
                     text = "\n".join("\t".join(r) for r in rows)

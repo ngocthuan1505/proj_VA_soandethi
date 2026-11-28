@@ -4,14 +4,22 @@ import asyncio
 import base64
 import io
 import json
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
-from pypdf import PdfWriter
+from pypdf import PdfReader, PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject, NumberObject
 
-from mach_backend.ai_contract import AIError
+from mach_backend.ai_contract import (
+    AIError,
+    AIJob,
+    Evidence,
+    Locator,
+    SourceFragment,
+    validate_evidence,
+)
 from mach_backend.local_documents import extract_text
 from mach_backend.local_workspace import create_app
 from mach_backend.source_ocr import read_source
@@ -117,6 +125,69 @@ def test_pdf_text_local_preserves_pages_without_ai():
     assert result["method"] == "pypdf_local_text" and result["sentToAI"] is False
     assert [p["number"] for p in result["pages"]] == [1, 2]
     assert "Page one" in result["pages"][0]["text"] and "Page two" in result["pages"][1]["text"]
+
+
+def test_selective_ocr_maps_attachment_positions_to_citation_pages():
+    binary = pdf("Page one", None, "Page three", None, "Page five", None)
+
+    async def model(purpose, body):
+        assert purpose == "source_ocr"
+        attachment = PdfReader(io.BytesIO(base64.b64decode(body["document"]["data"])))
+        assert len(attachment.pages) == 2
+        assert all("/Scan" in page["/Resources"]["/XObject"] for page in attachment.pages)
+        instruction = body["messages"][0]["content"]
+        assert "vị trí vật lý trong tệp đính kèm, bắt đầu từ 1" in instruction
+        return {
+            "content": json.dumps(
+                {
+                    "pages": [
+                        {"number": 1, "text": "Printed page 2: $x^2$", "uncertain": False},
+                        {"number": 2, "text": "Printed page 4: $y^2$", "uncertain": True},
+                    ],
+                    "notes": "",
+                }
+            )
+        }
+
+    response = asyncio.run(
+        read_source(
+            {"name": "mixed.pdf", "consent": True},
+            data_url(binary),
+            model,
+            page_numbers=[4, 3, 2, 2],
+            only_needs_ocr=True,
+        )
+    )
+
+    assert [page["number"] for page in response["pages"]] == [2, 4]
+    structured = response["structured"]
+    assert [(block["page"], block["latex"]) for block in structured["math_blocks"]] == [
+        (2, "x^2"),
+        (4, "y^2"),
+    ]
+    assert {region["page"] for region in structured["uncertain_regions"]} == {4}
+    assert "--- Trang 4 ---\nPrinted page 4" in structured["full_text"]
+    source_id = uuid4()
+    sources = tuple(
+        SourceFragment(
+            ownerId="fixture",
+            sourceId=source_id,
+            sourceVersion=1,
+            locator=Locator(kind="page", index=page["number"]),
+            text=page["text"],
+        )
+        for page in response["pages"]
+    )
+    job = AIJob(jobId=uuid4(), examId=uuid4(), baseRevision=1, ownerId="fixture", sources=sources)
+    citation = Evidence(
+        sourceId=source_id,
+        sourceVersion=1,
+        locator=Locator(kind="page", index=4),
+        quote="Printed page 4: $y^2$",
+    )
+    validate_evidence(job, (citation,))
+    with pytest.raises(AIError, match="vị trí nguồn"):
+        validate_evidence(job, (citation.model_copy(update={"locator": sources[0].locator}),))
 
 
 @pytest.mark.parametrize(

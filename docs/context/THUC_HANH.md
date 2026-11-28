@@ -824,6 +824,13 @@ uv run --frozen python benchmark_fastapi.py
 - **Nghiệm thu t2.** p95 đọc tăng 1,97× ở lượt gốc và 1,80× ở lượt lặp. JSON thống kê lưu cục bộ tại `outputs/t2-fastapi-baseline.json` và `outputs/t2-fastapi-repeat.json`. `uv sync --frozen`, Ruff check/format và ty đạt. Pytest đạt 1.090 ca, bỏ qua 5 ca, có một cảnh báo deprecation của Starlette TestClient. Đã dùng modern-python, python-testing-patterns, python-performance-optimization và ponytail-review. Graphify chưa có đồ thị.
 - **Bàn giao cho bên lý thuyết và bước tối ưu.** Các số đo mô tả burst đọc danh mục và công việc PDF cục bộ với adapter giả lập. Lượt sau có thể dùng cùng script để so sánh trước/sau. Để đánh giá riêng ảnh hưởng của đoạn `pdf_pages` đồng bộ trong coroutine, cần đo thêm từng tác vụ riêng và đối chiếu bản thử `asyncio.to_thread`. Mức tăng p95 ở đây phản ánh tải gộp.
 
+## 28/11/2026 — t8 · Hợp đồng xử lý tài liệu
+
+- OCR chọn lọc yêu cầu adapter đánh số theo thứ tự của tệp đính kèm. Backend ánh xạ về trang gốc trước khi cấu trúc kết quả. Fixture chữ–scan xen kẽ chỉ gửi hai trang được chọn, giữ số trang 2 và 4 cho công thức và vùng cần rà. `validate_evidence` chấp nhận trích dẫn đúng trang 4 và từ chối cùng trích dẫn khi đổi sang trang 2. Phân tích văn bản cục bộ `pdf_pages` chạy qua `asyncio.to_thread`.
+- API nhập ma trận DOCX đọc số hiển thị của trường Word và nhận tiêu đề có ngắt dòng. Fixture xác nhận đúng năm câu, đúng số câu từng ô và xử lý cục bộ. Xuất bộ mã đề có ô rich document dùng nội dung của ô khi chuẩn bị tài nguyên. Pytest mở cả ba bản DOCX, đối chiếu câu gốc và phương án hiển thị với khóa giáo viên ở từng mã.
+- Kiểm trên working tree bằng `uv sync --frozen`, `uv run --frozen pytest` (1.098 đạt, 5 bỏ qua), Ruff check/format và ty. Hai suite JavaScript `uv64-exports-matrix` và `uv64-sources-citation` đạt 12/12 qua Node. Đã dùng modern-python, python-testing-patterns, python-performance-optimization và ponytail-review.
+- Bên lý thuyết có thể dùng ba ca hồi quy trong `test_source_documents.py`, `test_matrix_import.py` và `test_variant_passages.py` làm bằng chứng cho trích dẫn đúng vị trí, đọc bảng cục bộ và bảo toàn đáp án khi trộn. OCR dùng adapter giả lập. Ca này chưa đo lại p95, gọi OCR thật hoặc kiểm ZIP Workshop mới.
+
 ## 28/11/2026 — t3 · Khép khoảng trống CI JavaScript
 
 - [`npm test`](../../package.json) dùng glob `tests/*.test.mjs` của Node 24. Sáu suite trước đây bị bỏ sót gồm `chat-overhaul`, `uv63-frontend`, `uv64-editor-mobile`, `uv64-exports-matrix`, `uv64-rooms-proactive` và `uv64-sources-citation`. [CI](../../.github/workflows/ci.yml) chạy toàn bộ suite rồi chạy `scripts/check-team.mjs`. Lệnh `npm run check:team` vẫn chạy riêng được với ba suite của nhóm.

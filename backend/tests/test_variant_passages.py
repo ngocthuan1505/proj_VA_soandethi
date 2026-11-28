@@ -1,11 +1,13 @@
 """Kiểm thử nhóm ngữ liệu nhiều câu (passageId/groupId) và bảng đối chiếu sau hoán vị."""
 
 import io
+import re
 import zipfile
 from copy import deepcopy
 from xml.etree import ElementTree as ET
 
 import pytest
+from docx import Document
 from fastapi.testclient import TestClient
 
 from mach_backend.ai_contract import AIError
@@ -601,3 +603,55 @@ def test_variant_pack_teacher_key_and_zero_leak_student_html_and_docx(fmt, tmp_p
                 assert pos_p1_1 < pos_p1_2 < pos_p2_1 < pos_p2_2
             else:
                 assert pos_p2_1 < pos_p2_2 < pos_p1_1 < pos_p1_2
+
+
+def test_docx_variant_pack_matches_each_answer_to_rendered_option_with_rich_cell(tmp_path):
+    questions = [
+        _mcq(f"q{i}", f"Nội dung câu gốc {i}", [f"PA {i}-{j}" for j in range(4)], answer=i)
+        for i in range(3)
+    ]
+    questions[1]["tables"] = [{"rows": [[_rich_doc("Ô dữ liệu")]]}]
+    with TestClient(create_app(tmp_path), headers={"Origin": "http://testserver"}) as client:
+        response = (
+            client.post(
+                "/api/save-export",
+                json={
+                    "type": "variant-pack",
+                    "format": "docx",
+                    "exam": {"title": "Đề thử", "questions": questions},
+                    "questionIds": [question["id"] for question in questions],
+                    "shuffleOptions": True,
+                },
+            )
+            .raise_for_status()
+            .json()
+        )
+        bundle = client.get(response["url"]).raise_for_status().content
+
+    with zipfile.ZipFile(io.BytesIO(bundle)) as archive:
+        key = archive.read("GIAO_VIEN/Doi_chieu_dap_an.html").decode()
+        key_rows = [
+            re.findall(r"<td>([A-D]) <small>\(gốc: (\d+)\)</small>", row)
+            for row in re.findall(r"<tr><th scope='row'>.*?</tr>", key)
+        ]
+        assert len(key_rows) == len(questions)
+        for column, code in enumerate(range(101, 104)):
+            doc = Document(io.BytesIO(archive.read(f"HOC_SINH/Ma_{code}.docx")))
+            blocks = re.split(r"^Câu \d+\. ", "\n".join(p.text for p in doc.paragraphs), flags=re.M)
+            assert len(blocks) == len(questions) + 1
+            assert [
+                cell.text
+                for table in doc.tables
+                for row in table.rows
+                for cell in row.cells
+                if cell.text == "Ô dữ liệu"
+            ] == ["Ô dữ liệu"]
+            seen = set()
+            for row, block in zip(key_rows, blocks[1:], strict=True):
+                assert len(row) == 3
+                label, source = row[column]
+                question = questions[int(source) - 1]
+                assert block.startswith(question["stem"] + "\n")
+                assert f"{label}. {question['options'][question['answer']]}" in block.splitlines()
+                seen.add(source)
+            assert seen == {"1", "2", "3"}

@@ -278,7 +278,7 @@ def field_inputs(exam, teacher):
                 for cell in row:
                     if isinstance(cell, dict):
                         if cell.get("type") == "doc":
-                            yield "", cell, None
+                            yield project(cell, []), cell, None
                     else:
                         yield cell, None, None
         if teacher:
