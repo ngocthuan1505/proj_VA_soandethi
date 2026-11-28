@@ -17,7 +17,12 @@ import {
   submitAttempt,
   formatChoiceGroupLabel,
 } from '../assets/exam-room.js';
-import { buildGradingTabHTML } from '../exam-rooms.js';
+import {
+  buildGradingTabHTML,
+  buildShellHTML,
+  openExamRooms,
+  handleExamRoomAction,
+} from '../exam-rooms.js';
 import {
   renderProactiveCardsHTML,
   openNewReminderModal,
@@ -736,5 +741,749 @@ test('t5 Trang chủ & Trợ lý Chủ động: hoàn thành/lưu trữ chiến 
     assert.ok(toasts.at(-1).includes('lưu trữ'));
   } finally {
     globalThis.fetch = origFetch;
+  }
+});
+
+function createFakeRoomsDom({ includeLayer2 = true } = {}) {
+  const docListeners = new Map();
+  const fakeDoc = {
+    hidden: false,
+    visibilityState: 'visible',
+    activeElement: null,
+    head: { appendChild: () => {} },
+    body: { tagName: 'BODY' },
+    createElement: (tag) => makeEl(tag, ''),
+    addEventListener: (ev, fn) => {
+      if (!docListeners.has(ev)) docListeners.set(ev, new Set());
+      docListeners.get(ev).add(fn);
+    },
+    removeEventListener: (ev, fn) => {
+      docListeners.get(ev)?.delete(fn);
+    },
+    dispatchEvent: (ev) => {
+      for (const fn of [...(docListeners.get(ev.type) || [])]) {
+        fn(ev);
+      }
+      return true;
+    },
+    getListenerCount: (ev) => docListeners.get(ev)?.size || 0,
+  };
+  fakeDoc.activeElement = fakeDoc.body;
+
+  function makeEl(tagName, id = '') {
+    const listeners = new Map();
+    const attrs = new Map();
+    let html = '';
+    const el = {
+      tagName: tagName.toUpperCase(),
+      id,
+      dataset: {},
+      className: '',
+      disabled: false,
+      checked: true,
+      open: false,
+      scrollTop: 0,
+      scrollLeft: 0,
+      isConnected: true,
+      parentElement: null,
+      children: [],
+      style: {},
+      focusCalls: [],
+      classList: {
+        contains: (cls) => String(el.className || '').split(/\s+/).includes(cls),
+      },
+      setAttribute: (k, v) => attrs.set(k, String(v)),
+      getAttribute: (k) => (attrs.has(k) ? attrs.get(k) : null),
+      removeAttribute: (k) => attrs.delete(k),
+      addEventListener: (ev, fn) => {
+        if (!listeners.has(ev)) listeners.set(ev, new Set());
+        listeners.get(ev).add(fn);
+      },
+      removeEventListener: (ev, fn) => {
+        listeners.get(ev)?.delete(fn);
+      },
+      dispatchEvent: (ev) => {
+        const event = {
+          preventDefault: () => {
+            event.defaultPrevented = true;
+          },
+          stopPropagation: () => {
+            event.propagationStopped = true;
+          },
+          target: el,
+          ...ev,
+        };
+        for (const fn of [...(listeners.get(event.type) || [])]) {
+          fn(event);
+        }
+        return !event.defaultPrevented;
+      },
+      focus: (opts) => {
+        el.focusCalls.push(opts || null);
+        fakeDoc.activeElement = el;
+      },
+      contains: (node) => {
+        let cur = node;
+        while (cur) {
+          if (cur === el) return true;
+          cur = cur.parentElement;
+        }
+        return false;
+      },
+      closest: (sel) => {
+        let cur = el;
+        while (cur) {
+          if (matchesSimple(cur, sel)) return cur;
+          cur = cur.parentElement;
+        }
+        return null;
+      },
+      querySelector: (sel) => el.querySelectorAll(sel)[0] || null,
+      querySelectorAll: () => [],
+      close: () => {
+        el.open = false;
+        el.dispatchEvent({ type: 'close' });
+      },
+      showModal: () => {
+        el.open = true;
+      },
+    };
+    Object.defineProperty(el, 'innerHTML', {
+      get: () => html,
+      set: (val) => {
+        html = String(val || '');
+        if (el._onHtmlChange) el._onHtmlChange(html);
+      },
+    });
+    return el;
+  }
+
+  function matchesSimple(node, selector) {
+    return selector
+      .split(',')
+      .map((s) => s.trim())
+      .some((part) => {
+        if (part.startsWith('#')) return node.id === part.slice(1);
+        if (part.includes('[data-er-action="lock-attempt"]')) {
+          return (
+            node.dataset?.erAction === 'lock-attempt' &&
+            (!part.includes('data-attempt-id') ||
+              part.includes(`"${node.dataset.attemptId}"`))
+          );
+        }
+        if (part.includes('[data-er-action="delete-room"]')) {
+          return node.dataset?.erAction === 'delete-room';
+        }
+        if (part.includes('[data-er-action="switch-tab"]')) {
+          return (
+            node.dataset?.erAction === 'switch-tab' &&
+            (!part.includes('data-tab') || part.includes(`"${node.dataset.tab}"`))
+          );
+        }
+        if (part.includes('[data-er-action="select-room"]')) {
+          return node.dataset?.erAction === 'select-room' && (!part.includes('.is-active') || node.classList.contains('is-active'));
+        }
+        if (part.includes('[data-er-action]')) return Boolean(node.dataset?.erAction);
+        if (part === '[role="tab"][aria-selected="true"]') {
+          return node.getAttribute('role') === 'tab' && node.getAttribute('aria-selected') === 'true';
+        }
+        if (part.includes('.er-tabs')) return node.classList.contains('er-tabs');
+        return false;
+      });
+  }
+
+  const dialog = makeEl('dialog', 'dialog');
+  const modalBody = makeEl('div', '');
+  modalBody.className = 'modal-body';
+  modalBody.parentElement = dialog;
+  const dialogLayer2 = includeLayer2 ? makeEl('dialog', 'dialog-layer2') : null;
+
+  const elements = new Map([
+    ['dialog', dialog],
+    ['exam-rooms-shell', null],
+    ['er-monitor-badges', null],
+    ['er-monitor-results', null],
+    ['er-autorefresh-chk', null],
+    ['er-cancel-delete-btn', null],
+    ['er-confirm-delete-btn', null],
+    ['er-cancel-inline-delete-btn', null],
+    ['er-confirm-inline-delete-btn', null],
+  ]);
+  if (dialogLayer2) elements.set('dialog-layer2', dialogLayer2);
+
+  let shellEl = null;
+  let tabsEl = null;
+  let tabEls = [];
+  let monitorBadgesEl = null;
+  let monitorResultsEl = null;
+  let tableWrapEl = null;
+  let autorefreshChk = null;
+  let lockAttemptBtns = [];
+  let deleteBtn = null;
+  let inlineCancelBtn = null;
+  let inlineConfirmBtn = null;
+  let activePillBtn = null;
+  let quickOpenBtn = null;
+  let layer2CancelBtn = null;
+  let layer2ConfirmBtn = null;
+  let layer2ConfirmBox = null;
+
+  function parseHtmlIntoDom(html) {
+    if (!html.includes('id="exam-rooms-shell"')) return;
+    shellEl = makeEl('div', 'exam-rooms-shell');
+    shellEl.className = 'er-shell';
+    shellEl.parentElement = modalBody;
+    elements.set('exam-rooms-shell', shellEl);
+
+    quickOpenBtn = makeEl('button', 'er-quick-open-btn');
+    quickOpenBtn.dataset = { erAction: 'quick-open' };
+    quickOpenBtn.parentElement = shellEl;
+    elements.set('er-quick-open-btn', quickOpenBtn);
+
+    const activeRoomMatch = html.match(/class="er-room-pill is-active"[^>]*data-room-id="([^"]+)"/);
+    if (activeRoomMatch) {
+      activePillBtn = makeEl('button', '');
+      activePillBtn.className = 'er-room-pill is-active';
+      activePillBtn.dataset = { erAction: 'select-room', roomId: activeRoomMatch[1] };
+      activePillBtn.parentElement = shellEl;
+    } else {
+      activePillBtn = null;
+    }
+
+    tabsEl = makeEl('div', '');
+    tabsEl.className = 'er-tabs';
+    tabsEl.parentElement = shellEl;
+    tabEls = [];
+    const tabMatches = [
+      ...html.matchAll(
+        /<button[^>]*id="er-tab-([^"]+)"[^>]*aria-selected="(true|false)"[^>]*data-tab="([^"]+)"[^>]*>([^<]*)<\/button>/g,
+      ),
+    ];
+    for (const m of tabMatches) {
+      const tb = makeEl('button', `er-tab-${m[1]}`);
+      tb.className = m[2] === 'true' ? 'er-tab is-active' : 'er-tab';
+      tb.setAttribute('role', 'tab');
+      tb.setAttribute('aria-selected', m[2]);
+      tb.dataset = { erAction: 'switch-tab', tab: m[3] };
+      tb.textContent = m[4];
+      tb.parentElement = tabsEl;
+      tabEls.push(tb);
+      elements.set(tb.id, tb);
+    }
+
+    if (html.includes('data-er-action="delete-room"')) {
+      deleteBtn = makeEl('button', '');
+      deleteBtn.dataset = { erAction: 'delete-room' };
+      deleteBtn.parentElement = shellEl;
+    } else {
+      deleteBtn = null;
+    }
+
+    if (html.includes('id="er-cancel-inline-delete-btn"')) {
+      inlineCancelBtn = makeEl('button', 'er-cancel-inline-delete-btn');
+      inlineCancelBtn.dataset = { erAction: 'cancel-delete-room' };
+      inlineCancelBtn.parentElement = shellEl;
+      const mId = html.match(/id="er-confirm-inline-delete-btn"[^>]*data-room-id="([^"]+)"/);
+      inlineConfirmBtn = makeEl('button', 'er-confirm-inline-delete-btn');
+      inlineConfirmBtn.dataset = { erAction: 'confirm-delete-room', roomId: mId?.[1] || '' };
+      inlineConfirmBtn.parentElement = shellEl;
+      elements.set('er-cancel-inline-delete-btn', inlineCancelBtn);
+      elements.set('er-confirm-inline-delete-btn', inlineConfirmBtn);
+    } else {
+      inlineCancelBtn = null;
+      inlineConfirmBtn = null;
+      elements.set('er-cancel-inline-delete-btn', null);
+      elements.set('er-confirm-inline-delete-btn', null);
+    }
+
+    if (html.includes('id="er-monitor-results"')) {
+      monitorBadgesEl = makeEl('div', 'er-monitor-badges');
+      monitorBadgesEl.parentElement = shellEl;
+      autorefreshChk = makeEl('input', 'er-autorefresh-chk');
+      autorefreshChk.parentElement = shellEl;
+      monitorResultsEl = makeEl('div', 'er-monitor-results');
+      monitorResultsEl.parentElement = shellEl;
+      elements.set('er-monitor-badges', monitorBadgesEl);
+      elements.set('er-monitor-results', monitorResultsEl);
+      elements.set('er-autorefresh-chk', autorefreshChk);
+      monitorBadgesEl._onHtmlChange = () => {};
+      monitorResultsEl._onHtmlChange = (inner) => syncMonitorResults(inner);
+      syncMonitorResults(html);
+    } else {
+      monitorBadgesEl = null;
+      monitorResultsEl = null;
+      tableWrapEl = null;
+      autorefreshChk = null;
+      lockAttemptBtns = [];
+      elements.set('er-monitor-badges', null);
+      elements.set('er-monitor-results', null);
+      elements.set('er-autorefresh-chk', null);
+    }
+
+    shellEl.querySelector = (sel) => shellEl.querySelectorAll(sel)[0] || null;
+    shellEl.querySelectorAll = (sel) => {
+      const candidates = [
+        ...tabEls,
+        ...(activePillBtn ? [activePillBtn] : []),
+        ...(quickOpenBtn ? [quickOpenBtn] : []),
+        ...(deleteBtn ? [deleteBtn] : []),
+        ...(autorefreshChk ? [autorefreshChk] : []),
+        ...(tableWrapEl ? [tableWrapEl] : []),
+        ...lockAttemptBtns,
+        ...(inlineCancelBtn ? [inlineCancelBtn] : []),
+        ...(inlineConfirmBtn ? [inlineConfirmBtn] : []),
+      ];
+      if (sel === '.er-table-wrap') return tableWrapEl ? [tableWrapEl] : [];
+      if (sel === '.er-tabs [role="tab"][data-er-action="switch-tab"]') return tabEls;
+      return candidates.filter((n) => matchesSimple(n, sel));
+    };
+    modalBody.querySelector = (sel) => shellEl?.querySelector(sel) || null;
+    modalBody.querySelectorAll = (sel) => shellEl?.querySelectorAll(sel) || [];
+  }
+
+  function syncMonitorResults(inner) {
+    if (!monitorResultsEl) return;
+    if (inner.includes('class="er-table-wrap"')) {
+      tableWrapEl = makeEl('div', '');
+      tableWrapEl.className = 'er-table-wrap';
+      tableWrapEl.parentElement = monitorResultsEl;
+    } else {
+      tableWrapEl = null;
+    }
+    lockAttemptBtns = [];
+    const attMatches = [
+      ...inner.matchAll(/data-er-action="lock-attempt" data-attempt-id="([^"]+)"/g),
+    ];
+    for (const m of attMatches) {
+      const b = makeEl('button', '');
+      b.dataset = { erAction: 'lock-attempt', attemptId: m[1] };
+      b.parentElement = tableWrapEl || monitorResultsEl;
+      lockAttemptBtns.push(b);
+    }
+    monitorResultsEl.querySelector = (sel) => monitorResultsEl.querySelectorAll(sel)[0] || null;
+    monitorResultsEl.querySelectorAll = (sel) => {
+      const list = [...(tableWrapEl ? [tableWrapEl] : []), ...lockAttemptBtns];
+      if (sel === '.er-table-wrap') return tableWrapEl ? [tableWrapEl] : [];
+      return list.filter((n) => matchesSimple(n, sel));
+    };
+  }
+
+  modalBody._onHtmlChange = parseHtmlIntoDom;
+
+  if (dialogLayer2) {
+    dialogLayer2._onHtmlChange = (inner) => {
+      if (inner.includes('id="er-cancel-delete-btn"')) {
+        layer2ConfirmBox = makeEl('div', '');
+        layer2ConfirmBox.className = 'er-confirm-delete';
+        layer2ConfirmBox.parentElement = dialogLayer2;
+        layer2CancelBtn = makeEl('button', 'er-cancel-delete-btn');
+        layer2CancelBtn.dataset = { action: 'close-top-modal' };
+        layer2CancelBtn.parentElement = layer2ConfirmBox;
+        const mId = inner.match(/id="er-confirm-delete-btn"[^>]*data-room-id="([^"]+)"/);
+        layer2ConfirmBtn = makeEl('button', 'er-confirm-delete-btn');
+        layer2ConfirmBtn.dataset = { action: 'er-confirm-delete-room', roomId: mId?.[1] || '' };
+        layer2ConfirmBtn.parentElement = layer2ConfirmBox;
+        elements.set('er-cancel-delete-btn', layer2CancelBtn);
+        elements.set('er-confirm-delete-btn', layer2ConfirmBtn);
+        layer2ConfirmBox.querySelectorAll = (sel) => {
+          if (sel.includes('button')) return [layer2CancelBtn, layer2ConfirmBtn];
+          return [];
+        };
+        dialogLayer2.querySelector = (sel) =>
+          sel === '.er-confirm-delete' ? layer2ConfirmBox : null;
+      } else {
+        layer2ConfirmBox = null;
+        layer2CancelBtn = null;
+        layer2ConfirmBtn = null;
+        elements.set('er-cancel-delete-btn', null);
+        elements.set('er-confirm-delete-btn', null);
+      }
+    };
+  }
+
+  fakeDoc.getElementById = (id) => elements.get(id) || null;
+  fakeDoc.querySelector = () => null;
+  fakeDoc.querySelectorAll = () => [];
+
+  return {
+    fakeDoc,
+    dialog,
+    dialogLayer2,
+    modalBody,
+    getShell: () => shellEl,
+    getTab: (tab) => tabEls.find((t) => t.dataset.tab === tab) || null,
+    getDeleteBtn: () => deleteBtn,
+    getAutorefreshChk: () => autorefreshChk,
+    getTableWrap: () => tableWrapEl,
+    getLockBtn: (attId) => lockAttemptBtns.find((b) => b.dataset.attemptId === attId) || null,
+    getLayer2CancelBtn: () => layer2CancelBtn,
+    getLayer2ConfirmBtn: () => layer2ConfirmBtn,
+    getInlineCancelBtn: () => inlineCancelBtn,
+    getInlineConfirmBtn: () => inlineConfirmBtn,
+  };
+}
+
+test('t4 Phòng thi · tablist ARIA, bỏ window.confirm và hộp thoại xác nhận xóa bàn phím', async () => {
+  const erSrc = fs.readFileSync(
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../exam-rooms.js'),
+    'utf8',
+  );
+  assert.ok(!erSrc.includes('window.confirm'), 'exam-rooms.js không được dùng window.confirm');
+  assert.ok(erSrc.includes('role="tablist"') && erSrc.includes('role="tab"'));
+  assert.ok(erSrc.includes('aria-selected') && erSrc.includes('role="tabpanel"'));
+  assert.ok(erSrc.includes('document.hidden') && erSrc.includes('visibilitychange'));
+
+  const origDocument = globalThis.document;
+  const origWindow = globalThis.window;
+  const origFetch = globalThis.fetch;
+  const origCreateObj = URL.createObjectURL;
+  const origRevokeObj = URL.revokeObjectURL;
+
+  const dom = createFakeRoomsDom({ includeLayer2: true });
+  let confirmCalled = false;
+  let rooms = [
+    {
+      id: 'room-1',
+      examId: 'ex-1',
+      roomCode: 'ABC123',
+      title: 'Phòng thi Toán 9',
+      status: 'open',
+      mode: 'exam',
+      attemptCount: 2,
+      needsManualCount: 0,
+      questionCount: 2,
+      totalPointsP100: 1000,
+    },
+  ];
+  const deleteCalls = [];
+  const modalCalls = [];
+  const toasts = [];
+
+  globalThis.document = dom.fakeDoc;
+  globalThis.window = {
+    confirm: () => {
+      confirmCalled = true;
+      return true;
+    },
+  };
+  URL.createObjectURL = () => 'blob:qr-mock';
+  URL.revokeObjectURL = () => {};
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url);
+    const method = (init.method || 'GET').toUpperCase();
+    if (u === '/api/rooms' && method === 'GET') {
+      return { ok: true, status: 200, json: async () => ({ rooms }) };
+    }
+    if (u === '/api/exports/preflight') {
+      return { ok: true, status: 200, json: async () => ({ ready: true, blockingIssues: [] }) };
+    }
+    if (u.includes('/qr.svg')) {
+      return { ok: true, status: 200, blob: async () => new Blob(['<svg></svg>'], { type: 'image/svg+xml' }) };
+    }
+    if (u === '/api/rooms/room-1' && method === 'DELETE') {
+      deleteCalls.push(u);
+      rooms = [];
+      return { ok: true, status: 200, json: async () => ({ ok: true, deleted: 'room-1' }) };
+    }
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+
+  const ctx = {
+    exam: () => ({ id: 'ex-1', title: 'Đề Toán 9', subject: 'Toán', grade: '9', minutes: 45, questions: [{}] }),
+    workspaceHeaders: () => ({}),
+    toast: (m) => toasts.push(m),
+    modal: (title, body, subtitle, opts) => {
+      modalCalls.push({ title, body, subtitle, opts });
+      if (opts?.layer === 2) {
+        dom.dialogLayer2.innerHTML = `<div class="modal-head"><h2>${title}</h2></div><div class="modal-body">${body}</div>`;
+        dom.dialogLayer2.showModal();
+      } else {
+        dom.modalBody.innerHTML = body;
+        dom.dialog.showModal();
+      }
+    },
+  };
+
+  try {
+    await openExamRooms(ctx, { tab: 'share' });
+    const shellHtml = buildShellHTML(ctx);
+    assert.ok(shellHtml.includes('role="tablist"'));
+    assert.ok(shellHtml.includes('id="er-tab-share" class="er-tab is-active" role="tab" aria-selected="true" aria-controls="er-tabpanel-share" tabindex="0"'));
+    assert.ok(shellHtml.includes('id="er-tab-monitor" class="er-tab " role="tab" aria-selected="false" aria-controls="er-tabpanel-monitor" tabindex="-1"'));
+    assert.ok(shellHtml.includes('id="er-tabpanel-share" class="er-tabpanel" role="tabpanel" aria-labelledby="er-tab-share"'));
+
+    // Bấm Xóa phòng này -> mở dialog layer 2, focus vào nút Hủy, không gọi window.confirm hay DELETE
+    dom.getShell().dispatchEvent({ type: 'click', target: dom.getDeleteBtn() });
+    assert.equal(confirmCalled, false);
+    assert.equal(deleteCalls.length, 0);
+    assert.equal(dom.dialogLayer2.open, true);
+    assert.equal(modalCalls.at(-1).opts?.layer, 2);
+    assert.equal(dom.fakeDoc.activeElement.id, 'er-cancel-delete-btn');
+
+    // Hủy bằng đóng layer 2 -> KHÔNG gọi DELETE
+    dom.dialogLayer2.close();
+    assert.equal(dom.dialogLayer2.open, false);
+    await handleExamRoomAction('er-confirm-delete-room', dom.getLayer2ConfirmBtn(), ctx);
+    assert.equal(deleteCalls.length, 0);
+
+    // Mở lại xác nhận và bấm Xóa phòng -> gọi DELETE, đóng layer 2, thông báo đã xóa
+    dom.getShell().dispatchEvent({ type: 'click', target: dom.getDeleteBtn() });
+    assert.equal(dom.dialogLayer2.open, true);
+    await handleExamRoomAction('er-confirm-delete-room', dom.getLayer2ConfirmBtn(), ctx);
+    assert.deepEqual(deleteCalls, ['/api/rooms/room-1']);
+    assert.equal(dom.dialogLayer2.open, false);
+    assert.ok(toasts.at(-1).includes('ABC123'));
+
+    // Kiểm tra fallback inline role="alertdialog" khi môi trường không có #dialog-layer2
+    rooms = [
+      {
+        id: 'room-2',
+        examId: 'ex-1',
+        roomCode: 'XYZ789',
+        title: 'Phòng dự phòng',
+        status: 'open',
+        mode: 'exam',
+        attemptCount: 0,
+        needsManualCount: 0,
+      },
+    ];
+    const domNoL2 = createFakeRoomsDom({ includeLayer2: false });
+    globalThis.document = domNoL2.fakeDoc;
+    const ctxNoL2 = {
+      ...ctx,
+      modal: (_t, body) => {
+        domNoL2.modalBody.innerHTML = body;
+        domNoL2.dialog.showModal();
+      },
+    };
+    await openExamRooms(ctxNoL2, { tab: 'share' });
+    domNoL2.getShell().dispatchEvent({ type: 'click', target: domNoL2.getDeleteBtn() });
+    assert.ok(domNoL2.getInlineCancelBtn(), 'Phải dựng hộp xác nhận inline khi thiếu #dialog-layer2');
+    assert.equal(domNoL2.fakeDoc.activeElement.id, 'er-cancel-inline-delete-btn');
+    domNoL2.getShell().dispatchEvent({ type: 'keydown', key: 'Escape' });
+    assert.equal(domNoL2.getInlineCancelBtn(), null, 'Nhấn Escape phải đóng hộp xác nhận inline');
+    assert.deepEqual(deleteCalls, ['/api/rooms/room-1']);
+
+    domNoL2.dialog.close();
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.window = origWindow;
+    globalThis.fetch = origFetch;
+    URL.createObjectURL = origCreateObj;
+    URL.revokeObjectURL = origRevokeObj;
+  }
+});
+
+test('t4 Phòng thi · điều hướng tab bằng phím mũi tên, dừng polling khi tab ẩn, làm mới khi quay lại và giữ focus/cuộn', async () => {
+  const origDocument = globalThis.document;
+  const origWindow = globalThis.window;
+  const origFetch = globalThis.fetch;
+  const origSetInterval = globalThis.setInterval;
+  const origClearInterval = globalThis.clearInterval;
+  const origCreateObj = URL.createObjectURL;
+  const origRevokeObj = URL.revokeObjectURL;
+
+  const dom = createFakeRoomsDom({ includeLayer2: true });
+  const intervals = new Map();
+  let nextTimerId = 1;
+  let roomGetCount = 0;
+  let delayNextPoll = false;
+  let delayedPoll;
+
+  const roomObj = {
+    id: 'room-poll',
+    examId: 'ex-1',
+    roomCode: 'MON123',
+    title: 'Phòng thi Giám sát',
+    status: 'open',
+    mode: 'exam',
+    attemptCount: 2,
+    needsManualCount: 0,
+    maxTabSwitches: 3,
+    questionCount: 2,
+    totalPointsP100: 1000,
+  };
+  let attemptsData = [
+    {
+      id: 'att-1',
+      studentName: 'Nguyễn An',
+      studentClass: '9A1',
+      studentCode: '01',
+      attemptNo: 1,
+      variantCode: '101',
+      status: 'in_progress',
+      gradingStatus: 'auto_graded',
+      tabSwitchCount: 0,
+      fullscreenExitCount: 0,
+      startedAt: Date.now() - 60_000,
+    },
+  ];
+
+  globalThis.document = dom.fakeDoc;
+  globalThis.window = {};
+  URL.createObjectURL = () => 'blob:qr-poll';
+  URL.revokeObjectURL = () => {};
+  globalThis.setInterval = (fn, ms) => {
+    const id = nextTimerId++;
+    intervals.set(id, { fn, ms });
+    return id;
+  };
+  globalThis.clearInterval = (id) => {
+    intervals.delete(id);
+  };
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url);
+    if (u === '/api/rooms') {
+      return { ok: true, status: 200, json: async () => ({ rooms: [roomObj] }) };
+    }
+    if (u === '/api/exports/preflight') {
+      return { ok: true, status: 200, json: async () => ({ ready: true, blockingIssues: [] }) };
+    }
+    if (u.includes('/qr.svg')) {
+      return { ok: true, status: 200, blob: async () => new Blob(['<svg></svg>'], { type: 'image/svg+xml' }) };
+    }
+    if (u === '/api/rooms/room-poll') {
+      roomGetCount += 1;
+      if (delayNextPoll && init.signal) {
+        delayNextPoll = false;
+        await new Promise((resolve) => {
+          delayedPoll = { signal: init.signal, resolve };
+        });
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          room: { ...roomObj, attemptCount: attemptsData.length },
+          attempts: attemptsData,
+          answerKeys: [],
+        }),
+      };
+    }
+    if (u.includes('/grading-queue')) {
+      return { ok: true, status: 200, json: async () => ({ pendingCount: 0, gradedCount: 0, items: [] }) };
+    }
+    if (u.includes('/analytics')) {
+      return { ok: true, status: 200, json: async () => ({ submittedCount: 0, histogram: [], questionStats: [] }) };
+    }
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+
+  const ctx = {
+    exam: () => ({ id: 'ex-1', title: 'Đề Toán 9', subject: 'Toán', grade: '9', minutes: 45, questions: [{}] }),
+    workspaceHeaders: () => ({}),
+    toast: () => {},
+    modal: (_t, body) => {
+      dom.modalBody.innerHTML = body;
+      dom.dialog.showModal();
+    },
+  };
+
+  try {
+    await openExamRooms(ctx, { tab: 'share' });
+    // Điều hướng phím mũi tên trên .er-tabs
+    dom.getTab('share').focus();
+    dom.getShell().dispatchEvent({ type: 'keydown', key: 'ArrowRight', target: dom.getTab('share') });
+    await new Promise((r) => setTimeout(r, 15));
+    assert.equal(dom.getTab('monitor').getAttribute('aria-selected'), 'true');
+    assert.equal(dom.fakeDoc.activeElement.id, 'er-tab-monitor');
+
+    dom.getShell().dispatchEvent({ type: 'keydown', key: 'End', target: dom.getTab('monitor') });
+    await new Promise((r) => setTimeout(r, 15));
+    assert.equal(dom.getTab('keys').getAttribute('aria-selected'), 'true');
+    assert.equal(dom.fakeDoc.activeElement.id, 'er-tab-keys');
+
+    dom.getShell().dispatchEvent({ type: 'keydown', key: 'Home', target: dom.getTab('keys') });
+    await new Promise((r) => setTimeout(r, 15));
+    assert.equal(dom.getTab('share').getAttribute('aria-selected'), 'true');
+    assert.equal(dom.fakeDoc.activeElement.id, 'er-tab-share');
+
+    dom.getShell().dispatchEvent({ type: 'keydown', key: 'ArrowRight', target: dom.getTab('share') });
+    await new Promise((r) => setTimeout(r, 15));
+    assert.equal(dom.getTab('monitor').getAttribute('aria-selected'), 'true');
+
+    // Focus vào #er-autorefresh-chk và cuộn modal + bảng ngang
+    assert.equal(intervals.size, 1, 'Phải bật polling 5s khi tab đang hiển thị');
+    assert.equal([...intervals.values()][0].ms, 5000);
+    const chk = dom.getAutorefreshChk();
+    chk.focus();
+    dom.modalBody.scrollTop = 240;
+    dom.getTableWrap().scrollLeft = 95;
+    const countBeforePoll = roomGetCount;
+
+    // Kích hoạt 1 nhịp poll khi đang hiển thị -> giữ nguyên focus ở #er-autorefresh-chk và vị trí cuộn
+    attemptsData = [
+      ...attemptsData,
+      {
+        id: 'att-2',
+        studentName: 'Trần Bình',
+        studentClass: '9A1',
+        studentCode: '02',
+        attemptNo: 1,
+        variantCode: '102',
+        status: 'in_progress',
+        gradingStatus: 'auto_graded',
+        tabSwitchCount: 1,
+        fullscreenExitCount: 0,
+        startedAt: Date.now() - 30_000,
+      },
+    ];
+    await [...intervals.values()][0].fn();
+    await new Promise((r) => setTimeout(r, 15));
+    assert.equal(roomGetCount, countBeforePoll + 1);
+    assert.equal(dom.fakeDoc.activeElement, chk, 'Focus phải giữ nguyên ở #er-autorefresh-chk sau poll');
+    assert.equal(dom.modalBody.scrollTop, 240);
+    assert.equal(dom.getTableWrap().scrollLeft, 95);
+
+    // Focus vào nút Khóa & thu bài trong kết quả poll -> sau poll phải khôi phục focus bằng preventScroll: true
+    const lockBtnBefore = dom.getLockBtn('att-1');
+    lockBtnBefore.focus();
+    await [...intervals.values()][0].fn();
+    await new Promise((r) => setTimeout(r, 15));
+    const lockBtnAfter = dom.getLockBtn('att-1');
+    assert.equal(dom.fakeDoc.activeElement, lockBtnAfter, 'Focus phải khôi phục đúng nút lock-attempt');
+    assert.deepEqual(lockBtnAfter.focusCalls.at(-1), { preventScroll: true });
+    assert.equal(dom.modalBody.scrollTop, 240);
+    assert.equal(dom.getTableWrap().scrollLeft, 95);
+
+    // Ẩn tab (document.hidden = true) -> dừng polling, không gửi GET khi ẩn
+    delayNextPoll = true;
+    const stale = [...intervals.values()][0].fn();
+    await Promise.resolve();
+    assert.ok(delayedPoll);
+    dom.fakeDoc.hidden = true;
+    dom.fakeDoc.visibilityState = 'hidden';
+    dom.fakeDoc.dispatchEvent({ type: 'visibilitychange' });
+    assert.equal(intervals.size, 0, 'Phải dừng toàn bộ timer polling khi tab bị ẩn');
+    assert.equal(delayedPoll.signal.aborted, true);
+    const countWhenHidden = roomGetCount;
+
+    // Quay lại tab (document.hidden = false) -> làm mới ngay và bật lại polling 5s, giữ focus & cuộn
+    dom.fakeDoc.hidden = false;
+    dom.fakeDoc.visibilityState = 'visible';
+    dom.fakeDoc.dispatchEvent({ type: 'visibilitychange' });
+    await new Promise((r) => setTimeout(r, 20));
+    assert.equal(roomGetCount, countWhenHidden + 1, 'Phải làm mới ngay khi quay lại tab');
+    assert.equal(intervals.size, 1, 'Phải khởi động lại polling 5s khi quay lại tab');
+    assert.equal(dom.fakeDoc.activeElement.dataset?.attemptId, 'att-1');
+    assert.equal(dom.modalBody.scrollTop, 240);
+    assert.equal(dom.getTableWrap().scrollLeft, 95);
+    const restoredLock = dom.getLockBtn('att-1');
+    delayedPoll.resolve();
+    await stale;
+    assert.equal(dom.getLockBtn('att-1'), restoredLock, 'Kết quả đã hủy không được thay DOM mới');
+
+    // Đóng modal -> dọn dẹp timer và visibilitychange listener
+    dom.dialog.close();
+    assert.equal(intervals.size, 0);
+    assert.equal(dom.fakeDoc.getListenerCount('visibilitychange'), 0);
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.window = origWindow;
+    globalThis.fetch = origFetch;
+    globalThis.setInterval = origSetInterval;
+    globalThis.clearInterval = origClearInterval;
+    URL.createObjectURL = origCreateObj;
+    URL.revokeObjectURL = origRevokeObj;
   }
 });

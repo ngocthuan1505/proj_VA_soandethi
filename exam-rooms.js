@@ -29,6 +29,11 @@ const RESULT_POLICY_LABELS = {
 
 let activeCtx = null;
 let pollTimer = null;
+let pollRequest = null;
+let tabLoadEpoch = 0;
+let detailLoadEpoch = 0;
+let deleteInFlight = false;
+let visibilityHandler = null;
 let qrObjectUrl = '';
 let state = {
   rooms: [],
@@ -43,6 +48,9 @@ let state = {
   createPanelOpen: false,
   autoRefresh: true,
   loading: false,
+  loadingTab: '',
+  pendingDeleteRoomId: '',
+  confirmDeleteRoomId: '',
   error: '',
   qrBaseOrigin: '',
 };
@@ -315,10 +323,17 @@ function injectStyles() {
     .er-badge-open { background: var(--er-ok-bg); color: var(--er-ok); }
     .er-badge-closed { background: #e5e7eb; color: #374151; }
     .er-badge-draft { background: var(--er-warn-bg); color: var(--er-warn); }
-    .er-badge-archived { background: #f3f4f6; color: #6b7280; }
+    .er-badge-archived { background: #f3f4f6; color: #4b5563; }
     .er-badge-warn { background: var(--er-warn-bg); color: var(--er-warn); }
     .er-badge-danger { background: var(--er-danger-bg); color: var(--er-danger); }
     .er-badge-teal { background: var(--er-teal-soft); color: var(--er-teal-dark); }
+    .er-check input[type="checkbox"],
+    .er-rubric-step-chk {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      accent-color: var(--er-teal, #0f4c81);
+    }
     .er-tabs {
       display: flex;
       flex-wrap: wrap;
@@ -346,6 +361,24 @@ function injectStyles() {
       background: var(--er-teal, #0f4c81);
       border-color: var(--er-teal, #0f4c81);
       color: #ffffff;
+    }
+    .er-shell .er-tab:focus-visible,
+    .er-shell .er-btn:focus-visible,
+    .er-shell .er-room-pill:focus-visible {
+      outline: 2px solid var(--er-accent, #1e78c8);
+      outline-offset: 2px;
+    }
+    .er-tabpanel {
+      min-width: 0;
+    }
+    .er-confirm-inline {
+      border-color: #f3c2c2;
+      background: #fff5f5;
+      color: var(--er-ink);
+    }
+    .er-confirm-delete p {
+      margin: 0 0 8px;
+      line-height: 1.5;
     }
     .er-share-layout {
       display: grid;
@@ -564,10 +597,18 @@ function injectStyles() {
         max-width: none;
         width: 100%;
       }
-      .er-btn, a.er-btn, .er-btn-sm, a.er-btn-sm {
+      .er-btn, a.er-btn, .er-btn-sm, a.er-btn-sm, .er-shell .er-tab {
         min-height: 44px;
         display: inline-flex;
         align-items: center;
+      }
+      .er-check {
+        min-height: 44px;
+      }
+      .er-check input[type="checkbox"],
+      .er-rubric-step-chk {
+        width: 20px;
+        height: 20px;
       }
       .er-hist { gap: 4px; }
     }
@@ -632,12 +673,14 @@ async function getHeaders(c) {
   return fallbackWorkspaceHeaders();
 }
 
-async function roomApi(c, path, { method = 'GET', body } = {}) {
+async function roomApi(c, path, { method = 'GET', body, signal } = {}) {
   const headers = { ...(await getHeaders(c)) };
+  signal?.throwIfAborted();
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const response = await fetch(path, {
     method,
     headers,
+    signal,
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   let data = null;
@@ -670,6 +713,8 @@ async function fetchAuthBlob(c, path) {
 }
 
 function stopPolling() {
+  pollRequest?.abort();
+  pollRequest = null;
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
@@ -988,25 +1033,121 @@ function buildShareTabHTML(room) {
             <button type="submit" class="er-btn er-btn-primary">Lưu thay đổi phòng</button>
           </div>
         </form>
+        ${
+          state.confirmDeleteRoomId === room.id
+            ? `<div class="er-card er-confirm-inline" role="alertdialog" aria-modal="false" aria-labelledby="er-inline-del-title" aria-describedby="er-inline-del-desc" style="display:flex;flex-direction:column;gap:8px;">
+                 <strong id="er-inline-del-title">Xóa phòng ${esc(room.roomCode)}?</strong>
+                 <p id="er-inline-del-desc" style="margin:0;line-height:1.5;">Xóa phòng <strong>${esc(room.roomCode)}</strong> (${esc(room.title)}) và toàn bộ bài làm trong phòng này? Hành động này không thể hoàn tác.</p>
+                 <div class="er-btn-row" style="justify-content:flex-end;">
+                   <button type="button" id="er-cancel-inline-delete-btn" class="er-btn er-btn-sm" data-er-action="cancel-delete-room">Hủy</button>
+                   <button type="button" id="er-confirm-inline-delete-btn" class="er-btn er-btn-danger er-btn-sm" data-er-action="confirm-delete-room" data-room-id="${esc(room.id)}">Xóa phòng</button>
+                 </div>
+               </div>`
+            : ''
+        }
       </div>
     </div>
   `;
 }
 
-function buildMonitorTabHTML(room) {
+function buildMonitorSummaryBadgesHTML(room) {
   const attempts = state.roomDetail?.attempts || [];
   const inProg = attempts.filter((a) => a.status === 'in_progress').length;
   const submitted = attempts.filter((a) => a.status !== 'in_progress').length;
   const warned = attempts.filter((a) => (a.tabSwitchCount || 0) > 0 || (a.fullscreenExitCount || 0) > 0).length;
-
   return `
-    <div style="display:flex;flex-direction:column;gap:12px;">
+    <span class="er-badge er-badge-teal">Tổng lượt: ${attempts.length}</span>
+    <span class="er-badge er-badge-open">Đã nộp/Khóa: ${submitted}</span>
+    <span class="er-badge er-badge-draft">Đang làm: ${inProg}</span>
+    ${warned ? `<span class="er-badge er-badge-warn">Cảnh báo rời màn hình: ${warned}</span>` : ''}
+  `;
+}
+
+function buildMonitorResultsHTML(room) {
+  if (state.loadingTab === 'monitor' && !state.roomDetail) {
+    return `<div class="er-empty">Đang tải dữ liệu giám sát…</div>`;
+  }
+  const attempts = state.roomDetail?.attempts || [];
+  if (!attempts.length) {
+    return `<div class="er-empty">Chưa có học sinh nào tham gia phòng <strong>${esc(room.roomCode)}</strong>. Hãy chia sẻ mã hoặc mã QR ở tab Chia sẻ.</div>`;
+  }
+  return `
+    <div class="er-table-wrap">
+      <table class="er-table">
+        <thead>
+          <tr>
+            <th>Học sinh</th>
+            <th>Lớp / SBD</th>
+            <th>Mã đề</th>
+            <th>Trạng thái</th>
+            <th>Chuyển tab / Toàn màn hình</th>
+            <th>Điểm số</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${attempts
+            .map((a) => {
+              const tabCnt = Number(a.tabSwitchCount || 0);
+              const fsCnt = Number(a.fullscreenExitCount || 0);
+              const limit = Number(room.maxTabSwitches || 0);
+              const tabCls =
+                limit > 0 && tabCnt > limit
+                  ? 'er-badge-danger'
+                  : tabCnt > 0
+                    ? 'er-badge-warn'
+                    : 'er-badge-open';
+              const scoreTxt =
+                a.status === 'in_progress'
+                  ? 'Đang làm'
+                  : `${formatPointsVi(a.totalScoreP100)} / ${formatPointsVi(a.totalPointsP100)}`;
+              const adjP100 = Number(a.scoreAdjustmentP100 || 0);
+              const adjTxt =
+                adjP100 !== 0
+                  ? `Điều chỉnh: ${adjP100 > 0 ? '+' : ''}${formatPointsVi(adjP100)} đ${a.adjustmentNote ? ` (${a.adjustmentNote})` : ''}`
+                  : '';
+              return `
+                <tr>
+                  <td>
+                    <strong>${esc(a.studentName)}</strong>
+                    <div style="font-size:11.5px;color:var(--er-muted);">Lượt ${esc(a.attemptNo)} · Bắt đầu ${esc(formatDateTimeVi(a.startedAt))}</div>
+                  </td>
+                  <td>${esc(a.studentClass || '—')}${a.studentCode ? ` · ${esc(a.studentCode)}` : ''}</td>
+                  <td><span class="er-code">${esc(a.variantCode || 'Gốc')}</span></td>
+                  <td>${attemptStatusBadge(a.status)}</td>
+                  <td>
+                    <span class="er-badge ${tabCls}">${tabCnt} tab</span>
+                    ${fsCnt ? `<span class="er-badge er-badge-warn">${fsCnt} lần thoát toàn màn hình</span>` : ''}
+                  </td>
+                  <td>
+                    <strong>${esc(scoreTxt)}</strong>
+                    ${a.status !== 'in_progress' && a.gradingStatus === 'needs_manual' ? ' <span class="er-badge er-badge-warn">Điểm tạm</span>' : ''}
+                    <div style="font-size:11.5px;color:var(--er-muted);">${esc(GRADING_STATUS_LABELS[a.gradingStatus] || a.gradingStatus)}</div>
+                    ${adjTxt ? `<div style="font-size:11.5px;color:var(--er-warn);">${esc(adjTxt)}</div>` : ''}
+                  </td>
+                  <td>
+                    ${
+                      a.status === 'in_progress'
+                        ? `<button type="button" class="er-btn er-btn-danger er-btn-sm" data-er-action="lock-attempt" data-attempt-id="${esc(a.id)}">Khóa & thu bài</button>`
+                        : `<span style="font-size:12px;color:var(--er-muted);">${esc(formatDateTimeVi(a.submittedAt))}</span>`
+                    }
+                  </td>
+                </tr>
+              `;
+            })
+            .join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildMonitorTabHTML(room) {
+  return `
+    <div id="er-monitor-panel" style="display:flex;flex-direction:column;gap:12px;">
       <div class="er-card" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;">
-        <div class="er-btn-row">
-          <span class="er-badge er-badge-teal">Tổng lượt: ${attempts.length}</span>
-          <span class="er-badge er-badge-open">Đã nộp/Khóa: ${submitted}</span>
-          <span class="er-badge er-badge-draft">Đang làm: ${inProg}</span>
-          ${warned ? `<span class="er-badge er-badge-warn">Cảnh báo rời màn hình: ${warned}</span>` : ''}
+        <div id="er-monitor-badges" class="er-btn-row">
+          ${buildMonitorSummaryBadgesHTML(room)}
         </div>
         <div class="er-btn-row">
           <label class="er-check" style="font-size:12.5px;">
@@ -1017,76 +1158,9 @@ function buildMonitorTabHTML(room) {
         </div>
       </div>
 
-      ${
-        attempts.length
-          ? `<div class="er-table-wrap">
-               <table class="er-table">
-                 <thead>
-                   <tr>
-                     <th>Học sinh</th>
-                     <th>Lớp / SBD</th>
-                     <th>Mã đề</th>
-                     <th>Trạng thái</th>
-                     <th>Chuyển tab / Toàn màn hình</th>
-                     <th>Điểm số</th>
-                     <th>Thao tác</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   ${attempts
-                     .map((a) => {
-                       const tabCnt = Number(a.tabSwitchCount || 0);
-                       const fsCnt = Number(a.fullscreenExitCount || 0);
-                       const limit = Number(room.maxTabSwitches || 0);
-                       const tabCls =
-                         limit > 0 && tabCnt > limit
-                           ? 'er-badge-danger'
-                           : tabCnt > 0
-                             ? 'er-badge-warn'
-                             : 'er-badge-open';
-                       const scoreTxt =
-                         a.status === 'in_progress'
-                           ? 'Đang làm'
-                           : `${formatPointsVi(a.totalScoreP100)} / ${formatPointsVi(a.totalPointsP100)}`;
-                       const adjP100 = Number(a.scoreAdjustmentP100 || 0);
-                       const adjTxt = adjP100 !== 0
-                         ? `Điều chỉnh: ${adjP100 > 0 ? '+' : ''}${formatPointsVi(adjP100)} đ${a.adjustmentNote ? ` (${a.adjustmentNote})` : ''}`
-                         : '';
-                       return `
-                         <tr>
-                           <td>
-                             <strong>${esc(a.studentName)}</strong>
-                             <div style="font-size:11.5px;color:var(--er-muted);">Lượt ${esc(a.attemptNo)} · Bắt đầu ${esc(formatDateTimeVi(a.startedAt))}</div>
-                           </td>
-                           <td>${esc(a.studentClass || '—')}${a.studentCode ? ` · ${esc(a.studentCode)}` : ''}</td>
-                           <td><span class="er-code">${esc(a.variantCode || 'Gốc')}</span></td>
-                           <td>${attemptStatusBadge(a.status)}</td>
-                           <td>
-                             <span class="er-badge ${tabCls}">${tabCnt} tab</span>
-                             ${fsCnt ? `<span class="er-badge er-badge-warn">${fsCnt} lần thoát toàn màn hình</span>` : ''}
-                           </td>
-                           <td>
-                             <strong>${esc(scoreTxt)}</strong>
-                             ${a.status !== 'in_progress' && a.gradingStatus === 'needs_manual' ? ' <span class="er-badge er-badge-warn">Điểm tạm</span>' : ''}
-                             <div style="font-size:11.5px;color:var(--er-muted);">${esc(GRADING_STATUS_LABELS[a.gradingStatus] || a.gradingStatus)}</div>
-                             ${adjTxt ? `<div style="font-size:11.5px;color:var(--er-warn);">${esc(adjTxt)}</div>` : ''}
-                           </td>
-                           <td>
-                             ${
-                               a.status === 'in_progress'
-                                 ? `<button type="button" class="er-btn er-btn-danger er-btn-sm" data-er-action="lock-attempt" data-attempt-id="${esc(a.id)}">Khóa & thu bài</button>`
-                                 : `<span style="font-size:12px;color:var(--er-muted);">${esc(formatDateTimeVi(a.submittedAt))}</span>`
-                             }
-                           </td>
-                         </tr>
-                       `;
-                     })
-                     .join('')}
-                 </tbody>
-               </table>
-             </div>`
-          : `<div class="er-empty">Chưa có học sinh nào tham gia phòng <strong>${esc(room.roomCode)}</strong>. Hãy chia sẻ mã hoặc mã QR ở tab Chia sẻ.</div>`
-      }
+      <div id="er-monitor-results">
+        ${buildMonitorResultsHTML(room)}
+      </div>
     </div>
   `;
 }
@@ -1399,7 +1473,7 @@ function buildAnswerKeysTabHTML(room) {
             if (k.type === 'mcq') {
               const opts = Array.isArray(k.options) ? k.options : [];
               inputHTML = `
-                <select name="key_mcq_${esc(k.questionId)}" data-regrade-qid="${esc(k.questionId)}" data-regrade-type="mcq" style="padding:6px 10px;border:1px solid var(--er-border);border-radius:6px;">
+                <select name="key_mcq_${esc(k.questionId)}" data-regrade-qid="${esc(k.questionId)}" data-regrade-type="mcq" aria-label="Đáp án đúng Câu ${esc(k.order)}" style="padding:6px 10px;border:1px solid var(--er-border);border-radius:6px;">
                   ${opts
                     .map((opt, idx) => {
                       const letter = String.fromCharCode(65 + idx);
@@ -1427,7 +1501,7 @@ function buildAnswerKeysTabHTML(room) {
               `;
             } else if (k.type === 'short') {
               inputHTML = `
-                <input type="text" name="key_short_${esc(k.questionId)}" data-regrade-qid="${esc(k.questionId)}" data-regrade-type="short" value="${esc(k.answerText || '')}" style="width:100%;max-width:260px;padding:6px 10px;border:1px solid var(--er-border);border-radius:6px;" placeholder="Nhập đáp án đúng…">
+                <input type="text" name="key_short_${esc(k.questionId)}" data-regrade-qid="${esc(k.questionId)}" data-regrade-type="short" aria-label="Đáp án đúng Câu ${esc(k.order)}" value="${esc(k.answerText || '')}" style="width:100%;max-width:260px;padding:6px 10px;border:1px solid var(--er-border);border-radius:6px;" placeholder="Nhập đáp án đúng…">
               `;
             } else {
               inputHTML = `<span style="font-size:12.5px;color:var(--er-muted);">Câu tự luận (chấm ở tab Chấm tự luận)</span>`;
@@ -1494,64 +1568,253 @@ function buildShellHTML(c) {
             <button type="button" class="er-btn er-btn-sm ${state.scopeFilter === 'all' ? 'er-btn-soft' : ''}" data-er-action="scope-filter" data-scope="all">Tất cả phòng của tôi (${state.rooms.length})</button>
           </div>
         </div>
-        ${
-          visibleRooms.length
-            ? `<div class="er-room-pills">
-                 ${visibleRooms
-                   .map(
-                     (r) => `
-                     <button type="button" class="er-room-pill ${r.id === state.selectedRoomId ? 'is-active' : ''}" data-er-action="select-room" data-room-id="${esc(r.id)}">
-                       <div class="er-pill-top">
-                         <span class="er-code">${esc(r.roomCode)}</span>
-                         ${roomStatusBadge(r.status)}
-                       </div>
-                       <div style="font-weight:600;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.title)}</div>
-                       <div style="font-size:11.5px;color:var(--er-muted);">
-                         ${r.mode === 'homework' ? 'Bài tập' : 'Thi'} · ${esc(r.attemptCount || 0)} lượt
-                         ${r.needsManualCount > 0 ? ` · <span style="color:var(--er-warn);font-weight:700;">${r.needsManualCount} chờ chấm</span>` : ''}
-                       </div>
-                     </button>
-                   `,
-                   )
-                   .join('')}
-               </div>`
-            : `<div class="er-empty">Chưa có phòng nào${state.scopeFilter === 'exam' ? ' cho đề thi đang mở' : ''}. Nhấn <strong>Mở phòng ngay (1 chạm)</strong> ở trên để phát hành cho học sinh.</div>`
-        }
+      ${
+        visibleRooms.length
+          ? `<div class="er-room-pills">
+               ${visibleRooms
+                 .map(
+                   (r) => `
+                   <button type="button" class="er-room-pill ${r.id === state.selectedRoomId ? 'is-active' : ''}" data-er-action="select-room" data-room-id="${esc(r.id)}">
+                     <div class="er-pill-top">
+                       <span class="er-code">${esc(r.roomCode)}</span>
+                       ${roomStatusBadge(r.status)}
+                     </div>
+                     <div style="font-weight:600;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.title)}</div>
+                     <div data-er-pill-meta="${esc(r.id)}" style="font-size:11.5px;color:var(--er-muted);">
+                       ${r.mode === 'homework' ? 'Bài tập' : 'Thi'} · ${esc(r.attemptCount || 0)} lượt
+                       ${r.needsManualCount > 0 ? ` · <span style="color:var(--er-warn);font-weight:700;">${r.needsManualCount} chờ chấm</span>` : ''}
+                     </div>
+                   </button>
+                 `,
+                 )
+                 .join('')}
+             </div>`
+          : `<div class="er-empty">Chưa có phòng nào${state.scopeFilter === 'exam' ? ' cho đề thi đang mở' : ''}. Nhấn <strong>Mở phòng ngay (1 chạm)</strong> ở trên để phát hành cho học sinh.</div>`
+      }
       </div>
 
       ${
         active
-          ? `<div class="er-card" style="display:flex;flex-direction:column;gap:14px;">
-               <div class="er-tabs">
-                 <button type="button" class="er-tab ${state.activeTab === 'share' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="share">Chia sẻ & Cấu hình</button>
-                 <button type="button" class="er-tab ${state.activeTab === 'monitor' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="monitor">Giám sát trực tiếp (${active.attemptCount ?? state.roomDetail?.attempts?.length ?? 0})</button>
-                 <button type="button" class="er-tab ${state.activeTab === 'grading' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="grading">Chấm tự luận ${active.needsManualCount > 0 ? `(${active.needsManualCount})` : ''}</button>
-                 <button type="button" class="er-tab ${state.activeTab === 'analytics' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="analytics">Thống kê & Excel</button>
-                 <button type="button" class="er-tab ${state.activeTab === 'keys' ? 'is-active' : ''}" data-er-action="switch-tab" data-tab="keys">Đáp án & Chấm lại</button>
-               </div>
-               ${
-                 state.activeTab === 'share'
-                   ? buildShareTabHTML(active)
-                   : state.activeTab === 'monitor'
-                     ? buildMonitorTabHTML(active)
-                     : state.activeTab === 'grading'
-                       ? buildGradingTabHTML()
-                       : state.activeTab === 'keys'
-                         ? buildAnswerKeysTabHTML(active)
-                         : buildAnalyticsTabHTML(active)
-               }
-             </div>`
+          ? (() => {
+              const tabs = [
+                { id: 'share', label: 'Chia sẻ & Cấu hình' },
+                {
+                  id: 'monitor',
+                  label: `Giám sát trực tiếp (${active.attemptCount ?? state.roomDetail?.attempts?.length ?? 0})`,
+                },
+                {
+                  id: 'grading',
+                  label:
+                    active.needsManualCount > 0
+                      ? `Chấm tự luận (${active.needsManualCount})`
+                      : 'Chấm tự luận',
+                },
+                { id: 'analytics', label: 'Thống kê & Excel' },
+                { id: 'keys', label: 'Đáp án & Chấm lại' },
+              ];
+              const activeTabId = VALID_TABS.includes(state.activeTab) ? state.activeTab : 'share';
+              const panelHTML =
+                activeTabId === 'share'
+                  ? buildShareTabHTML(active)
+                  : activeTabId === 'monitor'
+                    ? buildMonitorTabHTML(active)
+                    : activeTabId === 'grading'
+                      ? buildGradingTabHTML()
+                      : activeTabId === 'keys'
+                        ? buildAnswerKeysTabHTML(active)
+                        : buildAnalyticsTabHTML(active);
+              return `<div class="er-card" style="display:flex;flex-direction:column;gap:14px;">
+                <div class="er-tabs" role="tablist" aria-label="Quản lý phòng thi">
+                  ${tabs
+                    .map((t) => {
+                      const isActive = activeTabId === t.id;
+                      return `<button type="button" id="er-tab-${t.id}" class="er-tab ${isActive ? 'is-active' : ''}" role="tab" aria-selected="${isActive ? 'true' : 'false'}" aria-controls="er-tabpanel-${t.id}" tabindex="${isActive ? '0' : '-1'}" data-er-action="switch-tab" data-tab="${t.id}">${esc(t.label)}</button>`;
+                    })
+                    .join('')}
+                </div>
+                <div id="er-tabpanel-${activeTabId}" class="er-tabpanel" role="tabpanel" aria-labelledby="er-tab-${activeTabId}">
+                  ${panelHTML}
+                </div>
+              </div>`;
+            })()
           : ''
       }
     </div>
   `;
 }
 
-function renderShell(c) {
+const VALID_TABS = ['share', 'monitor', 'grading', 'analytics', 'keys'];
+
+function escapeAttrValue(val) {
+  const s = String(val ?? '');
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(s);
+  }
+  return s.replace(/["\\]/g, '\\$&');
+}
+
+function captureScrollState(wrapper) {
+  if (!wrapper) return null;
+  const tables = [];
+  if (typeof wrapper.querySelectorAll === 'function') {
+    wrapper.querySelectorAll('.er-table-wrap').forEach((el, idx) => {
+      tables.push({ idx, top: el.scrollTop || 0, left: el.scrollLeft || 0 });
+    });
+  }
+  return {
+    wrapperTop: wrapper.scrollTop || 0,
+    wrapperLeft: wrapper.scrollLeft || 0,
+    tables,
+  };
+}
+
+function restoreScrollState(wrapper, snap) {
+  if (!snap || !wrapper) return;
+  wrapper.scrollTop = snap.wrapperTop;
+  wrapper.scrollLeft = snap.wrapperLeft;
+  if (typeof wrapper.querySelectorAll === 'function') {
+    const tables = wrapper.querySelectorAll('.er-table-wrap');
+    for (const entry of snap.tables || []) {
+      const tbl = tables[entry.idx];
+      if (tbl) {
+        tbl.scrollTop = entry.top;
+        tbl.scrollLeft = entry.left;
+      }
+    }
+  }
+}
+
+function captureFocusState(wrapper) {
+  if (!wrapper || typeof document === 'undefined') return null;
+  const active = document.activeElement;
+  if (!active || active === document.body) return null;
+  if (typeof wrapper.contains === 'function' && !wrapper.contains(active)) return null;
+
+  let selectionStart = null;
+  let selectionEnd = null;
+  try {
+    if (typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number') {
+      selectionStart = active.selectionStart;
+      selectionEnd = active.selectionEnd;
+    }
+  } catch {
+    // Ignore selection read errors on number/date inputs
+  }
+
+  let selector = '';
+  let fallbackSelector = '';
+  if (active.id) {
+    selector = `#${escapeAttrValue(active.id)}`;
+  } else if (active.dataset?.erAction) {
+    const action = active.dataset.erAction;
+    const parts = [`[data-er-action="${escapeAttrValue(action)}"]`];
+    if (active.dataset.tab) parts.push(`[data-tab="${escapeAttrValue(active.dataset.tab)}"]`);
+    if (active.dataset.roomId) parts.push(`[data-room-id="${escapeAttrValue(active.dataset.roomId)}"]`);
+    if (active.dataset.scope) parts.push(`[data-scope="${escapeAttrValue(active.dataset.scope)}"]`);
+    if (active.dataset.attemptId) parts.push(`[data-attempt-id="${escapeAttrValue(active.dataset.attemptId)}"]`);
+    if (active.dataset.origin) parts.push(`[data-origin="${escapeAttrValue(active.dataset.origin)}"]`);
+    if (active.dataset.score !== undefined) parts.push(`[data-score="${escapeAttrValue(active.dataset.score)}"]`);
+    if (active.dataset.adjust !== undefined) parts.push(`[data-adjust="${escapeAttrValue(active.dataset.adjust)}"]`);
+    if (active.dataset.copy) parts.push(`[data-copy="${escapeAttrValue(active.dataset.copy)}"]`);
+    const parentForm = active.closest?.('form[data-attempt-id]');
+    if (parentForm) {
+      const pAtt = parentForm.dataset.attemptId;
+      const pQid = parentForm.dataset.questionId;
+      if (pAtt && pQid) {
+        selector = `form[data-attempt-id="${escapeAttrValue(pAtt)}"][data-question-id="${escapeAttrValue(pQid)}"] ${parts.join('')}`;
+      } else if (pAtt) {
+        selector = `form[data-attempt-id="${escapeAttrValue(pAtt)}"] ${parts.join('')}`;
+      }
+    }
+    if (!selector) selector = parts.join('');
+    if (action === 'lock-attempt') {
+      fallbackSelector = '#er-autorefresh-chk, [data-er-action="refresh-room"], [role="tab"][aria-selected="true"]';
+    }
+  } else if (active.name) {
+    const form = active.closest?.('form');
+    if (form?.id) {
+      selector = `#${escapeAttrValue(form.id)} [name="${escapeAttrValue(active.name)}"]`;
+    } else if (form?.dataset?.attemptId && form?.dataset?.questionId) {
+      selector = `form[data-attempt-id="${escapeAttrValue(form.dataset.attemptId)}"][data-question-id="${escapeAttrValue(form.dataset.questionId)}"] [name="${escapeAttrValue(active.name)}"]`;
+      fallbackSelector = '#er-pending-only-chk, [role="tab"][aria-selected="true"]';
+    } else if (form?.dataset?.attemptId) {
+      selector = `form[data-attempt-id="${escapeAttrValue(form.dataset.attemptId)}"] [name="${escapeAttrValue(active.name)}"]`;
+    } else {
+      selector = `[name="${escapeAttrValue(active.name)}"]`;
+    }
+  } else if (active.classList?.contains('er-rubric-step-chk')) {
+    const card = active.closest?.('[data-grade-card]');
+    if (card?.dataset?.gradeCard) {
+      selector = `[data-grade-card="${escapeAttrValue(card.dataset.gradeCard)}"] .er-rubric-step-chk`;
+      fallbackSelector = '#er-pending-only-chk, [role="tab"][aria-selected="true"]';
+    }
+  } else if (active.getAttribute?.('type') === 'submit') {
+    const form = active.closest?.('form');
+    if (form?.id) {
+      selector = `#${escapeAttrValue(form.id)} button[type="submit"]`;
+    } else if (form?.dataset?.attemptId && form?.dataset?.questionId) {
+      selector = `form[data-attempt-id="${escapeAttrValue(form.dataset.attemptId)}"][data-question-id="${escapeAttrValue(form.dataset.questionId)}"] button[type="submit"]`;
+      fallbackSelector = '.er-grade-form .er-score-input, #er-pending-only-chk, [role="tab"][aria-selected="true"]';
+    } else if (form?.dataset?.attemptId) {
+      selector = `form[data-attempt-id="${escapeAttrValue(form.dataset.attemptId)}"] button[type="submit"]`;
+    }
+  }
+
+  if (!selector) return null;
+  let index = 0;
+  if (typeof wrapper.querySelectorAll === 'function') {
+    const matches = Array.from(wrapper.querySelectorAll(selector));
+    const idx = matches.indexOf(active);
+    if (idx >= 0) index = idx;
+  }
+  return { selector, index, fallbackSelector, selectionStart, selectionEnd };
+}
+
+function restoreFocusState(wrapper, snap) {
+  if (!snap || !wrapper || typeof wrapper.querySelectorAll !== 'function') return false;
+  const matches = Array.from(wrapper.querySelectorAll(snap.selector));
+  let target = matches[snap.index] || matches[0] || null;
+  if (target?.disabled) target = null;
+  if (!target && snap.fallbackSelector) {
+    const fallback = wrapper.querySelector(snap.fallbackSelector);
+    if (fallback && !fallback.disabled) target = fallback;
+  }
+  if (!target || typeof target.focus !== 'function') return false;
+  try {
+    target.focus({ preventScroll: true });
+  } catch {
+    target.focus();
+  }
+  if (
+    snap.selectionStart !== null &&
+    snap.selectionEnd !== null &&
+    typeof target.setSelectionRange === 'function'
+  ) {
+    try {
+      target.setSelectionRange(snap.selectionStart, snap.selectionEnd);
+    } catch {
+      // Ignore setSelectionRange errors on unsupported input types
+    }
+  }
+  return true;
+}
+
+function renderShell(c, options = {}) {
   const host = document.getElementById('exam-rooms-shell');
   if (!host) return;
   const wrapper = host.parentElement;
   if (!wrapper) return;
+  const scrollSnap = options.resetScroll ? null : captureScrollState(wrapper);
+  const focusSnap = options.focusTargetSelector
+    ? {
+        selector: options.focusTargetSelector,
+        index: 0,
+        fallbackSelector: options.fallbackSelector || '',
+        selectionStart: null,
+        selectionEnd: null,
+      }
+    : captureFocusState(wrapper);
+
   wrapper.innerHTML = buildShellHTML(c);
   if (typeof window !== 'undefined' && typeof window.renderMathInElement === 'function') {
     try {
@@ -1567,6 +1830,8 @@ function renderShell(c) {
     }
   }
   bindShellEvents(c);
+  restoreFocusState(wrapper, focusSnap);
+  if (scrollSnap) restoreScrollState(wrapper, scrollSnap);
 }
 
 async function refreshQrImage(c) {
@@ -1602,21 +1867,21 @@ async function loadRooms(c, { preferredRoomId = '' } = {}) {
 }
 
 async function loadActiveTabData(c) {
+  const tab = state.activeTab;
   const room = selectedRoom();
   if (!room) return;
   if (state.activeTab === 'share') {
     await refreshQrImage(c);
-  } else if (state.activeTab === 'monitor' || state.activeTab === 'keys') {
-    state.roomDetail = await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}`);
-    if (state.roomDetail?.room) {
-      const idx = state.rooms.findIndex((r) => r.id === room.id);
-      if (idx >= 0) state.rooms[idx] = state.roomDetail.room;
-    }
+  } else if (tab === 'monitor' || tab === 'keys') {
+    await loadRoomDetail(c, room.id, tab);
   } else if (state.activeTab === 'grading') {
-    state.gradingQueue = await roomApi(
+    const session = state;
+    const queue = await roomApi(
       c,
       `/api/rooms/${encodeURIComponent(room.id)}/grading-queue?includeGraded=true`,
     );
+    if (state !== session || state.activeTab !== tab || state.selectedRoomId !== room.id) return;
+    state.gradingQueue = queue;
     const idx = state.rooms.findIndex((r) => r.id === room.id);
     if (idx >= 0 && state.gradingQueue) {
       if (state.gradingQueue.pendingCount != null) {
@@ -1628,7 +1893,10 @@ async function loadActiveTabData(c) {
       }
     }
   } else if (state.activeTab === 'analytics') {
-    state.analytics = await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}/analytics`);
+    const session = state;
+    const analytics = await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}/analytics`);
+    if (state !== session || state.activeTab !== tab || state.selectedRoomId !== room.id) return;
+    state.analytics = analytics;
     const idx = state.rooms.findIndex((r) => r.id === room.id);
     if (idx >= 0 && state.analytics) {
       const nextAttempts =
@@ -1645,8 +1913,153 @@ async function loadActiveTabData(c) {
   }
 }
 
-function syncPolling(c) {
+async function loadRoomDetail(c, roomId, tab, signal) {
+  const epoch = ++detailLoadEpoch;
+  const session = state;
+  const detail = await roomApi(c, `/api/rooms/${encodeURIComponent(roomId)}`, { signal });
+  if (
+    signal?.aborted ||
+    epoch !== detailLoadEpoch ||
+    state !== session ||
+    state.activeTab !== tab ||
+    state.selectedRoomId !== roomId ||
+    (signal && !shouldPollMonitor())
+  ) {
+    return false;
+  }
+  state.roomDetail = detail;
+  const idx = state.rooms.findIndex((room) => room.id === roomId);
+  if (idx >= 0 && detail?.room) state.rooms[idx] = detail.room;
+  return true;
+}
+
+function isDocumentHidden() {
+  if (typeof document === 'undefined') return false;
+  return document.hidden === true || document.visibilityState === 'hidden';
+}
+
+function shouldPollMonitor() {
+  if (typeof document === 'undefined') return false;
+  const dialog = document.getElementById('dialog');
+  return Boolean(
+    dialog?.open &&
+      document.getElementById('exam-rooms-shell') &&
+      state.activeTab === 'monitor' &&
+      !state.loading &&
+      !state.loadingTab &&
+      state.autoRefresh &&
+      selectedRoom() &&
+      !isDocumentHidden(),
+  );
+}
+
+function updateMonitorInPlace(c) {
+  if (typeof document === 'undefined') return;
+  const shell = document.getElementById('exam-rooms-shell');
+  const room = selectedRoom();
+  const badgesEl = document.getElementById('er-monitor-badges');
+  const resultsEl = document.getElementById('er-monitor-results');
+  if (!shell || !room || !badgesEl || !resultsEl || state.error) {
+    renderShell(c);
+    return;
+  }
+  const wrapper = shell.parentElement;
+  const scrollSnap = captureScrollState(wrapper);
+  const activeEl = document.activeElement;
+  const focusInResults = Boolean(
+    activeEl && typeof resultsEl.contains === 'function' && resultsEl.contains(activeEl),
+  );
+  const focusSnap = focusInResults ? captureFocusState(resultsEl) : null;
+
+  badgesEl.innerHTML = buildMonitorSummaryBadgesHTML(room);
+  resultsEl.innerHTML = buildMonitorResultsHTML(room);
+
+  const monitorTabEl = shell.querySelector('[data-er-action="switch-tab"][data-tab="monitor"]');
+  if (monitorTabEl) {
+    const cnt = room.attemptCount ?? state.roomDetail?.attempts?.length ?? 0;
+    monitorTabEl.textContent = `Giám sát trực tiếp (${cnt})`;
+  }
+  const gradingTabEl = shell.querySelector('[data-er-action="switch-tab"][data-tab="grading"]');
+  if (gradingTabEl) {
+    gradingTabEl.textContent =
+      room.needsManualCount > 0 ? `Chấm tự luận (${room.needsManualCount})` : 'Chấm tự luận';
+  }
+  const pillMeta = shell.querySelector(`[data-er-pill-meta="${escapeAttrValue(room.id)}"]`);
+  if (pillMeta) {
+    pillMeta.innerHTML = `${room.mode === 'homework' ? 'Bài tập' : 'Thi'} · ${esc(room.attemptCount || 0)} lượt${
+      room.needsManualCount > 0
+        ? ` · <span style="color:var(--er-warn);font-weight:700;">${rCountText(room.needsManualCount)}</span>`
+        : ''
+    }`;
+  }
+
+  if (focusSnap) {
+    const restored = restoreFocusState(resultsEl, focusSnap);
+    if (!restored && focusSnap.fallbackSelector) {
+      const fb = shell.querySelector(focusSnap.fallbackSelector);
+      if (fb && typeof fb.focus === 'function') {
+        try {
+          fb.focus({ preventScroll: true });
+        } catch {
+          fb.focus();
+        }
+      }
+    }
+  }
+  restoreScrollState(wrapper, scrollSnap);
+}
+
+function rCountText(count) {
+  return `${count} chờ chấm`;
+}
+
+async function runMonitorRefresh(c) {
+  if (!shouldPollMonitor()) {
+    stopPolling();
+    return;
+  }
+  if (pollRequest) return;
+  const request = new AbortController();
+  pollRequest = request;
+  try {
+    if (await loadRoomDetail(c, state.selectedRoomId, 'monitor', request.signal)) {
+      if (!request.signal.aborted && shouldPollMonitor()) updateMonitorInPlace(c);
+    }
+  } catch {
+    // Ignore transient poll error
+  } finally {
+    if (pollRequest === request) pollRequest = null;
+  }
+}
+
+function detachVisibilityListener() {
+  if (typeof document !== 'undefined' && visibilityHandler) {
+    document.removeEventListener('visibilitychange', visibilityHandler);
+  }
+  visibilityHandler = null;
+}
+
+function ensureVisibilityListener(c) {
+  if (typeof document === 'undefined') return;
+  if (visibilityHandler) return;
+  visibilityHandler = () => {
+    const ctx = activeCtx || c;
+    const dialog = document.getElementById('dialog');
+    if (!dialog?.open || !document.getElementById('exam-rooms-shell')) {
+      stopPolling();
+      detachVisibilityListener();
+      return;
+    }
+    syncPolling(ctx);
+    if (shouldPollMonitor()) void runMonitorRefresh(ctx);
+  };
+  document.addEventListener('visibilitychange', visibilityHandler);
+}
+
+function syncPolling(c = activeCtx) {
+  if (c) activeCtx = c;
   stopPolling();
+  if (typeof document === 'undefined') return;
   const dialog = document.getElementById('dialog');
   if (
     dialog?.open &&
@@ -1654,18 +2067,12 @@ function syncPolling(c) {
     state.autoRefresh &&
     selectedRoom()
   ) {
-    pollTimer = setInterval(async () => {
-      if (!document.getElementById('dialog')?.open || state.activeTab !== 'monitor') {
-        stopPolling();
-        return;
-      }
-      try {
-        await loadActiveTabData(c);
-        renderShell(c);
-      } catch {
-        // Ignore transient poll error
-      }
-    }, 5000);
+    ensureVisibilityListener(c);
+    if (shouldPollMonitor()) {
+      pollTimer = setInterval(() => runMonitorRefresh(activeCtx || c), 5000);
+    }
+  } else if (!dialog?.open) {
+    detachVisibilityListener();
   }
 }
 
@@ -1739,9 +2146,196 @@ async function createRoomFromPayload(c, payload) {
   notify(c, `Đã mở phòng ${created.roomCode}.`);
 }
 
+async function switchTab(c, nextTab, { focusTab = false } = {}) {
+  const targetTab = VALID_TABS.includes(nextTab) ? nextTab : 'share';
+  const epoch = ++tabLoadEpoch;
+  state.error = '';
+  state.confirmDeleteRoomId = '';
+  state.activeTab = targetTab;
+  state.loadingTab = targetTab;
+  renderShell(c, {
+    focusTargetSelector: focusTab ? `#er-tab-${escapeAttrValue(targetTab)}` : '',
+  });
+  syncPolling(c);
+  try {
+    await loadActiveTabData(c);
+  } catch (err) {
+    if (epoch !== tabLoadEpoch) return;
+    state.error = err.message || 'Không tải được dữ liệu tab.';
+  } finally {
+    if (epoch === tabLoadEpoch) {
+      state.loadingTab = '';
+      const stillInTabs =
+        typeof document !== 'undefined' &&
+        document.activeElement?.closest?.('.er-tabs');
+      renderShell(
+        c,
+        focusTab && stillInTabs
+          ? { focusTargetSelector: `#er-tab-${escapeAttrValue(targetTab)}` }
+          : {},
+      );
+      syncPolling(c);
+    }
+  }
+}
+
+function openDeleteRoomConfirmDialog(c, room, triggerBtn) {
+  if (!room) return;
+  if (
+    triggerBtn &&
+    typeof triggerBtn.focus === 'function' &&
+    typeof document !== 'undefined' &&
+    document.activeElement !== triggerBtn
+  ) {
+    try {
+      triggerBtn.focus({ preventScroll: true });
+    } catch {
+      triggerBtn.focus();
+    }
+  }
+  const dlg2 = typeof document !== 'undefined' ? document.getElementById('dialog-layer2') : null;
+  if (dlg2 && typeof c?.modal === 'function') {
+    state.pendingDeleteRoomId = room.id;
+    state.confirmDeleteRoomId = '';
+    c.modal(
+      `Xóa phòng ${esc(room.roomCode)}?`,
+      `<div class="er-confirm-delete" data-er-confirm-dialog="delete-room">
+         <p id="er-delete-confirm-desc">Xóa phòng <strong>${esc(room.roomCode)}</strong> (${esc(room.title)}) và toàn bộ bài làm trong phòng này?</p>
+         <p class="hint">Hành động này không thể hoàn tác. Danh sách lượt làm bài, điểm chấm tự luận và thống kê của phòng sẽ bị xóa vĩnh viễn.</p>
+         <div class="modal-foot">
+           <button type="button" id="er-cancel-delete-btn" data-action="close-top-modal" autofocus>Hủy</button>
+           <button type="button" id="er-confirm-delete-btn" class="danger" data-action="er-confirm-delete-room" data-room-id="${esc(room.id)}">Xóa phòng</button>
+         </div>
+       </div>`,
+      'Xác nhận trước khi xóa phòng thi.',
+      { layer: 2 },
+    );
+    dlg2.setAttribute?.('aria-describedby', 'er-delete-confirm-desc');
+    const confirmBox = dlg2.querySelector?.('.er-confirm-delete');
+    if (confirmBox) {
+      confirmBox.addEventListener('keydown', (ev) => {
+        if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+          const btns = Array.from(confirmBox.querySelectorAll('.modal-foot button:not([disabled])'));
+          const idx = btns.indexOf(document.activeElement);
+          if (idx >= 0 && btns.length > 1) {
+            ev.preventDefault();
+            const next =
+              ev.key === 'ArrowRight'
+                ? (idx + 1) % btns.length
+                : (idx - 1 + btns.length) % btns.length;
+            btns[next]?.focus?.();
+          }
+        }
+      });
+    }
+    const onLayer2Close = () => {
+      state.pendingDeleteRoomId = '';
+      dlg2.removeAttribute?.('aria-describedby');
+      dlg2.removeEventListener?.('close', onLayer2Close);
+    };
+    dlg2.addEventListener?.('close', onLayer2Close);
+    document.getElementById('er-cancel-delete-btn')?.focus?.();
+    return;
+  }
+
+  state.confirmDeleteRoomId = room.id;
+  renderShell(c, { focusTargetSelector: '#er-cancel-inline-delete-btn' });
+}
+
+async function executeDeleteRoom(c, roomId, triggerBtn) {
+  if (deleteInFlight) return;
+  const room = state.rooms.find((r) => r.id === roomId);
+  if (!room) return;
+  const session = state;
+  let deleted = false;
+  deleteInFlight = true;
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.textContent = 'Đang xóa…';
+  }
+  const dlg2 = typeof document !== 'undefined' ? document.getElementById('dialog-layer2') : null;
+  try {
+    await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}`, { method: 'DELETE' });
+    deleted = true;
+    notify(c, `Đã xóa phòng ${room.roomCode}.`);
+    if (state !== session) return;
+    state.pendingDeleteRoomId = '';
+    state.confirmDeleteRoomId = '';
+    state.rooms = state.rooms.filter((r) => r.id !== room.id);
+    state.selectedRoomId = state.rooms.find((r) => r.examId === c?.exam?.()?.id)?.id || state.rooms[0]?.id || '';
+    state.roomDetail = null;
+    state.gradingQueue = null;
+    state.analytics = null;
+    await loadRooms(c);
+    await loadActiveTabData(c);
+    if (state !== session) return;
+    if (dlg2?.open && dlg2.querySelector?.('.er-confirm-delete')) dlg2.close();
+    renderShell(c, {
+      focusTargetSelector: selectedRoom()
+        ? '[data-er-action="select-room"].is-active'
+        : '#er-quick-open-btn',
+      fallbackSelector: '#er-quick-open-btn',
+      resetScroll: true,
+    });
+    syncPolling(c);
+  } catch (err) {
+    if (state !== session) return;
+    state.pendingDeleteRoomId = '';
+    state.confirmDeleteRoomId = '';
+    if (dlg2?.open && dlg2.querySelector?.('.er-confirm-delete')) dlg2.close();
+    state.error = deleted
+      ? 'Đã xóa phòng nhưng chưa tải lại được danh sách.'
+      : err.message || 'Không thể xóa phòng thi.';
+    renderShell(c, {
+      focusTargetSelector: '[data-er-action="delete-room"]',
+      fallbackSelector: '#er-quick-open-btn',
+    });
+  } finally {
+    deleteInFlight = false;
+    if (triggerBtn?.isConnected) {
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = 'Xóa phòng';
+    }
+  }
+}
+
 function bindShellEvents(c) {
   const shell = document.getElementById('exam-rooms-shell');
   if (!shell) return;
+
+  shell.addEventListener('keydown', (ev) => {
+    const tabBtn = ev.target?.closest?.('.er-tabs [role="tab"][data-er-action="switch-tab"]');
+    if (
+      tabBtn &&
+      !ev.altKey &&
+      !ev.ctrlKey &&
+      !ev.metaKey &&
+      (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft' || ev.key === 'Home' || ev.key === 'End')
+    ) {
+      const tabs = Array.from(shell.querySelectorAll('.er-tabs [role="tab"][data-er-action="switch-tab"]'));
+      const idx = tabs.indexOf(tabBtn);
+      if (idx >= 0 && tabs.length) {
+        ev.preventDefault();
+        let nextIdx = idx;
+        if (ev.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
+        else if (ev.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
+        else if (ev.key === 'Home') nextIdx = 0;
+        else if (ev.key === 'End') nextIdx = tabs.length - 1;
+        const nextTab = tabs[nextIdx]?.dataset?.tab;
+        if (nextTab) {
+          void switchTab(c, nextTab, { focusTab: true });
+        }
+      }
+      return;
+    }
+
+    if (ev.key === 'Escape' && state.confirmDeleteRoomId) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      state.confirmDeleteRoomId = '';
+      renderShell(c, { focusTargetSelector: '[data-er-action="delete-room"]' });
+    }
+  });
 
   shell.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('[data-er-action]');
@@ -1772,6 +2366,7 @@ function bindShellEvents(c) {
       }
       if (action === 'scope-filter') {
         state.scopeFilter = btn.dataset.scope === 'all' ? 'all' : 'exam';
+        state.confirmDeleteRoomId = '';
         const visible =
           state.scopeFilter === 'exam' && c?.exam?.()?.id
             ? state.rooms.filter((r) => r.examId === c.exam().id)
@@ -1788,21 +2383,20 @@ function bindShellEvents(c) {
         return;
       }
       if (action === 'select-room') {
+        stopPolling();
         state.selectedRoomId = btn.dataset.roomId || '';
+        state.confirmDeleteRoomId = '';
         state.roomDetail = null;
         state.gradingQueue = null;
         state.analytics = null;
         state.qrBaseOrigin = typeof location !== 'undefined' ? location.origin : '';
         await loadActiveTabData(c);
-        renderShell(c);
+        renderShell(c, { resetScroll: true });
         syncPolling(c);
         return;
       }
       if (action === 'switch-tab') {
-        state.activeTab = btn.dataset.tab || 'share';
-        await loadActiveTabData(c);
-        renderShell(c);
-        syncPolling(c);
+        await switchTab(c, btn.dataset.tab || 'share', { focusTab: false });
         return;
       }
       if (action === 'copy-text') {
@@ -1850,19 +2444,18 @@ function bindShellEvents(c) {
       if (action === 'delete-room') {
         const room = selectedRoom();
         if (!room) return;
-        if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-          const ok = window.confirm(`Xóa phòng ${room.roomCode} và toàn bộ bài làm trong phòng này?`);
-          if (!ok) return;
+        openDeleteRoomConfirmDialog(c, room, btn);
+        return;
+      }
+      if (action === 'cancel-delete-room') {
+        state.confirmDeleteRoomId = '';
+        renderShell(c, { focusTargetSelector: '[data-er-action="delete-room"]' });
+        return;
+      }
+      if (action === 'confirm-delete-room') {
+        if (state.confirmDeleteRoomId && btn.dataset.roomId === state.confirmDeleteRoomId) {
+          await executeDeleteRoom(c, state.confirmDeleteRoomId, btn);
         }
-        await roomApi(c, `/api/rooms/${encodeURIComponent(room.id)}`, { method: 'DELETE' });
-        state.roomDetail = null;
-        state.gradingQueue = null;
-        state.analytics = null;
-        await loadRooms(c);
-        await loadActiveTabData(c);
-        renderShell(c);
-        syncPolling(c);
-        notify(c, `Đã xóa phòng ${room.roomCode}.`);
         return;
       }
       if (action === 'refresh-room' || action === 'refresh-grading' || action === 'refresh-analytics') {
@@ -2107,10 +2700,14 @@ function bindShellEvents(c) {
   });
 }
 
+let dialogCloseHandler = null;
+
 export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate = false } = {}) {
   if (c) activeCtx = c;
   injectStyles();
+  tabLoadEpoch += 1;
   stopPolling();
+  detachVisibilityListener();
   revokeQrUrl();
 
   state = {
@@ -2120,12 +2717,15 @@ export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate =
     gradingQueue: null,
     analytics: null,
     preflight: null,
-    activeTab: tab || 'share',
+    activeTab: VALID_TABS.includes(tab) ? tab : 'share',
     scopeFilter: c?.exam?.() ? 'exam' : 'all',
     onlyPendingGrading: true,
     createPanelOpen: !!openCreate,
     autoRefresh: true,
     loading: true,
+    loadingTab: '',
+    pendingDeleteRoomId: '',
+    confirmDeleteRoomId: '',
     error: '',
     qrBaseOrigin: typeof location !== 'undefined' ? location.origin : '',
   };
@@ -2138,12 +2738,18 @@ export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate =
 
   const dialog = document.getElementById('dialog');
   if (dialog) {
-    const onDialogClose = () => {
+    if (dialogCloseHandler) {
+      dialog.removeEventListener('close', dialogCloseHandler);
+    }
+    dialogCloseHandler = () => {
+      tabLoadEpoch += 1;
       stopPolling();
+      detachVisibilityListener();
       revokeQrUrl();
-      dialog.removeEventListener('close', onDialogClose);
+      dialog.removeEventListener('close', dialogCloseHandler);
+      dialogCloseHandler = null;
     };
-    dialog.addEventListener('close', onDialogClose);
+    dialog.addEventListener('close', dialogCloseHandler);
   }
 
   try {
@@ -2157,7 +2763,7 @@ export async function openExamRooms(c = activeCtx, { tab = 'share', openCreate =
     state.loading = false;
   }
 
-  renderShell(c);
+  renderShell(c, { resetScroll: true });
   syncPolling(c);
 }
 
@@ -2181,6 +2787,15 @@ export async function handleExamRoomAction(action, node, c = activeCtx) {
     case 'exam-room-grading':
       await openExamRooms(c, { tab: 'grading' });
       return true;
+    case 'er-confirm-delete-room':
+      if (
+        document.getElementById('dialog-layer2')?.open &&
+        state.pendingDeleteRoomId &&
+        node?.dataset?.roomId === state.pendingDeleteRoomId
+      ) {
+        await executeDeleteRoom(c, state.pendingDeleteRoomId, node);
+      }
+      return true;
     default:
       return false;
   }
@@ -2189,3 +2804,5 @@ export async function handleExamRoomAction(action, node, c = activeCtx) {
 export async function handleExamRoomSubmit() {
   return false;
 }
+
+export { buildShellHTML, renderShell, syncPolling };
