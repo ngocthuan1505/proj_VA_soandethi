@@ -798,3 +798,28 @@ Khi có thay đổi tiếp: thay nội dung hiện trạng bằng kết quả c�
   ZIP tại `outputs/workshop-2026-12-01/SoanDeThi-Workshop-2026-12-01.zip`, SHA-256 `e5647f3a95e35c8399f080acc2d6f6d6d4891061598f7aa71f28d4d815edbcf6`. Đã đối chiếu 251 tệp trong manifest với tệp nguồn do Git quản lý. Cài bản giải nén bằng `uv sync --frozen --no-dev` trong môi trường thiếu Node/npm. Chrome qua Playwright Core theo `example-skills:webapp-testing` tạo và lưu đề, sau đó mở lại đúng UUID và tiêu đề bằng phiên Chrome mới sau khi khởi động lại FastAPI.
 
   Pytest đạt 1.090 ca và 3 ca con, bỏ qua 5 ca. Ruff check/format, ty, 247 ca JavaScript, `check:team`, `kiem-ui-redesign.mjs` và 11/11 ca fixture IT đều đạt. Kiểm thử JavaScript dùng trực tiếp Node do máy thiếu lệnh npm. Bên thuyết trình có thể dẫn kết quả kiểm danh mục và lưu/mở lại từ bản phát hành. Báo cáo cục bộ ở `outputs/workshop-2026-12-01/kiem-d9923ef/`, gồm `zip-smoke.json`, `it/result.json`, `ui.json`, `js.txt` và `pytest.txt`.
+
+## 28/11/2026 — t2 · Số đo gốc FastAPI khi OCR và xuất PDF chạy đồng thời
+
+Đã đo HTTP loopback trên mã ứng dụng `ba9da49`, một worker Uvicorn ở tiến trình riêng, SQLite tạm và cổng hệ điều hành cấp. Máy đo chạy Windows 11 build 26200, Core i5-12450H, RAM khả dụng cho hệ điều hành 15,6 GiB, Python 3.12.16 và Chrome 158.0.8127.38.
+
+Chạy lại từ thư mục gốc bằng PowerShell với Chrome hoặc Edge có sẵn. [Script benchmark](../../backend/benchmark_fastapi.py)
+
+```powershell
+Set-Location backend
+uv sync --frozen
+$env:PYTHONPATH = 'src'
+uv run --frozen python benchmark_fastapi.py
+```
+
+- **Fixture.** PDF giả lập 20 trang ảnh xám 1440 × 1920, 5.205.743 byte. `POST /api/ocr` chọn trang 10 với `onlyNeedsOcr=true`, chạy phân tích và tách trang thật, rồi gọi adapter giả lập đợi 120 ms. Adapter kiểm tra PDF con đúng một trang. `POST /api/save-export` xuất PDF học sinh cho đề 40 câu bằng Chrome headless thật. Script tải tệp và kiểm chữ ký PDF cùng kích thước 146.614 byte trong hai lượt.
+- **Cách đo.** Mỗi lượt bỏ một vòng làm nóng, sau đó xen kẽ 12 cặp vòng rảnh và có tải. Mỗi vòng lên lịch 20 yêu cầu `GET /api/lesson-catalog` cách nhau 10 ms. Vòng có tải gửi yêu cầu xuất trước 50 ms, rồi gửi OCR cùng loạt yêu cầu đọc. Mỗi chế độ có 240 mẫu đọc. Trong cả hai lượt, toàn bộ mẫu có tải bắt đầu khi cả hai POST còn chờ phản hồi theo đồng hồ phía client. Đo từ lúc gọi HTTP đến khi đọc hết body. p95 lấy mẫu ở hạng làm tròn lên của 95% số mẫu.
+- **HTTP thực tế.** Cả hai chế độ trả 200 cho mọi mẫu đọc. Client gửi `Accept-Encoding: gzip, deflate` và `Origin` trùng địa chỉ loopback. Phản hồi đọc có `Content-Type=application/json` và `Content-Length=697095`, body 697.095 byte. Vắng `Content-Encoding`, `Cache-Control`, `ETag` và `Vary`. Hai POST đều trả 200 với body JSON 244 byte (OCR) và 126 byte (metadata xuất).
+
+| Lượt | Đọc rảnh p50 / p95 (ms) | Đọc có tải p50 / p95 (ms) | OCR p95 (ms, 12 mẫu) | Xuất p95 (ms, 12 mẫu) |
+| --- | ---: | ---: | ---: | ---: |
+| Gốc | 624,54 / 838,17 | 1.078,18 / 1.649,66 | 1.666,52 | 2.105,12 |
+| Lặp | 695,56 / 1.408,72 | 1.315,16 / 2.538,02 | 2.513,20 | 5.691,56 |
+
+- **Nghiệm thu t2.** p95 đọc tăng 1,97× ở lượt gốc và 1,80× ở lượt lặp. JSON thống kê lưu cục bộ tại `outputs/t2-fastapi-baseline.json` và `outputs/t2-fastapi-repeat.json`. `uv sync --frozen`, Ruff check/format và ty đạt. Pytest đạt 1.090 ca, bỏ qua 5 ca, có một cảnh báo deprecation của Starlette TestClient. Đã dùng modern-python, python-testing-patterns, python-performance-optimization và ponytail-review. Graphify chưa có đồ thị.
+- **Bàn giao cho bên lý thuyết và bước tối ưu.** Các số đo mô tả burst đọc danh mục và công việc PDF cục bộ với adapter giả lập. Lượt sau có thể dùng cùng script để so sánh trước/sau. Để đánh giá riêng ảnh hưởng của đoạn `pdf_pages` đồng bộ trong coroutine, cần đo thêm từng tác vụ riêng và đối chiếu bản thử `asyncio.to_thread`. Mức tăng p95 ở đây phản ánh tải gộp.
