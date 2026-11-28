@@ -4,6 +4,14 @@ Cập nhật: 24/11/2026.
 
 ## Hiện trạng đã kiểm
 
+### 28/11/2026 · Kiểm Phòng thi và Chấm điểm trên ZIP Workshop (t4)
+
+Hai commit `cf23844` và `aad96e9` đã chứa cả [mã Phòng thi](../../exam-rooms.js) và [test hồi quy](../../tests/uv64-rooms-proactive.test.mjs). Đã kiểm bản giải nén từ `15e2c41`, sau đó đóng lại từ `648ab5e` để lấy thay đổi Kho đề của t5. Bản sau có 251 tệp khớp từng byte với Git theo manifest, đạt kiểm tra CRC và rà các mẫu khóa. ZIP ở `outputs/workshop-2026-12-01/SoanDeThi-Workshop-2026-12-01.zip`, SHA-256 `ebb7d6bd71a0f2404a5a741c38774639df23ee6655c5569f60baac26ecca27a4`. FastAPI chạy từ bản giải nén với PATH thiếu cả Node và npm.
+
+- Chrome 158 chạy cùng một ca ở 1440×900, 1280×720 và 390×844. Hộp xóa đặt focus ban đầu ở **Hủy**. Escape trả focus về nút mở. Enter trên **Hủy** giữ phòng. Tab sang **Xóa** rồi Enter gửi đúng một DELETE và trả focus về nút mở phòng nhanh.
+- Khi chuyển sang tab khác trong 5,5 giây, bộ đếm ghi 0 GET giám sát. Khi quay lại có đúng 1 GET, nhận phản hồi lần lượt sau 27, 24 và 22 ms. Focus vẫn ở đúng điều khiển qua lần cập nhật. Hộp giữ cuộn dọc 125 px và bảng trên mobile giữ cuộn ngang 57 px.
+- Học sinh nghe hết lượt audio cuối và nộp bài. Giáo viên đổi khóa đáp án, chấm lại trắc nghiệm, lưu tự luận 4 điểm rồi xem phổ điểm ghi nhận đúng một bài 4/10. Cả ba lượt có 0 lỗi console/JavaScript (thiếu skill `webapp-testing`/`frontend-design`/`emil-design-eng`/`web-design-guidelines`, kiểm trực tiếp bằng `playwright-core`). Hồi quy đạt: `tests/uv64-rooms-proactive.test.mjs` 11/11, toàn bộ JS 259/259, `check-team` OK, `pytest tests/test_exam_rooms.py` 15/15, `ruff`/`ruff format` (145 tệp)/`ty` sạch. Bên thuyết trình có thể dùng ba ảnh xác nhận xóa và nhật ký `t4-review-final-chrome.json` tại `outputs/workshop-2026-12-01/t4-cycle2-648ab5e/`.
+
 ### 28/11/2026 · Mở chiến dịch từ nhắc hạn bằng bàn phím (t6)
 
 Trong [Trang chủ](../../home.js), nút **Mở chiến dịch** của nhắc hạn dùng `targetId`. Nút **Đã xong** và **Hoãn 4 giờ** vẫn dùng ID của nhắc hạn. Nếu chiến dịch vắng trong digest, ứng dụng gọi `GET /api/campaigns` của workspace hiện tại và tìm đúng ID.
