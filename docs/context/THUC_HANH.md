@@ -1,8 +1,15 @@
 # Bàn giao: xây app và kiểm thử
 
-Cập nhật: 24/11/2026.
+Cập nhật: 28/11/2026.
 
 ## Hiện trạng đã kiểm
+
+### 28/11/2026 · Đóng gói, kiểm định ZIP Workshop cuối và phát hành (t10 vòng 2 trên `a51656b`)
+
+- **Đóng gói & toàn vẹn ZIP:** Đóng mới `outputs/workshop-2026-12-01/SoanDeThi-Workshop-2026-12-01.zip` (`3.096.875 B`, `SHA-256: af8ac62128a2ff372b1f0e5808a68af52b279b654540abaa624dfd4ae97446a3`, khớp tệp `.sha256`) từ cây sạch `a51656b2fd4e4891cd5f4854412264dfba90ce10` (bao gồm trọn vẹn các bản sửa đã nghiệm thu ở vòng 2: t4 `cf23844`/`aad96e9`, t5 `626d46a`/`e397097`/`648ab5e`, t6 `cc27a04`, bằng chứng OCR PDF 390px `14b0ae7`, và nghiệm thu t9 `82ed32e`). Kiểm tra `testzip()` đạt, `252` mục (`251` tệp + `MANIFEST.json`), `251/251` tệp khớp từng byte với manifest và nguồn Git, `0` tệp cấm (`.env`/`.data`/`.runtime`/`node_modules`/`__pycache__`/`ModuleAnalysisCache`), `0` chuỗi khóa/secret, và xác nhận `exam-rooms.js` trong ZIP không còn `window.confirm` và đã có `document.hidden`.
+- **Kiểm giải nén sạch không Node/npm & giữ UUID sau restart (`outputs/workshop-2026-12-01/t10-cycle2-zip-smoke.json`):** Giải nén ZIP ra thư mục tạm ngoài repo, chạy FastAPI từ bản giải nén với `PATH` đã loại bỏ hoàn toàn Node và npm (`nodeOnServerPath: false`, `npmOnServerPath: false`) trên Chrome `158.0.8127.38` (thiếu skill `webapp-testing`/`frontend-design`/`emil-design-eng`/`web-design-guidelines`, kiểm trực tiếp bằng `playwright-core`). Lưu đề trên cổng `50482`, xác nhận `PUT /api/kv` với `If-Match: 0` trả HTTP `409`, tắt server rồi khởi động lại FastAPI trên cổng `52961` cùng thư mục dữ liệu và mở lại từ Kho đề: giữ nguyên UUID `efab481c-7462-4246-8f0a-054da081642a` và tiêu đề `"Đề kiểm chứng ZIP T10 vòng 2 · UUID"`, `0` `pageErrors`, `0` lỗi console ngoài `409` mong đợi.
+- **Ranh giới Tú & thay đổi tệp dùng chung (`ba9da49..a51656b`):** `0` tệp trong vùng Soạn đề của Tú bị sửa. Các tệp dùng chung chỉ chỉnh phần ngoài trang Soạn đề: [`app.js`](../../app.js) (`mountDesign` trên `#home`, `syncHomeUrl`, chặn lỗi `persist()` thoát ra ngoài khi mở đề lúc mất kết nối), [`mvp.js`](../../mvp.js) (phản hồi tiếng Việt `role="status"`/`role="alert"`, nút `Thử lại`, luồng tải JSON bộ đã chọn ở Kho đề), và [`assets/layout.css`](../../assets/layout.css) (nâng tương phản `.sgk-tab.is-active`/`.qbank-badge-*`/`.analytics-jump`, hết chồng lấn header `1440×900`, hiển thị nút Chia sẻ và vùng chạm `>= 40px` trên `390×844`).
+- **Tác động bên thuyết trình & việc còn lại:** Có thể dùng trọn bộ bằng chứng trên `a51656b` (kèm báo cáo `t10-cycle2-zip-smoke.json`, ảnh OCR 390px `docs/testing/t1-l7/` và ảnh Phòng thi `t4-cycle2-648ab5e/`) cho Workshop 01/12/2026. Chưa đụng GreenNode; các cổng con người (diễn tập GreenNode của Thuận, phỏng vấn người dùng thật `#26/CT-01`, kiểm AI model thật có phí) giữ nguyên tách bạch.
 
 ### 28/11/2026 · Nghiệm thu tích hợp vòng 2 (t9) trên `82ed32e`
 
