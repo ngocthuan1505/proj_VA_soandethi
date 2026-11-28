@@ -883,6 +883,12 @@ function createFakeRoomsDom({ includeLayer2 = true } = {}) {
         if (part.includes('[data-er-action="select-room"]')) {
           return node.dataset?.erAction === 'select-room' && (!part.includes('.is-active') || node.classList.contains('is-active'));
         }
+        if (part.includes('[data-er-action="scope-filter"]')) {
+          return (
+            node.dataset?.erAction === 'scope-filter' &&
+            (!part.includes('data-scope') || part.includes(`"${node.dataset.scope}"`))
+          );
+        }
         if (part.includes('[data-er-action]')) return Boolean(node.dataset?.erAction);
         if (part === '[role="tab"][aria-selected="true"]') {
           return node.getAttribute('role') === 'tab' && node.getAttribute('aria-selected') === 'true';
@@ -923,6 +929,7 @@ function createFakeRoomsDom({ includeLayer2 = true } = {}) {
   let inlineCancelBtn = null;
   let inlineConfirmBtn = null;
   let activePillBtn = null;
+  let scopeFilterBtns = [];
   let quickOpenBtn = null;
   let layer2CancelBtn = null;
   let layer2ConfirmBtn = null;
@@ -939,6 +946,17 @@ function createFakeRoomsDom({ includeLayer2 = true } = {}) {
     quickOpenBtn.dataset = { erAction: 'quick-open' };
     quickOpenBtn.parentElement = shellEl;
     elements.set('er-quick-open-btn', quickOpenBtn);
+
+    scopeFilterBtns = [];
+    const scopeMatches = [
+      ...html.matchAll(/data-er-action="scope-filter"[^>]*data-scope="([^"]+)"/g),
+    ];
+    for (const m of scopeMatches) {
+      const sb = makeEl('button', '');
+      sb.dataset = { erAction: 'scope-filter', scope: m[1] };
+      sb.parentElement = shellEl;
+      scopeFilterBtns.push(sb);
+    }
 
     const activeRoomMatch = html.match(/class="er-room-pill is-active"[^>]*data-room-id="([^"]+)"/);
     if (activeRoomMatch) {
@@ -1025,6 +1043,7 @@ function createFakeRoomsDom({ includeLayer2 = true } = {}) {
       const candidates = [
         ...tabEls,
         ...(activePillBtn ? [activePillBtn] : []),
+        ...scopeFilterBtns,
         ...(quickOpenBtn ? [quickOpenBtn] : []),
         ...(deleteBtn ? [deleteBtn] : []),
         ...(autorefreshChk ? [autorefreshChk] : []),
@@ -1112,6 +1131,7 @@ function createFakeRoomsDom({ includeLayer2 = true } = {}) {
     modalBody,
     getShell: () => shellEl,
     getTab: (tab) => tabEls.find((t) => t.dataset.tab === tab) || null,
+    getScopeFilterBtn: (scope) => scopeFilterBtns.find((b) => b.dataset.scope === scope) || null,
     getDeleteBtn: () => deleteBtn,
     getAutorefreshChk: () => autorefreshChk,
     getTableWrap: () => tableWrapEl,
@@ -1485,6 +1505,131 @@ test('t4 Phòng thi · điều hướng tab bằng phím mũi tên, dừng polli
     globalThis.fetch = origFetch;
     globalThis.setInterval = origSetInterval;
     globalThis.clearInterval = origClearInterval;
+    URL.createObjectURL = origCreateObj;
+    URL.revokeObjectURL = origRevokeObj;
+  }
+});
+
+test('t4 Phòng thi · hai đề: xóa phòng cuối của đề A không chọn nhầm phòng đề B và trả focus về nút lọc', async () => {
+  const origDocument = globalThis.document;
+  const origWindow = globalThis.window;
+  const origFetch = globalThis.fetch;
+  const origCreateObj = URL.createObjectURL;
+  const origRevokeObj = URL.revokeObjectURL;
+
+  const dom = createFakeRoomsDom({ includeLayer2: true });
+  let rooms = [
+    {
+      id: 'room-a',
+      examId: 'ex-a',
+      roomCode: 'AAA111',
+      title: 'Phòng đề A',
+      status: 'open',
+      mode: 'exam',
+      attemptCount: 0,
+      needsManualCount: 0,
+      questionCount: 1,
+      totalPointsP100: 1000,
+    },
+    {
+      id: 'room-b',
+      examId: 'ex-b',
+      roomCode: 'BBB222',
+      title: 'Phòng đề B',
+      status: 'open',
+      mode: 'exam',
+      attemptCount: 0,
+      needsManualCount: 0,
+      questionCount: 1,
+      totalPointsP100: 1000,
+    },
+  ];
+  const deleteCalls = [];
+
+  globalThis.document = dom.fakeDoc;
+  globalThis.window = {};
+  URL.createObjectURL = () => 'blob:qr-two-exams';
+  URL.revokeObjectURL = () => {};
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url);
+    const method = (init.method || 'GET').toUpperCase();
+    if (u === '/api/rooms' && method === 'GET') {
+      return { ok: true, status: 200, json: async () => ({ rooms }) };
+    }
+    if (u === '/api/exports/preflight') {
+      return { ok: true, status: 200, json: async () => ({ ready: true, blockingIssues: [] }) };
+    }
+    if (u.includes('/qr.svg')) {
+      return { ok: true, status: 200, blob: async () => new Blob(['<svg></svg>'], { type: 'image/svg+xml' }) };
+    }
+    if (u === '/api/rooms/room-a' && method === 'DELETE') {
+      deleteCalls.push(u);
+      rooms = rooms.filter((r) => r.id !== 'room-a');
+      return { ok: true, status: 200, json: async () => ({ ok: true, deleted: 'room-a' }) };
+    }
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+
+  const ctx = {
+    exam: () => ({ id: 'ex-a', title: 'Đề A', subject: 'Toán', grade: '9', minutes: 45, questions: [{}] }),
+    workspaceHeaders: () => ({}),
+    toast: () => {},
+    modal: (title, body, _subtitle, opts) => {
+      if (opts?.layer === 2) {
+        dom.dialogLayer2.innerHTML = `<div class="modal-head"><h2>${title}</h2></div><div class="modal-body">${body}</div>`;
+        dom.dialogLayer2.showModal();
+      } else {
+        dom.modalBody.innerHTML = body;
+        dom.dialog.showModal();
+      }
+    },
+  };
+
+  try {
+    await openExamRooms(ctx, { tab: 'share' });
+    assert.ok(dom.modalBody.innerHTML.includes('Phòng thi & Bài tập (1)'));
+    assert.ok(dom.modalBody.innerHTML.includes('AAA111'));
+    assert.ok(!dom.modalBody.innerHTML.includes('BBB222'));
+
+    // Xóa phòng cuối của đề A
+    dom.getShell().dispatchEvent({ type: 'click', target: dom.getDeleteBtn() });
+    assert.equal(dom.dialogLayer2.open, true);
+    await handleExamRoomAction('er-confirm-delete-room', dom.getLayer2ConfirmBtn(), ctx);
+
+    assert.deepEqual(deleteCalls, ['/api/rooms/room-a']);
+    assert.ok(dom.modalBody.innerHTML.includes('Phòng thi & Bài tập (0)'));
+    assert.equal(dom.getDeleteBtn(), null, 'Không được hiện nút xóa phòng của đề B khi danh sách đề A còn 0 phòng');
+    assert.ok(!dom.modalBody.innerHTML.includes('BBB222'), 'Không được hiện chi tiết phòng đề B trong bộ lọc đề A');
+    assert.equal(
+      dom.fakeDoc.activeElement,
+      dom.getScopeFilterBtn('all'),
+      'Hết phòng trong bộ lọc đề A phải trả focus về nút lọc Tất cả phòng',
+    );
+
+    // Chuyển sang "Tất cả phòng của tôi" -> hiện phòng đề B; chuyển lại "Phòng của đề đang mở" -> xóa lựa chọn
+    dom.getShell().dispatchEvent({ type: 'click', target: dom.getScopeFilterBtn('all') });
+    await new Promise((r) => setTimeout(r, 15));
+    assert.ok(dom.modalBody.innerHTML.includes('BBB222'));
+    assert.ok(dom.getDeleteBtn());
+
+    dom.getShell().dispatchEvent({ type: 'click', target: dom.getScopeFilterBtn('exam') });
+    await new Promise((r) => setTimeout(r, 15));
+    assert.ok(dom.modalBody.innerHTML.includes('Phòng thi & Bài tập (0)'));
+    assert.equal(dom.getDeleteBtn(), null);
+    assert.ok(!dom.modalBody.innerHTML.includes('BBB222'));
+
+    // Mở lại từ đầu khi chỉ còn phòng đề B -> loadRooms không chọn nhầm phòng đề B
+    dom.dialog.close();
+    await openExamRooms(ctx, { tab: 'share' });
+    assert.ok(dom.modalBody.innerHTML.includes('Phòng thi & Bài tập (0)'));
+    assert.equal(dom.getDeleteBtn(), null);
+    assert.ok(!dom.modalBody.innerHTML.includes('BBB222'));
+
+    dom.dialog.close();
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.window = origWindow;
+    globalThis.fetch = origFetch;
     URL.createObjectURL = origCreateObj;
     URL.revokeObjectURL = origRevokeObj;
   }

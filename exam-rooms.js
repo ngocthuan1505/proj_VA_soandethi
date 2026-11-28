@@ -795,8 +795,16 @@ function attemptStatusBadge(status) {
   return `<span class="er-badge ${cls}">${esc(ATTEMPT_STATUS_LABELS[status] || status)}</span>`;
 }
 
-function selectedRoom() {
-  return state.rooms.find((r) => r.id === state.selectedRoomId) || null;
+function getVisibleRooms(c = activeCtx) {
+  const curId = c?.exam?.()?.id;
+  if (state.scopeFilter === 'exam' && curId) {
+    return state.rooms.filter((r) => r.examId === curId);
+  }
+  return state.rooms;
+}
+
+function selectedRoom(c = activeCtx) {
+  return getVisibleRooms(c).find((r) => r.id === state.selectedRoomId) || null;
 }
 
 function resolveExamMinutes(cur, fallback = 45) {
@@ -1530,11 +1538,8 @@ function buildAnswerKeysTabHTML(room) {
 
 function buildShellHTML(c) {
   const cur = c?.exam?.();
-  const visibleRooms =
-    state.scopeFilter === 'exam' && cur?.id
-      ? state.rooms.filter((r) => r.examId === cur.id)
-      : state.rooms;
-  const active = selectedRoom();
+  const visibleRooms = getVisibleRooms(c);
+  const active = selectedRoom(c);
   const preflightBlocked = isRoomLaunchBlocked(state.preflight);
 
   return `
@@ -1859,12 +1864,13 @@ async function refreshQrImage(c) {
 async function loadRooms(c, { preferredRoomId = '' } = {}) {
   const res = await roomApi(c, '/api/rooms');
   state.rooms = Array.isArray(res?.rooms) ? res.rooms : [];
+  const visible = getVisibleRooms(c);
   const curId = c?.exam?.()?.id;
-  if (preferredRoomId && state.rooms.some((r) => r.id === preferredRoomId)) {
+  if (preferredRoomId && visible.some((r) => r.id === preferredRoomId)) {
     state.selectedRoomId = preferredRoomId;
-  } else if (!state.rooms.some((r) => r.id === state.selectedRoomId)) {
-    const matchCur = curId ? state.rooms.find((r) => r.examId === curId) : null;
-    state.selectedRoomId = matchCur?.id || state.rooms[0]?.id || '';
+  } else if (!visible.some((r) => r.id === state.selectedRoomId)) {
+    const matchCur = curId ? visible.find((r) => r.examId === curId) : null;
+    state.selectedRoomId = matchCur?.id || visible[0]?.id || '';
   }
 }
 
@@ -2264,7 +2270,10 @@ async function executeDeleteRoom(c, roomId, triggerBtn) {
     state.pendingDeleteRoomId = '';
     state.confirmDeleteRoomId = '';
     state.rooms = state.rooms.filter((r) => r.id !== room.id);
-    state.selectedRoomId = state.rooms.find((r) => r.examId === c?.exam?.()?.id)?.id || state.rooms[0]?.id || '';
+    const remainingVisible = getVisibleRooms(c);
+    const curId = c?.exam?.()?.id;
+    const nextMatch = curId ? remainingVisible.find((r) => r.examId === curId) : null;
+    state.selectedRoomId = nextMatch?.id || remainingVisible[0]?.id || '';
     state.roomDetail = null;
     state.gradingQueue = null;
     state.analytics = null;
@@ -2272,11 +2281,15 @@ async function executeDeleteRoom(c, roomId, triggerBtn) {
     await loadActiveTabData(c);
     if (state !== session) return;
     if (dlg2?.open && dlg2.querySelector?.('.er-confirm-delete')) dlg2.close();
+    const emptyFocusSelector =
+      state.scopeFilter === 'exam' && state.rooms.length > 0
+        ? '[data-er-action="scope-filter"][data-scope="all"]'
+        : '#er-quick-open-btn';
     renderShell(c, {
-      focusTargetSelector: selectedRoom()
+      focusTargetSelector: selectedRoom(c)
         ? '[data-er-action="select-room"].is-active'
-        : '#er-quick-open-btn',
-      fallbackSelector: '#er-quick-open-btn',
+        : emptyFocusSelector,
+      fallbackSelector: '[data-er-action="scope-filter"][data-scope="all"]',
       resetScroll: true,
     });
     syncPolling(c);
@@ -2288,9 +2301,15 @@ async function executeDeleteRoom(c, roomId, triggerBtn) {
     state.error = deleted
       ? 'Đã xóa phòng nhưng chưa tải lại được danh sách.'
       : err.message || 'Không thể xóa phòng thi.';
+    const emptyFocusSelector =
+      state.scopeFilter === 'exam' && state.rooms.length > 0
+        ? '[data-er-action="scope-filter"][data-scope="all"]'
+        : '#er-quick-open-btn';
     renderShell(c, {
-      focusTargetSelector: '[data-er-action="delete-room"]',
-      fallbackSelector: '#er-quick-open-btn',
+      focusTargetSelector: selectedRoom(c)
+        ? '[data-er-action="delete-room"]'
+        : emptyFocusSelector,
+      fallbackSelector: '[data-er-action="scope-filter"][data-scope="all"]',
     });
   } finally {
     deleteInFlight = false;
@@ -2369,16 +2388,15 @@ function bindShellEvents(c) {
       if (action === 'scope-filter') {
         state.scopeFilter = btn.dataset.scope === 'all' ? 'all' : 'exam';
         state.confirmDeleteRoomId = '';
-        const visible =
-          state.scopeFilter === 'exam' && c?.exam?.()?.id
-            ? state.rooms.filter((r) => r.examId === c.exam().id)
-            : state.rooms;
-        if (visible.length && !visible.some((r) => r.id === state.selectedRoomId)) {
-          state.selectedRoomId = visible[0].id;
+        const visible = getVisibleRooms(c);
+        if (!visible.some((r) => r.id === state.selectedRoomId)) {
+          state.selectedRoomId = visible[0]?.id || '';
           state.roomDetail = null;
           state.gradingQueue = null;
           state.analytics = null;
-          await loadActiveTabData(c);
+          if (state.selectedRoomId) {
+            await loadActiveTabData(c);
+          }
         }
         renderShell(c);
         syncPolling(c);
