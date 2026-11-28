@@ -2,10 +2,14 @@ const TAB_SESSION_KEY='mach-storage-tab';
 let tabIdPromise;
 function claimTabId(locks,id){
  return new Promise(resolve=>{
-  Promise.resolve(locks.request(TAB_SESSION_KEY+':'+id,{ifAvailable:true},lock=>{
-   resolve(Boolean(lock));
-   if(lock)return new Promise(()=>{});
-  })).catch(()=>resolve(false));
+  let settled=false;
+  const done=status=>{if(!settled){settled=true;resolve(status);}};
+  try{
+   Promise.resolve(locks.request(TAB_SESSION_KEY+':'+id,{ifAvailable:true},lock=>{
+    done(lock?'acquired':'busy');
+    if(lock)return new Promise(()=>{});
+   })).catch(()=>done('unavailable'));
+  }catch{done('unavailable');}
  });
 }
 function tabId(){
@@ -13,8 +17,8 @@ function tabId(){
   let session,id;
   try{session=globalThis.sessionStorage;id=session?.getItem(TAB_SESSION_KEY);}catch{}
   const locks=globalThis.window?.navigator?.locks;
-  // Một tab được nhân bản có thể nhận bản sao sessionStorage của tab nguồn.
-  if(id&&(!locks||await claimTabId(locks,id)))return id;
+  // Một tab được nhân bản có thể nhận bản sao sessionStorage của tab nguồn; lỗi API Web Locks không đồng nghĩa khóa đang bận.
+  if(id&&(!locks||await claimTabId(locks,id)!=='busy'))return id;
   id=crypto.randomUUID();
   if(locks)await claimTabId(locks,id);
   try{session?.setItem(TAB_SESSION_KEY,id);}catch{}

@@ -338,3 +338,63 @@ def test_nonstandard_json_number_is_rejected_before_commit(workspace, token):  #
     )
     assert response.status_code == 409 and response.json()["code"] == "invalid_backup"
     assert client.get("/api/kv?key=state").json() == before
+
+
+def test_batch_restore_checks_trash_uuids_to_prevent_collision_on_redelete(workspace):  # noqa: F811
+    client, _, _ = workspace
+    base_fixture = backup_fixture()
+    active_exam = base_fixture["state"]["exams"][0]
+    trashed_id = str(uuid4())
+    trashed_exam = {
+        **active_exam,
+        "id": trashed_id,
+        "title": "Đề cũ trong thùng rác",
+        "deletedAt": 1700000000000,
+    }
+    initial_state = {
+        "current": active_exam["id"],
+        "exams": [active_exam],
+        "trash": [trashed_exam],
+        "prefs": [],
+    }
+    rev = client.get("/api/kv?key=state").json()["revision"]
+    saved = client.put(
+        "/api/kv",
+        json={"key": "state", "value": initial_state},
+        headers={"If-Match": str(rev)},
+    )
+    assert saved.status_code == 200, saved.text
+    rev = saved.json()["revision"]
+
+    incoming_exam = {**active_exam, "id": trashed_id, "title": "Đề nhập lại cùng UUID thùng rác"}
+    batch_payload = {
+        "format": "tro-ly-soan-de-batch",
+        "version": 1,
+        "exams": [incoming_exam],
+        "files": base_fixture["files"],
+    }
+    merged = client.post(
+        "/api/workspace/restore",
+        json=batch_payload,
+        headers={"If-Match": str(rev)},
+    )
+    assert merged.status_code == 200, merged.text
+    body = merged.json()
+    assert body["importedExams"] == 1
+    assert body["skippedExams"] == 0
+    merged_exams = body["state"]["exams"]
+    assert len(merged_exams) == 2
+    imported = next(e for e in merged_exams if e["title"] == "Đề nhập lại cùng UUID thùng rác")
+    assert imported["id"] != trashed_id
+    assert imported["id"] != active_exam["id"]
+    assert body["state"]["trash"][0]["id"] == trashed_id
+
+    # Bật skipDuplicateIds thì bỏ qua đề trùng UUID với Thùng rác thay vì ghi trùng ID.
+    skipped = client.post(
+        "/api/workspace/restore",
+        json={**batch_payload, "skipDuplicateIds": True},
+        headers={"If-Match": str(body["revision"])},
+    )
+    assert skipped.status_code == 200, skipped.text
+    assert skipped.json()["importedExams"] == 0
+    assert skipped.json()["skippedExams"] == 1

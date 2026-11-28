@@ -623,9 +623,11 @@ def restore(store, backup, base_revision):
             if not isinstance(current_state, dict):
                 current_state = {"current": None, "exams": [], "prefs": []}
             existing_exams = list(current_state.get("exams") or [])
+            raw_trash = current_state.get("trash")
+            existing_trash = list(raw_trash) if isinstance(raw_trash, list) else []
             existing_ids = {
                 e["id"]
-                for e in existing_exams
+                for e in (*existing_exams, *existing_trash)
                 if isinstance(e, dict) and isinstance(e.get("id"), str)
             }
             file_remap: dict[str, str] = {}

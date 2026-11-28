@@ -363,17 +363,55 @@ test('retryPendingWrites không bỏ sót file audio đang chờ khi state gặp
  }finally{h.restore();}
 });
 
-test('claimTabId tự chuyển UUID mới an toàn khi navigator.locks bị từ chối',async()=>{
+test('Web Locks bị từ chối sau HTTP 409 vẫn giữ nguyên tabId và mở nháp IndexedDB khi reload',async()=>{
  const h=await harness();
  const prevWindow=globalThis.window;
  try{
+  let serverRev=1,serverState={title:'Bản máy chủ mới'};
+  globalThis.fetch=async(url,options)=>{
+   if(!options?.body)return {ok:true,status:200,json:async()=>({value:structuredClone(serverState),revision:serverRev})};
+   return {ok:false,status:409,json:async()=>({error:'Đề trên máy chủ đã đổi.',code:'stale_snapshot'})};
+  };
   globalThis.window={navigator:{locks:{request:()=>Promise.reject(Error('Lock rejected'))}}};
-  h.session.set('mach-storage-tab','stale-lock-id');
+  h.session.set('mach-storage-tab','tab-409-id');
   const tab=await h.open(h.session);
-  h.responses.push(()=>{throw Error('Mất mạng');});
-  await assert.rejects(tab.storage.put('state',{title:'Nháp fallback'}));
-  assert.notEqual(h.session.get('mach-storage-tab'),'stale-lock-id');
-  assert.equal(h.data.get(tab.pendingKey()).value.title,'Nháp fallback');
+  await tab.storage.get('state');
+  const draft={title:'Nháp 409 cần giữ'};
+  await assert.rejects(tab.storage.put('state',draft),/đã đổi/);
+  assert.equal(h.session.get('mach-storage-tab'),'tab-409-id');
+  assert.equal(h.data.get(tab.pendingKey()).conflict,true);
+
+  serverRev=2;
+  serverState={title:'Bản máy chủ sau reload'};
+  const reloaded=await h.open(h.session);
+  const loaded=await reloaded.storage.get('state');
+  assert.equal(h.session.get('mach-storage-tab'),'tab-409-id');
+  assert.deepEqual(loaded,draft);
+  assert.equal(reloaded.storage.hasStateConflict(),true);
+  assert.equal(reloaded.storage.hasPendingWrites(),true);
+ }finally{
+  if(prevWindow===undefined)delete globalThis.window;else globalThis.window=prevWindow;
+  h.restore();
+ }
+});
+
+test('Web Locks báo khóa đang bận (nhân bản tab) phải cấp tabId mới và không đọc nhầm nháp tab nguồn',async()=>{
+ const h=await harness();
+ const prevWindow=globalThis.window;
+ try{
+  const held=new Set(['mach-storage-tab:source-tab-id']);
+  globalThis.window={navigator:{locks:{request:(name,_opts,cb)=>{
+   if(held.has(name))return Promise.resolve(cb(null));
+   held.add(name);
+   return Promise.resolve(cb({name}));
+  }}}};
+  h.data.set('local:__pending:source-tab-id:state',{id:crypto.randomUUID(),base:1,conflict:true,value:{title:'Nháp tab nguồn'}});
+  h.session.set('mach-storage-tab','source-tab-id');
+  const duplicated=await h.open(h.session);
+  const loaded=await duplicated.storage.get('state');
+  assert.notEqual(h.session.get('mach-storage-tab'),'source-tab-id');
+  assert.deepEqual(loaded,{title:'Ban đầu'});
+  assert.equal(duplicated.storage.hasPendingWrites(),false);
  }finally{
   if(prevWindow===undefined)delete globalThis.window;else globalThis.window=prevWindow;
   h.restore();
