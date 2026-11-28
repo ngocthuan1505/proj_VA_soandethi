@@ -1,0 +1,596 @@
+{
+  "time": "2026-11-28T11:05:50.191Z",
+  "revision": "77865d3f5b6d3b5d0838902f1bcf32b37955aedd",
+  "browser": "158.0.8127.38",
+  "provider": "Fixture OCR cục bộ qua FastAPI. Lần đầu thiếu trang. Lần sau đọc nhầm 18 thành 19. Không gọi Gemini.",
+  "results": {
+    "1440x900": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "states": [
+        {
+          "name": "dang-doc",
+          "atMs": 1706,
+          "shot": "1440x900-dang-doc.png",
+          "text": "Đang đọc tài liệu bằng Gemini… Đề đang lưu được giữ nguyên.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nDự thảo\nĐã rà soát\nBản duyệt\nBản đã in\nTrang"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "loi",
+          "atMs": 2641,
+          "shot": "1440x900-loi.png",
+          "text": "Số trang bị lặp/sai thứ tự hoặc không đọc được chữ. Chưa thêm tài liệu.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nDự thảo\nĐã rà soát\nBản duyệt\nBản đã in\nTrang"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "can-doi-chieu",
+          "atMs": 4222,
+          "shot": "1440x900-can-doi-chieu.png",
+          "text": "Trang này cần đối chiếu bản gốc trước khi dùng làm nguồn. Bộ đọc giả lập L7. Kiểm tra số bi ở trang 2.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nDự thảo\nĐã rà soát\nBản duyệt\nBản đã in\nTrang"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "da-luu",
+          "atMs": 4670,
+          "shot": "1440x900-da-luu.png",
+          "text": "Trang này đã được đối chiếu.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nDự thảo\nĐã rà soát\nBản duyệt\nBản đã in\nTrang"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "trich-dan",
+          "atMs": 5143,
+          "shot": "1440x900-trich-dan.png",
+          "text": "Đối chiếu trích dẫn nguồn\n“Câu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi? A. 9 B. 10 C. 11 D. 12”\ndoi-chieu-trang-2.pdf · Trang 2 · Bản 2\nMở ngữ cảnh · doi-chieu-trang-2.pdf · Trang 2\nCâu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?\nA. 9\nB. 10\nC. 11\nD. 12",
+          "focus": {
+            "tag": "SUMMARY",
+            "label": "Mở ngữ cảnh · doi-chieu-trang-2.pdf · Trang 2"
+          },
+          "overflowX": false
+        }
+      ],
+      "extract": [
+        {
+          "atMs": 1433,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": false,
+          "http": 409,
+          "durationMs": 9,
+          "code": "document_ai_consent"
+        },
+        {
+          "atMs": 1557,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": true,
+          "http": 409,
+          "durationMs": 821,
+          "code": "invalid_document_reading"
+        },
+        {
+          "atMs": 2695,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": true,
+          "http": 200,
+          "durationMs": 823,
+          "method": "gemini_document_ocr",
+          "pages": [
+            {
+              "number": 1,
+              "needsReview": true
+            },
+            {
+              "number": 2,
+              "needsReview": true
+            }
+          ]
+        }
+      ],
+      "input": [
+        {
+          "action": "tap",
+          "target": "Trang chủ → Rút trích PDF"
+        },
+        {
+          "action": "Enter",
+          "target": "Thêm ảnh / PDF gốc"
+        },
+        {
+          "action": "Enter",
+          "target": "Chọn tài liệu"
+        },
+        {
+          "action": "Space",
+          "target": "Cho phép gửi PDF fixture"
+        },
+        {
+          "action": "tap",
+          "target": "Đọc bằng Gemini (fixture)"
+        },
+        {
+          "action": "tap",
+          "target": "Đồng ý lại sau lỗi"
+        },
+        {
+          "action": "Enter",
+          "target": "Thử đọc lại"
+        },
+        {
+          "action": "ArrowDown",
+          "target": "Chọn trang 2"
+        },
+        {
+          "action": "Enter",
+          "target": "Mở PDF gốc tại trang 2"
+        },
+        {
+          "action": "tap",
+          "target": "Văn bản OCR trang 2"
+        },
+        {
+          "action": "sửa văn bản, Tab, Enter",
+          "target": "Lưu bản đối chiếu trang 2"
+        },
+        {
+          "action": "tap",
+          "target": "Tách câu từ trang 2"
+        },
+        {
+          "action": "Enter",
+          "target": "Mở thành đề mới"
+        },
+        {
+          "action": "tap",
+          "target": "Menu công cụ"
+        },
+        {
+          "action": "Enter",
+          "target": "Kiểm tra bằng phép tính"
+        },
+        {
+          "action": "tap",
+          "target": "Xem căn cứ câu vừa tách"
+        },
+        {
+          "action": "Space",
+          "target": "Mở ngữ cảnh trích dẫn"
+        }
+      ],
+      "console": [
+        {
+          "level": "error",
+          "path": "/api/extract",
+          "message": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+        },
+        {
+          "level": "error",
+          "path": "/api/extract",
+          "message": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+        }
+      ],
+      "pageErrors": [],
+      "failedRequests": [],
+      "original": {
+        "path": "/api/source-file/2a800c18-8209-4c8e-be74-c670e5900ed7#page=2",
+        "sha256": "2a1fbf214136e7cf7b3d0f301a4337cf13d20adf1b40e5fdff6e49a7ce4b1bbe",
+        "popupUrl": "/api/source-file/2a800c18-8209-4c8e-be74-c670e5900ed7#page=2"
+      },
+      "citation": {
+        "document": "doi-chieu-trang-2.pdf",
+        "sourceId": "f0b43ebe-d1be-4349-965e-4c7da463527f",
+        "page": 2,
+        "version": 2,
+        "quote": "Câu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?\nA. 9\nB. 10\nC. 11\nD. 12",
+        "question": "Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?"
+      }
+    },
+    "1280x720": {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "states": [
+        {
+          "name": "dang-doc",
+          "atMs": 1595,
+          "shot": "1280x720-dang-doc.png",
+          "text": "Đang đọc tài liệu bằng Gemini… Đề đang lưu được giữ nguyên.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nTrang chủ\nSoạn đề\nKho đề\nNgân hàng\nPhòng thi"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "loi",
+          "atMs": 2524,
+          "shot": "1280x720-loi.png",
+          "text": "Số trang bị lặp/sai thứ tự hoặc không đọc được chữ. Chưa thêm tài liệu.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nTrang chủ\nSoạn đề\nKho đề\nNgân hàng\nPhòng thi"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "can-doi-chieu",
+          "atMs": 4062,
+          "shot": "1280x720-can-doi-chieu.png",
+          "text": "Trang này cần đối chiếu bản gốc trước khi dùng làm nguồn. Bộ đọc giả lập L7. Kiểm tra số bi ở trang 2.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nTrang chủ\nSoạn đề\nKho đề\nNgân hàng\nPhòng thi"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "da-luu",
+          "atMs": 4476,
+          "shot": "1280x720-da-luu.png",
+          "text": "Trang này đã được đối chiếu.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nTrang chủ\nSoạn đề\nKho đề\nNgân hàng\nPhòng thi"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "trich-dan",
+          "atMs": 4886,
+          "shot": "1280x720-trich-dan.png",
+          "text": "Đối chiếu trích dẫn nguồn\n“Câu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi? A. 9 B. 10 C. 11 D. 12”\ndoi-chieu-trang-2.pdf · Trang 2 · Bản 2\nMở ngữ cảnh · doi-chieu-trang-2.pdf · Trang 2\nCâu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?\nA. 9\nB. 10\nC. 11\nD. 12",
+          "focus": {
+            "tag": "SUMMARY",
+            "label": "Mở ngữ cảnh · doi-chieu-trang-2.pdf · Trang 2"
+          },
+          "overflowX": false
+        }
+      ],
+      "extract": [
+        {
+          "atMs": 1355,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": false,
+          "http": 409,
+          "durationMs": 7,
+          "code": "document_ai_consent"
+        },
+        {
+          "atMs": 1466,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": true,
+          "http": 409,
+          "durationMs": 824,
+          "code": "invalid_document_reading"
+        },
+        {
+          "atMs": 2589,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": true,
+          "http": 200,
+          "durationMs": 822,
+          "method": "gemini_document_ocr",
+          "pages": [
+            {
+              "number": 1,
+              "needsReview": true
+            },
+            {
+              "number": 2,
+              "needsReview": true
+            }
+          ]
+        }
+      ],
+      "input": [
+        {
+          "action": "tap",
+          "target": "Trang chủ → Rút trích PDF"
+        },
+        {
+          "action": "Enter",
+          "target": "Thêm ảnh / PDF gốc"
+        },
+        {
+          "action": "Enter",
+          "target": "Chọn tài liệu"
+        },
+        {
+          "action": "Space",
+          "target": "Cho phép gửi PDF fixture"
+        },
+        {
+          "action": "tap",
+          "target": "Đọc bằng Gemini (fixture)"
+        },
+        {
+          "action": "tap",
+          "target": "Đồng ý lại sau lỗi"
+        },
+        {
+          "action": "Enter",
+          "target": "Thử đọc lại"
+        },
+        {
+          "action": "ArrowDown",
+          "target": "Chọn trang 2"
+        },
+        {
+          "action": "Enter",
+          "target": "Mở PDF gốc tại trang 2"
+        },
+        {
+          "action": "tap",
+          "target": "Văn bản OCR trang 2"
+        },
+        {
+          "action": "sửa văn bản, Tab, Enter",
+          "target": "Lưu bản đối chiếu trang 2"
+        },
+        {
+          "action": "tap",
+          "target": "Tách câu từ trang 2"
+        },
+        {
+          "action": "Enter",
+          "target": "Mở thành đề mới"
+        },
+        {
+          "action": "tap",
+          "target": "Menu công cụ"
+        },
+        {
+          "action": "Enter",
+          "target": "Kiểm tra bằng phép tính"
+        },
+        {
+          "action": "tap",
+          "target": "Xem căn cứ câu vừa tách"
+        },
+        {
+          "action": "Space",
+          "target": "Mở ngữ cảnh trích dẫn"
+        }
+      ],
+      "console": [
+        {
+          "level": "error",
+          "path": "/api/extract",
+          "message": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+        },
+        {
+          "level": "error",
+          "path": "/api/extract",
+          "message": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+        }
+      ],
+      "pageErrors": [],
+      "failedRequests": [],
+      "original": {
+        "path": "/api/source-file/845b146a-f30d-4dfa-b104-bccdbcb3e483#page=2",
+        "sha256": "2a1fbf214136e7cf7b3d0f301a4337cf13d20adf1b40e5fdff6e49a7ce4b1bbe",
+        "popupUrl": "/api/source-file/845b146a-f30d-4dfa-b104-bccdbcb3e483#page=2"
+      },
+      "citation": {
+        "document": "doi-chieu-trang-2.pdf",
+        "sourceId": "dda54922-2b4c-467b-a7e8-69091f1c2a0e",
+        "page": 2,
+        "version": 2,
+        "quote": "Câu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?\nA. 9\nB. 10\nC. 11\nD. 12",
+        "question": "Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?"
+      }
+    },
+    "390x844": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "states": [
+        {
+          "name": "dang-doc",
+          "atMs": 1519,
+          "shot": "390x844-dang-doc.png",
+          "text": "Đang đọc tài liệu bằng Gemini… Đề đang lưu được giữ nguyên.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nTrang chủ\nSoạn đề\nKho đề\nNgân hàng\nPhòng thi"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "loi",
+          "atMs": 2397,
+          "shot": "390x844-loi.png",
+          "text": "Số trang bị lặp/sai thứ tự hoặc không đọc được chữ. Chưa thêm tài liệu.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nTrang chủ\nSoạn đề\nKho đề\nNgân hàng\nPhòng thi"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "can-doi-chieu",
+          "atMs": 3904,
+          "shot": "390x844-can-doi-chieu.png",
+          "text": "Trang này cần đối chiếu bản gốc trước khi dùng làm nguồn. Bộ đọc giả lập L7. Kiểm tra số bi ở trang 2.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nTrang chủ\nSoạn đề\nKho đề\nNgân hàng\nPhòng thi"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "da-luu",
+          "atMs": 4250,
+          "shot": "390x844-da-luu.png",
+          "text": "Trang này đã được đối chiếu.",
+          "focus": {
+            "tag": "BODY",
+            "label": "Đã lưu trên máy\nTrang chủ\nSoạn đề\nKho đề\nNgân hàng\nPhòng thi"
+          },
+          "overflowX": false
+        },
+        {
+          "name": "trich-dan",
+          "atMs": 4671,
+          "shot": "390x844-trich-dan.png",
+          "text": "Đối chiếu trích dẫn nguồn\n“Câu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi? A. 9 B. 10 C. 11 D. 12”\ndoi-chieu-trang-2.pdf · Trang 2 · Bản 2\nMở ngữ cảnh · doi-chieu-trang-2.pdf · Trang 2\nCâu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?\nA. 9\nB. 10\nC. 11\nD. 12",
+          "focus": {
+            "tag": "SUMMARY",
+            "label": "Mở ngữ cảnh · doi-chieu-trang-2.pdf · Trang 2"
+          },
+          "overflowX": false
+        }
+      ],
+      "extract": [
+        {
+          "atMs": 1304,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": false,
+          "http": 409,
+          "durationMs": 5,
+          "code": "document_ai_consent"
+        },
+        {
+          "atMs": 1423,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": true,
+          "http": 409,
+          "durationMs": 829,
+          "code": "invalid_document_reading"
+        },
+        {
+          "atMs": 2459,
+          "name": "doi-chieu-trang-2.pdf",
+          "consent": true,
+          "http": 200,
+          "durationMs": 816,
+          "method": "gemini_document_ocr",
+          "pages": [
+            {
+              "number": 1,
+              "needsReview": true
+            },
+            {
+              "number": 2,
+              "needsReview": true
+            }
+          ]
+        }
+      ],
+      "input": [
+        {
+          "action": "tap",
+          "target": "Trang chủ → Rút trích PDF"
+        },
+        {
+          "action": "Enter",
+          "target": "Thêm ảnh / PDF gốc"
+        },
+        {
+          "action": "Enter",
+          "target": "Chọn tài liệu"
+        },
+        {
+          "action": "Space",
+          "target": "Cho phép gửi PDF fixture"
+        },
+        {
+          "action": "tap",
+          "target": "Đọc bằng Gemini (fixture)"
+        },
+        {
+          "action": "tap",
+          "target": "Đồng ý lại sau lỗi"
+        },
+        {
+          "action": "Enter",
+          "target": "Thử đọc lại"
+        },
+        {
+          "action": "ArrowDown",
+          "target": "Chọn trang 2"
+        },
+        {
+          "action": "Enter",
+          "target": "Mở PDF gốc tại trang 2"
+        },
+        {
+          "action": "tap",
+          "target": "Văn bản OCR trang 2"
+        },
+        {
+          "action": "sửa văn bản, Tab, Enter",
+          "target": "Lưu bản đối chiếu trang 2"
+        },
+        {
+          "action": "tap",
+          "target": "Tách câu từ trang 2"
+        },
+        {
+          "action": "Enter",
+          "target": "Mở thành đề mới"
+        },
+        {
+          "action": "tap",
+          "target": "Menu công cụ"
+        },
+        {
+          "action": "Enter",
+          "target": "Kiểm tra bằng phép tính"
+        },
+        {
+          "action": "tap",
+          "target": "Xem căn cứ câu vừa tách"
+        },
+        {
+          "action": "Space",
+          "target": "Mở ngữ cảnh trích dẫn"
+        }
+      ],
+      "console": [
+        {
+          "level": "error",
+          "path": "/api/extract",
+          "message": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+        },
+        {
+          "level": "error",
+          "path": "/api/extract",
+          "message": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+        }
+      ],
+      "pageErrors": [],
+      "failedRequests": [],
+      "original": {
+        "path": "/api/source-file/268f0aa2-11cf-44bc-b3c0-8980b659c1b1#page=2",
+        "sha256": "2a1fbf214136e7cf7b3d0f301a4337cf13d20adf1b40e5fdff6e49a7ce4b1bbe",
+        "popupUrl": "/api/source-file/268f0aa2-11cf-44bc-b3c0-8980b659c1b1#page=2"
+      },
+      "citation": {
+        "document": "doi-chieu-trang-2.pdf",
+        "sourceId": "a086c143-77de-4a3a-a4c4-5a71d0a4ce2f",
+        "page": 2,
+        "version": 2,
+        "quote": "Câu 1. Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?\nA. 9\nB. 10\nC. 11\nD. 12",
+        "question": "Hộp có 18 viên bi. Lấy ra 7 viên. Hỏi còn bao nhiêu viên bi?"
+      }
+    }
+  }
+}
