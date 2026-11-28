@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import os
 import time
 from copy import deepcopy
 from pathlib import Path
@@ -10,6 +11,7 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from mach_backend import local_workspace
 from mach_backend.ai_questions import CheckJob
 from mach_backend.local_workspace import create_app
 from mach_backend.ollama_protocol import generation_format
@@ -809,13 +811,104 @@ def test_timeout_keeps_partial_reports_unknown_and_draft_unchanged(
 
 
 @pytest.mark.parametrize(
-    "path", ["/", "/bootstrap.js", "/app.js", "/subject-profiles.js", "/assets/usability.js"]
+    "path", ["/", "/bootstrap.js", "/app.js", "/subject-profiles.js", "/assets/exam-room.html"]
 )
 def test_mutable_ui_files_do_not_mix_old_cached_modules(tmp_path, path):
     with TestClient(create_app(tmp_path)) as client:
         response = client.get(path)
         assert response.status_code == 200
         assert response.headers["cache-control"] == "no-store"
+
+
+@pytest.mark.parametrize("path", ["/api/lesson-catalog", "/assets/usability.js"])
+def test_public_text_revalidates_each_encoding(tmp_path, path):
+    with TestClient(create_app(tmp_path)) as client:
+        plain = client.get(path, headers={"Accept-Encoding": "gzip;q=0, *;q=1"})
+        compressed = client.get(path, headers={"Accept-Encoding": "GZip"})
+        assert plain.status_code == compressed.status_code == 200
+        assert "content-encoding" not in plain.headers
+        assert compressed.headers["content-encoding"] == "gzip"
+        assert plain.content == compressed.content
+        assert int(compressed.headers["content-length"]) < len(plain.content)
+        assert plain.headers["etag"] != compressed.headers["etag"]
+        for representation, encoding in [(plain, "identity"), (compressed, "gzip")]:
+            etag = representation.headers["etag"]
+            unchanged = client.get(
+                path, headers={"Accept-Encoding": encoding, "If-None-Match": f'"old", W/{etag}'}
+            )
+            assert unchanged.status_code == 304
+            assert unchanged.content == b""
+            for response in (representation, unchanged):
+                assert response.headers["etag"] == etag
+                assert response.headers["cache-control"] == "public, no-cache"
+                assert response.headers["vary"] == "Accept-Encoding"
+        assert client.get(path, headers={"If-None-Match": "*"}).status_code == 304
+        assert (
+            client.get(
+                path,
+                headers={
+                    "Accept-Encoding": "identity",
+                    "If-None-Match": compressed.headers["etag"],
+                },
+            ).status_code
+            == 200
+        )
+
+
+def test_asset_validator_changes_and_ranges_still_work(tmp_path, monkeypatch):
+    root = tmp_path / "public"
+    asset = root / "assets" / "fixture.js"
+    asset.parent.mkdir(parents=True)
+    asset.write_bytes(b"a" * 2048)
+    monkeypatch.setattr(local_workspace, "ROOT", root)
+    path = "/assets/fixture.js"
+    with TestClient(create_app(tmp_path / "data"), headers={"Accept-Encoding": "gzip"}) as client:
+        before = client.get(path)
+        stamp = asset.stat()
+        asset.write_bytes(b"b" * 2048)
+        os.utime(asset, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+        after = client.get(path, headers={"If-None-Match": before.headers["etag"]})
+        assert after.status_code == 200
+        assert after.headers["etag"] != before.headers["etag"]
+        assert after.content == b"b" * 2048
+
+        partial = client.get(path, headers={"Range": "bytes=0-3"})
+        assert partial.status_code == 206
+        assert partial.headers["content-range"] == "bytes 0-3/2048"
+        assert "content-encoding" not in partial.headers
+        assert partial.content == b"bbbb"
+
+
+def test_private_json_remains_uncached_even_with_wildcard_validator(workspace):
+    client, exam, _ = workspace
+    headers = {"Accept-Encoding": "gzip", "If-None-Match": "*"}
+    for path in ("/api/kv?key=state", "/api/account", "/api/lesson-catalog/sources"):
+        response = client.get(path, headers=headers)
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "no-store"
+        assert "content-encoding" not in response.headers
+    assert client.get("/api/kv?key=state", headers=headers).json()["value"]["current"] == exam["id"]
+
+
+def test_private_sse_keeps_streaming_headers_and_events(tmp_path):
+    async def fixture_chat(_purpose, _body):
+        return {"content": json.dumps({"message": "Xin chào " * 300})}
+
+    with (
+        TestClient(
+            create_app(tmp_path, agent_call=fixture_chat),
+            headers={"Origin": "http://testserver", "Accept-Encoding": "gzip"},
+        ) as client,
+        client.stream(
+            "POST", "/api/assistant/chat/stream", json={"text": "Xin chào", "consent": True}
+        ) as response,
+    ):
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+        assert response.headers["cache-control"] == "no-store"
+        assert response.headers["x-accel-buffering"] == "no"
+        assert "content-encoding" not in response.headers
+        assert b"event: done" in response.read()
 
 
 def test_entry_versions_transitive_modules_without_changing_source(tmp_path):

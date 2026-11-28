@@ -836,3 +836,18 @@ uv run --frozen python benchmark_fastapi.py
 - [`npm test`](../../package.json) dùng glob `tests/*.test.mjs` của Node 24. Sáu suite trước đây bị bỏ sót gồm `chat-overhaul`, `uv63-frontend`, `uv64-editor-mobile`, `uv64-exports-matrix`, `uv64-rooms-proactive` và `uv64-sources-citation`. [CI](../../.github/workflows/ci.yml) chạy toàn bộ suite rồi chạy `scripts/check-team.mjs`. Lệnh `npm run check:team` vẫn chạy riêng được với ba suite của nhóm.
 - Trên Windows với Node 24.22.3 và Chrome, `npm ci` thành công. Đối chiếu sự kiện `test:summary` theo tệp cho thấy đủ 27/27 suite, 247/247 ca đạt. Tạo một suite tạm cố ý thất bại, `npm test` tự chạy thành 248 ca và trả mã 1. Đã xóa suite tạm. `npm run check:team` đạt 14/14 ca và xác thực kế hoạch nhóm thành công.
 - Bên lý thuyết có thể dùng phép đối chiếu trên làm bằng chứng CI thu đủ suite JavaScript hiện có. Kết quả trên được đo cục bộ. Chờ lượt GitHub Actions theo trigger hiện hành để xác nhận trên Ubuntu.
+
+## 28/11/2026 — t7 · GZip và tái xác thực tài nguyên công khai
+
+- FastAPI cục bộ dùng `public, no-cache` và `Vary: Accept-Encoding` cho `/api/lesson-catalog` và asset văn bản trong `assets/` (`js`, `mjs`, `css`, `svg`, `json`). GZip áp dụng từ 1.024 byte khi client chấp nhận và bản nén nhỏ hơn. ETag SHA-256 tính trên byte của từng biểu diễn. Danh mục dùng lại JSON đã kết xuất trong vòng đời tiến trình. Asset đọc lại byte hiện tại để nhận ra bản thay cùng kích thước và mtime. Yêu cầu Range vẫn có thể đọc byte của bản identity.
+- Kiểm HTTP trước/sau bằng một worker Uvicorn trên cổng loopback tự cấp, kho tạm, HTTPX keep-alive, 70 GET nối tiếp cho mỗi đường dẫn và chế độ sau một GET làm nóng. Đếm byte thân thô trước giải nén. p95 đo đến khi đọc hết thân, lấy mẫu hạng 67. Dữ liệu fixture và các đường dẫn giống nhau ở cả hai lượt.
+
+| Đường dẫn | GZip byte trước → sau | GZip p95 trước → sau (ms) | Tái xác thực byte trước → sau | Tái xác thực p95 trước → sau (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| `/api/lesson-catalog` | 697.095 → 117.003 | 94,12 → 6,56 | 697.095 → 0 | 86,87 → 7,37 |
+| `/assets/editor-engine.js` | 447.254 → 142.137 | 13,22 → 10,50 | 447.254 → 0 | 17,81 → 8,75 |
+| `/assets/layout.css` | 142.557 → 26.229 | 10,83 → 9,37 | 142.557 → 0 | 11,91 → 9,81 |
+
+- Lượt baseline gửi `If-None-Match` với ETag từ GET làm nóng hoặc thẻ thử khi thiếu và nhận 200. Sau sửa, ETag của bản GZip cho kết quả 304. Ca hồi quy trong `test_local_workspace.py` kiểm ETag theo biểu diễn, đổi validator khi byte asset đổi với cùng mtime và kích thước, Range 206, `no-store` cho kho đề/tài khoản/nguồn riêng và header SSE kèm sự kiện `done`.
+- `uv sync --frozen`, Ruff check/format và ty đạt. Pytest toàn bộ đạt 1.098 ca, bỏ qua 5 ca, có một cảnh báo deprecation của Starlette TestClient. Cả 5 ca t7 chạy riêng đều đạt.
+- Bên lý thuyết có thể dùng bảng làm bằng chứng giảm byte truyền và p95 đọc danh mục trên loopback. Phép đo t7 chạy rảnh, số liệu tải song song OCR/xuất PDF nằm ở mục t2. Phạm vi t7 là FastAPI cục bộ. Chế độ nhóm đặt `no-store` ở lớp ngoài. Bản ZIP cần được dựng lại ở lượt phát hành.

@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import gzip
 import hashlib
 import importlib
 import inspect
@@ -12,6 +13,7 @@ import re
 import sqlite3
 import time
 import zipfile
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID, uuid4
@@ -122,6 +124,8 @@ from mach_backend.workspace_store import WorkspaceStore
 
 OWNER = "local"
 ROOT = Path(__file__).resolve().parents[3]
+PUBLIC_REVALIDATE = "public, no-cache"
+PUBLIC_ASSET_SUFFIXES = {".js", ".mjs", ".css", ".svg", ".json"}
 RETRYABLE = {
     "invalid_result",
     "wrong_job",
@@ -141,6 +145,73 @@ LEVELS = (
     "Vận dụng cao: phối hợp nhiều kiến thức, lập luận trong tình huống phức tạp. "
     "Nhãn mức độ phải tương ứng việc học sinh cần làm; giáo viên sẽ rà lại nội dung."
 )
+
+
+def _public_variants(body: bytes) -> dict[str, tuple[bytes, str]]:
+    variants = {"identity": (body, f'"{hashlib.sha256(body).hexdigest()}"')}
+    if len(body) >= 1024:
+        compressed = gzip.compress(body, compresslevel=5, mtime=0)
+        if len(compressed) < len(body):
+            variants["gzip"] = (compressed, f'"{hashlib.sha256(compressed).hexdigest()}"')
+    return variants
+
+
+@lru_cache(maxsize=1)
+def _catalog_variants() -> dict[str, tuple[bytes, str]]:
+    return _public_variants(bytes(JSONResponse({"collections": lesson_catalog()}).body))
+
+
+# Khóa theo byte để nhận ra cả bản thay có cùng kích thước và mtime.
+_asset_variants = lru_cache(maxsize=32)(_public_variants)
+
+
+def _accepts_gzip(request: Request) -> bool:
+    weights: dict[str, float] = {}
+    for header in request.headers.getlist("accept-encoding"):
+        for item in header.split(","):
+            name, separator, parameter = item.lower().partition(";")
+            weight = 1.0
+            if separator:
+                key, _, value = parameter.partition("=")
+                try:
+                    weight = float(value) if key.strip() == "q" else 0.0
+                except ValueError:
+                    weight = 0.0
+            weights[name.strip()] = weight if 0 <= weight <= 1 else 0.0
+    gzip_weight = weights.get("gzip", weights.get("*", 0.0))
+    return gzip_weight > 0 and gzip_weight >= weights.get("identity", 0.0)
+
+
+def _public_response(
+    request: Request,
+    variants: dict[str, tuple[bytes, str]],
+    media_type: str,
+    *,
+    file: FileResponse | None = None,
+) -> Response:
+    use_gzip = (
+        "gzip" in variants
+        and (file is None or "range" not in request.headers)
+        and _accepts_gzip(request)
+    )
+    body, etag = variants["gzip" if use_gzip else "identity"]
+    headers = {"Cache-Control": PUBLIC_REVALIDATE, "ETag": etag, "Vary": "Accept-Encoding"}
+    validators = {etag, f"W/{etag}", "*"}
+    if any(
+        tag.strip() in validators
+        for value in request.headers.getlist("if-none-match")
+        for tag in value.split(",")
+    ):
+        return Response(status_code=304, headers=headers)
+    if use_gzip:
+        headers["Content-Encoding"] = "gzip"
+    elif file is not None:
+        file.headers.update(headers)
+        if "range" in request.headers:
+            return file
+        file.headers["content-length"] = str(len(body))
+        return Response(body, headers=file.headers)
+    return Response(body, media_type=media_type, headers=headers)
 
 
 def ui_entry(root=ROOT):
@@ -682,6 +753,13 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
                 return await call_next(request)
         return await call_next(request)
 
+    @app.middleware("http")
+    async def prevent_private_caching(request: Request, call_next):
+        response = await call_next(request)
+        if response.headers.get("cache-control") != PUBLIC_REVALIDATE:
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
     @app.exception_handler(AIError)
     async def ai_error(_request, error):
         payload: dict[str, Any] = {"error": str(error), "code": error.code}
@@ -718,8 +796,8 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         }
 
     @app.get("/api/lesson-catalog")
-    def list_lessons():
-        return {"collections": lesson_catalog()}
+    def list_lessons(request: Request):
+        return _public_response(request, _catalog_variants(), "application/json")
 
     @app.get("/api/poc/sample")
     def poc_sample(dataset: str = "bio-tham-thau"):
@@ -2914,7 +2992,7 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
         return Response(ui_entry(), media_type="text/html", headers={"Cache-Control": "no-store"})
 
     @app.get("/{file_path:path}")
-    def static(file_path: str):
+    def static(file_path: str, request: Request):
         candidate = (ROOT / (file_path or "index.html")).resolve()
         if not candidate.is_relative_to(ROOT) or not candidate.is_file():
             raise HTTPException(404)
@@ -2934,6 +3012,10 @@ def create_app(directory: Path, provider=None, *, agent_call=None, account_info=
             return Response(
                 ui_entry(), media_type="text/html", headers={"Cache-Control": "no-store"}
             )
+        if relative.parts[0] == "assets" and candidate.suffix in PUBLIC_ASSET_SUFFIXES:
+            file = FileResponse(candidate, stat_result=candidate.stat())
+            variants = _asset_variants(candidate.read_bytes())
+            return _public_response(request, variants, file.headers["content-type"], file=file)
         return FileResponse(candidate, headers={"Cache-Control": "no-store"})
 
     return app
