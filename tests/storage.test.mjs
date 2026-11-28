@@ -2,9 +2,32 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 // Mô phỏng callback/transaction IndexedDB, không thay logic storage cần kiểm.
+function testBrowser(){
+ const data=new Map(),previous={indexedDB:globalThis.indexedDB,fetch:globalThis.fetch,sessionStorage:globalThis.sessionStorage};
+ function transaction(){
+  let remaining=0;
+  const enqueue=callback=>{
+   remaining++;
+   queueMicrotask(()=>{callback();if(--remaining===0)tx.oncomplete?.();});
+  };
+  const store={
+   get(key){const r={};enqueue(()=>{r.result=structuredClone(data.get(key));r.onsuccess?.();});return r;},
+   put(value,key){const copy=structuredClone(value);enqueue(()=>data.set(key,copy));},
+   delete(key){enqueue(()=>data.delete(key));},
+  };
+  const tx={objectStore:()=>store};
+  return tx;
+ }
+ globalThis.indexedDB={open(){const request={};queueMicrotask(()=>{request.result={transaction};request.onsuccess?.();});return request;}};
+ async function open(session=new Map()){
+  globalThis.sessionStorage={getItem:key=>session.get(key),setItem:(key,value)=>session.set(key,value)};
+  const storage=await import('../storage.js?test='+crypto.randomUUID());
+  return {storage,session,pendingKey:(id='local',key='state')=>id+':__pending:'+session.get('mach-storage-tab')+':'+key};
+ }
+ return {data,open,restore(){Object.assign(globalThis,previous);}};
+}
 async function harness(){
- const data=new Map(),previous={indexedDB:globalThis.indexedDB,fetch:globalThis.fetch};
- globalThis.indexedDB={open(){const request={};queueMicrotask(()=>{request.result={transaction(){const tx={objectStore(){return {get(key){const r={};queueMicrotask(()=>{r.result=structuredClone(data.get(key));r.onsuccess?.();});return r;},put(value,key){data.set(key,structuredClone(value));queueMicrotask(()=>tx.oncomplete?.());}};}};return tx;}};request.onsuccess?.();});return request;}};
+ const browser=testBrowser(),tab=await browser.open();
  const responses=[],writes=[];
  globalThis.fetch=async(url,options)=>{
   if(!options?.body)return {ok:true,status:200,json:async()=>({value:{title:'Ban đầu'},revision:1})};
@@ -12,8 +35,7 @@ async function harness(){
   if(responses.length)return responses.shift()(body,options);
   return {ok:true,status:200,json:async()=>({revision:writes.length+1})};
  };
- const storage=await import('../storage.js?test='+crypto.randomUUID());
- return {storage,data,responses,writes,restore(){globalThis.indexedDB=previous.indexedDB;globalThis.fetch=previous.fetch;}};
+ return {...browser,...tab,responses,writes};
 }
 
 test('Đổi tài khoản không đồng bộ nháp offline của người trước sang tài khoản mới',async()=>{
@@ -29,20 +51,21 @@ test('Đổi tài khoản không đồng bộ nháp offline của người trư�
  }finally{h.restore();}
 });
 
-test('Hai lần lưu chồng nhau phải tuần tự, dùng revision mới và không mất bản mới nhất',async()=>{
+test('Các lần lưu chồng nhau phải tuần tự, dùng revision mới và không mất bản mới nhất',async()=>{
  const h=await harness();try{
   await h.storage.get('state');let release;
   h.responses.push(()=>new Promise(resolve=>{release=()=>resolve({ok:true,status:200,json:async()=>({revision:2})});}));
   const first=h.storage.put('state',{title:'Bản A'});
   await new Promise(resolve=>setImmediate(resolve));
   const second=h.storage.put('state',{title:'Bản B'});
+  const third=h.storage.put('state',{title:'Bản C'});
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(h.writes.length,1);
-  assert.deepEqual(h.data.get('local:__pending:state').value,{title:'Bản B'});
-  release();await first;await second;
-  assert.equal(h.writes[1].headers['If-Match'],'2');
+  assert.deepEqual(h.data.get(h.pendingKey()).value,{title:'Bản C'});
+  release();await Promise.all([first,second,third]);
+  assert.deepEqual(h.writes.map(write=>write.headers['If-Match']),['1','2','3']);
   assert.equal(h.storage.hasPendingWrites(),false);
-  assert.deepEqual(h.data.get('local:state'),{title:'Bản B'});
+  assert.deepEqual(h.data.get('local:state'),{title:'Bản C'});
  }finally{h.restore();}
 });
 
@@ -68,7 +91,7 @@ test('Tab kho nhóm ràng buộc các yêu cầu với tài khoản đã mở v�
   await assert.rejects(h.storage.put('state',{title:'Nháp A'}),/Tài khoản đã đổi/);
   assert.deepEqual(requests.map(({url})=>url),['/api/kv?key=state','/api/workspace/restore/preview','/api/workspace/restore','/api/kv']);
   assert(requests.every(({headers})=>headers['X-Workspace-Context']==='team:nguoi-a'));
-  assert.equal(h.data.get('team:nguoi-a:__pending:state').value.title,'Nháp A');
+  assert.equal(h.data.get(h.pendingKey('team:nguoi-a')).value.title,'Nháp A');
  }finally{h.restore();}
 });
 
@@ -82,22 +105,22 @@ test('Conflict giữ bản mới offline và không ghi đè server khi tự ret
   assert(h.storage.hasPendingWrites());
   assert.equal(h.writes[1].headers['If-Match'],'1');
   assert(h.storage.hasStateConflict());
-  assert.deepEqual(h.data.get('local:__pending:state').value,{title:'Bản cần khôi phục'});
+  assert.deepEqual(h.data.get(h.pendingKey()).value,{title:'Bản cần khôi phục'});
  }finally{h.restore();}
 });
 
-test('Lượt lưu cũ đã xong không xóa bản nháp mới ghi từ tab khác',async()=>{
+test('Đọc bản nháp IndexedDB từ phiên bản cũ và giữ lại khi tải lại tab',async()=>{
  const h=await harness();try{
-  await h.storage.get('state');
-  let release;
-  h.responses.push(()=>new Promise(resolve=>{release=()=>resolve({ok:true,status:200,json:async()=>({revision:2})});}));
-  const oldSave=h.storage.put('state',{title:'Bản lưu cũ'});
-  await new Promise(resolve=>setImmediate(resolve));
-  const newer={id:crypto.randomUUID(),base:1,value:{title:'Bản nháp ở tab khác'}};
-  h.data.set('local:__pending:state',newer);
-  release();
-  await oldSave;
-  assert.deepEqual(h.data.get('local:__pending:state'),newer);
+  const legacy={id:crypto.randomUUID(),base:1,conflict:true,value:{title:'Bản nháp cũ'}};
+  h.data.set('local:__pending:state',legacy);
+  globalThis.fetch=async()=>{throw Error('Mất mạng');};
+  assert.deepEqual(await h.storage.get('state'),legacy.value);
+  assert.equal(h.storage.hasStateConflict(),true);
+  assert.deepEqual(h.data.get(h.pendingKey()),legacy);
+  assert.equal(h.data.has('local:__pending:state'),false);
+  const reloaded=await h.open(h.session);
+  assert.deepEqual(await reloaded.storage.get('state'),legacy.value);
+  assert.equal(reloaded.storage.hasStateConflict(),true);
  }finally{h.restore();}
 });
 
@@ -146,9 +169,9 @@ for(const [scenario,failPreview] of [
    finishPreview();
    await preview;
    assert(h.storage.hasPendingWrites());
-   assert.deepEqual(h.data.get('local:__pending:state').value,draft);
-  assert.equal(h.data.get('local:__pending:state').base,1);
-   assert.deepEqual(h.data.get('local:state'),draft);
+   assert.deepEqual(h.data.get(h.pendingKey()).value,draft);
+   assert.equal(h.data.get(h.pendingKey()).base,1);
+   assert.deepEqual(h.data.get('local:state'),{title:'Ban đầu'});
    assert.equal(h.writes.length,2);
    await h.storage.retryPendingWrites();
    assert.equal(h.writes.length,3);
@@ -168,8 +191,8 @@ test('Nháp đang chờ đồng bộ chặn yêu cầu xem trước và vẫn c�
   await assert.rejects(h.storage.previewRestore({state:{title:'Bản sao thử'}}),/Còn bản nháp chưa đồng bộ/);
   assert.equal(h.writes.length,1);
   assert(h.storage.hasPendingWrites());
-  assert.deepEqual(h.data.get('local:__pending:state').value,draft);
-  assert.equal(h.data.get('local:__pending:state').base,1);
+  assert.deepEqual(h.data.get(h.pendingKey()).value,draft);
+  assert.equal(h.data.get(h.pendingKey()).base,1);
  }finally{h.restore();}
 });
 
@@ -220,10 +243,11 @@ test('allQuestionBank phân trang tới hết total và trả null khi máy ch�
  }finally{h.restore();}
 });
 
-test('Hai tab cùng IndexedDB: tab B gặp 409 rồi tab A lưu tiếp không làm mất nháp B khi B tải lại',async()=>{
- const data=new Map(),previous={indexedDB:globalThis.indexedDB,fetch:globalThis.fetch};
- globalThis.indexedDB={open(){const request={};queueMicrotask(()=>{request.result={transaction(){const tx={objectStore(){return {get(key){const r={};queueMicrotask(()=>{r.result=structuredClone(data.get(key));r.onsuccess?.();});return r;},put(value,key){data.set(key,structuredClone(value));queueMicrotask(()=>tx.oncomplete?.());}};}};return tx;}};request.onsuccess?.();});return request;}};
+test('Hai tab lưu chồng: B giữ nháp 409 khi chưa có phản hồi của A và sau khi cả hai tải lại',async()=>{
+ const browser=testBrowser(),{data}=browser;
  let serverRev=10,serverState={title:'Gốc'};
+ let receiveA,releaseA;
+ const acceptedA=new Promise(resolve=>{receiveA=resolve;});
  globalThis.fetch=async(url,options)=>{
   if(!options?.body)return {ok:true,status:200,json:async()=>({value:structuredClone(serverState),revision:serverRev})};
   const body=JSON.parse(options.body);
@@ -233,38 +257,59 @@ test('Hai tab cùng IndexedDB: tab B gặp 409 rồi tab A lưu tiếp không l�
   }
   serverRev+=1;
   serverState=structuredClone(body.value);
-  return {ok:true,status:200,json:async()=>({revision:serverRev})};
+  const revision=serverRev;
+  if(body.value.title==='A lưu 1')await new Promise(resolve=>{releaseA=resolve;receiveA();});
+  return {ok:true,status:200,json:async()=>({revision})};
  };
  try{
-  const tabA=await import('../storage.js?tabA='+crypto.randomUUID());
-  const tabB=await import('../storage.js?tabB='+crypto.randomUUID());
-  await tabA.get('state');
-  await tabB.get('state');
-
-  // 1. Tab A lưu lần 1 (rev 10 -> 11)
-  await tabA.put('state',{title:'QA TAB A LUU 1'});
+  const a=await browser.open();
+  await a.storage.get('state');
+  const b=await browser.open();
+  await b.storage.get('state');
+  const savingA=a.storage.put('state',{title:'A lưu 1'});
+  await acceptedA;
   assert.equal(serverRev,11);
-
-  // 2. Tab B (base=10) lưu -> 409 stale_snapshot, nháp B lưu trong IndexedDB
-  await assert.rejects(tabB.put('state',{title:'QA TAB B NHAP CHUA LUU'}),/đã đổi/);
-  assert.equal(tabB.hasStateConflict(),true);
-  assert.equal(data.get('local:__pending:state').value.title,'QA TAB B NHAP CHUA LUU');
-  assert.equal(data.get('local:__pending:state').conflict,true);
-
-  // 3. Tab A lưu lần 2 (rev 11 -> 12) -> KHÔNG được xóa/ghi đè nháp 409 của tab B
-  await tabA.put('state',{title:'QA TAB A LUU 2'});
+  const draftB={title:'Nháp B'};
+  await assert.rejects(b.storage.put('state',draftB),/đã đổi/);
+  assert.equal(b.storage.hasStateConflict(),true);
+  assert.deepEqual(data.get(b.pendingKey()).value,draftB);
+  assert.equal(data.get(b.pendingKey()).conflict,true);
+  releaseA();await savingA;
+  await a.storage.put('state',{title:'A lưu 2'});
   assert.equal(serverRev,12);
-  assert.equal(data.get('local:__pending:state').value.title,'QA TAB B NHAP CHUA LUU');
-  assert.equal(data.get('local:state').title,'QA TAB B NHAP CHUA LUU');
-
-  // 4. Tab B tải lại (context mới đọc từ IndexedDB) -> vẫn khôi phục nháp B và cờ xung đột 409
-  const tabBReloaded=await import('../storage.js?tabBReload='+crypto.randomUUID());
-  const loaded=await tabBReloaded.get('state');
-  assert.equal(loaded.title,'QA TAB B NHAP CHUA LUU');
-  assert.equal(tabBReloaded.hasStateConflict(),true);
-  assert.equal(tabBReloaded.hasPendingWrites(),true);
+  assert.equal(data.has(a.pendingKey()),false);
+  assert.deepEqual(data.get(b.pendingKey()).value,draftB);
+  const reloadedA=await browser.open(a.session);
+  assert.deepEqual(await reloadedA.storage.get('state'),{title:'A lưu 2'});
+  assert.equal(reloadedA.storage.hasPendingWrites(),false);
+  const reloadedB=await browser.open(b.session);
+  assert.deepEqual(await reloadedB.storage.get('state'),draftB);
+  assert.equal(reloadedB.storage.hasStateConflict(),true);
+  assert.equal(reloadedB.storage.hasPendingWrites(),true);
  }finally{
-  globalThis.indexedDB=previous.indexedDB;
-  globalThis.fetch=previous.fetch;
+  releaseA?.();
+  browser.restore();
  }
+});
+
+test('Phản hồi lưu đến muộn không hạ phiên bản cache của tab khác',async()=>{
+ const h=await harness();try{
+  await h.storage.get('state');
+  let release;
+  const accepted=new Promise(resolve=>{
+   h.responses.push(()=>new Promise(respond=>{
+    release=()=>respond({ok:true,status:200,json:async()=>({revision:2})});
+    resolve();
+   }));
+  });
+  const saving=h.storage.put('state',{title:'A đã lưu'});
+  await accepted;
+  const b=await h.open(),fetchWrites=globalThis.fetch;
+  globalThis.fetch=(url,options)=>options?.body?fetchWrites(url,options):
+   Promise.resolve({ok:true,status:200,json:async()=>({value:{title:'A đã lưu'},revision:2})});
+  await b.storage.get('state');
+  await b.storage.put('state',{title:'B đã lưu sau A'});
+  release();await saving;
+  assert.deepEqual(h.data.get('local:state'),{title:'B đã lưu sau A'});
+ }finally{h.restore();}
 });

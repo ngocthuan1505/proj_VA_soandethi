@@ -7,6 +7,7 @@ import base64
 import io
 import json
 import sqlite3
+import wave
 import zipfile
 from types import SimpleNamespace
 from typing import Any
@@ -998,7 +999,13 @@ def test_selective_ocr_empty_page_keeps_needs_ocr_and_preserves_text_pages(tmp_p
 
 def test_share_clone_and_restore_preserves_wav_and_null_answers(tmp_path):
     """Chia sẻ, sao chép và sao lưu/khôi phục giữ WAV phát được và nhận đáp án null."""
-    valid_wav = b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x44\xac\x00\x00"
+    sample_rate = 8_000
+    pcm = (b"\x00\x20" * 10 + b"\x00\xe0" * 10) * (sample_rate // 20)
+    wav_buffer = io.BytesIO()
+    with wave.open(wav_buffer, "wb") as writer:
+        writer.setparams((1, 2, sample_rate, 0, "NONE", "not compressed"))
+        writer.writeframes(pcm)
+    valid_wav = wav_buffer.getvalue()
     wav_uri = _data_url("audio/wav", valid_wav)
     exam_audio_id = "aud_exam_1"
     q_audio_id = "aud_q_1"
@@ -1055,10 +1062,14 @@ def test_share_clone_and_restore_preserves_wav_and_null_answers(tmp_path):
         assert f"/api/share/audio/{token}/{exam_audio_id}" in html_res.text
         assert f"/api/share/audio/{token}/{q_audio_id}" in html_res.text
 
-        aud_res = src_client.get(f"/api/share/audio/{token}/{exam_audio_id}")
-        assert aud_res.status_code == 200
-        assert aud_res.headers["content-type"].startswith("audio/wav")
-        assert aud_res.content == valid_wav
+        for file_id in (exam_audio_id, q_audio_id):
+            aud_res = src_client.get(f"/api/share/audio/{token}/{file_id}")
+            assert aud_res.status_code == 200
+            assert aud_res.headers["content-type"].startswith("audio/wav")
+            assert aud_res.content == valid_wav
+            with wave.open(io.BytesIO(aud_res.content), "rb") as audio:
+                assert audio.getnframes() == audio.getframerate() == sample_rate
+                assert audio.readframes(sample_rate) == pcm
 
         # /api/share/read/{token} giữ audio metadata + files để sao chép
         read_res = src_client.get(f"/api/share/read/{token}")

@@ -1,4 +1,27 @@
-const TAB_ID=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2);
+const TAB_SESSION_KEY='mach-storage-tab';
+let tabIdPromise;
+function claimTabId(locks,id){
+ return new Promise((resolve,reject)=>{
+  locks.request(TAB_SESSION_KEY+':'+id,{ifAvailable:true},lock=>{
+   resolve(Boolean(lock));
+   if(lock)return new Promise(()=>{});
+  }).catch(reject);
+ });
+}
+function tabId(){
+ return tabIdPromise??=(async()=>{
+  let session,id;
+  try{session=globalThis.sessionStorage;id=session?.getItem(TAB_SESSION_KEY);}catch{}
+  const locks=globalThis.window?.navigator?.locks;
+  // Một tab được nhân bản có thể nhận bản sao sessionStorage của tab nguồn.
+  if(id&&(!locks||await claimTabId(locks,id)))return id;
+  id=crypto.randomUUID();
+  if(locks)await claimTabId(locks,id);
+  try{session?.setItem(TAB_SESSION_KEY,id);}catch{}
+  return id;
+ })();
+}
+async function pendingKey(key){return '__pending:'+await tabId()+':'+key;}
 const contexts=new Map();
 function contextFor(id){
  if(!contexts.has(id))contexts.set(id,{id,revision:0,stateConflict:false,pending:new Map(),inflight:new WeakMap(),disk:Promise.resolve(),remote:Promise.resolve()});
@@ -27,21 +50,54 @@ async function localGet(ctx,key){
   request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);
  });
 }
-async function localPut(ctx,key,value){
+function writeCache(store,ctx,key,value,revision){
+ const name=ctx.id+':'+key;
+ if(key!=='state'){store.put(value,name);return;}
+ const revisionKey=ctx.id+':__cacheRevision:state',request=store.get(revisionKey);
+ request.onsuccess=()=>{
+  if(revision<request.result)return;
+  store.put(value,name);
+  store.put(revision,revisionKey);
+ };
+}
+async function localPut(ctx,key,value,revision){
  const db=await requireDb();
  return new Promise((resolve,reject)=>{
-  const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(value,ctx.id+':'+key);
+  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv');
+  if(revision===undefined)store.put(value,ctx.id+':'+key);
+  else writeCache(store,ctx,key,value,revision);
   tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Không lưu được bản tạm.'));
  });
 }
-async function updatePending(ctx,key,record,next){
+async function readPending(ctx,key){
+ const name=ctx.id+':'+await pendingKey(key),legacyName=ctx.id+':__pending:'+key;
  const db=await requireDb();
  return new Promise((resolve,reject)=>{
-  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv'),name=ctx.id+':__pending:'+key;
+  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv'),request=store.get(name);
+  let record;
+  request.onsuccess=()=>{
+   record=request.result;
+   if(record)return;
+   const legacy=store.get(legacyName);
+   legacy.onsuccess=()=>{
+    record=legacy.result;
+    if(record?.value!==undefined){store.put(record,name);store.delete(legacyName);}
+   };
+  };
+  tx.oncomplete=()=>resolve(record);
+  tx.onabort=()=>reject(tx.error||Error('Không đọc được bản tạm.'));
+ });
+}
+async function updatePending(ctx,key,record,next){
+ const name=ctx.id+':'+await pendingKey(key);
+ const db=await requireDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv');
   const request=store.get(name);
   request.onsuccess=()=>{
-   if(!request.result||request.result.id!==record.id){resolve();return;}
-   store.put(next,name);
+   if(request.result?.id!==record.id)return;
+   if(next)store.put(next,name);
+   else store.delete(name);
   };
   tx.oncomplete=()=>resolve();
   tx.onerror=()=>reject(tx.error);
@@ -55,20 +111,28 @@ function send(ctx,key,record,saved=Promise.resolve()){
  if(ctx.inflight.has(record))return ctx.inflight.get(record);
  const operation=ctx.remote.then(async()=>{
   await saved;sameIdentity(ctx);
+  if(key==='state')record.base=ctx.revision;
   const response=await fetch('/api/kv',{method:'PUT',headers:{...workspaceHeaders(ctx),'Content-Type':'application/json',...(key==='state'?{'If-Match':String(record.base)}:{})},body:JSON.stringify({key,value:record.value})});
   let result;try{result=await response.json();}catch{throw Error('Máy chủ chưa trả kết quả lưu hợp lệ. Bản tạm vẫn được giữ.');}
   if(!response.ok){
    if(key==='state'&&response.status===409&&result.code==='stale_snapshot'){
     ctx.stateConflict=true;
-    record.conflict=true;
-    await disk(ctx,()=>updatePending(ctx,key,record,{...record,conflict:true}));
+    const latest=ctx.pending.get(key);
+    if(latest){
+     latest.conflict=true;
+     await disk(ctx,()=>updatePending(ctx,key,latest,latest));
+    }
    }
    throw Error(result.error||'Không lưu được dữ liệu trên máy chủ. Bản tạm vẫn được giữ.');
   }
   if(key==='state'){ctx.revision=result.revision;ctx.stateConflict=false;}
   await disk(ctx,async()=>{
+   await localPut(ctx,key,record.value,result.revision);
    const latest=ctx.pending.get(key);
-   if(latest===record){ctx.pending.delete(key);await updatePending(ctx,key,record,null);}
+   if(latest===record){
+    await updatePending(ctx,key,record,null);
+    if(ctx.pending.get(key)===record)ctx.pending.delete(key);
+   }
    else if(latest){
     // Lần lưu cũ chỉ được cập nhật base, không xóa nháp mới hơn đang chờ.
     if(key==='state')latest.base=result.revision;
@@ -90,9 +154,14 @@ export async function retryPendingWrites(){
 }
 export async function get(key,{requireRemote=false}={}){
  const ctx=active;await ctx.remote;await ctx.disk;
- const queued=ctx.pending.get(key)||await localGet(ctx,'__pending:'+key);
+ const stored=ctx.pending.has(key)?null:await readPending(ctx,key);
+ const queued=ctx.pending.get(key)||stored;
  if(queued?.value!==undefined){
-  ctx.pending.set(key,queued);if(key==='state'&&!ctx.revision)ctx.revision=queued.base||0;
+  ctx.pending.set(key,queued);
+  if(key==='state'){
+   if(!ctx.revision)ctx.revision=queued.base||0;
+   ctx.stateConflict=Boolean(queued.conflict);
+  }
   if(requireRemote)throw Error('Còn thay đổi chờ đồng bộ. Kết nối lại và đồng bộ bản nháp trước khi tiếp tục.');
  }
  try{
@@ -109,7 +178,7 @@ export async function get(key,{requireRemote=false}={}){
   }
   if(key==='state'&&result.revision<ctx.revision)return localGet(ctx,key);
   if(key==='state'){ctx.revision=result.revision;ctx.stateConflict=false;}
-  if(result.value!==null){await disk(ctx,()=>localPut(ctx,key,result.value));return result.value;}
+  if(result.value!==null){await disk(ctx,()=>localPut(ctx,key,result.value,result.revision));return result.value;}
   const legacy=await localGet(ctx,key);
   if(legacy!==undefined&&key.startsWith('file:')){sameIdentity(ctx);await put(key,legacy);}
   return legacy;
@@ -117,18 +186,15 @@ export async function get(key,{requireRemote=false}={}){
   if(requireRemote||error.auth||ctx!==active)throw error;
   if(key==='state')console.warn('Dùng bản lưu trong trình duyệt:',error.message);
  }
- return ctx.pending.get(key)?.value??localGet(ctx,key);
+ const latest=ctx.pending.get(key);
+ return latest?latest.value:localGet(ctx,key);
 }
 export function put(key,value){
- const ctx=active,prevMemId=ctx.pending.get(key)?.id,record={id:crypto.randomUUID(),tabId:TAB_ID,value:structuredClone(value),base:key==='state'?ctx.revision:0};
+ const ctx=active,record={id:crypto.randomUUID(),value:structuredClone(value),base:key==='state'?ctx.revision:0};
  if(ctx.restoring)return Promise.reject(Error('Đang khôi phục kho. Chờ hoàn tất trước khi sửa.'));
+ if(key==='state'&&ctx.stateConflict)record.conflict=true;
  ctx.pending.set(key,record);
- const saved=disk(ctx,async()=>{
-  const existing=await localGet(ctx,'__pending:'+key);
-  if(existing?.value!==undefined&&existing.id!==record.id&&existing.id!==prevMemId&&existing.tabId!==record.tabId)return;
-  await localPut(ctx,key,record.value);
-  await localPut(ctx,'__pending:'+key,record);
- });
+ const saved=disk(ctx,async()=>localPut(ctx,await pendingKey(key),record));
  return send(ctx,key,record,saved);
 }
 export async function allFiles(ids){const ctx=active,files={};for(const id of ids){sameIdentity(ctx);const value=await get('file:'+id);sameIdentity(ctx);if(value)files[id]=value;}return files;}
@@ -216,11 +282,12 @@ export async function restoreBackup(backup,revision){
   ctx.revision=result.revision;ctx.stateConflict=false;
   try{
    await disk(ctx,async()=>{
-    const database=await dbp;
+    const database=await requireDb(),prefix=ctx.id+':'+await pendingKey('');
     await new Promise((resolve,reject)=>{
      const tx=database.transaction('kv','readwrite'),store=tx.objectStore('kv');
      for(const [key,value]of [['state',backup.state],...Object.entries(backup.files||{}).map(([id,value])=>['file:'+id,value])]){
-      store.put(value,ctx.id+':'+key);store.put(null,ctx.id+':__pending:'+key);
+      writeCache(store,ctx,key,value,result.revision);
+      store.delete(prefix+key);
      }
      tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Chưa lưu được cache.'));
     });

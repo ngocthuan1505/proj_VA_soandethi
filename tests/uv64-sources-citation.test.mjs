@@ -116,20 +116,31 @@ function withMockBrowserEnv(selectorMap, innerDims, fn) {
       queueMicrotask(() => {
         request.result = {
           transaction() {
+            let remaining = 0;
+            const enqueue = (callback) => {
+              remaining++;
+              queueMicrotask(() => {
+                callback();
+                if (--remaining === 0) tx.oncomplete?.();
+              });
+            };
             const tx = {
               objectStore() {
                 return {
                   get(key) {
                     const r = {};
-                    queueMicrotask(() => {
+                    enqueue(() => {
                       r.result = structuredClone(idbData.get(key));
                       r.onsuccess?.();
                     });
                     return r;
                   },
                   put(value, key) {
-                    idbData.set(key, structuredClone(value));
-                    queueMicrotask(() => tx.oncomplete?.());
+                    const copy = structuredClone(value);
+                    enqueue(() => idbData.set(key, copy));
+                  },
+                  delete(key) {
+                    enqueue(() => idbData.delete(key));
                   },
                 };
               },
