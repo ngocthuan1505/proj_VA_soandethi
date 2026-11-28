@@ -548,7 +548,8 @@ async function main() {
     unexpectedHttpErrors: [],
   };
 
-  let allowExpectedHttp = false;
+  let expected409Responses = null;
+  let expected409Console = null;
   let browser;
 
   const recordBug = (owner, area, title, details) => {
@@ -568,17 +569,42 @@ async function main() {
     const page = await context.newPage();
 
     page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        if (!allowExpectedHttp) summary.consoleErrors.push(msg.text());
+      if (msg.type() !== 'error') return;
+      const text = msg.text();
+      if (Array.isArray(expected409Console) && /Failed to load resource:.*409\b/i.test(text)) {
+        const locUrl = msg.location?.()?.url || '';
+        let pathname = '';
+        try {
+          pathname = new URL(locUrl).pathname;
+        } catch {}
+        const hit = expected409Console.find((rule) => !rule.matched && rule.pathname === pathname);
+        if (hit) {
+          hit.matched = true;
+          return;
+        }
       }
+      summary.consoleErrors.push(text);
     });
     page.on('pageerror', (err) => {
       summary.pageErrors.push(err.message);
     });
     page.on('response', (res) => {
-      if (res.status() >= 400 && !allowExpectedHttp) {
-        summary.unexpectedHttpErrors.push({status: res.status(), url: res.url()});
+      if (res.status() < 400) return;
+      if (res.status() === 409 && Array.isArray(expected409Responses)) {
+        let pathname = '';
+        try {
+          pathname = new URL(res.url()).pathname;
+        } catch {}
+        const method = res.request().method();
+        const hit = expected409Responses.find(
+          (rule) => !rule.matched && rule.method === method && rule.pathname === pathname,
+        );
+        if (hit) {
+          hit.matched = true;
+          return;
+        }
       }
+      summary.unexpectedHttpErrors.push({status: res.status(), url: res.url()});
     });
 
     const waitReady = async () => {
@@ -1400,31 +1426,48 @@ async function main() {
       await page.unroute('**/api/assistant/patch');
 
       // Test REAL 409 conflicts on backend endpoints!
-      allowExpectedHttp = true;
-      const conflictResults = await page.evaluate(async (eid) => {
-        const kv = await (await fetch('/api/kv?key=state')).json();
-        const staleKv = await fetch('/api/kv', {
-          method: 'PUT',
-          headers: {'Content-Type': 'application/json', 'If-Match': '0'},
-          body: JSON.stringify({key: 'state', value: kv.value}),
-        });
-        const staleConfigPatch = await fetch('/api/assistant/patch', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json', 'X-PoC-Config': 'stale-fingerprint'},
-          body: JSON.stringify({}),
-        });
-        const staleReverse = await fetch(`/api/exams/${eid}/reverse-matrix`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({baseRevision: 0}),
-        });
-        return {
-          kv409: staleKv.status,
-          patch409: staleConfigPatch.status,
-          reverse409: staleReverse.status,
-        };
-      }, originalStemAndBlocks.examId);
-      allowExpectedHttp = false;
+      const expected409Endpoints = [
+        {method: 'PUT', pathname: '/api/kv'},
+        {method: 'POST', pathname: '/api/assistant/patch'},
+        {method: 'POST', pathname: `/api/exams/${originalStemAndBlocks.examId}/reverse-matrix`},
+      ];
+      expected409Responses = expected409Endpoints.map((rule) => ({...rule, matched: false}));
+      expected409Console = expected409Endpoints.map((rule) => ({...rule, matched: false}));
+      let conflictResults;
+      try {
+        conflictResults = await page.evaluate(async (eid) => {
+          const kv = await (await fetch('/api/kv?key=state')).json();
+          const staleKv = await fetch('/api/kv', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'If-Match': '0'},
+            body: JSON.stringify({key: 'state', value: kv.value}),
+          });
+          const staleConfigPatch = await fetch('/api/assistant/patch', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-PoC-Config': 'stale-fingerprint'},
+            body: JSON.stringify({}),
+          });
+          const staleReverse = await fetch(`/api/exams/${eid}/reverse-matrix`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({baseRevision: 0}),
+          });
+          return {
+            kv409: staleKv.status,
+            patch409: staleConfigPatch.status,
+            reverse409: staleReverse.status,
+          };
+        }, originalStemAndBlocks.examId);
+        await page.waitForTimeout(50);
+        assert.equal(
+          expected409Responses.filter((rule) => rule.matched).length,
+          3,
+          'Phải khớp đúng 3 phản hồi HTTP 409 dự kiến',
+        );
+      } finally {
+        expected409Responses = null;
+        expected409Console = null;
+      }
 
       assert.equal(conflictResults.kv409, 409, 'PUT /api/kv stale If-Match phải trả 409');
       assert.equal(conflictResults.patch409, 409, 'POST /api/assistant/patch stale X-PoC-Config phải trả 409');
@@ -1440,7 +1483,8 @@ async function main() {
         conflictResults,
       };
     } catch (err) {
-      allowExpectedHttp = false;
+      expected409Responses = null;
+      expected409Console = null;
       recordFail('Pillar 4 (Thao tác nhanh, Composer, Context, Diff 2 cột & 409)', err);
     }
 

@@ -4,6 +4,11 @@ Cập nhật: 28/11/2026.
 
 ## Hiện trạng đã kiểm
 
+### 28/11/2026 · Siết lọc `console.error`/HTTP `409` trong `kiem-ui-redesign.mjs` và xác nhận `app.js` ghép lô/thay kho (t9 vòng 2)
+
+- **Sửa [`scripts/kiem-ui-redesign.mjs`](../../scripts/kiem-ui-redesign.mjs):** Bỏ cờ `allowExpectedHttp` vốn bỏ qua mọi `console.error` trong ca kiểm xung đột `409`; thay bằng bộ lọc khớp chính xác `3` phản hồi `409` dự kiến (`PUT /api/kv`, `POST /api/assistant/patch`, `POST /api/exams/{id}/reverse-matrix`) theo từng `method`/`pathname` (tối đa 1 lần cho mỗi endpoint) và chỉ lọc đúng log `Failed to load resource: ... 409` có `location().url` trùng `pathname` đó, kèm `assert` đủ `3/3` phản hồi `409`. Không chạm vùng Soạn đề của Tú.
+- **Xác nhận `app.js:702` & kiểm chứng (thiếu skill `webapp-testing`/`frontend-design`/`emil-design-eng`/`web-design-guidelines`/`ponytail-review`, kiểm Chrome trực tiếp bằng `playwright-core`):** Xác nhận commit `85e8fc9` đã phân biệt lời xác nhận `merge_batch` (ghép đề giữ kho hiện tại) với khôi phục toàn kho trong [`app.js`](../../app.js) kèm test Chrome cho cả hai nhánh trong [`tests/storage.test.mjs`](../../tests/storage.test.mjs). Chạy lại `node scripts/kiem-ui-redesign.mjs` trên 3 viewport (`1440×900`, `1280×720`, `390×844`) đạt **`ok: true`**, `0` `bugs`/`failures`/`consoleErrors`/`pageErrors`/`unexpectedHttpErrors`; `node --test "tests/*.test.mjs"` đạt **`268/268`**; `check:team` đạt **`14/14` + `Team plan OK`**. Tác động: cần chạy lại nghiệm thu tổng/đóng gói ZIP Workshop khi gom đủ các bản vá sau `2cca6b0`.
+
 ### 28/11/2026 · Giữ từ khóa phương pháp khi mở rộng truy vấn `giải hệ phương trình` trong Kho SGK (t6 vòng 2)
 
 - **Sửa [`lesson-picker.js`](../../lesson-picker.js):** Trong `expandLessonSearchVariants`, thay `out.add('giai he')` bằng `out.add(item.replace(/\bgiai he phuong trinh\b/g, 'giai he'))` (chạy sau bước đổi `phep the`/`phuong phap the`) để giữ nguyên phần còn lại của truy vấn như `Gauss` thay vì rút toàn bộ truy vấn thành `giai he`. Không chạm vùng Soạn đề của Tú.
