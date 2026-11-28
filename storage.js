@@ -1,11 +1,11 @@
 const TAB_SESSION_KEY='mach-storage-tab';
 let tabIdPromise;
 function claimTabId(locks,id){
- return new Promise((resolve,reject)=>{
-  locks.request(TAB_SESSION_KEY+':'+id,{ifAvailable:true},lock=>{
+ return new Promise(resolve=>{
+  Promise.resolve(locks.request(TAB_SESSION_KEY+':'+id,{ifAvailable:true},lock=>{
    resolve(Boolean(lock));
    if(lock)return new Promise(()=>{});
-  }).catch(reject);
+  })).catch(()=>resolve(false));
  });
 }
 function tabId(){
@@ -85,6 +85,7 @@ async function readPending(ctx,key){
    };
   };
   tx.oncomplete=()=>resolve(record);
+  tx.onerror=()=>reject(tx.error||Error('Không đọc được bản tạm.'));
   tx.onabort=()=>reject(tx.error||Error('Không đọc được bản tạm.'));
  });
 }
@@ -148,9 +149,13 @@ export function hasStateConflict(){return active.stateConflict;}
 export function hasPendingWrites(){return active.pending.size>0;}
 export async function retryPendingWrites(){
  const ctx=active;
+ let firstError=null;
  for(const [key,record] of [...ctx.pending]){
-  sameIdentity(ctx);if(ctx.pending.get(key)===record)await send(ctx,key,record);
+  sameIdentity(ctx);
+  if(ctx.pending.get(key)!==record)continue;
+  try{await send(ctx,key,record);}catch(error){firstError??=error;}
  }
+ if(firstError)throw firstError;
 }
 export async function get(key,{requireRemote=false}={}){
  const ctx=active;await ctx.remote;await ctx.disk;
@@ -172,7 +177,14 @@ export async function get(key,{requireRemote=false}={}){
   if(!response.ok)throw Error('Máy chủ chưa sẵn sàng.');
   const result=await response.json();sameIdentity(ctx);const latest=ctx.pending.get(key);
   if(latest){
-   if(key==='state')ctx.stateConflict=result.revision!==(latest.base||0);
+   if(key==='state'){
+    const conflict=result.revision!==(latest.base||0);
+    ctx.stateConflict=conflict;
+    if(conflict&&!latest.conflict){
+     latest.conflict=true;
+     try{await disk(ctx,()=>updatePending(ctx,key,latest,latest));}catch{}
+    }
+   }
    if(result.revision===(latest.base||0))try{await send(ctx,key,latest);}catch{}
    return latest.value;
   }
@@ -225,7 +237,8 @@ export async function allQuestionBank(){
   const page=data.items.map(entry=>entry&&typeof entry==='object'?(()=>{const {owner_id,...rest}=entry;return rest;})():entry);
   items.push(...page);
   offset+=page.length;
-  const total=Number.isFinite(Number(data.total))?Number(data.total):null;
+  const rawTotal=data.total;
+  const total=rawTotal!==null&&rawTotal!==undefined&&rawTotal!==''&&typeof rawTotal!=='boolean'&&Number.isFinite(Number(rawTotal))?Number(rawTotal):null;
   if(page.length===0)break;
   if(total!==null&&items.length>=total)break;
   if(total===null&&data.hasMore===false)break;
@@ -280,18 +293,34 @@ export async function restoreBackup(backup,revision){
   sameIdentity(ctx);
   if(!response.ok)throw Error(result.error||'Chưa khôi phục được dữ liệu.');
   ctx.revision=result.revision;ctx.stateConflict=false;
+  let restoredState=backup?.state&&typeof backup.state==='object'?backup.state:null;
+  if(!restoredState){
+   try{
+    const stateResponse=await fetch('/api/kv?key=state',{headers:workspaceHeaders(ctx)});
+    if(stateResponse.ok){
+     const statePayload=await stateResponse.json();
+     if(statePayload?.value&&typeof statePayload.value==='object')restoredState=statePayload.value;
+    }
+   }catch{}
+   sameIdentity(ctx);
+  }
   try{
    await disk(ctx,async()=>{
     const database=await requireDb(),prefix=ctx.id+':'+await pendingKey('');
     await new Promise((resolve,reject)=>{
      const tx=database.transaction('kv','readwrite'),store=tx.objectStore('kv');
-     for(const [key,value]of [['state',backup.state],...Object.entries(backup.files||{}).map(([id,value])=>['file:'+id,value])]){
+     if(restoredState)writeCache(store,ctx,'state',restoredState,result.revision);
+     store.delete(prefix+'state');
+     for(const [id,value] of Object.entries(backup.files||{})){
+      if(value===undefined)continue;
+      const key='file:'+id;
       writeCache(store,ctx,key,value,result.revision);
       store.delete(prefix+key);
      }
      tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Chưa lưu được cache.'));
     });
    });
+   if(!restoredState)result.cacheWarning='Kho đã khôi phục trên máy chủ; tải lại khi còn kết nối để cập nhật bộ nhớ trình duyệt.';
   }catch{result.cacheWarning='Kho đã khôi phục trên máy chủ; tải lại khi còn kết nối để cập nhật bộ nhớ trình duyệt.';}
   return result;
  }finally{ctx.restoring=false;}

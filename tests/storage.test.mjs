@@ -313,3 +313,221 @@ test('Phản hồi lưu đến muộn không hạ phiên bản cache của tab k
   assert.deepEqual(h.data.get('local:state'),{title:'B đã lưu sau A'});
  }finally{h.restore();}
 });
+
+test('Nháp offline phát hiện lệch revision khi online lại vẫn giữ trạng thái xung đột sau khi tải lại offline',async()=>{
+ const h=await harness();try{
+  let serverRev=1;
+  globalThis.fetch=async(url,options)=>{
+   if(!options?.body)return {ok:true,status:200,json:async()=>({value:{title:'Ban đầu'},revision:serverRev})};
+   return {ok:false,status:503,json:async()=>({error:'Mất mạng'})};
+  };
+  await h.storage.get('state');
+  await assert.rejects(h.storage.put('state',{title:'Nháp sửa offline'}));
+  assert.equal(h.storage.hasStateConflict(),false);
+
+  // Tab khác đẩy revision trên máy chủ lên 2; tab này tải lại khi có mạng -> ghi nhận conflict vào IndexedDB.
+  serverRev=2;
+  const onlineReload=await h.open(h.session);
+  const loaded=await onlineReload.storage.get('state');
+  assert.deepEqual(loaded,{title:'Nháp sửa offline'});
+  assert.equal(onlineReload.storage.hasStateConflict(),true);
+  assert.equal(h.data.get(h.pendingKey()).conflict,true);
+
+  // Tải lại tiếp khi ngoại tuyến: vẫn giữ nháp và cờ conflict để người dùng không vô tình ghi đè.
+  globalThis.fetch=async()=>{throw Error('Mất mạng');};
+  const offlineReload=await h.open(h.session);
+  const offlineState=await offlineReload.storage.get('state');
+  assert.deepEqual(offlineState,{title:'Nháp sửa offline'});
+  assert.equal(offlineReload.storage.hasStateConflict(),true);
+ }finally{h.restore();}
+});
+
+test('retryPendingWrites không bỏ sót file audio đang chờ khi state gặp HTTP 409',async()=>{
+ const h=await harness();try{
+  await h.storage.get('state');
+  h.responses.push(()=>{throw Error('Mất mạng');});
+  await assert.rejects(h.storage.put('state',{title:'Nháp lệch revision'}));
+  h.responses.push(()=>{throw Error('Mất mạng');});
+  await assert.rejects(h.storage.put('file:aud_1','data:audio/wav;base64,UklGRg=='));
+
+  globalThis.fetch=async(url,options)=>{
+   const body=JSON.parse(options.body);
+   h.writes.push({body,headers:options.headers});
+   if(body.key==='state')return {ok:false,status:409,json:async()=>({error:'Đề đã đổi ở nơi khác.',code:'stale_snapshot'})};
+   return {ok:true,status:200,json:async()=>({revision:5})};
+  };
+  await assert.rejects(h.storage.retryPendingWrites(),/đã đổi/);
+  assert.ok(h.writes.some(w=>w.body.key==='file:aud_1'&&w.body.value==='data:audio/wav;base64,UklGRg=='));
+  assert.equal(h.data.has(h.pendingKey('local','file:aud_1')),false);
+  assert.equal(h.data.get(h.pendingKey()).conflict,true);
+ }finally{h.restore();}
+});
+
+test('claimTabId tự chuyển UUID mới an toàn khi navigator.locks bị từ chối',async()=>{
+ const h=await harness();
+ const prevWindow=globalThis.window;
+ try{
+  globalThis.window={navigator:{locks:{request:()=>Promise.reject(Error('Lock rejected'))}}};
+  h.session.set('mach-storage-tab','stale-lock-id');
+  const tab=await h.open(h.session);
+  h.responses.push(()=>{throw Error('Mất mạng');});
+  await assert.rejects(tab.storage.put('state',{title:'Nháp fallback'}));
+  assert.notEqual(h.session.get('mach-storage-tab'),'stale-lock-id');
+  assert.equal(h.data.get(tab.pendingKey()).value.title,'Nháp fallback');
+ }finally{
+  if(prevWindow===undefined)delete globalThis.window;else globalThis.window=prevWindow;
+  h.restore();
+ }
+});
+
+test('allQuestionBank tiếp tục phân trang khi total là null hoặc rỗng và hasMore=true',async()=>{
+ const h=await harness();try{
+  const pages=[
+   {items:[{id:'q1',owner_id:'u1',stem:'Câu 1'}],total:null,hasMore:true},
+   {items:[{id:'q2',owner_id:'u1',stem:'Câu 2'}],total:'',hasMore:true},
+   {items:[{id:'q3',owner_id:'u1',stem:'Câu 3'}],hasMore:false},
+  ];
+  let idx=0;
+  globalThis.fetch=async()=>({ok:true,status:200,json:async()=>pages[idx++]});
+  const items=await h.storage.allQuestionBank();
+  assert.deepEqual(items,[{id:'q1',stem:'Câu 1'},{id:'q2',stem:'Câu 2'},{id:'q3',stem:'Câu 3'}]);
+ }finally{h.restore();}
+});
+
+test('restoreBackup giữ UUID, công thức, richDoc, audio và không ghi đè state thành undefined ở chế độ ghép lô',async()=>{
+ const h=await harness();try{
+  const examUuid='7c1d6d46-9b34-4c86-a47d-1234567890ab';
+  const richDoc={type:'doc',attrs:{id:'doc-1'},content:[{type:'math_inline',attrs:{latex:'\\frac{a}{b}'}}]};
+  const fullState={
+   current:examUuid,
+   exams:[{
+    id:examUuid,
+    title:'Đề khôi phục đầy đủ',
+    audio:{fileId:'aud_exam',filename:'nghe.wav',mimeType:'audio/wav'},
+    questions:[{id:'q-1',stem:'Tính $\\frac{1}{2}$',richDoc,formulas:['\\frac{1}{2}'],audio:{fileId:'aud_q1',mimeType:'audio/mpeg'}}],
+   }],
+  };
+  const files={aud_exam:'data:audio/wav;base64,UklGRg==',aud_q1:'data:audio/mpeg;base64,SUQzAw=='};
+  globalThis.fetch=async(url,options)=>{
+   if(String(url)==='/api/workspace/restore')return {ok:true,status:200,json:async()=>({revision:3,restoredExams:1})};
+   if(String(url).startsWith('/api/kv?key=state')){
+    if(options?.body)return {ok:true,status:200,json:async()=>({revision:1})};
+    return {ok:true,status:200,json:async()=>({value:{current:examUuid,exams:[]},revision:1})};
+   }
+   return {ok:true,status:200,json:async()=>({value:null,revision:0})};
+  };
+  await h.storage.get('state');
+  const fullRes=await h.storage.restoreBackup({format:'tro-ly-soan-de-backup',state:fullState,files},1);
+  assert.equal(fullRes.revision,3);
+  assert.equal(h.data.get('local:state').current,examUuid);
+  assert.deepEqual(h.data.get('local:state').exams[0].questions[0].richDoc,richDoc);
+  assert.equal(h.data.get('local:file:aud_exam'),files.aud_exam);
+  assert.equal(h.data.get('local:file:aud_q1'),files.aud_q1);
+
+  // Batch restore (format tro-ly-soan-de-batch) không có backup.state -> lấy state đã ghép từ server, không ghi undefined vào cache.
+  const mergedServerState={...fullState,exams:[...fullState.exams,{id:'8a2e1111-1111-4111-8111-111111111111',title:'Đề ghép thêm'}]};
+  globalThis.fetch=async(url)=>{
+   if(String(url)==='/api/workspace/restore')return {ok:true,status:200,json:async()=>({revision:4,mergedExams:1})};
+   if(String(url).startsWith('/api/kv?key=state'))return {ok:true,status:200,json:async()=>({value:mergedServerState,revision:4})};
+   return {ok:true,status:200,json:async()=>({value:null,revision:0})};
+  };
+  const batchRes=await h.storage.restoreBackup({format:'tro-ly-soan-de-batch',exams:[mergedServerState.exams[1]],files:{}},3);
+  assert.equal(batchRes.revision,4);
+  assert.equal(batchRes.cacheWarning,undefined);
+  assert.equal(h.data.get('local:state').exams.length,2);
+ }finally{h.restore();}
+});
+
+test('sharing.js ẩn đáp án khi sao cộng đồng, bảo toàn render khi HTTP 409 và chuẩn nút cảm ứng mobile',async()=>{
+ const h=await harness();
+ const prevDoc=globalThis.document;
+ try{
+  const modals=[];
+  let viewMode='home',rendered=0;
+  const formMock={querySelector:()=>({}),elements:{}};
+  const prevBtn={disabled:false},nextBtn={disabled:false};
+  const statusEl={textContent:''},resultsEl={innerHTML:'',textContent:''};
+  const filterForm={
+   isConnected:true,
+   dataset:{},
+   elements:{},
+   addEventListener(){},
+   querySelector(sel){
+    if(sel==='[data-community-results]')return resultsEl;
+    if(sel==='[data-community-status]')return statusEl;
+    if(sel==='[data-community-page=prev]')return prevBtn;
+    if(sel==='[data-community-page=next]')return nextBtn;
+    return formMock;
+   },
+  };
+  const dialog={
+   open:true,
+   close(){this.open=false;},
+   querySelector(sel){
+    if(sel==='#assistant-source-form')return null;
+    if(sel==='#community-filter')return filterForm;
+    if(sel==='#share-form')return filterForm;
+    return null;
+   },
+  };
+  globalThis.document={
+   documentElement:{style:{}},
+   body:{style:{}},
+   createElement:()=>({style:{},setAttribute(){},appendChild(){},addEventListener(){}}),
+   querySelector(sel){
+    if(sel==='#dialog')return dialog;
+    if(sel==='#share-form')return filterForm;
+    return null;
+   },
+  };
+  const prevFormData=globalThis.FormData;
+  globalThis.FormData=class{entries(){return [];}[Symbol.iterator](){return [][Symbol.iterator]();}};
+  try{
+   const {openSharing,openCommunity,cloneCommunityExam}=await import('../sharing.js?test='+crypto.randomUUID());
+   const state={exams:[{id:'old-1',title:'Đề gốc',revision:2,questions:[]}],current:'old-1'};
+   const ctx={
+    exam:()=>state.exams.find(e=>e.id===state.current),
+    getState:()=>state,
+    getViewMode:()=>viewMode,
+    setViewMode:m=>{viewMode=m;},
+    modal:(title,body)=>{modals.push({title,body});},
+    persist:async()=>{throw Error('HTTP 409 Conflict');},
+    render:()=>{rendered+=1;},
+    toast:()=>{},
+   };
+   await openSharing(ctx,async()=>({shares:[{revision:2,answers:false,community:false,created:Date.now(),url:'http://localhost/s/abc',token:'abc'}]}),{sharedSnapshots:true});
+   assert.ok(modals[0].body.includes('min-height:40px'));
+   assert.ok(modals[0].body.includes('flex-wrap:wrap'));
+
+   let communityCalls=0;
+   await openCommunity(ctx,async()=>{
+    communityCalls+=1;
+    if(communityCalls===1)return {page:2,hasMore:false,exams:[{token:'tok1',title:'Đề cộng đồng',subject:'Toán',grade:'6',questions:2,allowCopy:true}]};
+    throw Error('Mất kết nối');
+   });
+   assert.ok(resultsEl.innerHTML.includes('min-height:40px'));
+   assert.ok(resultsEl.innerHTML.includes('Xem đề'));
+   assert.ok(resultsEl.innerHTML.includes('Sao về kho của tôi'));
+   await nextBtn.onclick();
+   assert.equal(statusEl.textContent,'Mất kết nối');
+   assert.equal(prevBtn.disabled,false);
+
+   const btn={dataset:{token:'tok1'},disabled:false};
+   await assert.rejects(cloneCommunityExam(ctx,async()=>({
+    answersIncluded:false,
+    clonedExam:{id:'new-uuid-2',title:'Đề đã sao',questions:[{id:'q1',type:'choice',stem:'1+1=?',options:['1','2'],answer:1,answerKnown:true}]},
+   }),btn),/409/);
+   assert.equal(btn.disabled,false);
+   assert.equal(viewMode,'workspace');
+   assert.equal(rendered,1);
+   const cloned=state.exams.find(e=>e.id==='new-uuid-2');
+   assert.equal(cloned.questions[0].answer,null);
+   assert.equal(cloned.questions[0].answerKnown,false);
+  }finally{
+   globalThis.FormData=prevFormData;
+  }
+ }finally{
+  if(prevDoc===undefined)delete globalThis.document;else globalThis.document=prevDoc;
+  h.restore();
+ }
+});
