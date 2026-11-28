@@ -1,6 +1,21 @@
 import {esc,uid} from './core.js';
 import {mergeAssistantSourceDraft} from './reference.js';
-import {put as putStorage} from './storage.js';
+import {allFiles,put as putStorage} from './storage.js';
+
+export async function selectedExamBackup(selected){
+ const exams=structuredClone(selected);
+ const ids=new Set(),pending=[...exams];
+ while(pending.length){
+  const item=pending.pop();
+  if(item.fileId)ids.add(item.fileId);
+  for(const child of Object.values(item)){
+   if(child&&typeof child==='object')pending.push(child);
+  }
+ }
+ const files=await allFiles(ids);
+ if(Object.keys(files).length!==ids.size)throw Error('Chưa tải đủ tệp đính kèm. Hãy kết nối lại rồi tải bộ đề.');
+ return {format:'tro-ly-soan-de-batch',version:1,savedAt:new Date().toISOString(),exams,files};
+}
 
 const SHARE_LINK_STYLE='display:inline-flex;align-items:center;justify-content:center;min-height:40px;min-width:64px;padding:6px 12px;border:1px solid var(--line,#cbd5e1);border-radius:8px;white-space:nowrap;text-decoration:none;font-weight:500';
 const CLONE_ARRAY_FIELDS=['docs','matrix','history','undo','redo','chat','data','appliedPrefs','questions','passages'];

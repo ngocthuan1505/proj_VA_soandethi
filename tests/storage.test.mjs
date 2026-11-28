@@ -430,9 +430,8 @@ test('restoreBackup giữ UUID, công thức, richDoc, audio và không ghi đè
   const mergedExam={...incomingExam,audio:{...incomingExam.audio,fileId:remapped}};
   const mergedServerState={...fullState,exams:[...fullState.exams,mergedExam]};
   globalThis.fetch=async(url)=>{
-   if(String(url)==='/api/workspace/restore')return {ok:true,status:200,json:async()=>({revision:4,importedExams:1,fileRemap:{aud_exam:remapped},normalizedFileTypes:{aud_exam:'audio/wav'}})};
-   if(String(url).startsWith('/api/kv?key=state'))return {ok:true,status:200,json:async()=>({value:mergedServerState,revision:4})};
-   return {ok:true,status:200,json:async()=>({value:null,revision:0})};
+   if(String(url)==='/api/workspace/restore')return {ok:true,status:200,json:async()=>({revision:4,state:mergedServerState,importedExams:1,fileRemap:{aud_exam:remapped},normalizedFileTypes:{aud_exam:'audio/wav'}})};
+   throw Error('Mất mạng sau khi ghép đề');
   };
   const batchRes=await h.storage.restoreBackup({format:'tro-ly-soan-de-batch',exams:[incomingExam],files:{aud_exam:'data:application/octet-stream;base64,UklG RgE='}},3);
   assert.equal(batchRes.revision,4);

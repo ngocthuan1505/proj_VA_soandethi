@@ -295,7 +295,7 @@ export async function restoreBackup(backup,revision){
   ctx.revision=result.revision;ctx.stateConflict=false;
   const fileRemap=result.fileRemap||{};
   const normalizedFileTypes=result.normalizedFileTypes||{};
-  let restoredState=backup?.state&&typeof backup.state==='object'?backup.state:null;
+  let restoredState=backup.format==='tro-ly-soan-de-batch'?result.state:backup.state;
   let restoredRevision=result.revision;
   if(!restoredState){
    try{

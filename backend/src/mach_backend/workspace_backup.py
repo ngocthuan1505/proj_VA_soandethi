@@ -678,6 +678,7 @@ def restore(store, backup, base_revision):
             "revision": revision,
             "restored": True,
             "mode": "merge_batch",
+            "state": merged_state,
             "importedExams": imported_exams,
             "skippedExams": skipped_exams,
             "importedFiles": imported_files,

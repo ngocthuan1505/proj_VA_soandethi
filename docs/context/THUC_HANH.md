@@ -4,6 +4,18 @@ Cập nhật: 24/11/2026.
 
 ## Hiện trạng đã kiểm
 
+### 28/11/2026 · Mở chiến dịch từ nhắc hạn bằng bàn phím (t6)
+
+Trong [Trang chủ](../../home.js), nút **Mở chiến dịch** của nhắc hạn dùng `targetId`. Nút **Đã xong** và **Hoãn 4 giờ** vẫn dùng ID của nhắc hạn. Nếu chiến dịch vắng trong digest, ứng dụng gọi `GET /api/campaigns` của workspace hiện tại và tìm đúng ID.
+
+[Ca Chrome E2E](../../scripts/kiem-ui-redesign.mjs) dùng một chiến dịch đã lưu trữ và một chiến dịch đang hoạt động trong FastAPI cục bộ. Ở 1440×900, 1280×720 và 390×844, Tab tới nút trong thẻ nhắc hạn, Enter mở hộp chi tiết đúng ID và tiêu đề, Escape đóng hộp thoại. Khi chạy riêng, cả ba kích thước đạt với 0 lỗi console/JavaScript. Bên thuyết trình có thể dùng ca này làm bằng chứng điều hướng từ Trang chủ.
+
+### 28/11/2026 · t5, audio trong bản JSON bộ đề
+
+- Nút **Tải JSON bộ đã chọn** trong hộp thoại Kho đề đi qua `mvp.js` và `sharing.js`. Bản tải gồm cả lựa chọn bị bộ lọc ẩn và tệp tham chiếu từ đề, câu hỏi, lịch sử hoàn tác. Thiếu tệp thì báo lỗi trước khi tải.
+- Khi ghép lô, FastAPI trả trạng thái đã ghép, revision, ánh xạ ID và MIME đã chuẩn hóa. `storage.js` lưu trạng thái cùng tệp vào một giao dịch IndexedDB. Hai đề có cùng ID tệp đầu vào nhưng khác âm thanh giữ đúng nội dung riêng.
+- Chạy IT-11 trên Chrome với FastAPI fixture, bản `workbench.js` từ trước t5. Cả 9 ca đạt, gồm cả chặn toàn bộ API KV qua lần reload, đối chiếu hai WAV, UUID, công thức và richDoc. Bộ JS đạt 259/259 và `check:team` đạt. T4 đã có cả mã phòng thi và test tại `cf23844`. T10 phụ trách đóng ZIP từ cây commit đã kiểm.
+
 ### 28/11/2026 · Bổ sung bằng chứng T1/L7 từ PDF scan tới trích dẫn
 
 - Trên nền `77865d3`, Chrome `158.0.8127.38` chạy FastAPI trong kho tạm riêng cho từng kích thước 1440×900, 1280×720 và 390×844. Cả ba lượt dùng bàn phím và thao tác chạm mô phỏng bằng Playwright. [Nhật ký thao tác, HTTP, focus và 15 ảnh theo từng trạng thái](../testing/t1-l7/audit-result.json) · [PDF scan tự tạo gồm hai trang](../testing/t1-l7/doi-chieu-trang-2.pdf).

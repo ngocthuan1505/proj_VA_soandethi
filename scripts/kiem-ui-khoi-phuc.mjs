@@ -87,14 +87,10 @@ async function verifyBatchAudio(template){
   await openLibrary();await choose(bytes,tab);
   const confirm=tab.locator('[data-action="confirm-backup"]');
   await confirm.waitFor();
-  // Giữ vỏ ứng dụng để reload. Chỉ cho đọc state đúng một lần để ghi cache sau POST.
-  let readMergedState=false,blockedReads=0;
+  // Vỏ ứng dụng vẫn tải được, mọi lần đọc dữ liệu phải dùng IndexedDB.
+  let blockedReads=0;
   await tab.route(url=>url.pathname==='/api/kv',async route=>{
    const request=route.request();
-   if(!readMergedState&&request.method()==='GET'&&new URL(request.url()).searchParams.get('key')==='state'){
-    readMergedState=true;
-    return route.continue();
-   }
    if(request.method()==='GET')blockedReads++;
    await route.abort('internetdisconnected');
   });

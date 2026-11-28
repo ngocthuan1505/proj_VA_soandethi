@@ -8,6 +8,7 @@ import {esc,uid,clone,touch,check,LEVELS,usesTable,commit,blank,isApproved,isCon
 import {mountEditor,initEditor,flushEditor,format,equationHTML,newFormula} from './editor.js';
 import katex from './assets/katex/katex.mjs';
 import * as db from './storage.js';
+import {selectedExamBackup} from './sharing.js';
 let c,status=null,prepared=null,config=null,zoom=100,hideChat=false,activeSourcePage=1,activeSourceDoc=null,ocrAbortController=null,lastExportClassLabel='',latestExportPreflight=null;
 const SAFE_LAYOUT_IMAGE_RE=/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i;
 const $=s=>document.querySelector(s),btn=(a,t,cls='',attrs='')=>`<button data-action="${a}" class="${cls}" ${attrs}>${t}</button>`;
@@ -151,7 +152,39 @@ function renderQuestionAssets(){
  document.querySelectorAll('.question').forEach(el=>{const q=c.qget(el.dataset.q);el.classList.toggle('page-break',!!q.pageBreak);el.querySelector('.q-label').textContent=`${q.type==='essay'?'Bài':'Câu'} ${current().questions.indexOf(q)+1}${q.points?' ('+q.points+' điểm)':''}.`;el.querySelector('.question-assets')?.remove();const assets=document.createElement('div');assets.className='question-assets';assets.innerHTML=equationHTML(q,katex)+questionTablesHTML(q,btn)+(q.images||[]).map(im=>`<figure><img src="${esc(im.data)}" alt="${esc(im.caption||'Hình câu hỏi')}"><figcaption>${esc(im.caption||'')} ${btn('edit-image','Sửa hình','tiny-btn',`data-id="${q.id}" data-image="${im.id}"`)}</figcaption></figure>`).join('');const anchor=el.querySelector('.question-audio-card,.options,.essay-answer,.answer-area');if(anchor)anchor.before(assets);else el.append(assets);});
 }
 function syncWorkflowStrip(){if(!c)return;const strip=$('.main-footer .workflow-strip')||$('.workflow-strip');if(!strip)return;strip.outerHTML=workflowStripHTML(current());}
-export async function initMVP(context){c=context;initEditor(c);try{await refreshStatus();await c.persist();}catch(error){c.toast(error.message);}}
+function checkedLibraryExamIds(dialog){
+ const filters=[...dialog.querySelectorAll('#library-filter,#library-grade-filter,#library-subject-filter,#library-status-filter')].filter(input=>input.value);
+ const saved=filters.map(input=>input.value);
+ // Kho đề giữ cả lựa chọn bị bộ lọc ẩn. Đọc danh sách đầy đủ rồi trả bộ lọc trước khi tải tệp.
+ const refresh=()=>dialog.querySelector('#library-filter').dispatchEvent(new Event('input',{bubbles:true}));
+ try{
+  for(const input of filters)input.value='';
+  if(filters.length)refresh();
+  return new Set([...dialog.querySelectorAll('.wb-library-select:checked')].map(input=>input.dataset.id));
+ }finally{
+  filters.forEach((input,index)=>{input.value=saved[index];});
+  if(filters.length)refresh();
+ }
+}
+async function downloadLibraryBatch(event){
+ const button=event.target.closest('[data-action="library-batch-export"]');
+ if(!button)return;
+ event.preventDefault();
+ event.stopPropagation();
+ try{
+  const ids=checkedLibraryExamIds(event.currentTarget);
+  const exams=c.getState().exams.filter(exam=>ids.has(exam.id));
+  if(!exams.length)return;
+  const backup=await selectedExamBackup(exams);
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  if(blob.size>150*1024*1024)throw Error('Bản sao vượt 150 MB. Hãy chọn ít đề hơn.');
+  const url=URL.createObjectURL(blob);
+  Object.assign(document.createElement('a'),{href:url,download:'Bo-de-da-chon.json'}).click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  c.toast(`Đã tải JSON ${exams.length} đề.`);
+ }catch(error){c.toast(error.message);}
+}
+export async function initMVP(context){c=context;initEditor(c);$('#dialog').addEventListener('click',downloadLibraryBatch);try{await refreshStatus();await c.persist();}catch(error){c.toast(error.message);}}
 export function mountMVP(context){c=context;c.importDroppedFile=(file,opts)=>importFile(file,opts);const e=current();const wf=normalizeWorkflowStatus(e.workflowStatus);const header=$('header.top');const unified=header?.dataset.unifiedHeader==='1';if(!unified&&header){header.innerHTML=`<div class="mvp-document"><button class="doc-emblem" data-action="new" title="Đề mới">${c.icon('file')}</button><div><div class="document-title-line"><button class="header-title" data-action="metadata">${esc(e.title)}</button><span class="saved"><span data-save-status>Đã lưu trên máy</span></span><select id="workflow-status-select" class="workflow-status-select" data-wf="${esc(wf)}" aria-label="Trạng thái quy trình đề">${Object.entries(WORKFLOW_STATUS_LABELS).map(([k,lbl])=>`<option value="${k}" ${wf===k?'selected':''}>${lbl}</option>`).join('')}</select></div><div class="menubar">${[['file','Tệp'],['edit','Chỉnh sửa'],['view','Xem'],['insert','Chèn'],['format','Định dạng'],['tools','Công cụ']].map(([id,name])=>btn('menu',name,'menu-button',`data-menu="${id}"`)).join('')}</div></div></div><div class="header-actions">${btn('share',c.icon('globe')+'Chia sẻ','quiet')}${btn('library',c.icon('folder')+'Xem kho đề của tôi','quiet')}${btn('toggle-ai',c.icon('chat')+'Hỏi AI','ai-button')}<span class="avatar" title="Nguyễn Hữu Ngọc Thuận">NT</span></div>`;}
  const mainFooter=$('.main-footer');
  if(mainFooter&&!mainFooter.querySelector('.workflow-strip')){
